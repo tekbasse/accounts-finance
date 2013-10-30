@@ -91,7 +91,7 @@ if { $form_posted } {
         e {
             ns_log Notice "pert.tcl:  validated for e"
             set validated 1
-            if { ![ecds_is_natural_number $scenario_tid] && ![ecds_is_natural_number $dist_curve_tid] } {
+            if { ![qf_is_natural_number $scenario_tid] && ![qf_is_natural_number $dist_curve_tid] } {
                 set mode "n"
                 set next_mode ""
             } 
@@ -99,7 +99,7 @@ if { $form_posted } {
         d {
             ns_log Notice "pert.tcl:  validated for d"
             set validated 1
-            if { ( ![ecds_is_natural_number $scenario_tid] && ![ecds_is_natural_number $dist_curve_tid] ) || !$delete_p } {
+            if { ( ![qf_is_natural_number $scenario_tid] && ![qf_is_natural_number $dist_curve_tid] ) || !$delete_p } {
                 set mode "p"
                 set next_mode ""
             } 
@@ -107,7 +107,7 @@ if { $form_posted } {
         t {
             ns_log Notice "pert.tcl:  validated for t"
             set validated 1
-            if { ![ecds_is_natural_number $scenario_tid] && ![ecds_is_natural_number $dist_curve_tid] } {
+            if { ![qf_is_natural_number $scenario_tid] && ![qf_is_natural_number $dist_curve_tid] } {
                 set mode "p"
                 set next_mode ""
             } 
@@ -115,7 +115,7 @@ if { $form_posted } {
         c {
             ns_log Notice "pert.tcl:  validated for c"
             set validated 1
-            if { ![ecds_is_natural_number $scenario_tid] } {
+            if { ![qf_is_natural_number $scenario_tid] } {
                 lappend user_message_list "Table for Scenario has not been specified."
                 set validated 0
                 set mode "p"
@@ -143,7 +143,7 @@ if { $form_posted } {
         }
         default {
             ns_log Notice "pert.tcl:  validated for v"
-            if { [ecds_is_natural_number $scenario_tid] || [ecds_is_natural_number $dist_curve_tid] } {
+            if { [qf_is_natural_number $scenario_tid] || [qf_is_natural_number $dist_curve_tid] } {
                 set validated 1
                 set mode "v"
             } else {
@@ -216,7 +216,7 @@ if { $form_posted } {
                 set act_lists $act_lists_new
                 ns_log Notice "pert.tcl: : create/write table" 
                 ns_log Notice "pert.tcl: : llength act_lists [llength $act_lists]"
-                if { [ecds_is_natural_number $scenario_tid] } {
+                if { [qf_is_natural_number $scenario_tid] } {
                     set table_stats [qss_table_stats $scenario_tid]
                     set name_old [lindex $table_stats 0]
                     set title_old [lindex $table_stats 1]
@@ -341,7 +341,7 @@ if { $form_posted } {
                 ns_log Notice "pert.tcl: : length dc_lists [llength $dc_lists]"
 
 
-                if { [ecds_is_natural_number $dist_curve_tid] } {
+                if { [qf_is_natural_number $dist_curve_tid] } {
                     set table_stats [qss_table_stats $dist_curve_tid]
                     set name_old [lindex $table_stats 0]
                     set title_old [lindex $table_stats 1]
@@ -367,10 +367,10 @@ if { $form_posted } {
             ns_log Notice "pert.tcl:  mode = delete"
             #requires scenario_tid or dist_curve_tid
             # delete scenario_tid or dist_curve_tid or both, if both supplied
-            if { [ecds_is_natural_number $dist_curve_tid] } {
+            if { [qf_is_natural_number $dist_curve_tid] } {
                 qss_table_delete $dist_curve_tid
             }
-            if { [ecds_is_natural_number $scenario_tid] } {
+            if { [qf_is_natural_number $scenario_tid] } {
                 qss_table_delete $scenario_tid
             }
             set mode $next_mode
@@ -381,7 +381,7 @@ if { $form_posted } {
             ns_log Notice "pert.tcl:  mode = trash"
             #requires scenario_tid or dist_curve_tid
             # delete scenario_tid or dist_curve_tid or both, if both supplied
-            if { [ecds_is_natural_number $dist_curve_tid] && $write_p } {
+            if { [qf_is_natural_number $dist_curve_tid] && $write_p } {
                 set trashed_p [lindex [qss_table_stats $dist_curve_tid] 7]
                 if { $trashed_p == 1 } {
                     set trash 0
@@ -390,7 +390,7 @@ if { $form_posted } {
                 }
                 qss_table_trash $trash $dist_curve_tid
             }
-            if { [ecds_is_natural_number $scenario_tid] && $write_p } {
+            if { [qf_is_natural_number $scenario_tid] && $write_p } {
                 set trashed_p [lindex [qss_table_stats $scenario_tid] 7]
                 if { $trashed_p == 1 } {
                     set trash 0
@@ -428,7 +428,7 @@ switch -exact -- $mode {
         
         qf_input type hidden value w name mode label ""
         
-        if { [ecds_is_natural_number $scenario_tid] } {
+        if { [qf_is_natural_number $scenario_tid] } {
             set act_stats_list [qss_table_stats $scenario_tid]
             set act_name [lindex $act_stats_list 0]
             set act_title [lindex $act_stats_list 1]
@@ -453,7 +453,7 @@ switch -exact -- $mode {
             qf_textarea value $scenario_text cols 40 rows 6 name scenario_text label "Table data:"
             qf_append html "</div>"
         }
-        if { [ecds_is_natural_number $dist_curve_tid] } {
+        if { [qf_is_natural_number $dist_curve_tid] } {
             # get table from ID
             set dc_stats_list [qss_table_stats $dist_curve_tid]
             set dc_name [lindex $dc_stats_list 0]
@@ -633,22 +633,10 @@ switch -exact -- $mode {
             lappend cost_label_list [lindex $curve_band_list 2]
             lappend cost_val_probability_lists [list $cost_task_list $cost_probability_list]
         }
-
         # handy api ref
-        # for { set ii 0 } { $ii < $last_row } { set ii $n } { #code }
-        # lsort -integer -unique $rows_list
         # util_commify_number
         # format "% 8.2f" $num
         # f::sum $list
-        # generate the data points
-        # qaf_distribution_points_create
-        # qaf_discrete_dist_report
-        # qaf_harmonic_terms 
-        # qaf_triangular_numbers
-        # Naming conventions when creating interval calculations:
-        #  s_arr - an array of scalar values
-        #  list_arr - an arrary of lists
-        #  html_arr - an array of html output
 
        ## # PERT calculations
         # create activity_list
@@ -665,214 +653,291 @@ switch -exact -- $mode {
         # build array of activity_ref sequence_num
         # default for each acitivity_ref 1
         ## assign an activity_ref one more than the max sequence_num of its dependencies
-# defaults, inputs
-#set act_depnc_list [list a "" b e,c,a c e,f d b,f,c e a f ""]
-#set act_depnc_list [list a "" b a c "" d a e b f ""]
-set act_depnc_list [list a "" b "" c "a" d a e "b,c" f d g e]
-set act_time_est_list [list [list a 2 4 6] [list b 3 5 9] [list c 4 5 7] [list d 4 6 10] [list e 4 5 7] [list f 3 4 8] [list g 3 5 8] ]
 
-set act_list [list ]
-foreach {act_unfiltered depnc_unfiltered} $act_depnc_list {
-    regsub -all -nocase -- {[^a-z0-9,]+} $depnc_unfiltered {} depnc
-    regsub -all -nocase -- {[^a-z0-9,]+} $act_unfiltered {} act
-    # depnc: comma list of dependencies
-    # act: activity
-    lappend act_list $act
-    # depnc_arr() list of dependencies
-    set depnc_arr($act) [split $depnc ,]
-    # calcd_p_arr($act) Q: relative sequence number for $act been calculated?
-    set calcd_p_arr($act) 0
-    # act_seq_num_arr relative sequence number of an activity
-    set sequence_1 0
-    set act_seq_num_arr($act) $sequence_1
-}
-
-# time_expected_arr()
-# time_est_arr() is a list of short, median, long
-foreach act_t_list $act_time_est_list {
-    set act [lindex $act_t_list 0]
-    set time_est_arr($act) [lrange $act_t_list 1 3]
-    set short [lindex $act_t_list 1]
-    set med [lindex $act_t_list 2]
-    set long [lindex $act_t_list 3]
-    set time_expected_arr($act) [expr { ( $short + 4 * $med + $long ) / 6. } ]
-    set path_dur_arr($act) $time_expected_arr($act)
-}
-
-# Calculate paths in the main loop to save resouces.
-#  Each path is a list of numbers referenced by array, where array is path.
-#  set path_segment_ends_in_lists($act) 
-#         so future segments can quickly reference it to build theirs.
-# This keeps path making nearly linear. There are as many path references as there are activities..
-# Some of the references are incomplete paths, but these can be filtered as needed.
-# All paths must be assessed in order to handle all possibilities
-# Paths are used to determine critical path and fast crawl a single path.
-
-# An activity cannot start until the longest dependent segment has completed.
-
-# for strict critical path, create a list of lists, where 
-# each list is a list of dependencies from start to finish (aka path)  + the longest duraction path of activity including dependencies.
-# sum the duration for each list. The longest duration is the strict defintion of critical path.
-
-# create dependency check equations
-# depnc_eq_arr() is equation that answers question: Are dependencies met for $act?
-foreach act $act_list {
-    set eq "1 &&"
-    foreach dep $depnc_arr($act) {
-	append eq " calcd_p_arr($dep) &&"
-    }
-    set eq [string range $eq 0 end-3]
-    regsub -all -- {calcd} $eq {$calcd} depnc_eq_arr($act)
-}
-# main process looping
-set all_calced_p 0
-set activity_count [llength $act_list]
-set i 0
-set act_seq_list_arr($sequence_1) [list ]
-set act_count_of_seq_arr($sequence_1) 0
-set path_seg_dur_list [list ]
-# act_seq_max is the current maximum path length
-# act_count_of_seq_arr($seq_num) is the count of activities in sequence_num
-while { !$all_calced_p && $activity_count > $i } {
-    set all_calcd_p 1
-    foreach act $act_list {
-        set dependencies_met_p [expr $depnc_eq_arr($act) ]
-        set act_seq_max $sequence_1
-        if { $dependencies_met_p && !$calcd_p_arr($act) } {
-
-            # max_num: maximum relative sequence number for activity dependencies
-            set max_num 0
-            foreach test_act $depnc_arr($act) {
-                set test $act_seq_num_arr($test_act)
-                if { $max_num < $test } {
-                    set max_num $test
+        # defaults, inputs
+        #set act_depnc_list [list a "" b e,c,a c e,f d b,f,c e a f ""]
+        #set act_depnc_list [list a "" b a c "" d a e b f ""]
+        set act_depnc_list [list a "" b "" c "a" d a e "b,c" f d g e]
+        set act_time_est_list [list [list a 2 4 6] [list b 3 5 9] [list c 4 5 7] [list d 4 6 10] [list e 4 5 7] [list f 3 4 8] [list g 3 5 8] ]
+        
+        set act_list [list ]
+        foreach {act_unfiltered depnc_unfiltered} $act_depnc_list {
+            regsub -all -nocase -- {[^a-z0-9,]+} $depnc_unfiltered {} depnc
+            regsub -all -nocase -- {[^a-z0-9,]+} $act_unfiltered {} act
+            # depnc: comma list of dependencies
+            # act: activity
+            lappend act_list $act
+            # depnc_arr() list of dependencies
+            set depnc_arr($act) [split $depnc ,]
+            # calcd_p_arr($act) Q: relative sequence number for $act been calculated?
+            set calcd_p_arr($act) 0
+            # act_seq_num_arr relative sequence number of an activity
+            set sequence_1 0
+            set act_seq_num_arr($act) $sequence_1
+        }
+        
+        # time_expected_arr()
+        # time_est_arr() is a list of short, median, long
+        foreach act_t_list $act_time_est_list {
+            set act [lindex $act_t_list 0]
+            set time_est_arr($act) [lrange $act_t_list 1 3]
+            set short [lindex $act_t_list 1]
+            set med [lindex $act_t_list 2]
+            set long [lindex $act_t_list 3]
+            set time_expected_arr($act) [expr { ( $short + 4 * $med + $long ) / 6. } ]
+            set path_dur_arr($act) $time_expected_arr($act)
+        }
+        
+        # Calculate paths in the main loop to save resouces.
+        #  Each path is a list of numbers referenced by array, where array is path.
+        #  set path_segment_ends_in_lists($act) 
+        #         so future segments can quickly reference it to build theirs.
+        # This keeps path making nearly linear. There are as many path references as there are activities..
+        # Some of the references are incomplete paths, but these can be filtered as needed.
+        # All paths must be assessed in order to handle all possibilities
+        # Paths are used to determine critical path and fast crawl a single path.
+        
+        # An activity cannot start until the longest dependent segment has completed.
+        
+        # for strict critical path, create a list of lists, where 
+        # each list is a list of dependencies from start to finish (aka path)  + the longest duraction path of activity including dependencies.
+        # sum the duration for each list. The longest duration is the strict defintion of critical path.
+        
+        # create dependency check equations
+        # depnc_eq_arr() is equation that answers question: Are dependencies met for $act?
+        foreach act $act_list {
+            set eq "1 &&"
+            foreach dep $depnc_arr($act) {
+                append eq " calcd_p_arr($dep) &&"
+            }
+            set eq [string range $eq 0 end-3]
+            regsub -all -- {calcd} $eq {$calcd} depnc_eq_arr($act)
+        }
+        # main process looping
+        set all_calced_p 0
+        set activity_count [llength $act_list]
+        set i 0
+        set act_seq_list_arr($sequence_1) [list ]
+        set act_count_of_seq_arr($sequence_1) 0
+        set path_seg_dur_list [list ]
+        # act_seq_max is the current maximum path length
+        # act_count_of_seq_arr($seq_num) is the count of activities in sequence_num
+        while { !$all_calced_p && $activity_count > $i } {
+            set all_calcd_p 1
+            foreach act $act_list {
+                set dependencies_met_p [expr $depnc_eq_arr($act) ]
+                set act_seq_max $sequence_1
+                if { $dependencies_met_p && !$calcd_p_arr($act) } {
+                    
+                    # max_num: maximum relative sequence number for activity dependencies
+                    set max_num 0
+                    foreach test_act $depnc_arr($act) {
+                        set test $act_seq_num_arr($test_act)
+                        if { $max_num < $test } {
+                            set max_num $test
+                        }
+                    }
+                    # Add activity's relative sequence number: act_seq_num_arr
+                    set act_seq_nbr [expr { $max_num + 1 } ]
+                    set act_seq_num_arr($act) $act_seq_nbr
+                    set calcd_p_arr($act) 1
+                    # increment act_seq_max and set defaults for a new max seq number?
+                    if { $act_seq_nbr > $act_seq_max } {
+                        set act_seq_max $act_seq_nbr
+                        set act_seq_list_arr($act_seq_max) [list ]
+                        set act_count_of_seq_arr($act_seq_max) 0
+                    }
+                    # add activity to the network for this sequence number
+                    lappend act_seq_list_arr($act_seq_nbr) $act
+                    incr act_count_of_seq_arr($act_seq_nbr)
+                    
+                    # Analize prior path segments here.
+                    # path_duration(path) is the min. path duration to complete dependent paths
+                    set path_duration 0
+                    # set duration_new to the longest dependent segment.
+                    foreach dep_act $depnc_arr($act) {
+                        if { $path_dur_arr($dep_act) > $path_duration } {
+                            set path_duration $path_dur_arr($dep_act)
+                        }
+                    }
+                    set duration_arr($act) [expr { $path_duration + $time_expected_arr($act) } ]
+                    set path_seg_list_arr($act) [list ]
+                    #bad referencing here: separate duration from rest.
+                    foreach dep_act $depnc_arr($act) {
+                        foreach path_list $path_seg_list_arr($dep_act) {
+                            set path_new $path_list
+                            lappend path_new $act
+                            lappend path_seg_list_arr($act) $path_new
+                            lappend path_seg_dur_list [list $path_new $duration_arr($act)]
+                        }
+                    }
+                    if { [llength $path_seg_list_arr($act)] eq 0 } {
+                        lappend path_seg_list_arr($act) $act
+                        lappend path_seg_dur_list [list $act $duration_arr($act)]
+                    }
                 }
+                set all_calcd_p [expr { $all_calcd_p && $calcd_p_arr($act) } ]
             }
-            # Add activity's relative sequence number: act_seq_num_arr
-            set act_seq_nbr [expr { $max_num + 1 } ]
-            set act_seq_num_arr($act) $act_seq_nbr
-            set calcd_p_arr($act) 1
-            # increment act_seq_max and set defaults for a new max seq number?
-            if { $act_seq_nbr > $act_seq_max } {
-                set act_seq_max $act_seq_nbr
-                set act_seq_list_arr($act_seq_max) [list ]
-                set act_count_of_seq_arr($act_seq_max) 0
-            }
-            # add activity to the network for this sequence number
-            lappend act_seq_list_arr($act_seq_nbr) $act
-            incr act_count_of_seq_arr($act_seq_nbr)
-
-            # Analize prior path segments here.
-            # path_duration(path) is the min. path duration to complete dependent paths
-            set path_duration 0
-            # set duration_new to the longest dependent segment.
-            foreach dep_act $depnc_arr($act) {
-                if { $path_dur_arr($dep_act) > $path_duration } {
-                    set path_duration $path_dur_arr($dep_act)
-                }
-            }
-            set duration_arr($act) [expr { $path_duration + $time_expected_arr($act) } ]
-            set path_seg_list_arr($act) [list ]
-            #bad referencing here: separate duration from rest.
-            foreach dep_act $depnc_arr($act) {
-                foreach path_list $path_seg_list_arr($dep_act) {
-                    set path_new $path_list
-                    lappend path_new $act
-                    lappend path_seg_list_arr($act) $path_new
-                    lappend path_seg_dur_list [list $path_new $duration_arr($act)]
-                }
-            }
-            if { [llength $path_seg_list_arr($act)] eq 0 } {
-                lappend path_seg_list_arr($act) $act
-                lappend path_seg_dur_list [list $act $duration_arr($act)]
+            incr i
+        }
+        set dep_met_p 1
+        ns_log Notice "pert.tcl: path_seg_dur_list $path_seg_dur_list"
+        foreach act $act_list {
+            set $dep_met_p [expr $depnc_eq_arr($act) && $dep_met_p ]
+            # ns_log Notice "pert.tcl: act $act act_seq_num_arr '$act_seq_num_arr($act)'"
+            # ns_log Notice "pert.tcl: act_seq_list_arr '$act_seq_list_arr($act_seq_num_arr($act))' $act_count_of_seq_arr($act_seq_num_arr($act))"
+        }
+        ns_log Notice "pert.tcl: dep_met_p $dep_met_p"
+        
+        # sort by path duration
+        # critical path is the longest path. Float is the difference between CP and next longest CP.
+        # create an array of paths from longest to shortest to help build base table
+        set path_seg_dur_sort1_list [lsort -decreasing -real -index 1 $path_seg_dur_list]
+        # Critical Path (CP) is 
+        set cp_list [lindex [lindex $path_seg_dur_sort1_list 0] 0]
+        #ns_log Notice "pert.tcl: path_seg_dur_sort1_list $path_seg_dur_sort1_list"
+        
+        # Extract most significant CP alternates for a focused table
+        # by counting the number of times an act is used in the largest proportion (first half) of paths in path_set_dur_sort1_list
+        set path_count [llength $path_seg_dur_sort1_list]
+        set extract_limit [expr { $path_count / 2 + 1 } ]
+        set extractv1_list [lrange $path_seg_dur_sort1_list 0 ${extract_limit}] 
+        # act_freq_in_load_cp_alts_arr counts the number of times an activity is in a path  for the most significant CP alternates
+        set max_act_count_per_seq 0
+        foreach act $act_list {
+            set act_freq_in_load_cp_alts_arr($act) 0
+            if { $act_count_of_seq_arr($act) > $max_act_count_per_seq } {
+                set max_act_count_per_seq $act_count_of_seq_arr($act)
             }
         }
-        set all_calcd_p [expr { $all_calcd_p && $calcd_p_arr($act) } ]
-    }
-    incr i
-}
-set dep_met_p 1
-ns_log Notice "pert.tcl: path_seg_dur_list $path_seg_dur_list"
-foreach act $act_list {
-    set $dep_met_p [expr $depnc_eq_arr($act) && $dep_met_p ]
-#            ns_log Notice "pert.tcl: act $act act_seq_num_arr '$act_seq_num_arr($act)'"
-            if { [info exists act_seq_list_arr($act_seq_num_arr($act)) ] } {
-#                ns_log Notice "pert.tcl: act_seq_list_arr '$act_seq_list_arr($act_seq_num_arr($act))' $act_count_of_seq_arr($act_seq_num_arr($act))"
+        foreach path_seg_list $extractv1_list {
+            set path2_list [lindex $path_seg_list 0]
+            foreach act $path2_list {
+                incr act_freq_in_load_cp_alts_arr($act)
             }
-#    ns_log Notice "pert.tcl: act $act act_seq_num_arr $act_seq_num_arr($act)"
-}
-ns_log Notice "pert.tcl: dep_met_p $dep_met_p"
-
-# sort by path duration
-# critical path is the longest path. Float is the difference between CP and next longest CP.
-# create an array of paths from longest to shortest to help build base table
-set path_seg_dur_sort1_list [lsort -decreasing -real -index 1 $path_seg_dur_list]
-# Critical Path (CP) is 
-set cp_list [lindex [lindex $path_seg_dur_sort1_list 0] 0]
-#ns_log Notice "pert.tcl: path_seg_dur_sort1_list $path_seg_dur_sort1_list"
-
-# Extract most significant CP alternates for a focused table
-# by counting the number of times an act is used in the largest proportion (first half) of paths in path_set_dur_sort1_list
-set path_count [llength $path_seg_dur_sort1_list]
-set extract_limit [expr { $path_count / 2 + 1 } ]
-set extractv1_list [lrange $path_seg_dur_sort1_list 0 ${extract_limit}] 
-# act_freq_in_load_cp_alts_arr counts the number of times an activity is in a path  for the most significant CP alternates
-set max_act_count_per_seq 0
-foreach act $act_list {
-    set act_freq_in_load_cp_alts_arr($act) 0
-    if { $act_count_of_seq_arr($act) > $max_act_count_per_seq } {
-        set max_act_count_per_seq $act_count_of_seq_arr($act)
-    }
-}
-foreach path_seg_list $extractv1_list {
-    set path2_list [lindex $path_seg_list 0]
-    foreach act $path2_list {
-        incr act_freq_in_load_cp_alts_arr($act)
-    }
-}
-set act_sig_list [list ]
-foreach act $act_list {
-    lappend act_sig_list [list $act $act_freq_in_load_cp_alts_arr($act)]
-}
-set act_sig_sorted_list [lsort -decreasing -integer -index 1 $act_sig_list]
-set act_max_count [lindex [lindex $act_sig_sorted_list 0] 1]
-set act_sig_median_pos [expr { $extract_limit / 2 } + 1 ]
-set act_median_count [lindex [lindex $act_sig_sorted_list $act_sig_median_pos] 1]
-
-# build base table
-# Table width should be limited to max count of acivities per sequence.
-
-# activity_ref act_seq_num_arr has_direct_dependency_p time_expected direct_dependencies_list
-set base_lists [list ]
-
-foreach act $act_list {
-    set has_direct_dependency_p [expr { [llength $depnc_arr($act)] > 0 } ]
-    set on_critical_path_p [expr { [lsearch -exact $cp_list $act] > -1 } ]
-    set on_a_sig_path_p [expr { $act_freq_in_load_cp_alts_arr($act) > $act_median_count } ]
-    set activity_list [list $act $act_seq_num_arr($act) $has_direct_dependency_p $on_critical_path_p $on_a_sig_path_p $act_freq_in_load_cp_alts_arr($act)  $duration_arr($act) $time_expected_arr($act) $depnc_arr($act) ]
-    lappend base_lists $activity_list
-}
-
-# act_count_of_seq_arr( sequence_number) is the count of activities at this sequence number
-# max_act_count_per_seq is the maximum number of activities in a sequence number.
-
-ns_log Notice "pert.tcl: base_lists $base_lists"
-# critical path is the longest expexted duration of dependent activities..
-# so:
-# primary sort is act_seq_num_arr ascending
-# secondary sort is part_of_critical_path_p descending
-# third sort is has_direct_dependency_p descending (1 = true, 0 false)
-# fourth sort is path duraction descending
-
-set fourth_sort [lsort -decreasing -real -index 6 $base_lists]
-set third_sort [lsort -decreasing -integer -index 2 $fourth_sort]
-set second_sort [lsort -decreasing -integer -index 3 $third_sort]
-set primary_sort [lsort -increasing -integer -index 1 $second_sort]
-
-ns_log Notice "pert.tcl: primary_sort $primary_sort"
-
-
-
+        }
+        set act_sig_list [list ]
+        foreach act $act_list {
+            lappend act_sig_list [list $act $act_freq_in_load_cp_alts_arr($act)]
+        }
+        set act_sig_sorted_list [lsort -decreasing -integer -index 1 $act_sig_list]
+        set act_max_count [lindex [lindex $act_sig_sorted_list 0] 1]
+        set act_sig_median_pos [expr { $extract_limit / 2 } + 1 ]
+        set act_median_count [lindex [lindex $act_sig_sorted_list $act_sig_median_pos] 1]
+        
+        # build base table
+        # Table width should be limited to max count of acivities per sequence.
+        
+        # activity_ref act_seq_num_arr has_direct_dependency_p time_expected direct_dependencies_list
+        set base_lists [list ]
+        
+        foreach act $act_list {
+            set has_direct_dependency_p [expr { [llength $depnc_arr($act)] > 0 } ]
+            set on_critical_path_p [expr { [lsearch -exact $cp_list $act] > -1 } ]
+            set on_a_sig_path_p [expr { $act_freq_in_load_cp_alts_arr($act) > $act_median_count } ]
+            set activity_list [list $act $act_seq_num_arr($act) $has_direct_dependency_p $on_critical_path_p $on_a_sig_path_p $act_freq_in_load_cp_alts_arr($act) $duration_arr($act) $time_expected_arr($act) $depnc_arr($act) ]
+            lappend base_lists $activity_list
+        }
+        
+        # act_count_of_seq_arr( sequence_number) is the count of activities at this sequence number
+        # max_act_count_per_seq is the maximum number of activities in a sequence number.
+        
+        ns_log Notice "pert.tcl: base_lists $base_lists"
+        # critical path is the longest expexted duration of dependent activities..
+        # so:
+        # primary sort is act_seq_num_arr ascending
+        # secondary sort is part_of_critical_path_p descending
+        # third sort is has_direct_dependency_p descending (1 = true, 0 false)
+        # fourth sort is path duraction descending
+        
+        set fourth_sort [lsort -decreasing -real -index 6 $base_lists]
+        set third_sort [lsort -decreasing -integer -index 2 $fourth_sort]
+        set second_sort [lsort -decreasing -integer -index 3 $third_sort]
+        set primary_sort [lsort -increasing -integer -index 1 $second_sort]
+        
+        ns_log Notice "pert.tcl: primary_sort $primary_sort"
+        
+        # prep for conversion to html by adding missing TDs, setting formatting (colors, size etc).
+        # primary_sort list_of_lists consists of this order of elements:
+        #  act act_seq_num_arr has_direct_dependency_p on_critical_path_p on_a_sig_path_p act_freq_in_load_cp_alts path_duration time_expected dependencies_list
+        # sorted by: act_seq_num on_critical_path_p has_direct_dependency_p duration
+        
+        
+        # build formatting colors
+        set act_count [llength $act_list]
+        # contrast decreases on up to 50%
+        set contrast_step [expr { int( 16 / ( $max_act_count_per_seq / 2 + 1 ) ) } ]
+        set hex_list [list 0 1 2 3 4 5 6 7 8 9 a b c d e f]
+        set row_nbr 0
+        set cell_nbr 0
+        set act_seq_num $sequence_1
+        # each row is a relative sequence
+        set cells_per_row $max_act_count_per_seq
+        set cell_formatting_list [list ]
+        set cell_value_list [list ]
+        set table_formatting_lists [list ]
+        set table_value_lists [list ]
+        # act_count_of_seq_arr( sequence_number) is the count of activities at this sequence number
+        foreach cell $primary_sort {
+            set cell_nbr_prev $cell_nbr
+            set act_seq_num_prev $act_seq_num
+            incr cell_nbr
+            set cell_formatting [list ]
+            set cell_value ""
+            # set initial values
+            set act [lindex $cell 0]
+            set act_seq_num [lindex $cell 1]
+            set has_direct_dependency_p [lindex $cell 2]
+            set on_critical_path_p [lindex $cell 3]
+            set on_a_sig_path_p [lindex $cell 4]
+            set act_freq_in_load_cp_alts [lindex $cell 5]
+            set path_duration [lindex $cell 6]
+            set time_expected [lindex $cell 7]
+            set dependencies_list [lindex $cell 8]
+            set dependencies ""
+            set separator ""
+            foreach dependency $dependencies_list {
+                append dependencies $separator $dependency
+                set separator ", "
+            }
+            if { $act_seq_num_prev ne $act_seq_num } {
+                # new row
+                set cell_nbr 0
+                set row_nbr_prev $row_nbr
+                incr row_nbr
+                set hex_nbr_val 16
+                lappend table_formatting_lists $cell_formatting_list
+                lappend table_value_lists $cell_formatting_list
+                set cell_formatting_list [list ]
+                set cell_value_list [list ]
+            }
+            # build cell
+            set cell_value "$act t:${time_expected} T:${path_duration} D:${dependencies} "
+            set odd_row_p [expr { ( $row_nbr / 2. ) == int( $row_nbr / 2 ) } ]
+            # CP in highest contrast (yellow ff9), others in lowering contrast to f70
+            # CP alt in alternating lt blue 99f, lt green 9f9 
+            # others in alternating medium blue/green 66ff, 6f6
+            if { $on_critical_path_p } {
+                set bgcolor "#ffff00"
+            } elseif { $on_a_sig_path_p } {
+                set hex_nbr_val [expr { $hex_nbr - $contrast_step } ]
+                set hex_nbr [lindex $hex_list $hex_nbr_val]
+                if { $odd_row_p } {
+                    set bgcolor "#ff${hex_nbr}${hex_nbr}99"
+                } else {
+                    set bgcolor "#${hex_nbr}ff${hex_nbr}"
+                }
+                
+            } elseif { $odd_row_p } {
+                set bgcolor "#6666ff"
+            } else {
+                set bgcolor "#66ff66"
+            }
+            set cell_formatting bgcolor $bgcolor
+            lappend cell_formatting_list $cell_formatting
+            lappend cell_value_list $cell_value
+        }
+        
         # build unique list of dependencies
 
         # Build Network Breakdown Table: activity vs. path
@@ -888,7 +953,7 @@ ns_log Notice "pert.tcl: primary_sort $primary_sort"
         # html
         set html_arr(apt) "<h3>Computation report</h3>"
 
-        append html_arr(apt) [qss_list_of_lists_to_html_table $stat_list $table_attribute_list $stat_format_list]
+        append html_arr(apt) [qss_list_of_lists_to_html_table $table_value_lists $table_attribute_list $table_formatting_lists]
         append html_arr(apt) "Completed $s_arr(the_time)"
         append computation_report_html $html_arr(apt)
         
@@ -903,13 +968,13 @@ ns_log Notice "pert.tcl: primary_sort $primary_sort"
     v {
         #  view table(s) (standard, html page document/report)
         ns_log Notice "pert.tcl:  mode = $mode ie. view table"
-        if { [ecds_is_natural_number $scenario_tid] && [ecds_is_natural_number $dist_curve_tid] && $write_p } {
+        if { [qf_is_natural_number $scenario_tid] && [qf_is_natural_number $dist_curve_tid] && $write_p } {
             lappend menu_list [list edit "scenario_tid=${scenario_tid}&dist_curve_tid=${dist_curve_tid}&mode=e"]
             set menu_e_p 1
         } else {
             set menu_e_p 0
         }
-        if { [ecds_is_natural_number $scenario_tid] } {
+        if { [qf_is_natural_number $scenario_tid] } {
             set act_stats_list [qss_table_stats $scenario_tid]
             set act_name [lindex $act_stats_list 0]
             set act_title [lindex $act_stats_list 1]
@@ -920,7 +985,7 @@ ns_log Notice "pert.tcl: primary_sort $primary_sort"
             set table_tag_atts_list [list border 1 cellpadding 3 cellspacing 0]
             append scenario_html [qss_list_of_lists_to_html_table $act_lists $table_tag_atts_list]
             append scenario_html "<p>${act_comments}</p>"
-            if { ![ecds_is_natural_number $dist_curve_tid] } {
+            if { ![qf_is_natural_number $dist_curve_tid] } {
                 # can dist_curve_tid be extracted from scenario?
                 set constants_list [list dist_curve_tid]
                 foreach condition_list $act_lists {
@@ -937,7 +1002,7 @@ ns_log Notice "pert.tcl: primary_sort $primary_sort"
                 lappend menu_list [list edit "scenario_tid=${scenario_tid}&mode=e"]
             }
         }
-        if { [ecds_is_natural_number $dist_curve_tid] } {
+        if { [qf_is_natural_number $dist_curve_tid] } {
             set dc_stats_list [qss_table_stats $dist_curve_tid]
             set dc_name [lindex $dc_stats_list 0]
             set dc_title [lindex $dc_stats_list 1]
@@ -950,11 +1015,11 @@ ns_log Notice "pert.tcl: primary_sort $primary_sort"
             set table_tag_atts_list [list border 1 cellpadding 3 cellspacing 0]
             append dist_curve_html [qss_list_of_lists_to_html_table $dc_lists $table_tag_atts_list]
             append dist_curve_html "<p>${dc_comments}</p>"
-            if { !$menu_e_p && ![ecds_is_natural_number $scenario_tid] && $write_p } {
+            if { !$menu_e_p && ![qf_is_natural_number $scenario_tid] && $write_p } {
                 lappend menu_list [list edit "dist_curve_tid=${dist_curve_tid}&mode=e"]
             }
         }
-        if { [ecds_is_natural_number $scenario_tid] && [ecds_is_natural_number $dist_curve_tid] } {
+        if { [qf_is_natural_number $scenario_tid] && [qf_is_natural_number $dist_curve_tid] } {
             lappend menu_list [list compute "scenario_tid=${scenario_tid}&dist_curve_tid=${dist_curve_tid}&mode=c"]
         }
     }
