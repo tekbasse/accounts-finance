@@ -39,3 +39,4 @@ ad_proc -public acc_fin::energy_ppa_revenue {
     set revenue [expr { $energy_output * $ppa_rate * pow( 1. + $ppa_escalation , $year - 1. ) } ]
     return $revenue
 } 
+
