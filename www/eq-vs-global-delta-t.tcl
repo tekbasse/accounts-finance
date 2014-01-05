@@ -58,39 +58,44 @@ proc annotate_image_pos_color { imagename x y color text } {
 }
 
 proc filter_data { filter_list data_list } {
+    set new_data_list [list ]
     # y = f(x)
     set filter_len [llength $filter_list]
-    set b 0
-    set a [expr { $b - $filter_len + 1 } ]
-    set new_data_list [list ]
-    foreach y $data_list {
-        # negative range indexes clip at 0
-        set sample_list [lrange $data_list $a $b]
-        set sample_len [llength $sample_list]
-        set i_start [expr { $filter_len - $sample_len } ]
-        
-        if { $i_start > 0 } {
-            set this_filter_list [lrange $filter_list $i_start end]
-        } elseif { $this_filter_list ne $filter_list } {
-            set this_filter_list $filter_list
+    if { $filter_len > 0 } {
+        set b 0
+        set a [expr { $b - $filter_len + 1 } ]
+        foreach y $data_list {
+            # negative range indexes clip at 0
+            set sample_list [lrange $data_list $a $b]
+            set sample_len [llength $sample_list]
+            set i_start [expr { $filter_len - $sample_len } ]
+            
+            if { $i_start > 0 } {
+                # filter is larger than sample size
+                set this_filter_list [lrange $filter_list $i_start end]
+            } else {
+                set this_filter_list $filter_list
+            }
+            set factor_sum 0.
+            foreach factor $this_filter_list {
+                set factor_sum [expr { $factor_sum + $factor } ]
+            }
+#            puts "filter_data: factor_sum $factor_sum i_start $i_start this_filter_list '$this_filter_list'"
+            if { $i_start < 0 || [lindex $sample_list end] ne $y } {
+                puts "filter_data error i_start: $i_start for: a $a b $b filter_list $filter_list sample_list $sample_list "
+            }
+            set c 0
+            set sum 0
+            foreach factor $sample_list {
+                set term [expr { $factor * [lindex $this_filter_list $c] } ]
+#                puts "filter_data: sum $sum term $term factor $factor c $c"
+                set sum [expr { $sum + $term } ]
+            }
+            set geometric_avg [expr { $sum / ( $factor_sum + 0. ) } ]
+            incr a
+            incr b
+            lappend new_data_list $geometric_avg
         }
-        set factor_sum 0.
-        foreach factor $this_filter_list {
-            set factor_sum [expr { $factor_sum + $factor } ]
-        }
-        if { $i_start < 0 || [lindex $sample_list end] ne $y } {
-            puts "error i_start: $i_start for: a $a b $b filter_list $filter_list sample_list $sample_list "
-        }
-        set c 0
-        set sum 0
-        foreach factor $sample_list {
-            set term [expr { $factor * [lindex $this_filter_list $c] } ]
-            set sum [expr { $sum + $term } ]
-        }
-        set geometric_avg [expr { $sum / ( $factor_sum + 0. ) } ]
-        incr a
-        incr b
-        lappend new_data_list $geometric_avg
     }
     return $new_data_list
 }
@@ -99,7 +104,7 @@ proc binary11_series { term_count } {
     set binary_expan_list [list 1 1 2 4 8 16 32 64 128 256 512 1024 2048 4096 8192 16384 32768 65536 131072 262144 524288 1048576 2097152 4194304 8388608 16777216 33554432 67108864]
     set binary_expan_len 28
     set i 26
-    while { $term_count > $binary_expan_len } {
+    while { $term_count > $binary_expan_len && $binary_expan_len < 64 } {
         incr i
         lappend binary_expan_list [expr { wide( pow(2,$i) ) } ]
         incr binary_expan_len
@@ -132,12 +137,55 @@ proc fibonacci_series { term_count } {
 }
 
 proc decay_1_series { term_count } {
+    # based on round(x/(x+1/x)) where x = term_count; circa 1/x or inverse proportion
     set decay_list [list ]
     if { $term_count > -1 && $term_count < 10000 } {
-
-        # round(x/(x+1/x)) where x = term_count
         for {set x 0} {$x < $term_count} {incr x} {
             set y [expr { round( $term_count / ($x + 1. / ( $term_count * 1. ) ) ) } ]
+            lappend decay_list $y
+        }
+        incr term_count -1
+        set decay_list [lrange $decay_list 0 $term_count]
+    }
+    return $decay_list
+}
+
+proc decay_2_series { term_count } {
+    # based on avalance decay; circa -x^2
+    set decay_list [list ]
+    if { $term_count > -1 && $term_count < 10000 } {
+        set k1 [expr { pow($term_count,2) } ]
+        for {set x 0} {$x < $term_count} {incr x} {
+            set y [expr { round( $k1 - pow($x,2) ) } ]
+            lappend decay_list $y
+        }
+        incr term_count -1
+        set decay_list [lrange $decay_list 0 $term_count]
+    }
+    return $decay_list
+}
+
+proc decay_3_series { term_count } {
+    # based on avalance decay; -x^3
+    set decay_list [list ]
+    if { $term_count > -1 && $term_count < 10000 } {
+        set k1 [expr { pow($term_count,3) } ]
+        for {set x 0} {$x < $term_count} {incr x} {
+            set y [expr { round( $k1 - pow($x,3) ) } ]
+            lappend decay_list $y
+        }
+        incr term_count -1
+        set decay_list [lrange $decay_list 0 $term_count]
+    }
+    return $decay_list
+}
+
+proc decay_4_series { term_count } {
+    # based on linear decay; circa y = -x + term_count or countdown series
+    set decay_list [list ]
+    if { $term_count > -1 && $term_count < 10000 } {
+        for {set x 0} {$x < $term_count} {incr x} {
+            set y [expr { round( $term_count - $x ) } ]
             lappend decay_list $y
         }
         incr term_count -1
@@ -187,30 +235,112 @@ proc regression_test { original_list test_list } {
     return $sum
 }
 
+proc sign { number } {
+    if { $number == 0 } {
+        set sign 0
+    } else {
+        set sign [expr { round( $number / double( abs ( $number ) ) ) } ]
+    }
+    return $sign
+}
+
 proc minima_maxima_points { data_list } {
     # Returns a set of relative minimums and maximum values, where a minimum point = -1, a maximum point = 1 and all others 0.
+
     # Changes in the sign of the slope between points is being used to determine highs and lows
+    # Use smooth filter on data_list as basis for finding rational maxima minima
+    set minomaxima_list [list ]
+    set y_prev [lindex $data_list 0]
+    set dy_prev 0.
+    set dy_sign_prev 0
+    foreach y $data_list {
+        set dy [expr { $y - $y_prev } ]
+        set dy_sign [sign $dy ]
+        if { $dy_sign == $dy_sign_prev || $dy_sign == 0 } {
+            lappend minomaxima_list 0
+            # if dy_sign is zero, signal is flat, don't change prev sign
+            set y_prev $y
+            set dy_prev $dy
+
+        } elseif { $dy_sign > $dy_sign_prev } {
+            # minimum
+            lappend minomaxima_list -1
+            set y_prev $y
+            set dy_prev $dy
+            set dy_sign_prev $dy_sign
+        } else {
+            lappend minomaxima_list 1
+            # dy_sign < $dy_sign_prev
+            set y_prev $y
+            set dy_prev $dy
+            set dy_sign_prev $dy_sign            
+        }
+    }
+
+    # remove the first, false point that begins comparative loop
+    set minomaxima_list [lrange $minomaxima_list 1 end]
+    # is last point a relative min, max or 0 case?
+    lappend minomaxima_list $dy_sign
+    return $minomaxima_list
 }
-proc signal_best_fit_filter { data_list } {
-    # Returns a list of best fit data from procedure's choices of filters
 
-
-}
-
-proc signal_smoothest { data_list } {
+proc signal_smoother_1 { data_list {threashold_pct ".25"} } {
     # Returns a list of smoothed data from procedure's choices of filters
-    # Assumes a best fit should have fewer than 25% of data points as relative minima or maxima
-    
+    # Assumes a best smooth fit should have 
+    # a threashold of fewer than 25% of data points as relative minima or maxima
+
+    set data_len [llength $data_list]
+
     # First run through a set of filters.
-    # The filter with the worst regression_test value will be the smoothest, and
+    set filter_list [list ]
+    set quarter_data_len [expr { round( $data_len / 4. ) } ]
+    for {set f_len $quarter_data_len} {$f_len > 1 } {set f_len [expr { round( $f_len / 2. ) } ] } {
+        lappend filter_list [binary11_series $f_len]
+        lappend filter_list [fibonacci_series $f_len]
+        lappend filter_list [lsort -integer -increasing [decay_1_series $f_len]]
+        lappend filter_list [lsort -integer -increasing [decay_2_series $f_len]]
+        lappend filter_list [lsort -integer -increasing [decay_3_series $f_len]]
+        lappend filter_list [lsort -integer -increasing [decay_4_series $f_len]]
+        lappend filter_list [sum_of_prev_terms $f_len]
+    }
+    
+    set threashold_limit [expr { round( $data_len * $threashold_pct * 1. ) } ]
+    set f_i 0
+    foreach filter $filter_list {
+        set test_list_arr($f_i) [filter_data $filter $data_list]
+        # collect min count, max count and total maxmin point count for each filter
+        set min_max_ima [minima_maxima_points $test_list_arr($f_i) ]
+        set min_count [llength [lsearch -exact -all $min_max_ima -1]]
+        set max_count [llength [lsearch -exact -all $min_max_ima 1]]
+        set sum_min_max_arr($f_i) [expr { $min_count + $max_count } ]
+        if { $sum_min_max_arr($f_i) < $threashold_limit } {
+            lappend sum_min_max_list [list $sum_min_max_arr($f_i) $f_i]
+        }
+        # Also track best case, should nothing be within threashold limit
+        lappend sum_min_max_bu_list [list $sum_min_max_arr($f_i) $f_i]
+        incr f_i
+    }
 
-    # therefore perhaps most appropriate to determine most pronounced minima and maxima
-    # If the filter resulted in a fully linear set, then consider using a filter
-    # that represents the median of count of minima or maxima from among the filters
-    # returning fewer than 25% minima and maxima.
+    # What filter returns an average minima and maxima
+    # for all cases where min + max count < threashold_pct of total count?
 
+    # Determine median case, if no median, choose closest case
 
-
+    # Median (slight bias toward fewer points in case of an even count of elements in sum_min_max_list)
+    if { [llength $sum_min_max_list] > 0 } {
+        set sum_sorted_list [lsort -integer -index 0 $sum_min_max_list]
+        set median_i [expr { int( [llength $sum_sorted_list] / 2 ) } ]
+        set median_min_max_count [lindex [lindex $sum_sorted_list $median_i] 0]
+        set median_f_i [lindex [lindex $sum_sorted_list $median_i] 1]
+        set return_list $test_list_arr($median_f_i)
+        puts "signal_smoother_1: filter (ref $median_i): $return_list"
+    } else {
+        # No median exists within threshold. Choose closest to threshold ie fewest.
+        set sum_sorted_list [lsort -integer -index 0 $sum_min_max_bu_list]
+        set test_list_f_i [lindex [lindex $sum_sorted_list 0] 1]
+        set return_list $test_list_arr($test_list_f_i)
+    }
+    return $return_list
 }
 
 
@@ -675,6 +805,58 @@ for {set efc 1} {$efc <= $efcount} {incr efc} {
         set y_ct_range [expr { $ct_delta_t_max - $ct_delta_t_min } ]
         puts "Temperature range: $y_ct_range"
         set y_ct_diff_range [expr { $ct_delta_t_diff_max - $ct_delta_t_diff_min } ]
+
+
+        # Find minima and maxima of climate data
+        set ct_delta_t_list [list ]
+        set eq_energy_yyyy_mm_list [list ]
+        for {set cpc 1} {$cpc <= $cpcount} {incr cpc} {
+            lappend ct_delta_t_list $ct_delta_t_arr($cfc,$cpc)
+            # make a similar 1:1 list of earthquake data.. might come in handy in later analysis
+            lappend eq_energy_yyyy_mm_list $eq_energy_yyyy_mm_arr($cfc,$cpc)
+        }
+
+        set smooth_data_list [signal_smoother_1 $ct_delta_t_list] 
+        set extremes_list [minima_maxima_points $smooth_data_list ]
+ 
+        # Split data into climate temperature moving down and up curves
+
+        # dcounter = slope or delta t change counter
+        set dcounter 1
+        set cpc 1
+        set ct_delta_t_dy_arr($dcounter) 0.
+        set eq_energy_yyyy_mm_dy_arr($dcounter) 0.
+        set ct_months_dy_arr($dcounter) 0
+        foreach minmax_q $extremes_list {
+            # minmax_q = 0  no change in y direction
+            # minmax_q = 1  max point reached, heading downward next point
+            # minmax_q = -1 min point reached, heading upward next point
+            set ct_delta_t_dy_arr($dcounter) [expr { $ct_delta_t_dy_arr($dcounter) + $ct_delta_t_arr($cfc,$cpc) } ]
+            set eq_energy_yyyy_mm_dy_arr($dcounter) [expr { $eq_energy_yyyy_mm_dy_arr($dcounter) + $eq_energy_yyyy_mm_arr($cfc,$cpc) } ]
+            set ct_months_dy_arr($dcounter) [expr { $ct_months_dy_arr($dcounter) + 1 } ]
+            if { $minmax_q ne 0 } {
+                incr dcounter
+                set ct_delta_t_dy_arr($dcounter) 0.
+                set eq_energy_yyyy_mm_dy_arr($dcounter) 0.
+                set ct_months_dy_arr($dcounter) 0
+            }
+            incr cpc
+        }
+        if { $ct_delta_t_dy_arr($dcounter) == 0. } {
+            # last min/max point was at end of data and contains no accumulations
+            incr dcounter -1
+        }
+
+        # Calculate earthquake energy on delta_t down and up trends
+        # and average earthquake energy per delta_t
+        for {set dc 1} {$dc <= $dcounter} {incr dc} {
+            set eq_per_ct_arr($dc) [expr { $eq_energy_yyyy_mm_dy_arr($dc) / ( $ct_delta_t_dy_arr($dc) * 1. ) } ]
+            set eq_per_mm_arr($dc) [expr { $eq_energy_yyyy_mm_dy_arr($dc) / ( $ct_months_dy_arr($dc) * 1. ) } ]
+            puts "eq_energy/delta_t for $ct_months_dy_arr($dc) months: $eq_per_ct_arr($dc)"
+            puts "eq_energy/month: $eq_per_mm_arr($dc)\n"
+        }
+        
+
         # ..............................................................
         # Graph results.
 
@@ -775,6 +957,7 @@ for {set efc 1} {$efc <= $efcount} {incr efc} {
         set x_eq_diff_range [expr { $x_eq_end - $x_eq_start } ]
         set y_ct_zero_plot [expr { round(  $y_plot_high_limit_arr($c_i) - $y_plot_range_arr($c_i) * ( 0. - $ct_delta_t_diff_min ) / $y_ct_diff_range ) } ]
         set y_eq_zero_plot [expr { round(  $y_plot_high_limit_arr($c_i) - $y_plot_range_arr($c_i) * ( 0. - $eq_energy_yyyy_mm_diff_min ) / $y_eq_diff_range ) } ]
+
         # Start at cpc=2 instead of 1, because a difference is between 2 values..
         for {set cpc 2} {$cpc <= $cpcount} {incr cpc} {            
 
@@ -821,7 +1004,10 @@ for {set efc 1} {$efc <= $efcount} {incr efc} {
         set ct_diff_sign_same 1
         puts "ct_diff_stot eq_stot eq_diff_stot eq_avg_pp eq_diff_pp ct_avg_diff_pp"
 
-        for {set cpc 2} {$cpc <= $cpcount} {incr cpc} {
+        for {set cpc 1} {$cpc <= $cpcount} {incr cpc} {
+            lappend 
+
+        }
             set ct_diff_lt_0_prev $ct_diff_lt_0
             set ct_delta_t_diff $ct_delta_t_diff_arr($cfc,$cpc)
             set ct_diff_lt_0 [expr { $ct_delta_t_diff < 0. } ]
@@ -834,13 +1020,8 @@ for {set efc 1} {$efc <= $efcount} {incr efc} {
             # power of 2 expans.               10^a(n)+1
             # 100*e/(x+1))  round(271.8/(x+1))
             # or term_count / ( x + 1/term_count ) 
-            set invese_p2_list [list 1 1 1 1 2 2 2 3 4 6 11 144]
             # Graph vs. actual data. and check best fit...
-            set inverse_prop_list [list 272 136 91 68 54 45 39 34 30 27 25 23 21 19 18 17 16 ]
-            set inverse_p_rev_list [list 16 17 18 19 21 23 25 27 30 34 39 45 54 68 91 136 272 ]
-            set binary_expan_list [list 1 1 2 4 8 16 32 64 128 256 512 1024 2048]
-            set fibonnacci_list [list 1 1 2 3 5 8 13 21 34 55 89 144 ]
-            set sums_of_all_previous_list [list 1 2 3 6 12 24 48 96 192 384 768 1536 ]
+
             if { $ct_diff_sign_same } {
                 # Add to current subtotals
                 set ct_diff_stot [expr { $ct_diff_stot + $ct_delta_t_diff } ]
