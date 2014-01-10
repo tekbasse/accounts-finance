@@ -1,6 +1,14 @@
 # file: eq-vs-global-delta-t.tcl
 # See specific procedures and file comments for code attributions.
 
+if { [catch {package require TclMagick} err_msg ] } {
+    #puts "TclMagick not available. Using graphicsmagick directly."
+    set __TclMagick_p 0
+} else {
+    #puts "Using TclMagick (This feature not implemented)."
+    set __TclMagick_p 1
+}
+
 set tcl_version [info tclversion]
 puts "Tcl version [info patchlevel]"
 if { $tcl_version < 8.5 } {
@@ -31,21 +39,26 @@ proc gm_path_builder { list_of_points } {
     return $path_specification
 }
 
+
 proc draw_image_path_color { imagename x_y_coordinates_list color {opacity 1} } {
     # Move to first point in path, then draw to each that follows.
     # graphicsmagick.org/wand/drawing_wand.html#drawsetstrokeopacity
     # and graphicsmagick.org/1.2/www/GraphicsMagick.html
     # gm comvert infile -operator opacity xor "100%" outfile
     # gm convert infile -operator opacity xor|add|and|or|subtract "60%" outfile
-    
-    while { [llength $x_y_coordinates_list] > 100  } {
+    set fillcolor "none"
+    while { [llength $x_y_coordinates_list] > 100 } {
         set path_segment [lrange $x_y_coordinates_list 0 99]
         set x_y_coordinates_list [lrange $x_y_coordinates_list 98 end]
         #puts "exec gm convert -fill none -stroke $color -draw [gm_path_builder $path_segment ] $imagename $imagename"
-        exec gm convert -fill none -stroke $color -draw [gm_path_builder $path_segment ] $imagename $imagename
+        exec gm convert -fill $fillcolor -stroke $color -draw [gm_path_builder $path_segment ] $imagename $imagename
     }
     #puts "exec gm convert -fill none -stroke $color -draw [gm_path_builder $x_y_coordinates_list ] $imagename $imagename"
-    exec gm convert -fill none -stroke $color -draw [gm_path_builder $x_y_coordinates_list ] $imagename $imagename
+    set path [gm_path_builder $x_y_coordinates_list ]
+    if { [string match "*point*" $path] } {
+        set fillcolor $color
+    }
+    exec gm convert -fill $fillcolor -stroke $color -draw $path $imagename $imagename
 }
 
 proc draw_image_rect_color { imagename x0 y0 x1 y1 fillcolor {bordercolor ""} {opacity 1} } {
@@ -356,23 +369,23 @@ foreach filename $t_fi_list {
     set data_set_list [split $data_txt "\n\r\t"]
     set table_list [list ]
     set line_count 0
-    foreach {year delta_t error_amt} $data_set_list {
+    foreach {year gt error_amt} $data_set_list {
         # data integrity check (minimal, because file is in a standard, tab delimited format).
-        if { $year ne "" && $delta_t ne "" && $error_amt ne "" } {
+        if { $year ne "" && $gt ne "" && $error_amt ne "" } {
             set year_ck [expr { ( 1. + $year ) / ( $year + 1. ) } ]
-            set delta_t_ck [expr { ( 1. + $delta_t ) / ( $delta_t + 1. ) } ]
+            set gt_ck [expr { ( 1. + $gt ) / ( $gt + 1. ) } ]
             # error_amt is a positive real number > 0
             set error_amt_ck [expr { round( $error_amt /  abs( $error_amt ) ) == 1 } ]
             if { $year < 1978 || $year > 2013 } {
                 set year_ck 0
             }
-            if { $year_ck && $delta_t_ck && $error_amt_ck } {
-                set line_v2 [list $year $delta_t $error_amt]
+            if { $year_ck && $gt_ck && $error_amt_ck } {
+                set line_v2 [list $year $gt $error_amt]
                 lappend table_list $line_v2
                 incr line_count
             } else {
                 puts "This data point did not pass integrity check. Ignored:"
-                puts "year $year, delta_t $delta_t, error $error_amt"
+                puts "year $year, gt $gt, error $error_amt"
             }
         }
     }
@@ -385,13 +398,13 @@ foreach filename $t_fi_list {
 
     # Data in this format:
     # year_decimal = YYYY + (MM-1)/12 + 1/24, where YYYY-MM is year and month
-    # delta_t      = offset of temperature in Celsius from reference temperature.
+    # gt      = offset of temperature in Celsius from reference temperature.
     # error_amt     = measurement error.
     set cpcount 0
     foreach row_list $table_list {
         incr cpcount 
         set year_dec_input [lindex $row_list 0]
-        set delta_t [lindex $row_list 1]
+        set gt [lindex $row_list 1]
         set error_amt [lindex $row_list 2]
         # Calculations
         # Re-calculate year_decimal
@@ -400,9 +413,9 @@ foreach filename $t_fi_list {
         set month [expr  { round( ( $numerator_over_24 + 1. ) / 2. ) } ]
         # Following is consistent with earthquake year_decimal calculation:
         set year_decimal [expr { $year + ($month - 1. ) / 12. + 1./24. } ]
-#        puts "year_dec $year_dec_input, delta_t $delta_t, error_amt $error_amt, year $year, numerator/24 $numerator_over_24, month $month, year_decimal $year_decimal"
+#        puts "year_dec $year_dec_input, gt $gt, error_amt $error_amt, year $year, numerator/24 $numerator_over_24, month $month, year_decimal $year_decimal"
         set ct_year_dec_arr($cfcount,$cpcount) $year_decimal
-        set ct_delta_t_arr($cfcount,$cpcount) $delta_t
+        set ct_gt_arr($cfcount,$cpcount) $gt
         set ct_error_arr($cfcount,$cpcount) $error_amt
         # Save year and month format.
         # Grouping by year and month avoids introducing possible rounding and number value mismatch errors from
@@ -445,7 +458,7 @@ puts "Analyzing."
 
 # Arrays:
 # ct_year_dec_arr(cfc,cpc) a month ie interval of time
-# ct_delta_t_arr(cfc,cpc) temperature realative to an arbitrary fixed value
+# ct_gt_arr(cfc,cpc) temperature realative to an arbitrary fixed value
 # ct_error_arr(cfc,cpc) pre-analysis temperature value error
 # ct_yyyy_arr(cfc,cpc) the year of this interval
 # ct_mm_arr(cfc,cpc) the month of this interval
@@ -470,8 +483,10 @@ puts "Analyzing."
 puts "Looping through permuations of earthquake and climate data."
 for {set efc 1} {$efc <= $efcount} {incr efc} {
     for {set cfc 1} {$cfc <= $cfcount} {incr cfc} {
-        puts "Current earthquake data set from: [lindex $eq_fi_list $efc-1]"
-        puts "Current climate data set from: [lindex $t_fi_list $cfc-1]"
+        set eq_file [lindex $eq_fi_list $efc-1]
+        set ct_file [lindex $t_fi_list $cfc-1]
+        puts "Current earthquake data set from: $eq_file"
+        puts "Current climate data set from: $ct_file"
 
         # First, set eq_yyyy_mm_energy(for all ct_year_decimal cases) to 0
         for {set cpc 1} {$cpc <= $cpcount} {incr cpc} {
@@ -496,34 +511,34 @@ for {set efc 1} {$efc <= $efcount} {incr efc} {
         # Find the average, minimum and maximum, and difference from prior month
         # Loop through all eq_yyyy_mm_energy cases, to find min,max,total,average
         set eq_energy $eq_energy_yyyy_mm_arr($cfc,1)
-        set ct_delta_t $ct_delta_t_arr($cfc,1)
+        set ct_gt $ct_gt_arr($cfc,1)
         set eq_energy_max $eq_energy
         set eq_energy_min $eq_energy
         set eq_energy_tot $eq_energy
-        set ct_delta_t_max $ct_delta_t
-        set ct_delta_t_min $ct_delta_t
-        set ct_delta_t_tot $ct_delta_t
+        set ct_gt_max $ct_gt
+        set ct_gt_min $ct_gt
+        set ct_gt_tot $ct_gt
         set eq_energy_yyyy_mm_diff_max 0
         set eq_energy_yyyy_mm_diff_min 0
-        set ct_delta_t_diff_max 0
-        set ct_delta_t_diff_min 0
+        set ct_gt_diff_max 0
+        set ct_gt_diff_min 0
 
 
         for {set cpc3 2} {$cpc3 <= $cpcount} {incr cpc3} {
 
             set eq_energy_prev $eq_energy
-            set ct_delta_t_prev $ct_delta_t
+            set ct_gt_prev $ct_gt
             set eq_energy $eq_energy_yyyy_mm_arr($cfc,$cpc3)
             # Auditing energy
             # puts "cpc3 $cpc3 energy $eq_energy"
-            set ct_delta_t $ct_delta_t_arr($cfc,$cpc3)
+            set ct_gt $ct_gt_arr($cfc,$cpc3)
             set eq_energy_yyyy_mm_diff  [expr { $eq_energy - $eq_energy_prev } ]
-            set ct_delta_t_diff [expr { $ct_delta_t - $ct_delta_t_prev } ]
+            set ct_gt_diff [expr { $ct_gt - $ct_gt_prev } ]
 
             # Build an array of difference from last interval's eq energy
             set eq_energy_yyyy_mm_diff_arr($cfc,$cpc3) $eq_energy_yyyy_mm_diff
             # Build an array of difference from last interval's delta t
-            set ct_delta_t_diff_arr($cfc,$cpc3) $ct_delta_t_diff
+            set ct_gt_diff_arr($cfc,$cpc3) $ct_gt_diff
             # Adjust maximum or minimum values?
             if { $eq_energy > $eq_energy_max } {
                 # new eq_energy_max
@@ -532,12 +547,12 @@ for {set efc 1} {$efc <= $efcount} {incr efc} {
                 # new eq_energy_min
                 set eq_energy_min $eq_energy
             }
-            if { $ct_delta_t > $ct_delta_t_max } {
-                # new ct_delta_t_max
-                set ct_delta_t_max $ct_delta_t
-            } elseif { $ct_delta_t < $ct_delta_t_min } {
-                # new ct_delta_t_min
-                set ct_delta_t_min $ct_delta_t
+            if { $ct_gt > $ct_gt_max } {
+                # new ct_gt_max
+                set ct_gt_max $ct_gt
+            } elseif { $ct_gt < $ct_gt_min } {
+                # new ct_gt_min
+                set ct_gt_min $ct_gt
             }
 
             # Adjust maximum or minimum diff values?
@@ -548,12 +563,12 @@ for {set efc 1} {$efc <= $efcount} {incr efc} {
                 # new eq_energy_diff_min
                 set eq_energy_yyyy_mm_diff_min $eq_energy_yyyy_mm_diff
             }
-            if { $ct_delta_t_diff > $ct_delta_t_diff_max } {
-                # new ct_delta_t_diff_max
-                set ct_delta_t_diff_max $ct_delta_t_diff
-            } elseif { $ct_delta_t_diff < $ct_delta_t_diff_min } {
-                # new ct_delta_t_diff_min
-                set ct_delta_t_diff_min $ct_delta_t_diff
+            if { $ct_gt_diff > $ct_gt_diff_max } {
+                # new ct_gt_diff_max
+                set ct_gt_diff_max $ct_gt_diff
+            } elseif { $ct_gt_diff < $ct_gt_diff_min } {
+                # new ct_gt_diff_min
+                set ct_gt_diff_min $ct_gt_diff
             }
 
             # accumulate energy
@@ -567,19 +582,19 @@ for {set efc 1} {$efc <= $efcount} {incr efc} {
         puts "Energy range: $y_eq_range"
         set y_eq_diff_range [expr { $eq_energy_yyyy_mm_diff_max - $eq_energy_yyyy_mm_diff_min } ]
 
-        puts "Min temperature (C): $ct_delta_t_min"
-        puts "Max temperature (C): $ct_delta_t_max"
-        set y_ct_range [expr { $ct_delta_t_max - $ct_delta_t_min } ]
+        puts "Min temperature (C): $ct_gt_min"
+        puts "Max temperature (C): $ct_gt_max"
+        set y_ct_range [expr { $ct_gt_max - $ct_gt_min } ]
         puts "Temperature range: $y_ct_range"
-        set y_ct_diff_range [expr { $ct_delta_t_diff_max - $ct_delta_t_diff_min } ]
+        set y_ct_diff_range [expr { $ct_gt_diff_max - $ct_gt_diff_min } ]
 
 
         # Find minima and maxima of climate data
-        set ct_delta_t_list [list ]
+        set ct_gt_list [list ]
         set eq_energy_yyyy_mm_list [list ]
         for {set cpc 1} {$cpc <= $cpcount} {incr cpc} {
-            lappend ct_delta_t_list $ct_delta_t_arr($cfc,$cpc)
-            # puts "cpc $cpc ct_detla_t_arr($cpc) $ct_delta_t_arr($cfc,$cpc)"
+            lappend ct_gt_list $ct_gt_arr($cfc,$cpc)
+            # puts "cpc $cpc ct_detla_t_arr($cpc) $ct_gt_arr($cfc,$cpc)"
             # make a similar 1:1 list of earthquake data.. might come in handy in later analysis
             lappend eq_energy_yyyy_mm_list $eq_energy_yyyy_mm_arr($cfc,$cpc)
         }
@@ -589,33 +604,33 @@ for {set efc 1} {$efc <= $efcount} {incr efc} {
         # dcounter = slope or delta t change counter
         set dcounter 1
         set cpc 1
-        set ct_delta_t_dy_arr($dcounter) 0.
+        set ct_gt_dy_arr($dcounter) 0.
         set eq_energy_yyyy_mm_dy_arr($dcounter) 0.
         set ct_months_dy_arr($dcounter) 0
 
-        set dt_month_prev [lindex $ct_delta_t_list 0]
+        set gt_month_prev [lindex $ct_gt_list 0]
         set delta_t_prev 0
-        foreach dt_month [lrange $ct_delta_t_list 1 end] {
-            set delta_t [expr { $dt_month - $dt_month_prev } ]
+        foreach gt_month [lrange $ct_gt_list 1 end] {
+            set delta_t [expr { $gt_month - $gt_month_prev } ]
             set delta_factor [expr {  $delta_t * $delta_t_prev } ]
             if { $delta_factor < 0. } {
                # puts "ct dy     eq dy             ct counter"
-               # puts "$ct_delta_t_dy_arr($dcounter)   $eq_energy_yyyy_mm_dy_arr($dcounter) $ct_months_dy_arr($dcounter) delta factor: $delta_factor "
+               # puts "$ct_gt_dy_arr($dcounter)   $eq_energy_yyyy_mm_dy_arr($dcounter) $ct_months_dy_arr($dcounter) delta factor: $delta_factor "
                 incr dcounter
-                set ct_delta_t_dy_arr($dcounter) 0.
+                set ct_gt_dy_arr($dcounter) 0.
                 set eq_energy_yyyy_mm_dy_arr($dcounter) 0.
                 set ct_months_dy_arr($dcounter) 0
 
             }
-            set ct_delta_t_dy_arr($dcounter) [expr { $ct_delta_t_dy_arr($dcounter) + $ct_delta_t_arr($cfc,$cpc) } ]
+            set ct_gt_dy_arr($dcounter) [expr { $ct_gt_dy_arr($dcounter) + $ct_gt_arr($cfc,$cpc) } ]
             set eq_energy_yyyy_mm_dy_arr($dcounter) [expr { $eq_energy_yyyy_mm_dy_arr($dcounter) + $eq_energy_yyyy_mm_arr($cfc,$cpc) } ]
             set ct_months_dy_arr($dcounter) [expr { $ct_months_dy_arr($dcounter) + 1 } ]
-            # puts "factor $delta_factor adding ct $ct_delta_t_arr($cfc,$cpc) eq $eq_energy_yyyy_mm_arr($cfc,$cpc)"
+            # puts "factor $delta_factor adding ct $ct_gt_arr($cfc,$cpc) eq $eq_energy_yyyy_mm_arr($cfc,$cpc)"
             incr cpc
             set delta_t_prev $delta_t
-            set dt_month_prev $dt_month
+            set gt_month_prev $gt_month
         }
-        if { $ct_delta_t_dy_arr($dcounter) == 0. } {
+        if { $ct_gt_dy_arr($dcounter) == 0. } {
             # last min/max point was at end of data and contains no accumulations
             incr dcounter -1
         }
@@ -635,7 +650,7 @@ for {set efc 1} {$efc <= $efcount} {incr efc} {
         # Sum of months with negative (decreasing) change in temperature (delta t)
         set eq_neg_mm_count 0
         for {set dc 1} {$dc <= $dcounter} {incr dc} {
-            set eq_per_ct_arr($dc) [expr { $eq_energy_yyyy_mm_dy_arr($dc) / ( $ct_delta_t_dy_arr($dc) * 1. ) } ]
+            set eq_per_ct_arr($dc) [expr { $eq_energy_yyyy_mm_dy_arr($dc) / ( $ct_gt_dy_arr($dc) * 1. ) } ]
             set eq_per_mm_arr($dc) [expr { $eq_energy_yyyy_mm_dy_arr($dc) / ( $ct_months_dy_arr($dc) * 1. ) } ]
             if { $eq_per_ct_arr($dc) > 0. } {
                 set eq_pos_sum_per_mm [expr { $eq_pos_sum_per_mm + $eq_per_mm_arr($dc) } ]
@@ -661,12 +676,13 @@ for {set efc 1} {$efc <= $efcount} {incr efc} {
 
         # ..............................................................
         # Graph results.
-
-        set chart_name "/home/head/eq-$efc-ct-$cfc-chart-[clock seconds].png"
+        set timestamp [clock format [clock seconds] -format "%Y%m%dT%H%M%S"]
+        set chart_name "/home/head/eq-$efc-ct-$cfc-chart-$timestamp.png"
 
         # Determine dimensions, origins and scales
         # Create canvas image
-        set width_px [expr { $cpcount * 4 } ]
+        #set width_px [expr { 72 * 8 } ]
+        set width_px [expr { $cpcount * 2.9 } ]
         # height setting is somewhat arbitrary.
         set height_px [expr { $cpcount * 4 } ]
         # to create a solid red canvas image:
@@ -684,12 +700,15 @@ for {set efc 1} {$efc <= $efcount} {incr efc} {
         # set charting constants
         for {set c_i 1} {$c_i <= $chart_count} {incr c_i} {
             # x image references
-            set x_plot_start_arr($c_i) [expr { $cpcount / 4 } ]
-            set x_plot_end_arr($c_i) [expr { $x_plot_start_arr($c_i) + $cpcount - 1 } ]
+            set x_px_width [expr { int( $width_px / $cpcount ) } ]
+            set x_padding [expr { int( ( $width_px - $x_px_width * $cpcount ) / 2 ) } ]
+        set x_plot_start_arr($c_i) $x_padding
+            set x_plot_end_arr($c_i) [expr { $x_px_width * $cpcount + $x_padding } ]
             set x_plot_range_arr($c_i) [expr { $x_plot_end_arr($c_i) - $x_plot_start_arr($c_i) } ]
             # y image references
-            set y_plot_range_arr($c_i) [expr { ( $height_px )/ ( $chart_count + 1. ) } ]
-            set y_plot_low_limit_arr($c_i) [expr {  ( $c_i - 1) * ( $y_plot_range_arr($c_i) + $y_plot_range_arr($c_i) ) + $y_plot_range_arr($c_i) } ]
+            set y_plot_range_arr($c_i) [expr { ( $height_px ) / ( $chart_count + 1. ) } ]
+            set y_padding [expr { $y_plot_range_arr($c_i) / ( $chart_count + 1. ) } ]
+            set y_plot_low_limit_arr($c_i) [expr {  ( $c_i - 1 ) * ( $y_plot_range_arr($c_i) + $y_padding ) + $y_padding } ]
             set y_plot_high_limit_arr($c_i)  [expr { $y_plot_low_limit_arr($c_i) + $y_plot_range_arr($c_i) - 1 } ]
             # boundary of this graph: x_plot_start_arr,x_plot_end_arr, y_plot_low_limit_arr, y_plot_high_limit_arr
         }
@@ -698,6 +717,7 @@ for {set efc 1} {$efc <= $efcount} {incr efc} {
         # Chart 1
         # Showing accumulated earthquake energy and global temperature per month
         puts "Chart 1"
+
         puts "Started at [clock format [clock seconds]]"
         set c_i 1
         # set plot constants x_plot_start x_plot_end x_plot_range y_plot_range y_plot_low y_plot_high
@@ -722,13 +742,11 @@ for {set efc 1} {$efc <= $efcount} {incr efc} {
         annotate_image_pos_color $chart_name $x_plot_start [expr { $y_plot_low_limit + 15 } ] "#99ccff" "Global Temperature Error(GTE) Range"
         annotate_image_pos_color $chart_name $x_plot_start [expr { $y_plot_low_limit + 30 } ] "#ff0000" "Earthquake Energy in $energy_units"
         annotate_image_pos_color $chart_name $x_plot_start [expr { $y_plot_low_limit + 45 } ] "#ffcc99" "Earthquake Energy Error(EEE) Range"
-        annotate_image_pos_color $chart_name $x_plot_start [expr { $y_plot_low_limit + 60 } ] "#000000" "Earthquake data set: [lindex $eq_fi_list $efc-1]"
-        annotate_image_pos_color $chart_name $x_plot_start [expr { $y_plot_low_limit + 75 } ] "#000000" "Climate data set: [lindex $t_fi_list $cfc-1]"
 
         for {set cpc 1} {$cpc <= $cpcount} {incr cpc} {            
             # x_plot is a function of ct_year_dec_arr which is a function of i
             set x $ct_year_dec_arr($cfc,$cpc)
-            set y $ct_delta_t_arr($cfc,$cpc)
+            set y $ct_gt_arr($cfc,$cpc)
             set ct_err_diff $ct_error_arr($cfc,$cpc)
             set y_low [expr { $y - $ct_err_diff } ]
             set y_high [expr { $y + $ct_err_diff } ]
@@ -738,9 +756,9 @@ for {set efc 1} {$efc <= $efcount} {incr efc} {
             set y_eq_high [expr { $y_eq + $eq_err_diff } ]
 
             set x_ct_plot [expr { round( $x_plot_range * ( $x - $t0 ) / $x_ct_range + $x_plot_start ) } ]
-            set y_ct_plot [expr { round( $y_plot_high_limit - $y_plot_range * ( $y - $ct_delta_t_min ) / $y_ct_range ) } ] 
-            set y_ct_low_err_plot [expr { round( $y_plot_high_limit - $y_plot_range * ( $y_low  - $ct_delta_t_min ) / $y_ct_range ) } ]
-            set y_ct_high_err_plot [expr { round( $y_plot_high_limit - $y_plot_range * ( $y_high  - $ct_delta_t_min ) / $y_ct_range ) } ] 
+            set y_ct_plot [expr { round( $y_plot_high_limit - $y_plot_range * ( $y - $ct_gt_min ) / $y_ct_range ) } ] 
+            set y_ct_low_err_plot [expr { round( $y_plot_high_limit - $y_plot_range * ( $y_low  - $ct_gt_min ) / $y_ct_range ) } ]
+            set y_ct_high_err_plot [expr { round( $y_plot_high_limit - $y_plot_range * ( $y_high  - $ct_gt_min ) / $y_ct_range ) } ] 
 
             # x_eq_plot is same as x_ct_plot
             set x_eq_plot $x_ct_plot
@@ -767,7 +785,7 @@ for {set efc 1} {$efc <= $efcount} {incr efc} {
         # Following calculated in Chart 1 loop:
         #  set eq_energy_yyyy_mm_diff_arr($cfc,$cpc3) [expr { $eq_energy - $eq_energy_prev } ]
         # Build an array of difference from last interval's delta t
-        #  set ct_delta_t_diff_arr($cfc,$cpc3) [expr { $ct_delta_t - $ct_delta_t_prev } ]
+        #  set ct_gt_diff_arr($cfc,$cpc3) [expr { $ct_gt - $ct_gt_prev } ]
         puts "Chart 2"
         puts "Started at [clock format [clock seconds]]"
         set c_i 2
@@ -786,12 +804,18 @@ for {set efc 1} {$efc <= $efcount} {incr efc} {
         set x_eq_diff_end $eq_year_dec_arr($cfc,$cpcount)
         set x_eq_diff_range [expr { $x_eq_end - $x_eq_start } ]
 
-        set y_ct_zero_plot [expr { round(  $y_plot_high_limit - $y_plot_range * ( 0. - $ct_delta_t_diff_min ) / $y_ct_diff_range ) } ]
+        set y_ct_zero_plot [expr { round(  $y_plot_high_limit - $y_plot_range * ( 0. - $ct_gt_diff_min ) / $y_ct_diff_range ) } ]
         set y_eq_zero_plot [expr { round(  $y_plot_high_limit - $y_plot_range * ( 0. - $eq_energy_yyyy_mm_diff_min ) / $y_eq_diff_range ) } ]
         set y_ct_eq_plot_diff [expr { $y_eq_zero_plot - $y_ct_zero_plot } ]
         # following is basically the same as setting y_eq_zero_plot to y_ct_zero_plot
         set y_eq_zero_plot [expr { $y_eq_zero_plot - $y_ct_eq_plot_diff } ]
         set t0 $ct_year_dec_arr($cfc,1)
+
+        annotate_image_pos_color $chart_name $x_plot_start $y_plot_low_limit "#0000ff" "Relative Global Temperature(GT) Change per Month (Up is increasing.)"
+        annotate_image_pos_color $chart_name $x_plot_start [expr { $y_plot_low_limit + 15 } ] "#ff0000" "Relative Earthquake Energy per Month oriented with temperature change."
+
+
+
         # Start at cpc=2 instead of 1, because a difference is between 2 values..
         for {set cpc 2} {$cpc <= $cpcount} {incr cpc} {            
             # plot x_ct_plot
@@ -799,10 +823,15 @@ for {set efc 1} {$efc <= $efcount} {incr efc} {
             set x_ct_plot [expr { round( $x_plot_range * ( $t - $t0 ) / $x_ct_range + $x_plot_start ) } ]
 
             # plot y_ct_diff_plot
-            set y_ct_diff_plot [expr { round(  $y_plot_high_limit - $y_plot_range * ( $ct_delta_t_diff_arr($cfc,$cpc) - $ct_delta_t_diff_min ) / $y_ct_diff_range ) } ]
-
+            set ct_gt_diff $ct_gt_diff_arr($cfc,$cpc)
+            set y_ct_diff_plot [expr { round(  $y_plot_high_limit - $y_plot_range * ( $ct_gt_diff - $ct_gt_diff_min ) / $y_ct_diff_range ) } ]
+            if { $ct_gt_diff > 0 } {
+                set ct_gt_diff_sign 1.
+            } else {
+                set ct_gt_diff_sign -1.
+            }
             # plot y_eq_diff_plot
-            set y_eq_diff_plot [expr { round(  $y_plot_high_limit - $y_plot_range * ( $eq_energy_yyyy_mm_diff_arr($cfc,$cpc) - $eq_energy_yyyy_mm_diff_min ) / $y_eq_diff_range ) - $y_ct_eq_plot_diff } ]
+            set y_eq_diff_plot [expr { round(  $y_plot_high_limit - $y_plot_range * ( $ct_gt_diff_sign * $eq_energy_yyyy_mm_arr($cfc,$cpc) - $eq_energy_yyyy_mm_diff_min ) / $y_eq_diff_range ) - $y_ct_eq_plot_diff } ]
             # puts "$x_ct_plot $y_ct_diff_plot $y_eq_diff_plot"
             # add a constant to the eq plot to set zero the same for ct and eq
 
@@ -838,33 +867,40 @@ for {set efc 1} {$efc <= $efcount} {incr efc} {
 
         # loop through 1 to cpcount 
         set dcounter 1
-        set ct_delta_t  $ct_delta_t_arr($cfc,1)
-        set ct_delta_t_prev $ct_delta_t
-        set delta_t [expr { $ct_delta_t - $ct_delta_t_prev }]
+        set ct_gt  $ct_gt_arr($cfc,1)
+        set ct_gt_prev $ct_gt
+        set delta_t [expr { $ct_gt - $ct_gt_prev }]
         set delta_t_prev $delta_t
         set cpc_prev 1
         set cpc 2
         set t0 $ct_year_dec_arr($cfc,1)
         set x0 $t0
-        set y0 $ct_delta_t
+        set y0 $ct_gt
         set y0_eq_plot $y_plot_high_limit
+
+        annotate_image_pos_color $chart_name $x_plot_start $y_plot_low_limit "#0000ff" "Global Temperature(GT) trending downward"
+        annotate_image_pos_color $chart_name $x_plot_start [expr { $y_plot_low_limit + 15 } ] "#ff0000" "Global Temperature(GT) trending upward"
+        annotate_image_pos_color $chart_name $x_plot_start [expr { $y_plot_low_limit + 30 } ] "#99ff66" "Relative Earthquake Energy during downtrend"
+        annotate_image_pos_color $chart_name $x_plot_start [expr { $y_plot_low_limit + 45 } ] "#ff9966" "Relative Earthquake Energy during uptrend"
+
+
         for {set cpc 2} {$cpc <= $cpcount} {incr cpc} { 
             set x $ct_year_dec_arr($cfc,$cpc)
 
-            set ct_delta_t $ct_delta_t_arr($cfc,$cpc)
-            set delta_t [expr { $ct_delta_t - $ct_delta_t_prev }]
+            set ct_gt $ct_gt_arr($cfc,$cpc)
+            set delta_t [expr { $ct_gt - $ct_gt_prev }]
             set delta_factor [expr { $delta_t * $delta_t_prev } ]
             if { $delta_factor < 0. } {
                 # change in direction of delta t
                 
                 # Mark start of ct box
                 set x0_ct_plot [expr { round( $x_plot_range * ( $x0 - $t0 ) / $x_ct_range + $x_plot_start ) } ]
-                set y0_ct_plot [expr { round( $y_plot_high_limit - $y_plot_range * ( $y0 - $ct_delta_t_min ) / $y_ct_range ) } ] 
+                set y0_ct_plot [expr { round( $y_plot_high_limit - $y_plot_range * ( $y0 - $ct_gt_min ) / $y_ct_range ) } ] 
                 # Mark end of ct box
                 set x1 $x_prev
-                set y1 $ct_delta_t_prev
+                set y1 $ct_gt_prev
                 set x1_ct_plot [expr { round( $x_plot_range * ( $x1 - $t0 ) / $x_ct_range + $x_plot_start ) } ]
-                set y1_ct_plot [expr { round( $y_plot_high_limit - $y_plot_range * ( $y1 - $ct_delta_t_min ) / $y_ct_range ) } ]
+                set y1_ct_plot [expr { round( $y_plot_high_limit - $y_plot_range * ( $y1 - $ct_gt_min ) / $y_ct_range ) } ]
 
                 # grab earthquake data for same period
                 # eq_per_ct = earthquake energy per unit temperature change
@@ -880,7 +916,7 @@ for {set efc 1} {$efc <= $efcount} {incr efc} {
                     #puts "ct x0,y0 $x0_ct_plot,$y0_ct_plot x1,y1 $x1_ct_plot,$y1_ct_plot -"
 
                     # x range is same as ct rectangle
-                    draw_image_rect_color $chart_name $x0_ct_plot $y_eq_plot $x1_ct_plot $y0_eq_plot "#99cc66"
+                    draw_image_rect_color $chart_name $x0_ct_plot $y_eq_plot $x1_ct_plot $y0_eq_plot "#99ff66"
 
                 } else {
                     draw_image_rect_color $chart_name $x0_ct_plot $y0_ct_plot $x1_ct_plot $y1_ct_plot "#ff0000"
@@ -895,29 +931,32 @@ for {set efc 1} {$efc <= $efcount} {incr efc} {
                 # cpc-1 should equal # of months in eq_pos_mm_count or eq_neg_mm_count (depending on sign ie direction of ct)
 
                 # graph average earthquake energy over $x0 $x1:
-                # eq_per_ct_arr($dc) \[expr { $eq_energy_yyyy_mm_dy_arr($dc) / ( $ct_delta_t_dy_arr($dc) * 1. ) } \]
+                # eq_per_ct_arr($dc) \[expr { $eq_energy_yyyy_mm_dy_arr($dc) / ( $ct_gt_dy_arr($dc) * 1. ) } \]
                 # eq_per_mm_arr($dc) \[expr { $eq_energy_yyyy_mm_dy_arr($dc) / ( $ct_months_dy_arr($dc) * 1. ) } \]
 
                 incr dcounter                
                 # new x0,y0
                 set x0 $x
-                set y0 $ct_delta_t_prev
+                set y0 $ct_gt_prev
             }
 
             set delta_t_prev $delta_t
-            set ct_delta_t_prev $ct_delta_t
+            set ct_gt_prev $ct_gt
             set cpc_prev $cpc
             set x_prev $x
         }
         # complete last rectangle
         set x1 $x_prev
-        set y1 $ct_delta_t
+        set y1 $ct_gt
         set x1_ct_plot [expr { round( $x_plot_range * ( $x1 - $t0 ) / $x_ct_range + $x_plot_start ) } ]
-        set y1_ct_plot [expr { round( $y_plot_high_limit - $y_plot_range * ( $y1 - $ct_delta_t_min ) / $y_ct_range ) } ]
+        set y1_ct_plot [expr { round( $y_plot_high_limit - $y_plot_range * ( $y1 - $ct_gt_min ) / $y_ct_range ) } ]
+
+
             
         # Later graphs consider checking:
         # The curve of each of the change in temperature cases to see if there are any noticeable patterns.
         # For a common eq energy rate at various fixed temperatures based on up or down trending ct.
+
         puts "Ended at [clock format [clock seconds]]."
         # Begin next permutation of climate and earthquake data..
     }
@@ -926,10 +965,9 @@ for {set efc 1} {$efc <= $efcount} {incr efc} {
 
 
 # Check for patterns:
-#1.   change in Delta_t vs change in earthquake energy
-#2.   earthquake energy per month vs. Delta_T
-#3.   earthquake energy per month vs. average earthquake energy per month
-#4.   average earthquake energy per month for decreasing Temp. vs. average earthquake energy per month for increasing Temp.
+#1.   change in global temperature vs change in earthquake energy
+#2.   earthquake energy per month vs. global temperature change
+#3.   global temperature trend upward or downward vs. average earthquake energy per trend period
 #5.   try sorting by maximum earthquake energy in each month, to see if it reveals a seasonal or temperature pattern
-#6.   Acceleration continuity? check change of change of eq and ct data
+
 
