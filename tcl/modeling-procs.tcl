@@ -7,6 +7,10 @@ ad_library {
 
 namespace eval acc_fin {}
 
+# add double( ) to any variable that needs 17 digit precision
+# see http://wiki.tcl.tk/1650 which recommends going all the way: set ::tcl_precision 17
+# but that is not in the context of a server.
+
 ad_proc -private acc_fin::qaf_id_new {
 } {
     returns a unique id from qaf_id_sequence
