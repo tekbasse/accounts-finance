@@ -17,6 +17,41 @@ ad_proc -public acc_fin::tid_scalars_to_array {
     # load table_id
     # extract each name-value pair, saving into array
 }
+
+ad_proc -public acc_fin::table_type_scenario_p {
+    a_list_of_lists
+} {
+    returns 1 if lol table is a pretti scenario
+} {
+    return $test_p
+}
+
+ad_proc -public acc_fin::table_type_distr_p {
+    a_list_of_lists
+} {
+    returns 1 if lol table is a statistical distribution
+} {
+    return $test_p
+}
+
+ad_proc -public acc_fin::table_type_network_p {
+    a_list_of_lists
+} {
+    returns 1 if lol table is a pretti network of dependencies
+} {
+    return $test_p
+}
+
+ad_proc -public acc_fin::table_type_pretti_p {
+    a_list_of_lists
+} {
+    returns 1 if lol table is a pretti output format (special) table
+} {
+    return $test_p
+}
+
+
+
 ad_proc -public acc_fin::pretti_ck_lol {
     scenario_list_of_lists
 } {
@@ -458,3 +493,4 @@ ad_proc -public acc_fin::prettify_lol {
 
     return $pretti_lol
 }
+
