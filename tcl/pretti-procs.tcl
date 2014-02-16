@@ -67,8 +67,32 @@ ad_proc -public acc_fin::pretti_ck_lol {
 ad_proc -public acc_fin::prettify_lol {
     scenario_list_of_lists
 } {
-    processes PRETTI scenario. Returns resulting PRETTI table as a list of lists
+    processes PRETTI scenario. Returns resulting PRETTI table as a list of lists.
 } {
+    # vertical represents time. All tasks are rounded up to quantized time_unit.
+    # Smallest task duration is the number of quantized time_units that result in 1 line of text.
+
+    # Representing task bottlenecks --limits in parallel activity of same type
+    # Parallel limits represented by:
+    # concurrency_limit: count of tasks of same type that can operate in parallel
+    # overlap_limit: a percentage representing amount of overlap allowed.
+    #                overlap_limit, in effect, creates progressions of activity
+    # To find, repeat PRETTI scenario on tracks with CP tasks by task type, then increment by quantized time_unit (row), tracking overages
+    # amount to extend CP duration: collision_count / task_type * ( row_counts / ( time_quanta per task_type_duration ) + 1 )
+
+    # Since PRETTI does not schedule, don't manipulate task positioning,
+    # just increase duration of CP to account for limit overages.
+
+# How are multiple task requirements represented. Anyway to include a shortcut instead of listing task n times?
+
+    # task specific: (aid = acivity id)
+    # count_of_aid , aid_type, activity_id, name, descr, max_concurrent, max_overlap_pct021
+
+    # Can create a projected completion curve by stepping through the range of all the performance curves N times insteaqd of Monte Carlo simm.
+
+    # type:
+    # type, name, desc, max_concurrent, max_overlapp_pct021
+
         #  compute... compute/process and write output as a new table_lists
         ns_log Notice "acc_fin::prettify_lol: start"
         #requires scenario_tid
