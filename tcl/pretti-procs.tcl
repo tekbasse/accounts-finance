@@ -7,9 +7,68 @@ ad_library {
 
 namespace eval acc_fin {}
 
+# page flags as pretti_types:
+# p in positon 1 = PRETTI app specific
+# p1  scenario
+# p2  task network (unique tasks and their dependencies)
+# p3  task types (can also have dependencies)
+# cd2 distribution curve
+# p4  PRETTI report (output)
+
+# p1 PRETTI scenario
+#      task_table_name     name of table containing task network
+#      period_unit         measure of time used in task duration etc.
+#      dist_curve_name     a default distribution curve name when a task type doesn't reference one.
+#      dist_curve_dtid     a default distribution curve table_id, dist_curve_name overrides dist_curve_dtid
+
+# p3 task types:   
+#      type
+#      dependent_tasks (other types)
+#      name
+#      description
+#      max_concurrent       (as an integer, blank = no limit)
+#      max_overlapp_pct021  (as a percentage from 0 to 1, blank = 1)
+
+# p2 task network columns:
+#      activity_ref           reference for an activity, a unique task id, using "activity" to differentiate between table_id's tid
+#      aid_type               activity type from p3
+#      dependent_tasks        direct predecessors , activity_ref of activiites this activity depends on.
+#      name                   defaults to type's name (if exists else blank)
+#      description            defaults to type's description (if exists else blank)
+#      max_concurrent         defaults to type's max_concurrent 
+#      max_overlap_pct021     defaults to type's max_overlap_pct021
+
+#      time_est_short         estimated shortest duration. (Lowest statistical deviation value)
+#      time_est_median        estimated median duration. (Statistically, half of deviations are more or less than this.) 
+#      time_est_long          esimated longest duration. (Highest statistical deviation value.)
+#      time_est_dist_curve_id Use this distribution curve instead of the time_est short, median and long values
+#                             Consider using a variation of task_type as a reference
+#      time_est_dist_curv_eq  Use this distribution curve equation instead.
+
+#      cost_est_low           estimated lowest cost. (Lowest statistical deviation value.)
+#      cost_est_median        estimated median cost. (Statistically, half of deviations are more or less than this.)
+#      cost_est_high          esimage highest cost. (Highest statistical deviation value.)
+#      cost_est_dist_curve_id Use this distribution curve instead of equation and value defaults
+#      cost_est_dist_curv_eq  Use this distribution curve equation. P
+
+
+# cd2 distribution curve table
+#      first column Y         where Y = f(x) and f(x) is a probability mass function of a
+#                             probability distribution http://en.wikipedia.org/wiki/Probability_distribution
+#                             The discrete values are the values of Y included in the table
+
+#      second column X        Where X = the probability of Y.
+#                             These can be counts of a sample or a frequency.  When the table is saved,
+#                             the total area under the distribution is normalized to 1.
+
+#      third column label     Where label represents the value of Y at x. This is a short phrase or reference
+#                             that identifies a boundary point in the distribution.
+
 ad_proc -public acc_fin::tid_scalars_to_array {
     table_id 
     array_name
+    {scalars_allowed ""}
+    {scalars_ignored ""}
 } {
     Saves scalars in a 2 column table to an array array_name, where array indexes are the scalars in the first column, and the value for each scalar is same row in second column. table_id is a reference to a qss_simple table.
 } {
@@ -83,15 +142,10 @@ ad_proc -public acc_fin::prettify_lol {
     # Since PRETTI does not schedule, don't manipulate task positioning,
     # just increase duration of CP to account for limit overages.
 
-# How are multiple task requirements represented. Anyway to include a shortcut instead of listing task n times?
-
-    # task specific: (aid = acivity id)
-    # count_of_aid , aid_type, activity_id, name, descr, max_concurrent, max_overlap_pct021
+    # How are multiple task requirements represented. Anyway to include a shortcut instead of listing task n times?
 
     # Can create a projected completion curve by stepping through the range of all the performance curves N times insteaqd of Monte Carlo simm.
 
-    # type:
-    # type, name, desc, max_concurrent, max_overlapp_pct021
 
         #  compute... compute/process and write output as a new table_lists
         ns_log Notice "acc_fin::prettify_lol: start"
