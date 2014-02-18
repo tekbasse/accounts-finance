@@ -10,12 +10,13 @@ ad_library {
 namespace eval acc_fin {}
 
 # page flags as pretti_types:
-# p in positon 1 = PRETTI app specific
-# p1  scenario
-# p2  task network (unique tasks and their dependencies)
-# p3  task types (can also have dependencies)
-# cd2 distribution curve
-# p4  PRETTI report (output)
+#  p in positon 1 = PRETTI app specific
+#  p1  scenario
+#  p2  task network (unique tasks and their dependencies)
+#  p3  task types (can also have dependencies)
+#  cd2 distribution curve
+#  p4  PRETTI report (output)
+#  cd2 Estimated project duration distribution curve (can be used to create other projects)
 
 # p1 PRETTI scenario
 #      task_table_name     name of table containing task network
@@ -33,6 +34,13 @@ namespace eval acc_fin {}
 
 # p2 task network columns:
 #      activity_ref           reference for an activity, a unique task id, using "activity" to differentiate between table_id's tid
+#                             An activity reference is essential a function as in f() with no attributes,
+#                             However, there is room to grow this by extending a function to include explicitly set paramemters
+#                             within the function, similar to how app-model handles functions aka vectors
+#                             The multiple of an activity is respresented by a whole number followed by an "*" 
+#                             with no spaces between (when spaces are used as an activity delimiter), or
+#                             with spaces allowed (when commas or another character is used as an activity delimiter.
+#                
 #      aid_type               activity type from p3
 #      dependent_tasks        direct predecessors , activity_ref of activiites this activity depends on.
 #      name                   defaults to type's name (if exists else blank)
@@ -65,6 +73,15 @@ namespace eval acc_fin {}
 
 #      third column label     Where label represents the value of Y at x. This is a short phrase or reference
 #                             that identifies a boundary point in the distribution.
+
+# p4 Display modes
+#  
+#  tracks within n% of CP duration, n represented as %12100 or a duration of time as total lead slack
+#  tracks w/ n fixed count closest to CP duration. A n=1 shows CP track only.
+#  tracks that contain at least 1 CP track 
+
+# p5 Project fast-track duration curve
+#  same as cd2
 
 ad_proc -public acc_fin::tid_scalars_to_array {
     table_id 
@@ -133,11 +150,15 @@ ad_proc -public acc_fin::prettify_lol {
     # vertical represents time. All tasks are rounded up to quantized time_unit.
     # Smallest task duration is the number of quantized time_units that result in 1 line of text.
 
+    ### how to represent multiple dependencies of same task for example 99 cartwheels
+    # since task references are separated by spaces or commas?
+
     # Representing task bottlenecks --limits in parallel activity of same type
     # Parallel limits represented by:
     # concurrency_limit: count of tasks of same type that can operate in parallel
     # overlap_limit: a percentage representing amount of overlap allowed.
     #                overlap_limit, in effect, creates progressions of activity
+
     # To find, repeat PRETTI scenario on tracks with CP tasks by task type, then increment by quantized time_unit (row), tracking overages
     # amount to extend CP duration: collision_count / task_type * ( row_counts / ( time_quanta per task_type_duration ) + 1 )
 
