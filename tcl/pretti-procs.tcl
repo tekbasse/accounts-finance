@@ -1,6 +1,8 @@
 ad_library {
 
     PRETTI routines used for Project Reporting Evaluation and Track Task Interpretation
+    With Hints Of GANTT Activity Network Task Tracking (PRETTI WHO GANTT)
+    Project Activity Network Evaluation By Reporting Low Float Paths In Fast Tracks
     @creation-date 11 Feb 2014
     @cvs-id $Id:
 }
