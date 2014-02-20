@@ -13,6 +13,7 @@ namespace eval acc_fin {}
 #  p in positon 1 = PRETTI app specific
 #  p1  scenario
 #  p2  task network (unique tasks and their dependencies)
+#  p2e task network with all coefficients expanded (interna )
 #  p3  task types (can also have dependencies)
 #  cd2 distribution curve
 #  p4  PRETTI report (output)
@@ -33,7 +34,7 @@ namespace eval acc_fin {}
 #      max_overlapp_pct021  (as a percentage from 0 to 1, blank = 1)
 
 # p2 task network columns:
-#      activity_ref           reference for an activity, a unique task id, using "activity" to differentiate between table_id's tid
+#      activity_ref           reference for an activity, a unique task id, using "activity" to differentiate between table_id's tid 
 #                             An activity reference is essential a function as in f() with no attributes,
 #                             However, there is room to grow this by extending a function to include explicitly set paramemters
 #                             within the function, similar to how app-model handles functions aka vectors
@@ -61,6 +62,9 @@ namespace eval acc_fin {}
 #      cost_est_dist_curve_id Use this distribution curve instead of equation and value defaults
 #      cost_est_dist_curv_eq  Use this distribution curve equation. P
 
+# p2e  same as p2, except dependent tasks have no coefficients. Ones that had coefficients are given new references.
+#      New references are the same as coefficient references in p2.dependent_tasks, except the asterisk for multiplication
+#      in the coefficient is inactivated.
 
 # cd2 distribution curve table
 #      first column Y         where Y = f(x) and f(x) is a probability mass function of a
@@ -144,9 +148,12 @@ ad_proc -public acc_fin::pretti_ck_lol {
 
 ad_proc -public acc_fin::prettify_lol {
     scenario_list_of_lists
+    {with_coefficients_p 0}
 } {
-    processes PRETTI scenario. Returns resulting PRETTI table as a list of lists.
+    processes PRETTI scenario. Returns resulting PRETTI table as a list of lists. If with_coefficients_p is 1, an intermediary step processes coefficient multiplicands in dependent_tasks list.
 } {
+    # if with_coefficients_p 1, create a p2e file, call this proc referencing p2e with_coefficients_p 0 before continuing.
+
     # vertical represents time. All tasks are rounded up to quantized time_unit.
     # Smallest task duration is the number of quantized time_units that result in 1 line of text.
 
