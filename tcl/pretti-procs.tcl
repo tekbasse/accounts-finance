@@ -20,10 +20,13 @@ namespace eval acc_fin {}
 #  cd2 Estimated project duration distribution curve (can be used to create other projects)
 
 # p1 PRETTI scenario
-#      task_table_name     name of table containing task network
-#      period_unit         measure of time used in task duration etc.
-#      dist_curve_name     a default distribution curve name when a task type doesn't reference one.
-#      dist_curve_dtid     a default distribution curve table_id, dist_curve_name overrides dist_curve_dtid
+#      task_table_name      name of table containing task network
+#      period_unit          measure of time used in task duration etc.
+#      dist_curve_name      a default distribution curve name when a task type doesn't reference one.
+#      dist_curve_dtid      a default distribution curve table_id, dist_curve_name overrides dist_curve_dtid
+#      with_coefficients_p  defaults to 1 (true). Set to 0 (false) if any coefficients in p3 are to be ignored.
+#                           This option is useful to intercede in auto coefficient expansion to add additional
+#                           variation in repeating task detail.
 
 # p3 task types:   
 #      type
@@ -150,7 +153,7 @@ ad_proc -public acc_fin::prettify_lol {
     scenario_list_of_lists
     {with_coefficients_p 0}
 } {
-    processes PRETTI scenario. Returns resulting PRETTI table as a list of lists. If with_coefficients_p is 1, an intermediary step processes coefficient multiplicands in dependent_tasks list.
+    processes PRETTI scenario. Returns resulting PRETTI table as a list of lists. If with_coefficients_p is 1, an intermediary step processes coefficient multiplicands in dependent_tasks list, creating a p2e file with a complete list of expanded, nonrepeating tasks.
 } {
     # if with_coefficients_p 1, create a p2e file, call this proc referencing p2e with_coefficients_p 0 before continuing.
 
