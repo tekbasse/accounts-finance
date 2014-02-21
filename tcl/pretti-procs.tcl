@@ -13,13 +13,13 @@ namespace eval acc_fin {}
 #  p in positon 1 = PRETTI app specific
 #  p1  scenario
 #  p2  task network (unique tasks and their dependencies)
-#  p2e task network with all coefficients expanded (interna )
+#  p2e task network with all coefficients expanded (internal -depricated )
 #  p3  task types (can also have dependencies)
 #  cd2 distribution curve
 #  p4  PRETTI report (output)
 #  cd2 Estimated project duration distribution curve (can be used to create other projects)
 
-# p1 PRETTI scenario
+# p1 PRETTI Scenario
 #      task_table_name      name of table containing task network
 #      period_unit          measure of time used in task duration etc.
 #      dist_curve_name      a default distribution curve name when a task type doesn't reference one.
@@ -28,7 +28,7 @@ namespace eval acc_fin {}
 #                           This option is useful to intercede in auto coefficient expansion to add additional
 #                           variation in repeating task detail.
 
-# p3 task types:   
+# p3 Task Types:   
 #      type
 #      dependent_tasks (other types)
 #      name
@@ -36,7 +36,7 @@ namespace eval acc_fin {}
 #      max_concurrent       (as an integer, blank = no limit)
 #      max_overlapp_pct021  (as a percentage from 0 to 1, blank = 1)
 
-# p2 task network columns:
+# p2 Task Network
 #      activity_ref           reference for an activity, a unique task id, using "activity" to differentiate between table_id's tid 
 #                             An activity reference is essential a function as in f() with no attributes,
 #                             However, there is room to grow this by extending a function to include explicitly set paramemters
@@ -63,11 +63,14 @@ namespace eval acc_fin {}
 #      cost_est_median        estimated median cost. (Statistically, half of deviations are more or less than this.)
 #      cost_est_high          esimage highest cost. (Highest statistical deviation value.)
 #      cost_est_dist_curve_id Use this distribution curve instead of equation and value defaults
-#      cost_est_dist_curv_eq  Use this distribution curve equation. P
+#      cost_est_dist_curv_eq  Use this distribution curve equation. 
 
-# p2e  same as p2, except dependent tasks have no coefficients. Ones that had coefficients are given new references.
-#      New references are the same as coefficient references in p2.dependent_tasks, except the asterisk for multiplication
-#      in the coefficient is inactivated.
+# p2e  same as p2, except that coefficients in p2.dependent_tasks are inactivate
+#      p2.dependent_tasks. It is assumed that any coefficients in p2.dependent_tasks
+#      have already been expanded and collectively represented as an aggregate task
+#      THIS IS DEPRICATED.
+#      Any task reference with coefficient is first checked against existing task references.
+#      If task reference with coefficient is not found, a new one is created and added to p2. 
 
 # cd2 distribution curve table
 #      first column Y         where Y = f(x) and f(x) is a probability mass function of a
@@ -89,6 +92,17 @@ namespace eval acc_fin {}
 
 # p5 Project fast-track duration curve
 #  same as cd2
+
+ad_proc -public acc_fin::coefficients_expand {
+    a_pretti_lol
+} {
+    expands coefficients in a pretti_list_of_lists
+} {
+
+
+
+    return $pretti_expanded_lol
+}
 
 ad_proc -public acc_fin::tid_scalars_to_array {
     table_id 
@@ -149,19 +163,26 @@ ad_proc -public acc_fin::pretti_ck_lol {
     return $valid_p
 }
 
-ad_proc -public acc_fin::prettify_lol {
+
+ad_proc -public acc_fin::scenario_prettify {
     scenario_list_of_lists
     {with_coefficients_p 0}
 } {
-    processes PRETTI scenario. Returns resulting PRETTI table as a list of lists. If with_coefficients_p is 1, an intermediary step processes coefficient multiplicands in dependent_tasks list, creating a p2e file with a complete list of expanded, nonrepeating tasks.
+    processes PRETTI scenario. Returns resulting PRETTI table as a list of lists. If with_coefficients_p is 1, an intermediary step processes coefficient multiplicands in dependent_tasks list, appending table with a complete list of expanded, nonrepeating tasks.
 } {
-    # if with_coefficients_p 1, create a p2e file, call this proc referencing p2e with_coefficients_p 0 before continuing.
+    # load scenario values
 
+    # load pretti2_lol table
+
+
+    if { $with_coefficients_p } {
+        # append p2 file, call this proc referencing p2 with_coefficients_p 0 before continuing.
+        set pretti2e_lol [acc_fin::coefficients_expand $pretti2_lol]
+    }
     # vertical represents time. All tasks are rounded up to quantized time_unit.
     # Smallest task duration is the number of quantized time_units that result in 1 line of text.
 
-    ### how to represent multiple dependencies of same task for example 99 cartwheels
-    # since task references are separated by spaces or commas?
+    # Represent multiple dependencies of same task for example 99 cartwheels using * as in 99*cartwheels
 
     # Representing task bottlenecks --limits in parallel activity of same type
     # Parallel limits represented by:
@@ -181,7 +202,7 @@ ad_proc -public acc_fin::prettify_lol {
 
 
         #  compute... compute/process and write output as a new table_lists
-        ns_log Notice "acc_fin::prettify_lol: start"
+        ns_log Notice "acc_fin::scenario_prettify: start"
         #requires scenario_tid
         # given scenario_tid 
         # activity_table contains:
@@ -424,13 +445,13 @@ ad_proc -public acc_fin::prettify_lol {
             incr i
         }
         set dep_met_p 1
-        ns_log Notice "acc_fin::prettify_lol: path_seg_dur_list $path_seg_dur_list"
+        ns_log Notice "acc_fin::scenario_prettify: path_seg_dur_list $path_seg_dur_list"
         foreach act $act_list {
             set $dep_met_p [expr $depnc_eq_arr($act) && $dep_met_p ]
-            # ns_log Notice "acc_fin::prettify_lol: act $act act_seq_num_arr '$act_seq_num_arr($act)'"
-            # ns_log Notice "acc_fin::prettify_lol: act_seq_list_arr '$act_seq_list_arr($act_seq_num_arr($act))' $act_count_of_seq_arr($act_seq_num_arr($act))"
+            # ns_log Notice "acc_fin::scenario_prettify: act $act act_seq_num_arr '$act_seq_num_arr($act)'"
+            # ns_log Notice "acc_fin::scenario_prettify: act_seq_list_arr '$act_seq_list_arr($act_seq_num_arr($act))' $act_count_of_seq_arr($act_seq_num_arr($act))"
         }
-        ns_log Notice "acc_fin::prettify_lol: dep_met_p $dep_met_p"
+        ns_log Notice "acc_fin::scenario_prettify: dep_met_p $dep_met_p"
         
         # sort by path duration
         # critical path is the longest path. Float is the difference between CP and next longest CP.
@@ -438,7 +459,7 @@ ad_proc -public acc_fin::prettify_lol {
         set path_seg_dur_sort1_list [lsort -decreasing -real -index 1 $path_seg_dur_list]
         # Critical Path (CP) is 
         set cp_list [lindex [lindex $path_seg_dur_sort1_list 0] 0]
-        #ns_log Notice "acc_fin::prettify_lol: path_seg_dur_sort1_list $path_seg_dur_sort1_list"
+        #ns_log Notice "acc_fin::scenario_prettify: path_seg_dur_sort1_list $path_seg_dur_sort1_list"
         
         # Extract most significant CP alternates for a focused table
         # by counting the number of times an act is used in the largest proportion (first half) of paths in path_set_dur_sort1_list
@@ -485,7 +506,7 @@ ad_proc -public acc_fin::prettify_lol {
         # act_count_of_seq_arr( sequence_number) is the count of activities at this sequence number
         # max_act_count_per_seq is the maximum number of activities in a sequence number.
         
-        ns_log Notice "acc_fin::prettify_lol: base_lists $base_lists"
+        ns_log Notice "acc_fin::scenario_prettify: base_lists $base_lists"
         # critical path is the longest expexted duration of dependent activities..
         # so:
         # primary sort is act_seq_num_arr ascending
@@ -498,7 +519,7 @@ ad_proc -public acc_fin::prettify_lol {
         set second_sort [lsort -decreasing -integer -index 3 $third_sort]
         set primary_sort [lsort -increasing -integer -index 1 $second_sort]
         
-        ns_log Notice "acc_fin::prettify_lol: primary_sort $primary_sort"
+        ns_log Notice "acc_fin::scenario_prettify: primary_sort $primary_sort"
         
         # prep for conversion to html by adding missing TDs, setting formatting (colors, size etc).
         # primary_sort list_of_lists consists of this order of elements:
