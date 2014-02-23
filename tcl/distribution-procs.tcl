@@ -7,6 +7,28 @@ ad_library {
 
 namespace eval acc_fin {}
 
+ad_proc -public qaf_distribution_normalize {
+    distribution_lists
+} {
+    Normalizes area under curve to 1.
+} {
+
+    return $curve_lists
+}
+
+
+ad_proc -public qaf_distribution_loops {
+    distribution_pair_list
+    multiplicand
+} {
+    given a list of distribution pairs ( )
+} {
+
+
+}
+
+
+
 ad_proc -public qaf_distribution_points_create {
     distribution_p_list
     {number_of_points ""}

@@ -104,6 +104,8 @@ ad_proc -public acc_fin::coefficients_expand {
     return $pretti_expanded_lol
 }
 
+
+
 ad_proc -public acc_fin::tid_scalars_to_array {
     table_id 
     array_name
