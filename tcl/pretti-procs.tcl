@@ -13,7 +13,7 @@ namespace eval acc_fin {}
 #  p in positon 1 = PRETTI app specific
 #  p1  scenario
 #  p2  task network (unique tasks and their dependencies)
-#  p2e task network with all coefficients expanded (internal -depricated )
+#  p2e task network with all factors expanded (internal -depricated )
 #  p3  task types (can also have dependencies)
 #  cd2 distribution curve
 #  p4  PRETTI report (output)
@@ -24,8 +24,8 @@ namespace eval acc_fin {}
 #      period_unit          measure of time used in task duration etc.
 #      dist_curve_name      a default distribution curve name when a task type doesn't reference one.
 #      dist_curve_dtid      a default distribution curve table_id, dist_curve_name overrides dist_curve_dtid
-#      with_coefficients_p  defaults to 1 (true). Set to 0 (false) if any coefficients in p3 are to be ignored.
-#                           This option is useful to intercede in auto coefficient expansion to add additional
+#      with_factors_p  defaults to 1 (true). Set to 0 (false) if any factors in p3 are to be ignored.
+#                           This option is useful to intercede in auto factor expansion to add additional
 #                           variation in repeating task detail.
 
 # p3 Task Types:   
@@ -65,12 +65,12 @@ namespace eval acc_fin {}
 #      cost_est_dist_curve_id Use this distribution curve instead of equation and value defaults
 #      cost_est_dist_curv_eq  Use this distribution curve equation. 
 
-# p2e  same as p2, except that coefficients in p2.dependent_tasks are inactivate
-#      p2.dependent_tasks. It is assumed that any coefficients in p2.dependent_tasks
+# p2e  same as p2, except that factors in p2.dependent_tasks are inactivate
+#      p2.dependent_tasks. It is assumed that any factors in p2.dependent_tasks
 #      have already been expanded and collectively represented as an aggregate task
 #      THIS IS DEPRICATED.
-#      Any task reference with coefficient is first checked against existing task references.
-#      If task reference with coefficient is not found, a new one is created and added to p2. 
+#      Any task reference with factor is first checked against existing task references.
+#      If task reference with factor is not found, a new one is created and added to p2. 
 
 # cd2 distribution curve table
 #      first column Y         where Y = f(x) and f(x) is a probability mass function of a
@@ -93,10 +93,10 @@ namespace eval acc_fin {}
 # p5 Project fast-track duration curve
 #  same as cd2
 
-ad_proc -public acc_fin::coefficients_expand {
+ad_proc -public acc_fin::task_factors_expand {
     a_pretti_lol
 } {
-    expands coefficients in a pretti_list_of_lists
+    Expands dependent tasks with factors in a pretti_list_of_lists by appending new definitions of tasks that match tasks with factors as indexes.
 } {
 
 
@@ -104,20 +104,6 @@ ad_proc -public acc_fin::coefficients_expand {
     return $pretti_expanded_lol
 }
 
-
-
-ad_proc -public acc_fin::tid_scalars_to_array {
-    table_id 
-    array_name
-    {scalars_allowed ""}
-    {scalars_ignored ""}
-} {
-    Saves scalars in a 2 column table to an array array_name, where array indexes are the scalars in the first column, and the value for each scalar is same row in second column. table_id is a reference to a qss_simple table.
-} {
-    upvar $array_name tid_arr
-    # load table_id
-    # extract each name-value pair, saving into array
-}
 
 ad_proc -public acc_fin::table_type_scenario_p {
     a_list_of_lists
@@ -168,18 +154,18 @@ ad_proc -public acc_fin::pretti_ck_lol {
 
 ad_proc -public acc_fin::scenario_prettify {
     scenario_list_of_lists
-    {with_coefficients_p 0}
+    {with_factors_p 0}
 } {
-    processes PRETTI scenario. Returns resulting PRETTI table as a list of lists. If with_coefficients_p is 1, an intermediary step processes coefficient multiplicands in dependent_tasks list, appending table with a complete list of expanded, nonrepeating tasks.
+    processes PRETTI scenario. Returns resulting PRETTI table as a list of lists. If with_factors_p is 1, an intermediary step processes factor multiplicands in dependent_tasks list, appending table with a complete list of expanded, nonrepeating tasks.
 } {
     # load scenario values
-
+    
     # load pretti2_lol table
+    
 
-
-    if { $with_coefficients_p } {
-        # append p2 file, call this proc referencing p2 with_coefficients_p 0 before continuing.
-        set pretti2e_lol [acc_fin::coefficients_expand $pretti2_lol]
+    if { $with_factors_p } {
+        # append p2 file, call this proc referencing p2 with_factors_p 0 before continuing.
+        set pretti2e_lol [acc_fin::p2_factors_expand $pretti2_lol]
     }
     # vertical represents time. All tasks are rounded up to quantized time_unit.
     # Smallest task duration is the number of quantized time_units that result in 1 line of text.
@@ -198,12 +184,11 @@ ad_proc -public acc_fin::scenario_prettify {
     # Since PRETTI does not schedule, don't manipulate task positioning,
     # just increase duration of CP to account for limit overages.
 
-    # How are multiple task requirements represented. Anyway to include a shortcut instead of listing task n times?
+    # Multiple task requirements are represented with a number followed by asterisk.
 
-    # Can create a projected completion curve by stepping through the range of all the performance curves N times insteaqd of Monte Carlo simm.
+    # Create a projected completion curve by stepping through the range of all the performance curves N times insteaqd of Monte Carlo simm.
 
 
-        #  compute... compute/process and write output as a new table_lists
         ns_log Notice "acc_fin::scenario_prettify: start"
         #requires scenario_tid
         # given scenario_tid 
@@ -374,6 +359,9 @@ ad_proc -public acc_fin::scenario_prettify {
         foreach act $act_list {
             set eq "1 &&"
             foreach dep $depnc_arr($act) {
+                # strings generally are okay to 100,000,000+ chars..
+                # considering reducing size of calcd_p_arr to increase capacity
+                # or switch to manually calculate each incompletely calced network
                 append eq " calcd_p_arr($dep) &&"
             }
             set eq [string range $eq 0 end-3]
