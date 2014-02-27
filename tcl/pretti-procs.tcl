@@ -189,77 +189,50 @@ ad_proc -public acc_fin::scenario_prettify {
     # Create a projected completion curve by stepping through the range of all the performance curves N times insteaqd of Monte Carlo simm.
 
 
-        ns_log Notice "acc_fin::scenario_prettify: start"
-        #requires scenario_tid
-        # given scenario_tid 
-        # activity_table contains:
-        # activity_ref predecessors time_est_short time_est_median time_est_long cost_est_low cost_est_median cost_est_high time_dist_curv_eq cost_dist_curv_eq
-        set error_fail 0
-        set scenario_lists [qss_table_read $scenario_tid]
-        set constants_list [list scenario_tid activity_table_tid activity_table_name time_dist_curve_name time_dist_curve_tid cost_dist_curve_name cost_dist_curve_tid ]
-        set constants_required_list [list scenario_tid]
-        foreach condition_list $scenario_lists {
-            set constant [lindex $condition_list 0]
-            if { [lsearch -exact $constants_list $constant] > -1 } {
-                set input_array($constant) [lindex $condition_list 1]
-                set $constant $input_array($constant)
-            }
-        }
-        if { [info exists activity_table_name] } {
-            # set set activity_table_tid
-            set table_ids_list [qss_tables $package_id]
-            foreach table_id $table_ids_list {
-                if { [lindex [qss_table_stats $table_id] 0] eq $activity_table_name } {
-                    set activity_table_tid $table_id
-                }
-            }
+    ns_log Notice "acc_fin::scenario_prettify: start"
+    #requires scenario_tid
+ 
+    # given scenario_tid 
+    # activity_table contains:
+    # activity_ref predecessors time_est_short time_est_median time_est_long cost_est_low cost_est_median cost_est_high time_dist_curv_eq cost_dist_curv_eq
+    set error_fail 0
 
-        } 
-
-        if { [info exists time_dist_curve_name] } {
-            # set dist_curve_tid
-            set table_ids_list [qss_tables $package_id]
-            foreach table_id $table_ids_list {
-                if { [lindex [qss_table_stats $table_id] 0] eq $time_dist_curve_name } {
-                    set time_dist_curve_tid $table_id
-                }
-            }
-
-        } 
-        if { [info exists cost_dist_curve_name] } {
-            # set dist_curve_tid
-            set table_ids_list [qss_tables $package_id]
-            foreach table_id $table_ids_list {
-                if { [lindex [qss_table_stats $table_id] 0] eq $cost_dist_curve_name } {
-                    set cost_dist_curve_tid $table_id
-                }
-            }
-
-        } 
-        if { [info exists activity_table_tid] } {
-            set activity_table_name [lindex [qss_table_stats $activity_table_tid] 0]
-        }
-        if { [info exists time_dist_curve_tid] } {
-            set time_dist_curve_name [lindex [qss_table_stats $time_dist_curve_tid] 0]
-        }
-        if { [info exists cost_dist_curve_tid] } {
-            set cost_dist_curve_name [lindex [qss_table_stats $cost_dist_curve_tid] 0]
-        }
-        set constants_exist_p 1
-        set compute_message_list [list ]
-        foreach constant $constants_required_list {
-            if { ![info exists $constant] || ( [info exists $constant] && [set $constant] eq "" ) } {
-                set constants_exist_p 0
-                lappend compute_message_list "Initial condition constant '${constant}' is required but does not exist."
-                set error_fail 1
-            }
-        }
-        
-        # interpolate_last_band_p : interpolate last estimate item? choose this if you have a large estimate value that you want to vary over the value range
-
-        # Make time_curve_data 
-        set time_curve_data_lists [qss_table_read $time_dist_curve_tid]
-        # make the distribution curve accessible as lists
+    # get scenario into array s_arr
+    set constants_list [list activity_table_tid activity_table_name time_dist_curve_name time_dist_curve_tid cost_dist_curve_name cost_dist_curve_tid ]
+    set constants_required_list [list activity_table_tid ]
+    qss_tid_scalars_to_array $scenario_tid s_arr $constants_list $constants_required_list
+    
+    if { $s_arr(activity_table_name) ne "" } {
+	# set activity_table_tid
+	set s_arr(activity_table_id) [qss_tid_from_name $s_arr(activity_table_name) ]
+    } 
+    
+    if { $s_arr(time_dist_curve_name) ne "" } {
+	# set dist_curve_tid
+	set s_arr(time_dist_curve_tid) [qss_tid_from_name $s_arr(time_dist_curve_name) ]
+    }
+    
+    if { $s_arr(cost_dist_curve_name) ne "" } {
+	# set dist_curve_tid
+	set s_arr(cost_dist_curve_tid) [qss_tid_from_name $s_arr(cost_dist_curve_name) ]
+    }
+    
+    set constants_exist_p 1
+    set compute_message_list [list ]
+    foreach constant $constants_required_list {
+	if { $s_arr($constant) eq "" } {
+	    set constants_exist_p 0
+	    lappend compute_message_list "Initial condition constant '${constant}' is required but does not exist."
+	    set error_fail 1
+	}
+    }
+    
+    # Make time_curve_data This is the default curve unless a curve is specified in a task list.
+    # The most specific information is used by default. 
+    # curves take precedence over min,avg,max values.
+    # Task min,avg,max values set boundaries when a default curve.
+    set time_curve_data_lists [qss_table_read $time_dist_curve_tid]
+    # make the distribution curve accessible as lists
         set time_task_list [list ]
         set time_probability_list [list ]
         set time_label_list [list ]
