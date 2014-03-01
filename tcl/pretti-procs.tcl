@@ -5,6 +5,7 @@ ad_library {
     Project Activity Network Evaluation By Reporting Low Float Paths In Fast Tracks
     @creation-date 11 Feb 2014
     @cvs-id $Id:
+    Temporary comment about git commit comments: http://xkcd.com/1296/
 }
 
 namespace eval acc_fin {}
