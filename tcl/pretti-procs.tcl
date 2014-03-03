@@ -279,11 +279,6 @@ ad_proc -public acc_fin::scenario_prettify {
         # default for each acitivity_ref 1
         ## assign an activity_ref one more than the max sequence_num of its dependencies
 
-        # defaults, inputs
-        #set act_depnc_list [list a "" b e,c,a c e,f d b,f,c e a f ""]
-        #set act_depnc_list [list a "" b a c "" d a e b f ""]
-        set act_depnc_list [list a "" b "" c "a" d a e "b,c" f d g e]
-        set act_time_est_list [list [list a 2 4 6] [list b 3 5 9] [list c 4 5 7] [list d 4 6 10] [list e 4 5 7] [list f 3 4 8] [list g 3 5 8] ]
         
         set act_list [list ]
         foreach {act_unfiltered depnc_unfiltered} $act_depnc_list {

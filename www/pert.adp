@@ -64,6 +64,37 @@
 <td valign="top"><tt>cost_dist_curv_eq</tt></td>
 <td valign="top">Use this cost distribution curve equation instead of low/high estimates.</td>
 </tr></table>
+<p>Examples</p>
+<table>
+<tr><td>activity_ref</td><predecessors</td></tr>
+<tr><td>a</td>&nbsp;</td></tr>
+<tr><td>b</td>e,c,a</td></tr>
+<tr><td>c</td>e,f</td></tr>
+<tr><td>d</td>b,f,c</td></tr>
+<tr><td>e</td>a</td></tr>
+<tr><td>f</td>&nbsp;</td></tr>
+</table>
+<table>
+<tr><td>activity_ref</td><predecessors</td></tr>
+<tr><td>a</td>&nbsp;</td></tr>
+<tr><td>b</td>&nbsp;</td></tr>
+<tr><td>c</td>a</td></tr>
+<tr><td>d</td>a</td></tr>
+<tr><td>e</td>b</td></tr>
+<tr><td>f</td>&nbsp;</td></tr>
+</table>
+<table>
+<tr><td>activity_ref</td><predecessors</td></tr>
+<tr><td>a</td>&nbsp;</td></tr>
+<tr><td>b</td>&nbsp;</td></tr>
+<tr><td>c</td>a</td></tr>
+<tr><td>d</td>a</td></tr>
+<tr><td>e</td>b,c</td></tr>
+<tr><td>f</td>d</td></tr>
+<tr><td>g</td>e</td></tr>
+</table>
+ 
+
 <h3>Distribution Curve columns</h3>
 <table border="0" cellspacing="0" cellpadding="5">
 <tr>
@@ -76,6 +107,17 @@
 <td valign="top"><tt>third column label</tt></td>
 <td valign="top">Where label is associated with the value of Y at x. This is a reference or short phrase that identifies the location in the distribution.</td>
 </tr></table>
+<table>
+<tr><td>activty_ref</td><td>time_est_short</td><td>time_est_median</td><td>time_est_long</td></tr>
+<tr><td>a</td><td>2</td><td>4</td><td>6</td></tr>
+<tr><td>b</td><td>3</td><td>5</td><td>9</td></tr>
+<tr><td>c</td><td>4</td><td>5</td><td>7</td></tr>
+<tr><td>d</td><td>4</td><td>6</td><td>10</td></tr>
+<tr><td>e</td><td>4</td><td>5</td><td>7</td></tr>
+<tr><td>f</td><td>3</td><td>4</td><td>8</td></tr>
+<tr><td>g</td><td>3</td><td>5</td><td>8</td></tr>
+</table>
+
 </div>
 <div style="width: 90%;">
 @form_html;noquote@
