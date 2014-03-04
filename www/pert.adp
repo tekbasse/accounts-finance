@@ -98,13 +98,13 @@
 <h3>Distribution Curve columns</h3>
 <table border="0" cellspacing="0" cellpadding="5">
 <tr>
-<td valign="top">first column (Y)<tt></tt></td>
+<td valign="top">y<tt></tt></td>
 <td valign="top">Where Y = f(x). f(x) is a probability mass function of a <a href="http://en.wikipedia.org/wiki/Probability_distribution" target="_blank">probability distribution</a>. The discrete values are the values of Y included in the table.</td>
 </tr><tr>
-<td valign="top"><tt>second column (x)</tt></td>
+<td valign="top"><tt>x</tt></td>
 <td valign="top">Where X = the probability of Y. These can be counts of a sample or a frequency. When the table is saved, the total area under the distribution is normalized to 1.</td>
 </tr><tr>
-<td valign="top"><tt>third column label</tt></td>
+<td valign="top"><tt>label</tt></td>
 <td valign="top">Where label is associated with the value of Y at x. This is a reference or short phrase that identifies the location in the distribution.</td>
 </tr></table>
 <table>

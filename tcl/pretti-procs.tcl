@@ -187,7 +187,7 @@ ad_proc -public acc_fin::scenario_prettify {
 
     # Multiple task requirements are represented with a number followed by asterisk.
 
-    # Create a projected completion curve by stepping through the range of all the performance curves N times insteaqd of Monte Carlo simm.
+    # Create a projected completion curve by stepping through the range of all the performance curves N times instead of Monte Carlo simm.
 
 
     ns_log Notice "acc_fin::scenario_prettify: start"
@@ -201,23 +201,19 @@ ad_proc -public acc_fin::scenario_prettify {
     # get scenario into array s_arr
     set constants_list [list activity_table_tid activity_table_name time_dist_curve_name time_dist_curve_tid cost_dist_curve_name cost_dist_curve_tid ]
     set constants_required_list [list activity_table_tid ]
-    qss_tid_scalars_to_array $scenario_tid s_arr $constants_list $constants_required_list
-    
+    qss_tid_scalars_to_array $scenario_tid s_arr $constants_list $constants_required_list $package_id $user_id
     if { $s_arr(activity_table_name) ne "" } {
 	# set activity_table_tid
 	set s_arr(activity_table_id) [qss_tid_from_name $s_arr(activity_table_name) ]
     } 
-    
     if { $s_arr(time_dist_curve_name) ne "" } {
 	# set dist_curve_tid
 	set s_arr(time_dist_curve_tid) [qss_tid_from_name $s_arr(time_dist_curve_name) ]
     }
-    
     if { $s_arr(cost_dist_curve_name) ne "" } {
 	# set dist_curve_tid
 	set s_arr(cost_dist_curve_tid) [qss_tid_from_name $s_arr(cost_dist_curve_name) ]
     }
-    
     set constants_exist_p 1
     set compute_message_list [list ]
     foreach constant $constants_required_list {
@@ -228,44 +224,36 @@ ad_proc -public acc_fin::scenario_prettify {
 	}
     }
     
-    # Make time_curve_data This is the default curve unless a curve is specified in a task list.
+    # Make time_curve_data This is the default unless more specific data is specified in a task list.
     # The most specific information is used by default. 
     # curves take precedence over min,avg,max values.
     # Task min,avg,max values set boundaries when a default curve.
-    set time_curve_data_lists [qss_table_read $time_dist_curve_tid]
-    # make the distribution curve accessible as lists
-        set time_task_list [list ]
-        set time_probability_list [list ]
-        set time_label_list [list ]
-        set time_val_probability_lists [list ]
-        foreach curve_band_list $time_curve_data_lists {
-            lappend time_task_list [lindex $curve_band_list 0]
-            lappend time_probability_list [lindex $curve_band_list 1]            
-            lappend time_label_list [lindex $curve_band_list 2]
-            lappend time_val_probability_lists [list $time_task_list $time_probability_list]
-        }
+    if { $time_dist_curve_tid ne "" } {
+	# get time curve into array tc_arr
+	set constants_list [list y x label]
+	set constants_required_list [list y x]
+	qss_tid_columns_to_array_of_lists $time_dist_curve_tid tc_larr $constants_list $constants_required_list $package_id $user_id
+	#tc_larr(x), tc_larr(y) and optionally tc_larr(label) where _larr refers to an array where each value is a list of column data by row 1..n
 
-        # Make cost_curve_data 
-        set cost_curve_data_lists [qss_table_read $cost_dist_curve_tid]
-        # make the distribution curve accessible as lists
-        set cost_task_list [list ]
-        set cost_probability_list [list ]
-        set cost_label_list [list ]
-        set cost_val_probability_lists [list ]
-        foreach curve_band_list $cost_curve_data_lists {
-            lappend cost_task_list [lindex $curve_band_list 0]
-            lappend cost_probability_list [lindex $curve_band_list 1]            
-            lappend cost_label_list [lindex $curve_band_list 2]
-            lappend cost_val_probability_lists [list $cost_task_list $cost_probability_list]
-        }
-        # handy api ref
-        # util_commify_number
-        # format "% 8.2f" $num
-        # f::sum $list
+    }
+    
+    # Make cost_curve_data 
+    if { $cost_dist_curve_tid ne "" } {
+	set constants_list [list y x label]
+	set constants_required_list [list y x]	
+        set cost_curve_data_lists $cost_dist_curve_tid cc_larr $constants_list $constants_required_list $package_id $user_id
+	#cc_larr(x), cc_larr(y) and optionally cc_larr(label) where _larr refers to an array where each value is a list of column data by row 1..n
 
-       ## # PERT calculations
-        # create activity_list
-        # create arrays of activity columns.
+    }
+    
+    # handy api ref
+    # util_commify_number
+    # format "% 8.2f" $num
+    # f::sum $list
+
+    ## # PERT calculations
+    # create activity_list
+    # create arrays of activity columns.
 
         
         # Build activity map table:
