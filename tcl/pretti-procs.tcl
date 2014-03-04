@@ -59,12 +59,18 @@ namespace eval acc_fin {}
 #      time_est_dist_curve_id Use this distribution curve instead of the time_est short, median and long values
 #                             Consider using a variation of task_type as a reference
 #      time_est_dist_curv_eq  Use this distribution curve equation instead.
+#      time_probability_moment A percentage (0..1) along the (cumulative) distribution curve.
 
 #      cost_est_low           estimated lowest cost. (Lowest statistical deviation value.)
 #      cost_est_median        estimated median cost. (Statistically, half of deviations are more or less than this.)
 #      cost_est_high          esimage highest cost. (Highest statistical deviation value.)
 #      cost_est_dist_curve_id Use this distribution curve instead of equation and value defaults
 #      cost_est_dist_curv_eq  Use this distribution curve equation. 
+#      cost_probability_moment A percentage (0..1) along the (cumulative) distribution curve
+
+# A three point (short/median/long or low/median/high) estimation curve can be respresented as
+# a discrete set of six points:  minimum median median median median maximum of equal probability.
+# Thereby allowing *_probability_moment variable to be used in estimates with lower statistical resolution.
 
 # p2e  same as p2, except that factors in p2.dependent_tasks are inactivate
 #      p2.dependent_tasks. It is assumed that any factors in p2.dependent_tasks
@@ -74,8 +80,11 @@ namespace eval acc_fin {}
 #      If task reference with factor is not found, a new one is created and added to p2. 
 
 # cd2 distribution curve table
-#      first column Y         where Y = f(x) and f(x) is a probability mass function of a
-#                             probability distribution http://en.wikipedia.org/wiki/Probability_distribution
+#      first column Y         where Y = f(x) and f(x) is a 
+#                             probability mass function ie probability density function as a distribution
+#                             http://en.wikipedia.org/wiki/Probability_mass_function
+#                             http://en.wikipedia.org/wiki/Probability_density_function
+#                         aka http://en.wikipedia.org/wiki/Discrete_probability_distribution#Discrete_probability_distribution
 #                             The discrete values are the values of Y included in the table
 
 #      second column X        Where X = the probability of Y.
@@ -199,7 +208,7 @@ ad_proc -public acc_fin::scenario_prettify {
     set error_fail 0
     
     # get scenario into array s_arr
-    set constants_list [list activity_table_tid activity_table_name time_dist_curve_name time_dist_curve_tid cost_dist_curve_name cost_dist_curve_tid time_est_short time_est_median time_est_long cost_est_low cost_est_median cost_est_high]
+    set constants_list [list activity_table_tid activity_table_name time_dist_curve_name time_dist_curve_tid cost_dist_curve_name cost_dist_curve_tid time_est_short time_est_median time_est_long time_probability_moment cost_est_low cost_est_median cost_est_high cost_probability_moment]
     set constants_required_list [list activity_table_tid ]
     qss_tid_scalars_to_array $scenario_tid s_arr $constants_list $constants_required_list $package_id $user_id
     if { $s_arr(activity_table_name) ne "" } {
@@ -226,6 +235,14 @@ ad_proc -public acc_fin::scenario_prettify {
     
     # Make time_curve_data This is the default unless more specific data is specified in a task list.
     # The most specific information is used by default. 
+    # Median (most likely) point is assumed along the (cumulative) distribution curve, unless
+    # a time_probability_moment is specified.  time_probability_moment is only available as a general term.
+    #     local curve
+    #     local 3-point (min,median,max)
+    #     general curve (normalized to local 1 point median ); local 1 point median is minimum time data requirement
+    #     general 3-point (normalized to local median)
+    
+    
     # curves take precedence over min,avg,max values.
     # Task min,avg,max values set boundaries when a default curve.
     if { $time_dist_curve_tid ne "" } {
@@ -240,8 +257,15 @@ ad_proc -public acc_fin::scenario_prettify {
         
     } else {
         # set min,avg,max values available or set flag to just use average.
-        # s_arr(time_est_short time_est_median time_est_long or time_dist_curv_eq  )
+        # s_arr(time_est_short time_est_median time_est_long  )
         # Don't support time_dist_curv_eq for now. Interpreting an equation adds a layer of complexity.
+
+        # Geometric average requires all three values
+        if { [info exists s_arr(time_est_short)] && [info exists s_arr(time_est_median)] && [info exists s_arr(time_est_long) ] } {
+            # time_expected = ( time_optimistic + 4 * time_most_likely + time_pessimistic ) / 6.
+            # per http://en.wikipedia.org/wiki/Program_Evaluation_and_Review_Technique
+            
+        } 
         ####
     }
     
@@ -257,7 +281,7 @@ ad_proc -public acc_fin::scenario_prettify {
         
     } else {
         # set min,avg,max values available or set flag to just use average or don't calculate any.
-        # s_arr(cost_est_low cost_est_median cost_est_high or cost_dist_curv_eq)
+        # s_arr(cost_est_low cost_est_median cost_est_high )
         # Don't support cost_dist_curv_eq for now. Interpreting an equation adds a layer of complexity.
         ####
     }
