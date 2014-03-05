@@ -245,6 +245,7 @@ ad_proc -public acc_fin::scenario_prettify {
     
     # curves take precedence over min,avg,max values.
     # Task min,avg,max values set boundaries when a default curve.
+    # Don't support time_dist_curv_eq for now. Interpreting an equation adds a layer of complexity.
     if { $time_dist_curve_tid ne "" } {
         # get time curve into array tc_larr
         set tc_larr(x) [list ]
@@ -255,34 +256,74 @@ ad_proc -public acc_fin::scenario_prettify {
         qss_tid_columns_to_array_of_lists $time_dist_curve_tid tc_larr $constants_list $constants_required_list $package_id $user_id
         #tc_larr(x), tc_larr(y) and optionally tc_larr(label) where _larr refers to an array where each value is a list of column data by row 1..n
         
-    } else {
-        # set min,avg,max values available or set flag to just use average.
-        # s_arr(time_est_short time_est_median time_est_long  )
-        # Don't support time_dist_curv_eq for now. Interpreting an equation adds a layer of complexity.
-
+    } elseif { [info exists s_arr(time_est_short)] && [info exists s_arr(time_est_median)] && [info exists s_arr(time_est_long) ] } {
         # Geometric average requires all three values
-        if { [info exists s_arr(time_est_short)] && [info exists s_arr(time_est_median)] && [info exists s_arr(time_est_long) ] } {
-            # time_expected = ( time_optimistic + 4 * time_most_likely + time_pessimistic ) / 6.
-            # per http://en.wikipedia.org/wiki/Program_Evaluation_and_Review_Technique
-            
-        } 
-        ####
+        # set min,avg,max values available
+
+        # time_expected = ( time_optimistic + 4 * time_most_likely + time_pessimistic ) / 6.
+        # per http://en.wikipedia.org/wiki/Program_Evaluation_and_Review_Technique
+
+        # s_arr(time_est_short time_est_median time_est_long  )
+        set standard_deviation 0.682689492137 
+        set std_dev_parts [expr { $standard_deviation / 4. } ]
+        set outliers [expr { 0.317310507863 / 2. } ]
+        set tc_larr(x) [list $outliers ]
+        for {set i 1} {$i < 5} {incr i} {
+            set x [expr { $outliers + $i * $st_dev_parts } ]
+            lappend tc_larr(x) $x
+        }
+        # last x should be 1.0
+        lappend tc_larr(x) [expr { $x + $outliers } ]
+        set tc_larr(y) [list $s_arr(time_est_short) $s_arr(time_est_median) $s_arr(time_est_median) $s_arr(time_est_median) $s_arr(time_est_median) $s_arr(time_est_long)]
+        set tc_larr(label) [list "min" "avg" "avg" "avg" "avg" "max"]
+    } elseif { [info exists s_arr(time_est_median) ] } {
+        # assume curve is flat
+        set standard_deviation 0.682689492137 
+        set std_dev_parts [expr { $standard_deviation / 4. } ]
+        set outliers [expr { 0.317310507863 / 2. } ]
+        set tc_larr(x) [list $outliers ]
+        for {set i 1} {$i < 5} {incr i} {
+            set x [expr { $outliers + $i * $st_dev_parts } ]
+            lappend tc_larr(x) $x
+        }
+        # last x should be 1.0
+        lappend tc_larr(x) [expr { $x + $outliers } ]
+        set tc_larr(y) [list $s_arr(time_est_median) $s_arr(time_est_median) $s_arr(time_est_median) $s_arr(time_est_median) $s_arr(time_est_median) $s_arr(time_est_median]
+        set tc_larr(label) [list "avg" "avg" "avg" "avg" "avg" "avg"]
+    } else {
+        # No time defaults.
+        # set duration to 1 for limited block feedback.
+        set standard_deviation 0.682689492137 
+        set std_dev_parts [expr { $standard_deviation / 4. } ]
+        set outliers [expr { 0.317310507863 / 2. } ]
+        set tc_larr(x) [list $outliers ]
+        for {set i 1} {$i < 5} {incr i} {
+            set x [expr { $outliers + $i * $st_dev_parts } ]
+            lappend tc_larr(x) $x
+        }
+        # last x should be 1.0
+        lappend tc_larr(x) [expr { $x + $outliers } ]
+        set tc_larr(y) [list 1. 1. 1. 1. 1. 1.]
     }
     
     # Make cost_curve_data 
+    # Don't support cost_dist_curv_eq for now. Interpreting an equation adds a layer of complexity.
     if { $cost_dist_curve_tid ne "" } {
         set cc_larr(x) [list ]
         set cc_larr(y) [list ]
         set cc_larr(label) [list ]
         set constants_list [list y x label]
-        set constants_required_list [list y x]	
+        set constants_required_list [list y x]
         set cost_curve_data_lists $cost_dist_curve_tid cc_larr $constants_list $constants_required_list $package_id $user_id
         #cc_larr(x), cc_larr(y) and optionally cc_larr(label) where _larr refers to an array where each value is a list of column data by row 1..n
         
-    } else {
+    } elseif {  } {
         # set min,avg,max values available or set flag to just use average or don't calculate any.
         # s_arr(cost_est_low cost_est_median cost_est_high )
-        # Don't support cost_dist_curv_eq for now. Interpreting an equation adds a layer of complexity.
+        set cc_larr(x) [list 
+
+
+    } else {
         ####
     }
     
