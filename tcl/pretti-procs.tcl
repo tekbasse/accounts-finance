@@ -246,6 +246,10 @@ ad_proc -public acc_fin::scenario_prettify {
     # curves take precedence over min,avg,max values.
     # Task min,avg,max values set boundaries when a default curve.
     # Don't support time_dist_curv_eq for now. Interpreting an equation adds a layer of complexity.
+    set standard_deviation 0.682689492137 
+    set std_dev_parts [expr { $standard_deviation / 4. } ]
+    set outliers [expr { 0.317310507863 / 2. } ]
+
     if { $time_dist_curve_tid ne "" } {
         # get time curve into array tc_larr
         set tc_larr(x) [list ]
@@ -259,14 +263,11 @@ ad_proc -public acc_fin::scenario_prettify {
     } elseif { [info exists s_arr(time_est_short)] && [info exists s_arr(time_est_median)] && [info exists s_arr(time_est_long) ] } {
         # Geometric average requires all three values
         # set min,avg,max values available
-
+        
         # time_expected = ( time_optimistic + 4 * time_most_likely + time_pessimistic ) / 6.
         # per http://en.wikipedia.org/wiki/Program_Evaluation_and_Review_Technique
-
+        
         # s_arr(time_est_short time_est_median time_est_long  )
-        set standard_deviation 0.682689492137 
-        set std_dev_parts [expr { $standard_deviation / 4. } ]
-        set outliers [expr { 0.317310507863 / 2. } ]
         set tc_larr(x) [list $outliers ]
         for {set i 1} {$i < 5} {incr i} {
             set x [expr { $outliers + $i * $st_dev_parts } ]
@@ -288,14 +289,11 @@ ad_proc -public acc_fin::scenario_prettify {
         }
         # last x should be 1.0
         lappend tc_larr(x) [expr { $x + $outliers } ]
-        set tc_larr(y) [list $s_arr(time_est_median) $s_arr(time_est_median) $s_arr(time_est_median) $s_arr(time_est_median) $s_arr(time_est_median) $s_arr(time_est_median]
+        set tc_larr(y) [list $s_arr(time_est_median) $s_arr(time_est_median) $s_arr(time_est_median) $s_arr(time_est_median) $s_arr(time_est_median) $s_arr(time_est_median) ]
         set tc_larr(label) [list "avg" "avg" "avg" "avg" "avg" "avg"]
     } else {
         # No time defaults.
         # set duration to 1 for limited block feedback.
-        set standard_deviation 0.682689492137 
-        set std_dev_parts [expr { $standard_deviation / 4. } ]
-        set outliers [expr { 0.317310507863 / 2. } ]
         set tc_larr(x) [list $outliers ]
         for {set i 1} {$i < 5} {incr i} {
             set x [expr { $outliers + $i * $st_dev_parts } ]
@@ -317,14 +315,45 @@ ad_proc -public acc_fin::scenario_prettify {
         set cost_curve_data_lists $cost_dist_curve_tid cc_larr $constants_list $constants_required_list $package_id $user_id
         #cc_larr(x), cc_larr(y) and optionally cc_larr(label) where _larr refers to an array where each value is a list of column data by row 1..n
         
-    } elseif {  } {
-        # set min,avg,max values available or set flag to just use average or don't calculate any.
+    } elseif { [info exists s_arr(cost_est_low)] && [info exists s_arr(cost_est_median)] && [info exists s_arr(cost_est_high)] } {
+        # Geometric average requires all three values
+        # set min,avg,max values available 
+        
+        # cost_expected = ( cost_low + 4 * cost_median + cost_high ) / 6.
+        
         # s_arr(cost_est_low cost_est_median cost_est_high )
-        set cc_larr(x) [list 
-
-
+        set cc_larr(x) [list $outliers ]
+        for {set i 1} {$i < 5} {incr i} {
+            set x [expr { $outliers + $i * $st_dev_parts } ]
+            lappend cc_larr(x) $x
+        }
+        # last x should be 1.0
+        lappend cc_larr(x) [expr { $x + $outliers } ]
+        set cc_larr(y) [list $s_arr(cost_est_low) $s_arr(cost_est_median) $s_arr(cost_est_median) $s_arr(cost_est_median) $s_arr(cost_est_median) $s_arr(cost_est_high)]
+        set cc_larr(label) [list "min" "avg" "avg" "avg" "avg" "max"]
+    } elseif { [info exists s_arr(cost_est_median) ] } {
+        # assume curve is flat
+        set cc_larr(x) [list $outliers ]
+        for {set i 1} {$i < 5} {incr i} {
+            set x [expr { $outliers + $i * $st_dev_parts } ]
+            lappend cc_larr(x) $x
+        }
+        # last x should be 1.0
+        lappend cc_larr(x) [expr { $x + $outliers } ]
+        set cc_larr(y) [list $s_arr(cost_est_median) $s_arr(cost_est_median) $s_arr(cost_est_median) $s_arr(cost_est_median) $s_arr(cost_est_median) $s_arr(cost_est_median)]
+        set cc_larr(label) [list "avg" "avg" "avg" "avg" "avg" "avg"]
     } else {
-        ####
+        # No cost defaults.
+        # set duration to 1 for limited block feedback.
+        set cc_larr(x) [list $outliers ]
+        for {set i 1} {$i < 5} {incr i} {
+            set x [expr { $outliers + $i * $st_dev_parts } ]
+            lappend cc_larr(x) $x
+        }
+        # last x should be 1.0
+        lappend cc_larr(x) [expr { $x + $outliers } ]
+        # Since no value provided, using percent of maximum cost of 100%
+        set cc_larr(y) [list 0. 0.5 0.5 0.5 0.5 1.0]
     }
     
     # handy api ref
