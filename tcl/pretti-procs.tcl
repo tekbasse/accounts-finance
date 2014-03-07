@@ -21,17 +21,22 @@ namespace eval acc_fin {}
 #  cd2 Estimated project duration distribution curve (can be used to create other projects)
 
 # p1 PRETTI Scenario
-#      task_table_name      name of table containing task network
+#      activity_table_tid
+#      activigy_table_name      name of table containing task network
 #      period_unit          measure of time used in task duration etc.
-#      dist_curve_name      a default distribution curve name when a task type doesn't reference one.
-#      dist_curve_dtid      a default distribution curve table_id, dist_curve_name overrides dist_curve_dtid
+#      time_dist_curve_name      a default distribution curve name when a task type doesn't reference one.
+#      time_dist_curve_tid      a default distribution curve table_id, dist_curve_name overrides dist_curve_dtid
+#      cost_dist_curve_name      a default distribution curve name when a task type doesn't reference one.
+#      cost_dist_curve_tid      a default distribution curve table_id, dist_curve_name overrides dist_curve_dtid
 #      with_factors_p  defaults to 1 (true). Set to 0 (false) if any factors in p3 are to be ignored.
 #                           This option is useful to intercede in auto factor expansion to add additional
-#                           variation in repeating task detail.
+#                           variation in repeating task detail. (deprecated by auto expansion of nonexisting coefficients).
 
 # p3 Task Types:   
 #      type
-#      dependent_tasks (other types)
+#      dependent_tasks      These are other tasks referenced in p2
+#      dependent_types      Other dependent types required by this type. (possible reference collisions. type_refs != activity_refs.
+#####                       How to handle nomenclature collisons? 
 #      name
 #      description
 #      max_concurrent       (as an integer, blank = no limit)
@@ -208,12 +213,16 @@ ad_proc -public acc_fin::scenario_prettify {
     set error_fail 0
     
     # get scenario into array s_arr
-    set constants_list [list activity_table_tid activity_table_name time_dist_curve_name time_dist_curve_tid cost_dist_curve_name cost_dist_curve_tid time_est_short time_est_median time_est_long time_probability_moment cost_est_low cost_est_median cost_est_high cost_probability_moment]
+    set constants_list [list activity_table_tid activity_table_name task_types_tid task_types_name time_dist_curve_name time_dist_curve_tid cost_dist_curve_name cost_dist_curve_tid time_est_short time_est_median time_est_long time_probability_moment cost_est_low cost_est_median cost_est_high cost_probability_moment]
     set constants_required_list [list activity_table_tid ]
     qss_tid_scalars_to_array $scenario_tid s_arr $constants_list $constants_required_list $package_id $user_id
     if { $s_arr(activity_table_name) ne "" } {
         # set activity_table_tid
-        set s_arr(activity_table_id) [qss_tid_from_name $s_arr(activity_table_name) ]
+        set s_arr(activity_table_tid) [qss_tid_from_name $s_arr(activity_table_name) ]
+    } 
+    if { $s_arr(task_types_name) ne "" } {
+        # set task_types_tid
+        set s_arr(task_types_tid) [qss_tid_from_name $s_arr(task_types_name) ]
     } 
     if { $s_arr(time_dist_curve_name) ne "" } {
         # set dist_curve_tid
@@ -252,7 +261,7 @@ ad_proc -public acc_fin::scenario_prettify {
     set std_dev_parts [expr { $standard_deviation / 4. } ]
     set outliers [expr { 0.317310507863 / 2. } ]
 
-    if { $time_dist_curve_tid ne "" } {
+    if { $s_arr(time_dist_curve_tid) ne "" } {
         # get time curve into array tc_larr
         set tc_larr(x) [list ]
         set tc_larr(y) [list ]
@@ -310,7 +319,7 @@ ad_proc -public acc_fin::scenario_prettify {
     
     # Make cost_curve_data 
     # Don't support cost_dist_curv_eq for now. Interpreting an equation adds a layer of complexity.
-    if { $cost_dist_curve_tid ne "" } {
+    if { $s_arr(cost_dist_curve_tid) ne "" } {
         set cc_larr(x) [list ]
         set cc_larr(y) [list ]
         set cc_larr(label) [list ]
@@ -363,6 +372,30 @@ ad_proc -public acc_fin::scenario_prettify {
     }
 
     
+    # import task_types_list
+    if { $s_arr(task_types_tid) ne "" } {
+        # load task types table
+        set constants_list [list type dependent_tasks dependent_types name description max_concurrent max_overlapp]
+        set constants_required_list [list type dependent_tasks]
+        foreach column $constants_list {
+            set type_larr($column) [list ]
+        }
+        qss_tid_columns_to_array_of_lists $s_arr(task_types_tid) type_larr $constants_list $constants_required_list $package_id $user_id
+        # filter user input
+        set types_filtered_list [list ]
+        set depnc_filtered_list [list ]
+        foreach type_unfiltered $type_larr(type) {
+            regsub -all -nocase -- {[^a-z0-9,]+} $type_unfiltered {} type
+            lappend types_filtered_list $type
+        }
+        set type_larr(type) $types_filtered_list
+        foreach depnc_unfiltered $type_larr(dependent_tasks) {
+            regsub -all -nocase -- {[^a-z0-9,]+} $depnc_unfiltered {} depnc
+            lappend depnc_filtered_list $depnc
+        }
+        set type_larr(dependent_tasks) $depnc_filtered_list
+    }
+
     # import activity_list
     if { $s_arr(activity_table_id) ne "" } {
         # load activity table
@@ -371,6 +404,10 @@ ad_proc -public acc_fin::scenario_prettify {
         foreach column $constants_list {
             set act_larr($column) [list ]
         }
+        qss_tid_columns_to_array_of_lists $s_arr(activity_table_id) act_larr $constants_list $constants_required_list $package_id $user_id
+        # activity_ref and dependent_tasks are the only required lists. 
+        # Others can be filled by defaults from scalars or activity types (if exists)
+
         # filter user input
         set activities_filtered_list [list ]
         set depnc_filtered_list [list ]
@@ -385,9 +422,6 @@ ad_proc -public acc_fin::scenario_prettify {
         }
         set act_larr(dependent_tasks) $depnc_filtered_list
 
-        set cost_curve_data_lists $cost_dist_curve_tid act_larr $constants_list $constants_required_list $package_id $user_id
-        # activity_ref and dependent_tasks are the only required lists. 
-        # Others can be filled by defaults from scalars or activity types (if exists)
     }
 
 
