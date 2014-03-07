@@ -223,6 +223,20 @@ ad_proc -public acc_fin::scenario_prettify {
         # set dist_curve_tid
         set s_arr(cost_dist_curve_tid) [qss_tid_from_name $s_arr(cost_dist_curve_name) ]
     }
+    if { $s_arr(activity_table_id) ne "" } {
+        # load activity table
+        set act_larr(activity_ref) [list ]
+        set act_larr(predecessors) [list ]
+        set act_larr(time_est_short) [list ]
+########
+        set constants_list [list y x label]
+        set constants_required_list [list y x]
+        set cost_curve_data_lists $cost_dist_curve_tid act_larr $constants_list $constants_required_list $package_id $user_id
+        #act_larr(x), act_larr(y) and optionally act_larr(label) where _larr refers to an array where each value is a list of column data by row 1..n
+
+    }
+
+
     set constants_exist_p 1
     set compute_message_list [list ]
     foreach constant $constants_required_list {
@@ -277,6 +291,7 @@ ad_proc -public acc_fin::scenario_prettify {
         lappend tc_larr(x) [expr { $x + $outliers } ]
         set tc_larr(y) [list $s_arr(time_est_short) $s_arr(time_est_median) $s_arr(time_est_median) $s_arr(time_est_median) $s_arr(time_est_median) $s_arr(time_est_long)]
         set tc_larr(label) [list "min" "avg" "avg" "avg" "avg" "max"]
+
     } elseif { [info exists s_arr(time_est_median) ] } {
         # assume curve is flat
         set standard_deviation 0.682689492137 
@@ -291,6 +306,7 @@ ad_proc -public acc_fin::scenario_prettify {
         lappend tc_larr(x) [expr { $x + $outliers } ]
         set tc_larr(y) [list $s_arr(time_est_median) $s_arr(time_est_median) $s_arr(time_est_median) $s_arr(time_est_median) $s_arr(time_est_median) $s_arr(time_est_median) ]
         set tc_larr(label) [list "avg" "avg" "avg" "avg" "avg" "avg"]
+
     } else {
         # No time defaults.
         # set duration to 1 for limited block feedback.
@@ -331,6 +347,7 @@ ad_proc -public acc_fin::scenario_prettify {
         lappend cc_larr(x) [expr { $x + $outliers } ]
         set cc_larr(y) [list $s_arr(cost_est_low) $s_arr(cost_est_median) $s_arr(cost_est_median) $s_arr(cost_est_median) $s_arr(cost_est_median) $s_arr(cost_est_high)]
         set cc_larr(label) [list "min" "avg" "avg" "avg" "avg" "max"]
+
     } elseif { [info exists s_arr(cost_est_median) ] } {
         # assume curve is flat
         set cc_larr(x) [list $outliers ]
@@ -342,6 +359,7 @@ ad_proc -public acc_fin::scenario_prettify {
         lappend cc_larr(x) [expr { $x + $outliers } ]
         set cc_larr(y) [list $s_arr(cost_est_median) $s_arr(cost_est_median) $s_arr(cost_est_median) $s_arr(cost_est_median) $s_arr(cost_est_median) $s_arr(cost_est_median)]
         set cc_larr(label) [list "avg" "avg" "avg" "avg" "avg" "avg"]
+
     } else {
         # No cost defaults.
         # set duration to 1 for limited block feedback.
@@ -355,7 +373,10 @@ ad_proc -public acc_fin::scenario_prettify {
         # Since no value provided, using percent of maximum cost of 100%
         set cc_larr(y) [list 0. 0.5 0.5 0.5 0.5 1.0]
     }
+
     
+    #### load other reference tables
+
     # handy api ref
     # util_commify_number
     # format "% 8.2f" $num
@@ -377,7 +398,7 @@ ad_proc -public acc_fin::scenario_prettify {
     # default for each acitivity_ref 1
     ## assign an activity_ref one more than the max sequence_num of its dependencies
     
-        
+    
     set act_list [list ]
     foreach {act_unfiltered depnc_unfiltered} $act_depnc_list {
         regsub -all -nocase -- {[^a-z0-9,]+} $depnc_unfiltered {} depnc
