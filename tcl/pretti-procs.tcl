@@ -223,18 +223,6 @@ ad_proc -public acc_fin::scenario_prettify {
         # set dist_curve_tid
         set s_arr(cost_dist_curve_tid) [qss_tid_from_name $s_arr(cost_dist_curve_name) ]
     }
-    if { $s_arr(activity_table_id) ne "" } {
-        # load activity table
-        set act_larr(activity_ref) [list ]
-        set act_larr(predecessors) [list ]
-        set act_larr(time_est_short) [list ]
-########
-        set constants_list [list y x label]
-        set constants_required_list [list y x]
-        set cost_curve_data_lists $cost_dist_curve_tid act_larr $constants_list $constants_required_list $package_id $user_id
-        #act_larr(x), act_larr(y) and optionally act_larr(label) where _larr refers to an array where each value is a list of column data by row 1..n
-
-    }
 
 
     set constants_exist_p 1
@@ -375,6 +363,34 @@ ad_proc -public acc_fin::scenario_prettify {
     }
 
     
+    # import activity_list
+    if { $s_arr(activity_table_id) ne "" } {
+        # load activity table
+        set constants_list [list activity_ref aid_type dependent_tasks name description max_concurrent max_overlap_pct021 time_est_short time_est_median time_est_long time_est_dist_curve_id time_probability_moment cost_est_low cost_est_median cost_est_high cost_est_dist_curve_id cost_probability_moment]
+        set constants_required_list [list activity_ref dependent_tasks]
+        foreach column $constants_list {
+            set act_larr($column) [list ]
+        }
+        # filter user input
+        set activities_filtered_list [list ]
+        set depnc_filtered_list [list ]
+        foreach act_unfiltered $act_larr(activity_ref) {
+            regsub -all -nocase -- {[^a-z0-9,]+} $act_unfiltered {} act
+            lappend activities_filtered_list $act
+        }
+        set act_larr(activity_ref) $activities_filtered_list
+        foreach depnc_unfiltered $act_larr(dependent_tasks) {
+            regsub -all -nocase -- {[^a-z0-9,]+} $depnc_unfiltered {} depnc
+            lappend depnc_filtered_list $depnc
+        }
+        set act_larr(dependent_tasks) $depnc_filtered_list
+
+        set cost_curve_data_lists $cost_dist_curve_tid act_larr $constants_list $constants_required_list $package_id $user_id
+        # activity_ref and dependent_tasks are the only required lists. 
+        # Others can be filled by defaults from scalars or activity types (if exists)
+    }
+
+
     #### load other reference tables
 
     # handy api ref
@@ -383,29 +399,23 @@ ad_proc -public acc_fin::scenario_prettify {
     # f::sum $list
     
     ## # PERT calculations
-    # create activity_list
-    # create arrays of activity columns.
 
     
     # Build activity map table:
-    # activity_ref predecessors 
-    # add: time_est_short time_est_median time_est_long
-    # add: cost_est_low cost_est_median cost_est_high 
-    # if curves are blank, set expected value to (low + 4 * median + high) / 6.
-    # add: time_expected cost_expected
+    # activity_ref dependent_tasks
+    # add: time curve
+    # add: cost curve
+    # add: time_expected cost_expected (based on *_probability_moment)
     
     # build array of activity_ref sequence_num
     # default for each acitivity_ref 1
     ## assign an activity_ref one more than the max sequence_num of its dependencies
     
-    
     set act_list [list ]
-    foreach {act_unfiltered depnc_unfiltered} $act_depnc_list {
-        regsub -all -nocase -- {[^a-z0-9,]+} $depnc_unfiltered {} depnc
-        regsub -all -nocase -- {[^a-z0-9,]+} $act_unfiltered {} act
+    set i 0
+    foreach act $act_larr(activity_ref) {
+        set depnc [lindex $act_larr(dependent_tasks) ]
         # depnc: comma list of dependencies
-        # act: activity
-        lappend act_list $act
         # depnc_arr() list of dependencies
         set depnc_arr($act) [split $depnc ,]
         # calcd_p_arr($act) Q: relative sequence number for $act been calculated?
@@ -413,6 +423,7 @@ ad_proc -public acc_fin::scenario_prettify {
         # act_seq_num_arr relative sequence number of an activity
         set sequence_1 0
         set act_seq_num_arr($act) $sequence_1
+        incr i
     }
     
     # time_expected_arr()
@@ -444,7 +455,7 @@ ad_proc -public acc_fin::scenario_prettify {
     
     # create dependency check equations
     # depnc_eq_arr() is equation that answers question: Are dependencies met for $act?
-    foreach act $act_list {
+    foreach act $act_larr(activity_ref) {
         set eq "1 &&"
         foreach dep $depnc_arr($act) {
             # strings generally are okay to 100,000,000+ chars..
@@ -457,7 +468,7 @@ ad_proc -public acc_fin::scenario_prettify {
     }
     # main process looping
     set all_calced_p 0
-    set activity_count [llength $act_list]
+    set activity_count [llength $act_larr(activity_ref)]
     set i 0
     set act_seq_list_arr($sequence_1) [list ]
     set act_count_of_seq_arr($sequence_1) 0
@@ -466,7 +477,7 @@ ad_proc -public acc_fin::scenario_prettify {
     # act_count_of_seq_arr($seq_num) is the count of activities in sequence_num
     while { !$all_calced_p && $activity_count > $i } {
         set all_calcd_p 1
-        foreach act $act_list {
+        foreach act $act_larr(activity_ref) {
             set dependencies_met_p [expr $depnc_eq_arr($act) ]
             set act_seq_max $sequence_1
             if { $dependencies_met_p && !$calcd_p_arr($act) } {
@@ -524,7 +535,7 @@ ad_proc -public acc_fin::scenario_prettify {
     }
     set dep_met_p 1
     ns_log Notice "acc_fin::scenario_prettify: path_seg_dur_list $path_seg_dur_list"
-    foreach act $act_list {
+    foreach act $act_larr(activity_ref) {
         set $dep_met_p [expr $depnc_eq_arr($act) && $dep_met_p ]
         # ns_log Notice "acc_fin::scenario_prettify: act $act act_seq_num_arr '$act_seq_num_arr($act)'"
         # ns_log Notice "acc_fin::scenario_prettify: act_seq_list_arr '$act_seq_list_arr($act_seq_num_arr($act))' $act_count_of_seq_arr($act_seq_num_arr($act))"
@@ -546,7 +557,7 @@ ad_proc -public acc_fin::scenario_prettify {
     set extractv1_list [lrange $path_seg_dur_sort1_list 0 ${extract_limit}] 
     # act_freq_in_load_cp_alts_arr counts the number of times an activity is in a path  for the most significant CP alternates
     set max_act_count_per_seq 0
-    foreach act $act_list {
+    foreach act $act_larr(activity_ref) {
         set act_freq_in_load_cp_alts_arr($act) 0
         if { $act_count_of_seq_arr($act) > $max_act_count_per_seq } {
             set max_act_count_per_seq $act_count_of_seq_arr($act)
@@ -559,7 +570,7 @@ ad_proc -public acc_fin::scenario_prettify {
         }
     }
     set act_sig_list [list ]
-    foreach act $act_list {
+    foreach act $act_larr(activity_ref) {
         lappend act_sig_list [list $act $act_freq_in_load_cp_alts_arr($act)]
     }
     set act_sig_sorted_list [lsort -decreasing -integer -index 1 $act_sig_list]
@@ -573,7 +584,7 @@ ad_proc -public acc_fin::scenario_prettify {
     # activity_ref act_seq_num_arr has_direct_dependency_p time_expected direct_dependencies_list
     set base_lists [list ]
     
-    foreach act $act_list {
+    foreach act $act_larr(activity_ref) {
         set has_direct_dependency_p [expr { [llength $depnc_arr($act)] > 0 } ]
         set on_critical_path_p [expr { [lsearch -exact $cp_list $act] > -1 } ]
         set on_a_sig_path_p [expr { $act_freq_in_load_cp_alts_arr($act) > $act_median_count } ]
@@ -606,7 +617,7 @@ ad_proc -public acc_fin::scenario_prettify {
     
     
     # build formatting colors
-    set act_count [llength $act_list]
+    set act_count [llength $act_larr(activity_ref)]
     # contrast decreases on up to 50%
     set contrast_step [expr { int( 16 / ( $max_act_count_per_seq / 2 + 1 ) ) } ]
     set hex_list [list 0 1 2 3 4 5 6 7 8 9 a b c d e f]
