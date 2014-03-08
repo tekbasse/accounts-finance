@@ -443,25 +443,26 @@ ad_proc -public acc_fin::scenario_prettify {
     
     # build array of activity_ref sequence_num
     # default for each acitivity_ref 1
-    ## assign an activity_ref one more than the max sequence_num of its dependencies
-    
-    set act_list [list ]
+    # assign an activity_ref one more than the max sequence_num of its dependencies
+    # acitivity_refs are indexes to arrays since no predetermination can be made about act_larr content
     set i 0
+    set sequence_1 0
     foreach act $act_larr(activity_ref) {
         set depnc [lindex $act_larr(dependent_tasks) ]
         # depnc: comma list of dependencies
         # depnc_arr() list of dependencies
         set depnc_arr($act) [split $depnc ,]
-        # calcd_p_arr($act) Q: relative sequence number for $act been calculated?
+        # calcd_p_arr($act) Answers question: Has relative sequence number for $act been calculated?
         set calcd_p_arr($act) 0
-        # act_seq_num_arr relative sequence number of an activity
-        set sequence_1 0
+        # act_seq_num_arr is relative sequence number of an activity. 
         set act_seq_num_arr($act) $sequence_1
         incr i
     }
     
-    # time_expected_arr()
-    # time_est_arr() is a list of short, median, long
+
+    # each element in act_time_est_list is a curve. If curve is blank, the default curve is used.
+    # tc_larr(x) is a list_of_lists , denoting normalized percent of area under curve (p021)
+    # tc_larr(y) is duration value of curve
     foreach act_t_list $act_time_est_list {
         set act [lindex $act_t_list 0]
         set time_est_arr($act) [lrange $act_t_list 1 3]
