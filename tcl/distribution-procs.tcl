@@ -39,23 +39,24 @@ ad_proc -public qaf_y_of_x_dist_curve {
     set count_max [llength $y_x_pair_list]
     set i 0
     set p_test 0.
+    set p [expr { $p + 0. } ]
     while { $i < $count_max && $p_test < $p} {
         set x [lindex $y_x_pair_list $i]
-        set p_test [expr { $x + $p_test } ]
+        set p_test [expr { $x + $p_test + 0. } ]
         incr i 2
     }
     if { $interpolate_p } {
         set x2 $x
         incr i
-        set y2 [lindex $y_x_pair_list $i]
+        set y2 [expr { [lindex $y_x_pair_list $i] + 0. } ]
         incr i -3
-        set x1 [lindex $y_x_pair_list $i]
+        set x1 [expr { [lindex $y_x_pair_list $i] + 0. } ]
         incr i
-        set y1 [lindex $y_x_pair_list $i]
+        set y1 [expr { [lindex $y_x_pair_list $i] + 0. } ]
         set y [expr { ( $y2 - $y1 ) * ( $p - $x1 ) / ( $x2 - $x1) + $y1 } ]
     } else {
         incr i
-        set y [lindex $y_x_pair_list $i]
+        set y [expr { [lindex $y_x_pair_list $i] + 0. } ]
     }
 
     return $y
