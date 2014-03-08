@@ -27,7 +27,39 @@ ad_proc -public qaf_distribution_loops {
 
 }
 
+ad_proc -public qaf_y_of_x_dist_curve {
+    p
+    y_x_pair_list
+    {interpolate_p 0}
+} {
+    returns y where p is in the range of x ie y(p,x).  Where p is some probability between 0 and 1. 
+    Assumes y_x_pair_list is and ordered list of y-x pairs representing a curve. Set interpolate_p to 1
+    to interpolate when p is between two discrete points that represent a continuous curve.
+}  {
+    set count_max [llength $y_x_pair_list]
+    set i 0
+    set p_test 0.
+    while { $i < $count_max && $p_test < $p} {
+        set x [lindex $y_x_pair_list $i]
+        set p_test [expr { $x + $p_test } ]
+        incr i 2
+    }
+    if { $interpolate_p } {
+        set x2 $x
+        incr i
+        set y2 [lindex $y_x_pair_list $i]
+        incr i -3
+        set x1 [lindex $y_x_pair_list $i]
+        incr i
+        set y1 [lindex $y_x_pair_list $i]
+        set y [expr { ( $y2 - $y1 ) * ( $p - $x1 ) / ( $x2 - $x1) + $y1 } ]
+    } else {
+        incr i
+        set y [lindex $y_x_pair_list $i]
+    }
 
+    return $y
+}
 
 ad_proc -public qaf_distribution_points_create {
     distribution_p_list
