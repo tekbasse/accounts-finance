@@ -8,10 +8,13 @@ ad_library {
 namespace eval acc_fin {}
 
 ad_proc -public qaf_distribution_normalize {
-    distribution_lists
+    distribution_lol
+    {x_p "1"}
+    {y_p "0"}
 } {
-    Normalizes area under curve to 1.
+    Normalizes x to 1, or y to 1, or if both x_p and y_p are 1, the area under curve to 1. distribution_lol is a list of lists of x y.
 } {
+    
 
     return $curve_lists
 }
