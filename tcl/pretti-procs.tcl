@@ -319,8 +319,14 @@ ad_proc -public acc_fin::scenario_prettify {
     set tc_larr_len [llength $tc_larr(y)]
     set tc_larr(xy) [list ]
     for {set i 0} {$i < $tc_larr_len } {incr i} {
-        lappend tc_larr(xy) [lindex $tc_larr(x) $i] [lindex $tc_larr(y) $i]
+        set row [list [lindex $tc_larr(x) $i] [lindex $tc_larr(y) $i]]
+        lappend tc_larr(xy) $row
     }
+### check flags if any curves are not normalized in x, normalize to 1 and save as a new table (and update original reference in data: p1, P2 or p3)
+
+### Add option in App to normalize any column to 1, sort any column up/down.
+###   which is handy for most cases. 
+### It cannot be done by default for all cases, because order may already be predetermined.
     
     # Make cost_curve_data 
     # Don't support cost_dist_curv_eq for now. Interpreting an equation adds a layer of complexity.
