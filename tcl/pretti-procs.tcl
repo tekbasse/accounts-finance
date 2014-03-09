@@ -64,7 +64,7 @@ namespace eval acc_fin {}
 #      time_est_dist_curve_id Use this distribution curve instead of the time_est short, median and long values
 #                             Consider using a variation of task_type as a reference
 #      time_est_dist_curv_eq  Use this distribution curve equation instead.
-#      time_probability_moment A percentage (0..1) along the (cumulative) distribution curve.
+#      time_probability_moment A percentage (0..1) along the (cumulative) distribution curve. defaults to 0.5
 
 #      cost_est_low           estimated lowest cost. (Lowest statistical deviation value.)
 #      cost_est_median        estimated median cost. (Statistically, half of deviations are more or less than this.)
@@ -316,6 +316,11 @@ ad_proc -public acc_fin::scenario_prettify {
         lappend tc_larr(x) [expr { $x + $outliers } ]
         set tc_larr(y) [list 1. 1. 1. 1. 1. 1.]
     }
+    set tc_larr_len [llength $tc_larr(y)]
+    set tc_larr(xy) [list ]
+    for {set i 0} {$i < $tc_larr_len } {incr i} {
+        lappend tc_larr(xy) [lindex $tc_larr(x) $i] [lindex $tc_larr(y) $i]
+    }
     
     # Make cost_curve_data 
     # Don't support cost_dist_curv_eq for now. Interpreting an equation adds a layer of complexity.
@@ -463,13 +468,9 @@ ad_proc -public acc_fin::scenario_prettify {
     # each element in act_time_est_list is a curve. If curve is blank, the default curve is used.
     # tc_larr(x) is a list_of_lists , denoting normalized percent of area under curve (p021)
     # tc_larr(y) is duration value of curve
-    foreach act_t_list $act_time_est_list {
-        set act [lindex $act_t_list 0]
-        set time_est_arr($act) [lrange $act_t_list 1 3]
-        set short [lindex $act_t_list 1]
-        set med [lindex $act_t_list 2]
-        set long [lindex $act_t_list 3]
-        set time_expected_arr($act) [expr { ( $short + 4 * $med + $long ) / 6. } ]
+    foreach act $act_larr(activity_ref) {
+    #    set time_expected_arr($act) [expr { ( $short + 4 * $med + $long ) / 6. } ]
+        set time_expected_arr($act) [qaf_y_of_x_dist_curve $time_probability_moment $tc_larr(xy) 0]
         set path_dur_arr($act) $time_expected_arr($act)
     }
     
