@@ -14,9 +14,58 @@ ad_proc -public qaf_distribution_normalize {
 } {
     Normalizes x to 1, or y to 1, or if both x_p and y_p are 1, the area under curve to 1. distribution_lol is a list of lists of x y.
 } {
+    if { $x_p ne "0" } {
+        set x_p 1
+    }
+    if { $y_p ne "1" } {
+        set y_p 0
+    }
+    if { $x_p ||$y_p } {
+        set d_new_lol [list ]
+        if { $x_p } {
+            # normalize x to 1
+            set x_list [list ]
+            foreach row $distribution_lol {
+                lappend x_list [lindex $row 0]
+                
+            }
+            set denom [f::sum $x_list ]
+            foreach row $distribution_lol {
+                set row2_list [list [expr { [lindex $row 0] / ( 1. * $denom ) } ] [lindex $row 1]]
+                lappend d_new_lol $row2_list
+            }
+        } elseif { $y_p } {
+            # normalize y to 1
+            set y_list [list ]
+            foreach row $distribution_lol {
+                lappend y_list [lindex $row 1]
+            }
+            set denom [f::sum $y_list ]
+            foreach row $distribution_lol {
+                row2_list [list [lindex $row 0] [expr { [lindex $row 1] / ( 1. * $denom ) } ]]
+                lappend d_new_lol $row2_list
+            }
+        }
+        if { $x_p && $y_p } {
+            # x has been normalized to 1, now adjust y so that area under curve is 1
+            set xy_list [list ]
+            set xy2_list [list ]
+            foreach row $d_new_lol {
+                lappend xy_list [expr { 1. * [lindex $row 0] * [lindex $row 1] } ]
+            }
+            set denom [f::sum $xy_list ]
+            set d2_new_lol [list ]
+            foreach row $d_new_lol {
+                set row3_list [list [lindex $row 0] [expr { [lindex $row 1] / ( 1. * $denom ) } ] ]
+                lappend d2_new_lol $row3_list 
+            }
+            set d2_new_lol $d3_new_lol
+        }
     
-
-    return $curve_lists
+    } else {
+        set d2_new_lol $distribution_lol
+    }
+    return $d2_new_lol
 }
 
 
