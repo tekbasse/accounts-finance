@@ -48,18 +48,19 @@ ad_proc -public qaf_distribution_normalize {
         }
         if { $x_p && $y_p } {
             # x has been normalized to 1, now adjust y so that area under curve is 1
+            # assumes area with each point is x * y
             set xy_list [list ]
-            set xy2_list [list ]
             foreach row $d_new_lol {
                 lappend xy_list [expr { 1. * [lindex $row 0] * [lindex $row 1] } ]
             }
-            set denom [f::sum $xy_list ]
+            set denom [expr { 1. * [f::sum $xy_list ] } ]
             set d2_new_lol [list ]
             foreach row $d_new_lol {
-                set row3_list [list [lindex $row 0] [expr { [lindex $row 1] / ( 1. * $denom ) } ] ]
+                set row3_list [list [lindex $row 0] [expr { [lindex $row 1] / $denom } ] ]
                 lappend d2_new_lol $row3_list 
             }
-            set d2_new_lol $d3_new_lol
+        } else {
+            set d2_new_lol $d_new_lol
         }
     
     } else {
@@ -68,16 +69,6 @@ ad_proc -public qaf_distribution_normalize {
     return $d2_new_lol
 }
 
-
-ad_proc -public qaf_distribution_loops {
-    distribution_pair_list
-    multiplicand
-} {
-    given a list of distribution pairs ( )
-} {
-
-
-}
 
 ad_proc -public qaf_y_of_x_dist_curve {
     p

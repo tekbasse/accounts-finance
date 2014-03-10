@@ -537,7 +537,7 @@ switch -exact -- $mode {
         set form_html [qf_read]
     }
     c {
-        #  compute... compute/process (and cache) output, present post_calc results
+        #  compute... compute/process and write output as a new table, present post_calc results
         ns_log Notice "pert.tcl:  mode = compute"
         #requires scenario_tid
         # given scenario_tid 
