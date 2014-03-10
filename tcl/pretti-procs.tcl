@@ -279,41 +279,50 @@ ad_proc -public acc_fin::scenario_prettify {
         # per http://en.wikipedia.org/wiki/Program_Evaluation_and_Review_Technique
         
         # s_arr(time_est_short time_est_median time_est_long  )
-        set tc_larr(x) [list $outliers ]
-        for {set i 1} {$i < 5} {incr i} {
-            set x [expr { $outliers + $i * $st_dev_parts } ]
-            lappend tc_larr(x) $x
-        }
+# don't add the x values like this:
+#        set tc_larr(x) [list $outliers ]
+#        for {set i 1} {$i < 5} {incr i} {
+#            set x [expr { $outliers + $i * $st_dev_parts } ]
+#            lappend tc_larr(x) $x
+#        }
         # last x should be 1.0
-        lappend tc_larr(x) [expr { $x + $outliers } ]
+#        lappend tc_larr(x) [expr { $x + $outliers } ]
+
+        # Just include the part of x under the area of each y
+        set tc_larr(x) [list $outliers $st_dev_parts $st_dev_parts $st_dev_parts $st_dev_parts $outliers]
+
         set tc_larr(y) [list $s_arr(time_est_short) $s_arr(time_est_median) $s_arr(time_est_median) $s_arr(time_est_median) $s_arr(time_est_median) $s_arr(time_est_long)]
         set tc_larr(label) [list "min" "avg" "avg" "avg" "avg" "max"]
 
     } elseif { [info exists s_arr(time_est_median) ] } {
         # assume curve is flat
-        set standard_deviation 0.682689492137 
-        set std_dev_parts [expr { $standard_deviation / 4. } ]
-        set outliers [expr { 0.317310507863 / 2. } ]
-        set tc_larr(x) [list $outliers ]
-        for {set i 1} {$i < 5} {incr i} {
-            set x [expr { $outliers + $i * $st_dev_parts } ]
-            lappend tc_larr(x) $x
-        }
+ #       set standard_deviation 0.682689492137 
+ #       set std_dev_parts [expr { $standard_deviation / 4. } ]
+ #       set outliers [expr { 0.317310507863 / 2. } ]
+#        set tc_larr(x) [list $outliers ]
+#        for {set i 1} {$i < 5} {incr i} {
+#            set x [expr { $outliers + $i * $st_dev_parts } ]
+#            lappend tc_larr(x) $x
+#        }
         # last x should be 1.0
-        lappend tc_larr(x) [expr { $x + $outliers } ]
+#        lappend tc_larr(x) [expr { $x + $outliers } ]
+
+        set tc_larr(x) [list $outliers $st_dev_parts $st_dev_parts $st_dev_parts $st_dev_parts $outliers]
         set tc_larr(y) [list $s_arr(time_est_median) $s_arr(time_est_median) $s_arr(time_est_median) $s_arr(time_est_median) $s_arr(time_est_median) $s_arr(time_est_median) ]
         set tc_larr(label) [list "avg" "avg" "avg" "avg" "avg" "avg"]
 
     } else {
         # No time defaults.
         # set duration to 1 for limited block feedback.
-        set tc_larr(x) [list $outliers ]
-        for {set i 1} {$i < 5} {incr i} {
-            set x [expr { $outliers + $i * $st_dev_parts } ]
-            lappend tc_larr(x) $x
-        }
+#        set tc_larr(x) [list $outliers ]
+#        for {set i 1} {$i < 5} {incr i} {
+#            set x [expr { $outliers + $i * $st_dev_parts } ]
+#            lappend tc_larr(x) $x
+#        }
         # last x should be 1.0
-        lappend tc_larr(x) [expr { $x + $outliers } ]
+#        lappend tc_larr(x) [expr { $x + $outliers } ]
+
+        set tc_larr(x) [list $outliers $st_dev_parts $st_dev_parts $st_dev_parts $st_dev_parts $outliers]
         set tc_larr(y) [list 1. 1. 1. 1. 1. 1.]
     }
     set tc_larr_len [llength $tc_larr(y)]
@@ -344,40 +353,46 @@ ad_proc -public acc_fin::scenario_prettify {
         # set min,avg,max values available 
         
         # cost_expected = ( cost_low + 4 * cost_median + cost_high ) / 6.
-        
+       
+        set cc_larr(x) [list $outliers $st_dev_parts $st_dev_parts $st_dev_parts $st_dev_parts $outliers]
+
         # s_arr(cost_est_low cost_est_median cost_est_high )
-        set cc_larr(x) [list $outliers ]
-        for {set i 1} {$i < 5} {incr i} {
-            set x [expr { $outliers + $i * $st_dev_parts } ]
-            lappend cc_larr(x) $x
-        }
+#        set cc_larr(x) [list $outliers ]
+#        for {set i 1} {$i < 5} {incr i} {
+#            set x [expr { $outliers + $i * $st_dev_parts } ]
+#            lappend cc_larr(x) $x
+#        }
         # last x should be 1.0
-        lappend cc_larr(x) [expr { $x + $outliers } ]
+#        lappend cc_larr(x) [expr { $x + $outliers } ]
         set cc_larr(y) [list $s_arr(cost_est_low) $s_arr(cost_est_median) $s_arr(cost_est_median) $s_arr(cost_est_median) $s_arr(cost_est_median) $s_arr(cost_est_high)]
         set cc_larr(label) [list "min" "avg" "avg" "avg" "avg" "max"]
 
     } elseif { [info exists s_arr(cost_est_median) ] } {
         # assume curve is flat
-        set cc_larr(x) [list $outliers ]
-        for {set i 1} {$i < 5} {incr i} {
-            set x [expr { $outliers + $i * $st_dev_parts } ]
-            lappend cc_larr(x) $x
-        }
+ 
+        set cc_larr(x) [list $outliers $st_dev_parts $st_dev_parts $st_dev_parts $st_dev_parts $outliers]
+#        set cc_larr(x) [list $outliers ]
+#        for {set i 1} {$i < 5} {incr i} {
+#            set x [expr { $outliers + $i * $st_dev_parts } ]
+#            lappend cc_larr(x) $x
+#        }
         # last x should be 1.0
-        lappend cc_larr(x) [expr { $x + $outliers } ]
+#        lappend cc_larr(x) [expr { $x + $outliers } ]
         set cc_larr(y) [list $s_arr(cost_est_median) $s_arr(cost_est_median) $s_arr(cost_est_median) $s_arr(cost_est_median) $s_arr(cost_est_median) $s_arr(cost_est_median)]
         set cc_larr(label) [list "avg" "avg" "avg" "avg" "avg" "avg"]
 
     } else {
         # No cost defaults.
         # set duration to 1 for limited block feedback.
-        set cc_larr(x) [list $outliers ]
-        for {set i 1} {$i < 5} {incr i} {
-            set x [expr { $outliers + $i * $st_dev_parts } ]
-            lappend cc_larr(x) $x
-        }
+        set cc_larr(x) [list $outliers $st_dev_parts $st_dev_parts $st_dev_parts $st_dev_parts $outliers]
+
+#        set cc_larr(x) [list $outliers ]
+#        for {set i 1} {$i < 5} {incr i} {
+#            set x [expr { $outliers + $i * $st_dev_parts } ]
+#            lappend cc_larr(x) $x
+#        }
         # last x should be 1.0
-        lappend cc_larr(x) [expr { $x + $outliers } ]
+#        lappend cc_larr(x) [expr { $x + $outliers } ]
         # Since no value provided, using percent of maximum cost of 100%
         set cc_larr(y) [list 0. 0.5 0.5 0.5 0.5 1.0]
     }
