@@ -34,13 +34,18 @@ namespace eval acc_fin {}
 
 # p3 Task Types:   
 #      type
-#      dependent_tasks      These are other tasks referenced in p2
 #      dependent_types      Other dependent types required by this type. (possible reference collisions. type_refs != activity_refs.
-#####                       How to handle nomenclature collisons? 
+#
+#####                       dependent_types should be checked against activity_dependents' types 
+#                           to confirm that all dependencies are satisified.
 #      name
 #      description
 #      max_concurrent       (as an integer, blank = no limit)
 #      max_overlapp_pct021  (as a percentage from 0 to 1, blank = 1)
+#   deprecated:
+#      dependent_tasks      These are other tasks referenced in p2
+#                           How to handle nomenclature collisons? 
+#                           They only collide if p3.dependent_tasks are referenced; and there's no need for this complexity. REMOVED.
 
 # p2 Task Network
 #      activity_ref           reference for an activity, a unique task id, using "activity" to differentiate between table_id's tid 
@@ -212,32 +217,32 @@ ad_proc -public acc_fin::scenario_prettify {
     # activity_ref predecessors time_est_short time_est_median time_est_long cost_est_low cost_est_median cost_est_high time_dist_curv_eq cost_dist_curv_eq
     set error_fail 0
     
-    # get scenario into array s_arr
+    # get scenario into array p1_arr
     set constants_list [list activity_table_tid activity_table_name task_types_tid task_types_name time_dist_curve_name time_dist_curve_tid cost_dist_curve_name cost_dist_curve_tid time_est_short time_est_median time_est_long time_probability_moment cost_est_low cost_est_median cost_est_high cost_probability_moment]
     set constants_required_list [list activity_table_tid ]
-    qss_tid_scalars_to_array $scenario_tid s_arr $constants_list $constants_required_list $package_id $user_id
-    if { $s_arr(activity_table_name) ne "" } {
+    qss_tid_scalars_to_array $scenario_tid p1_arr $constants_list $constants_required_list $package_id $user_id
+    if { $p1_arr(activity_table_name) ne "" } {
         # set activity_table_tid
-        set s_arr(activity_table_tid) [qss_tid_from_name $s_arr(activity_table_name) ]
+        set p1_arr(activity_table_tid) [qss_tid_from_name $p1_arr(activity_table_name) ]
     } 
-    if { $s_arr(task_types_name) ne "" } {
+    if { $p1_arr(task_types_name) ne "" } {
         # set task_types_tid
-        set s_arr(task_types_tid) [qss_tid_from_name $s_arr(task_types_name) ]
+        set p1_arr(task_types_tid) [qss_tid_from_name $p1_arr(task_types_name) ]
     } 
-    if { $s_arr(time_dist_curve_name) ne "" } {
+    if { $p1_arr(time_dist_curve_name) ne "" } {
         # set dist_curve_tid
-        set s_arr(time_dist_curve_tid) [qss_tid_from_name $s_arr(time_dist_curve_name) ]
+        set p1_arr(time_dist_curve_tid) [qss_tid_from_name $p1_arr(time_dist_curve_name) ]
     }
-    if { $s_arr(cost_dist_curve_name) ne "" } {
+    if { $p1_arr(cost_dist_curve_name) ne "" } {
         # set dist_curve_tid
-        set s_arr(cost_dist_curve_tid) [qss_tid_from_name $s_arr(cost_dist_curve_name) ]
+        set p1_arr(cost_dist_curve_tid) [qss_tid_from_name $p1_arr(cost_dist_curve_name) ]
     }
 
 
     set constants_exist_p 1
     set compute_message_list [list ]
     foreach constant $constants_required_list {
-        if { $s_arr($constant) eq "" } {
+        if { $p1_arr($constant) eq "" } {
             set constants_exist_p 0
             lappend compute_message_list "Initial condition constant '${constant}' is required but does not exist."
             set error_fail 1
@@ -261,7 +266,7 @@ ad_proc -public acc_fin::scenario_prettify {
     set std_dev_parts [expr { $standard_deviation / 4. } ]
     set outliers [expr { 0.317310507863 / 2. } ]
 
-    if { $s_arr(time_dist_curve_tid) ne "" } {
+    if { $p1_arr(time_dist_curve_tid) ne "" } {
         # get time curve into array tc_larr
         set tc_larr(x) [list ]
         set tc_larr(y) [list ]
@@ -271,14 +276,14 @@ ad_proc -public acc_fin::scenario_prettify {
         qss_tid_columns_to_array_of_lists $time_dist_curve_tid tc_larr $constants_list $constants_required_list $package_id $user_id
         #tc_larr(x), tc_larr(y) and optionally tc_larr(label) where _larr refers to an array where each value is a list of column data by row 1..n
         
-    } elseif { [info exists s_arr(time_est_short)] && [info exists s_arr(time_est_median)] && [info exists s_arr(time_est_long) ] } {
+    } elseif { [info exists p1_arr(time_est_short)] && [info exists p1_arr(time_est_median)] && [info exists p1_arr(time_est_long) ] } {
         # Geometric average requires all three values
         # set min,avg,max values available
         
         # time_expected = ( time_optimistic + 4 * time_most_likely + time_pessimistic ) / 6.
         # per http://en.wikipedia.org/wiki/Program_Evaluation_and_Review_Technique
         
-        # s_arr(time_est_short time_est_median time_est_long  )
+        # p1_arr(time_est_short time_est_median time_est_long  )
 # don't add the x values like this:
 #        set tc_larr(x) [list $outliers ]
 #        for {set i 1} {$i < 5} {incr i} {
@@ -291,10 +296,10 @@ ad_proc -public acc_fin::scenario_prettify {
         # Just include the part of x under the area of each y
         set tc_larr(x) [list $outliers $st_dev_parts $st_dev_parts $st_dev_parts $st_dev_parts $outliers]
 
-        set tc_larr(y) [list $s_arr(time_est_short) $s_arr(time_est_median) $s_arr(time_est_median) $s_arr(time_est_median) $s_arr(time_est_median) $s_arr(time_est_long)]
+        set tc_larr(y) [list $p1_arr(time_est_short) $p1_arr(time_est_median) $p1_arr(time_est_median) $p1_arr(time_est_median) $p1_arr(time_est_median) $p1_arr(time_est_long)]
         set tc_larr(label) [list "min" "avg" "avg" "avg" "avg" "max"]
 
-    } elseif { [info exists s_arr(time_est_median) ] } {
+    } elseif { [info exists p1_arr(time_est_median) ] } {
         # assume curve is flat
  #       set standard_deviation 0.682689492137 
  #       set std_dev_parts [expr { $standard_deviation / 4. } ]
@@ -308,7 +313,7 @@ ad_proc -public acc_fin::scenario_prettify {
 #        lappend tc_larr(x) [expr { $x + $outliers } ]
 
         set tc_larr(x) [list $outliers $st_dev_parts $st_dev_parts $st_dev_parts $st_dev_parts $outliers]
-        set tc_larr(y) [list $s_arr(time_est_median) $s_arr(time_est_median) $s_arr(time_est_median) $s_arr(time_est_median) $s_arr(time_est_median) $s_arr(time_est_median) ]
+        set tc_larr(y) [list $p1_arr(time_est_median) $p1_arr(time_est_median) $p1_arr(time_est_median) $p1_arr(time_est_median) $p1_arr(time_est_median) $p1_arr(time_est_median) ]
         set tc_larr(label) [list "avg" "avg" "avg" "avg" "avg" "avg"]
 
     } else {
@@ -339,7 +344,7 @@ ad_proc -public acc_fin::scenario_prettify {
     
     # Make cost_curve_data 
     # Don't support cost_dist_curv_eq for now. Interpreting an equation adds a layer of complexity.
-    if { $s_arr(cost_dist_curve_tid) ne "" } {
+    if { $p1_arr(cost_dist_curve_tid) ne "" } {
         set cc_larr(x) [list ]
         set cc_larr(y) [list ]
         set cc_larr(label) [list ]
@@ -348,7 +353,7 @@ ad_proc -public acc_fin::scenario_prettify {
         set cost_curve_data_lists $cost_dist_curve_tid cc_larr $constants_list $constants_required_list $package_id $user_id
         #cc_larr(x), cc_larr(y) and optionally cc_larr(label) where _larr refers to an array where each value is a list of column data by row 1..n
         
-    } elseif { [info exists s_arr(cost_est_low)] && [info exists s_arr(cost_est_median)] && [info exists s_arr(cost_est_high)] } {
+    } elseif { [info exists p1_arr(cost_est_low)] && [info exists p1_arr(cost_est_median)] && [info exists p1_arr(cost_est_high)] } {
         # Geometric average requires all three values
         # set min,avg,max values available 
         
@@ -356,7 +361,7 @@ ad_proc -public acc_fin::scenario_prettify {
        
         set cc_larr(x) [list $outliers $st_dev_parts $st_dev_parts $st_dev_parts $st_dev_parts $outliers]
 
-        # s_arr(cost_est_low cost_est_median cost_est_high )
+        # p1_arr(cost_est_low cost_est_median cost_est_high )
 #        set cc_larr(x) [list $outliers ]
 #        for {set i 1} {$i < 5} {incr i} {
 #            set x [expr { $outliers + $i * $st_dev_parts } ]
@@ -364,10 +369,10 @@ ad_proc -public acc_fin::scenario_prettify {
 #        }
         # last x should be 1.0
 #        lappend cc_larr(x) [expr { $x + $outliers } ]
-        set cc_larr(y) [list $s_arr(cost_est_low) $s_arr(cost_est_median) $s_arr(cost_est_median) $s_arr(cost_est_median) $s_arr(cost_est_median) $s_arr(cost_est_high)]
+        set cc_larr(y) [list $p1_arr(cost_est_low) $p1_arr(cost_est_median) $p1_arr(cost_est_median) $p1_arr(cost_est_median) $p1_arr(cost_est_median) $p1_arr(cost_est_high)]
         set cc_larr(label) [list "min" "avg" "avg" "avg" "avg" "max"]
 
-    } elseif { [info exists s_arr(cost_est_median) ] } {
+    } elseif { [info exists p1_arr(cost_est_median) ] } {
         # assume curve is flat
  
         set cc_larr(x) [list $outliers $st_dev_parts $st_dev_parts $st_dev_parts $st_dev_parts $outliers]
@@ -378,7 +383,7 @@ ad_proc -public acc_fin::scenario_prettify {
 #        }
         # last x should be 1.0
 #        lappend cc_larr(x) [expr { $x + $outliers } ]
-        set cc_larr(y) [list $s_arr(cost_est_median) $s_arr(cost_est_median) $s_arr(cost_est_median) $s_arr(cost_est_median) $s_arr(cost_est_median) $s_arr(cost_est_median)]
+        set cc_larr(y) [list $p1_arr(cost_est_median) $p1_arr(cost_est_median) $p1_arr(cost_est_median) $p1_arr(cost_est_median) $p1_arr(cost_est_median) $p1_arr(cost_est_median)]
         set cc_larr(label) [list "avg" "avg" "avg" "avg" "avg" "avg"]
 
     } else {
@@ -399,14 +404,14 @@ ad_proc -public acc_fin::scenario_prettify {
 
     
     # import task_types_list
-    if { $s_arr(task_types_tid) ne "" } {
+    if { $p1_arr(task_types_tid) ne "" } {
         # load task types table
         set constants_list [list type dependent_tasks dependent_types name description max_concurrent max_overlapp]
         set constants_required_list [list type dependent_tasks]
         foreach column $constants_list {
             set type_larr($column) [list ]
         }
-        qss_tid_columns_to_array_of_lists $s_arr(task_types_tid) type_larr $constants_list $constants_required_list $package_id $user_id
+        qss_tid_columns_to_array_of_lists $p1_arr(task_types_tid) type_larr $constants_list $constants_required_list $package_id $user_id
         # filter user input
         set types_filtered_list [list ]
         set depnc_filtered_list [list ]
@@ -423,14 +428,14 @@ ad_proc -public acc_fin::scenario_prettify {
     }
 
     # import activity_list
-    if { $s_arr(activity_table_id) ne "" } {
+    if { $p1_arr(activity_table_id) ne "" } {
         # load activity table
         set constants_list [list activity_ref aid_type dependent_tasks name description max_concurrent max_overlap_pct021 time_est_short time_est_median time_est_long time_est_dist_curve_id time_probability_moment cost_est_low cost_est_median cost_est_high cost_est_dist_curve_id cost_probability_moment]
         set constants_required_list [list activity_ref dependent_tasks]
         foreach column $constants_list {
             set act_larr($column) [list ]
         }
-        qss_tid_columns_to_array_of_lists $s_arr(activity_table_id) act_larr $constants_list $constants_required_list $package_id $user_id
+        qss_tid_columns_to_array_of_lists $p1_arr(activity_table_id) act_larr $constants_list $constants_required_list $package_id $user_id
         # activity_ref and dependent_tasks are the only required lists. 
         # Others can be filled by defaults from scalars or activity types (if exists)
 
@@ -542,7 +547,7 @@ ad_proc -public acc_fin::scenario_prettify {
         set tcn_larr($act) $tc_larr(xy)
     }
     # Calculate the default time_expected
-    set time_expected_arr($act) [qaf_y_of_x_dist_curve $s_arr(time_probability_moment) $tc_larr(xy) 0]
+    set time_expected_arr($act) [qaf_y_of_x_dist_curve $p1_arr(time_probability_moment) $tc_larr(xy) 0]
 
 
 
@@ -815,13 +820,13 @@ ad_proc -public acc_fin::scenario_prettify {
     
     
     # the_time Time calculation completed
-    set s_arr(the_time) [clock format [clock seconds] -format "%Y %b %d %H:%M:%S"]
+    set p1_arr(the_time) [clock format [clock seconds] -format "%Y %b %d %H:%M:%S"]
     
     # html
     set html_arr(apt) "<h3>Computation report</h3>"
     
     append html_arr(apt) [qss_list_of_lists_to_html_table $table_value_lists $table_attribute_list $table_formatting_lists]
-    append html_arr(apt) "Completed $s_arr(the_time)"
+    append html_arr(apt) "Completed $p1_arr(the_time)"
     append computation_report_html $html_arr(apt)
     
     
