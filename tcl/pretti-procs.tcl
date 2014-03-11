@@ -492,6 +492,7 @@ ad_proc -public acc_fin::scenario_prettify {
     foreach act $act_larr(activity_ref) {
     #    set time_expected_arr($act) [expr { ( $short + 4 * $med + $long ) / 6. } ]
         set time_expected_arr($act) [qaf_y_of_x_dist_curve $time_probability_moment $tc_larr(xy) 0]
+        # set default of path_durations
         set path_dur_arr($act) $time_expected_arr($act)
     }
     
@@ -515,6 +516,7 @@ ad_proc -public acc_fin::scenario_prettify {
     foreach act $act_larr(activity_ref) {
         set eq "1 &&"
         foreach dep $depnc_arr($act) {
+            # CODING NOTE:
             # strings generally are okay to 100,000,000+ chars..
             # considering reducing size of calcd_p_arr to increase capacity
             # or switch to manually calculate each incompletely calced network
