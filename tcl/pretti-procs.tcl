@@ -171,6 +171,84 @@ ad_proc -public acc_fin::pretti_ck_lol {
     return $valid_p
 }
 
+ad_proc -private acc_fin::import_curve {
+    curve_array_name
+    minimum
+    average
+    maximum
+    xylabel_lists
+    instance_id 
+    user_id
+} {
+    Converts curve data to standard representation for PRETTI processing. 
+    1. If a curve exists in curve_array_name, use it. 
+    2. If a minimum, average, and maximum is available, make a curve of it. 
+    3. if an average value is available, make a curve of it, 
+    4. if an ordered list of lists x,y,label exists, use it as a fallback default, otherwise 
+    5. return a representation of a normalized curve.
+} {
+    upvar $curve_array_name c_larr
+    set standard_deviation 0.682689492137 
+    set std_dev_parts [expr { $standard_deviation / 4. } ]
+    set outliers [expr { 0.317310507863 / 2. } ]
+    # 1. If a curve exists in curve_array_name, use it. 
+    set c_larr_x_len [llength $c_larr(x)]
+    set c_larr_y_len [llength $c_larr(y)]
+    set c_larr_label_len [llength $c_larr(label) ]
+
+    if { $c_larr_y_len > 0 } {
+        # curve exists. 
+        set c_lists [list ]
+        if { $c_larr_label_len > 0 } {
+            for {set i 0} {$i < $c_larr_y_len } {incr i} {
+                set row [list [lindex $c_larr(x) $i] [lindex $c_larr(y) $i] [lindex $c_larr(label) $i] ]
+                lappend c_lists $row
+            }
+        } else {
+            for {set i 0} {$i < $c_larr_y_len } {incr i} {
+                set row [list [lindex $c_larr(x) $i] [lindex $c_larr(y) $i]]
+                lappend c_lists $row
+            }
+        }
+        
+    } elseif { $minimum ne "" && $average ne "" && $maximum ne "" } {
+        # min,avg,max values available
+        # Geometric average requires all three values
+        
+        # time_expected = ( time_optimistic + 4 * time_most_likely + time_pessimistic ) / 6.
+        # per http://en.wikipedia.org/wiki/Program_Evaluation_and_Review_Technique
+        
+        # Just include the part of x under the area of each y
+        set c_x [list $outliers $st_dev_parts $st_dev_parts $st_dev_parts $st_dev_parts $outliers]
+
+        set c_y [list $p1_arr(time_est_short) $p1_arr(time_est_median) $p1_arr(time_est_median) $p1_arr(time_est_median) $p1_arr(time_est_median) $p1_arr(time_est_long)]
+        set c_label [list "min" "avg" "avg" "avg" "avg" "max"]
+        set c_lists [list ]
+        for {set i 0} {$i < $c_larr_y_len } {incr i} {
+            set row [list [lindex $c_x $i] [lindex $c_y $i] [lindex $c_label $i]]
+            lappend c_lists $row
+        }
+
+
+    } elseif { [info exists p1_arr(time_est_median) ] } {
+        # assume curve is flat
+
+        set tc_larr(x) [list $outliers $st_dev_parts $st_dev_parts $st_dev_parts $st_dev_parts $outliers]
+        set tc_larr(y) [list $p1_arr(time_est_median) $p1_arr(time_est_median) $p1_arr(time_est_median) $p1_arr(time_est_median) $p1_arr(time_est_median) $p1_arr(time_est_median) ]
+        set tc_larr(label) [list "avg" "avg" "avg" "avg" "avg" "avg"]
+
+    } else {
+        # No time defaults.
+        # set duration to 1 for limited block feedback.
+
+        set tc_larr(x) [list $outliers $st_dev_parts $st_dev_parts $st_dev_parts $st_dev_parts $outliers]
+        set tc_larr(y) [list 1. 1. 1. 1. 1. 1.]
+    }
+
+    # Return an ordered list of lists representing a curve
+    return $c_lists
+}
+
 
 ad_proc -public acc_fin::scenario_prettify {
     scenario_list_of_lists
@@ -496,61 +574,54 @@ ad_proc -public acc_fin::scenario_prettify {
     # tc_larr(y) is duration value of curve
     set i 0
     foreach act $p2_larr(activity_ref) {
-    #    set time_expected_arr($act) [expr { ( $short + 4 * $med + $long ) / 6. } ]
-
+        
         # If act has a info for calculating a curve, get it
 
-    set has_act_tc_larr_p 1
-    if { $p2_larr(time_dist_curve_tid) ne "" } {
-        # get time curve into array tc_larr
-        set act_tc_larr(x) [list ]
-        set act_tc_larr(y) [list ]
-        set act_tc_larr(label) [list ]
-        set constants_list [list y x label]
-        set constants_required_list [list y x]
-        qss_tid_columns_to_array_of_lists $time_dist_curve_tid act_tc_larr $constants_list $constants_required_list $package_id $user_id
-
-    } elseif { [info exists act_arr(time_est_short)] && [info exists act_arr(time_est_median)] && [info exists act_arr(time_est_long) ] } {
-        # Geometric average requires all three values
-        # set min,avg,max values available
-        # Just include the part of x under the area of each y
-        set act_tc_larr(x) [list $outliers $st_dev_parts $st_dev_parts $st_dev_parts $st_dev_parts $outliers]
-
-        set act_tc_larr(y) [list $act_arr(time_est_short) $act_arr(time_est_median) $act_arr(time_est_median) $act_arr(time_est_median) $act_arr(time_est_median) $act_arr(time_est_long)]
-        set act_tc_larr(label) [list "min" "avg" "avg" "avg" "avg" "max"]
-
-    } elseif { [info exists act_arr(time_est_median) ] } {
-        # assume curve is flat
-        set act_tc_larr(x) [list $outliers $st_dev_parts $st_dev_parts $st_dev_parts $st_dev_parts $outliers]
-        set act_tc_larr(y) [list $act_arr(time_est_short) $act_arr(time_est_median) $act_arr(time_est_median) $act_arr(time_est_median) $act_arr(time_est_median) $act_arr(time_est_long)]
-        set act_tc_larr(label) [list "avg" "avg" "avg" "avg" "avg" "avg"]
-
-    } else {
-        # No time defaults.
-        set has_act_tc_larr_p 0
-    }
-    if { $has_act_tc_larr_p } {
-        set act_tc_larr_len [llength $act_tc_larr(y)]
-        set act_tc_larr(xy) [list ]
-        for {set i 0} {$i < $act_tc_larr_len } {incr i} {
-            set row [list [lindex $act_tc_larr(x) $i] [lindex $act_tc_larr(y) $i]]
-            lappend act_tc_larr(xy) $row
+        # More cases have act_tc_larr, so default to 1
+        set has_act_tc_larr_p 1
+        set act_time_est_list [lindex $p2_larr(time_dist_curve_tid) $i]
+        if { $act_time_est_list ne "" } {
+            # get time curve into array tc_larr
+            # use tempoary arr act_tc_larr to pass info from qss_*
+            set act_tc_larr(x) [list ]
+            set act_tc_larr(y) [list ]
+            set act_tc_larr(label) [list ]
+            set constants_list [list y x label]
+            set constants_required_list [list y x]
+            qss_tid_columns_to_array_of_lists $time_dist_curve_tid act_tc_larr $constants_list $constants_required_list $package_id $user_id
+            
+        } elseif { [llength $tc_larr(y) > 0] } {
+            # If there is a default, use it
+            set act_tc_larr(x) $tc_larr(x)
+            set act_tc_larr(y) $tc_larr(y)
+            set act_tc_larr(label) $tc_larr(label)
+            
+        } else {
+            # No time defaults.
+            set has_act_tc_larr_p 0
         }
-        # Set the curve for this act
-
-        set tcn_larr($act) $act_tc_larr(xy)
-    } else {
-        # use a default curve for this act
-
-#### this should check to see if activity type has a dist_curve before using the default...
-
-        set tcn_larr($act) $tc_larr(xy)
-    }
-    # Calculate the default time_expected
-    set time_expected_arr($act) [qaf_y_of_x_dist_curve $p1_arr(time_probability_moment) $tc_larr(xy) 0]
-
-
-
+        if { $has_act_tc_larr_p } {
+            set act_tc_larr_len [llength $act_tc_larr(y)]
+            set act_tc_larr(xy) [list ]
+            for {set i 0} {$i < $act_tc_larr_len } {incr i} {
+                set row [list [lindex $act_tc_larr(x) $i] [lindex $act_tc_larr(y) $i]]
+                lappend act_tc_larr(xy) $row
+            }
+            # Set the curve for this act
+            
+            set tcn_larr($act) $act_tc_larr(xy)
+        } else {
+            # use a default curve for this act
+            
+            #### this should check to see if activity type has a dist_curve before using the default...
+            
+            set tcn_larr($act) $tc_larr(xy)
+        }
+        # Calculate the default time_expected
+        set time_expected_arr($act) [qaf_y_of_x_dist_curve $p1_arr(time_probability_moment) $tc_larr(xy) 0]
+        
+        
+        
         # Set default of path_durations
         set path_dur_arr($act) $time_expected_arr($act)
         incr i
