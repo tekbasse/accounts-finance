@@ -171,14 +171,15 @@ ad_proc -public acc_fin::pretti_ck_lol {
     return $valid_p
 }
 
-ad_proc -private acc_fin::import_curve {
-    curve_array_name
+ad_proc -private acc_fin::curve_import {
+    curve_lists
+    c_x_list
+    c_y_list
+    c_label_list
     minimum
     average
     maximum
-    xylabel_lists
-    instance_id 
-    user_id
+    default_lists
 } {
     Converts curve data to standard representation for PRETTI processing. 
     1. If a curve exists in curve_array_name, use it. 
@@ -187,19 +188,28 @@ ad_proc -private acc_fin::import_curve {
     4. if an ordered list of lists x,y,label exists, use it as a fallback default, otherwise 
     5. return a representation of a normalized curve.
 } {
-    upvar $curve_array_name c_larr
+    # In persuit of making curve_data
+    #     local curves are represented as a list of lists, with each list a triplet set x, y, label
+    #     or as separate lists.. so this proc must check for both forms.
+
+    #     local 3-point (min,median,max) represented as a list of 3 elements
+    #     local median represented as a single element
+    #     default curve represented as a list of lists
+    #     if no default available, create one based on a normalized standard.
+
     set standard_deviation 0.682689492137 
     set std_dev_parts [expr { $standard_deviation / 4. } ]
     set outliers [expr { 0.317310507863 / 2. } ]
     # 1. If a curve exists in curve_array_name, use it. 
-    set c_larr_x_len [llength $c_larr(x)]
-    set c_larr_y_len [llength $c_larr(y)]
-    set c_larr_label_len [llength $c_larr(label) ]
+    set curve_lists_len [llength $curve_lists]
 
-    if { $c_larr_y_len > 0 } {
+
+    if { $curve_lists_len > 0 } {
         # curve exists. 
+        set point_len [llength [lindex $curve_lists 0] ]
+        # do labels exist?
         set c_lists [list ]
-        if { $c_larr_label_len > 0 } {
+        if { $point_len > 2 } {
             for {set i 0} {$i < $c_larr_y_len } {incr i} {
                 set row [list [lindex $c_larr(x) $i] [lindex $c_larr(y) $i] [lindex $c_larr(label) $i] ]
                 lappend c_lists $row
