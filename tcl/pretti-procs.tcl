@@ -32,21 +32,6 @@ namespace eval acc_fin {}
 #                           This option is useful to intercede in auto factor expansion to add additional
 #                           variation in repeating task detail. (deprecated by auto expansion of nonexisting coefficients).
 
-# p3 Task Types:   
-#      type
-#      dependent_types      Other dependent types required by this type. (possible reference collisions. type_refs != activity_refs.
-#
-#####                       dependent_types should be checked against activity_dependents' types 
-#                           to confirm that all dependencies are satisified.
-#      name
-#      description
-#      max_concurrent       (as an integer, blank = no limit)
-#      max_overlapp_pct021  (as a percentage from 0 to 1, blank = 1)
-#   deprecated:
-#      dependent_tasks      These are other tasks referenced in p2
-#                           How to handle nomenclature collisons? 
-#                           They only collide if p3.dependent_tasks are referenced; and there's no need for this complexity. REMOVED.
-
 # p2 Task Network
 #      activity_ref           reference for an activity, a unique task id, using "activity" to differentiate between table_id's tid 
 #                             An activity reference is essential a function as in f() with no attributes,
@@ -78,9 +63,20 @@ namespace eval acc_fin {}
 #      cost_est_dist_curv_eq  Use this distribution curve equation. 
 #      cost_probability_moment A percentage (0..1) along the (cumulative) distribution curve
 
-# A three point (short/median/long or low/median/high) estimation curve can be respresented as
-# a discrete set of six points:  minimum median median median median maximum of equal probability.
-# Thereby allowing *_probability_moment variable to be used in estimates with lower statistical resolution.
+# p3 Task Types:   
+#      type
+#      dependent_types      Other dependent types required by this type. (possible reference collisions. type_refs != activity_refs.
+#
+#####                       dependent_types should be checked against activity_dependents' types 
+#                           to confirm that all dependencies are satisified.
+#      name
+#      description
+#      max_concurrent       (as an integer, blank = no limit)
+#      max_overlapp_pct021  (as a percentage from 0 to 1, blank = 1)
+#   deprecated:
+#      dependent_tasks      These are other tasks referenced in p2
+#                           How to handle nomenclature collisons? 
+#                           They only collide if p3.dependent_tasks are referenced; and there's no need for this complexity. REMOVED.
 
 # p2e  same as p2, except that factors in p2.dependent_tasks are inactivate
 #      p2.dependent_tasks. It is assumed that any factors in p2.dependent_tasks
@@ -103,6 +99,10 @@ namespace eval acc_fin {}
 
 #                   label     Where label represents the value of Y at x. This is a short phrase or reference
 #                             that identifies a boundary point in the distribution.
+# A three point (short/median/long or low/median/high) estimation curve can be respresented as
+# a discrete set of six points:  minimum median median median median maximum 
+# of standard bell curve probabilities (outliers + standard deviation).
+# Thereby allowing *_probability_moment variable to be used in estimates with lower statistical resolution.
 
 # p4 Display modes
 #  
@@ -402,29 +402,29 @@ ad_proc -public acc_fin::scenario_prettify {
         set cc_larr(y) [list 0. 0.5 0.5 0.5 0.5 1.0]
     }
 
-    
+  ######  
     # import task_types_list
     if { $p1_arr(task_types_tid) ne "" } {
         # load task types table
         set constants_list [list type dependent_tasks dependent_types name description max_concurrent max_overlapp]
         set constants_required_list [list type dependent_tasks]
         foreach column $constants_list {
-            set type_larr($column) [list ]
+            set p3_larr($column) [list ]
         }
-        qss_tid_columns_to_array_of_lists $p1_arr(task_types_tid) type_larr $constants_list $constants_required_list $package_id $user_id
+        qss_tid_columns_to_array_of_lists $p1_arr(task_types_tid) p3_larr $constants_list $constants_required_list $package_id $user_id
         # filter user input
         set types_filtered_list [list ]
         set depnc_filtered_list [list ]
-        foreach type_unfiltered $type_larr(type) {
+        foreach type_unfiltered $p3_larr(type) {
             regsub -all -nocase -- {[^a-z0-9,]+} $type_unfiltered {} type
             lappend types_filtered_list $type
         }
-        set type_larr(type) $types_filtered_list
-        foreach depnc_unfiltered $type_larr(dependent_tasks) {
+        set p3_larr(type) $types_filtered_list
+        foreach depnc_unfiltered $p3_larr(dependent_tasks) {
             regsub -all -nocase -- {[^a-z0-9,]+} $depnc_unfiltered {} depnc
             lappend depnc_filtered_list $depnc
         }
-        set type_larr(dependent_tasks) $depnc_filtered_list
+        set p3_larr(dependent_tasks) $depnc_filtered_list
     }
 
     # import activity_list
@@ -433,25 +433,25 @@ ad_proc -public acc_fin::scenario_prettify {
         set constants_list [list activity_ref aid_type dependent_tasks name description max_concurrent max_overlap_pct021 time_est_short time_est_median time_est_long time_est_dist_curve_id time_probability_moment cost_est_low cost_est_median cost_est_high cost_est_dist_curve_id cost_probability_moment]
         set constants_required_list [list activity_ref dependent_tasks]
         foreach column $constants_list {
-            set act_larr($column) [list ]
+            set p2_larr($column) [list ]
         }
-        qss_tid_columns_to_array_of_lists $p1_arr(activity_table_id) act_larr $constants_list $constants_required_list $package_id $user_id
+        qss_tid_columns_to_array_of_lists $p1_arr(activity_table_id) p2_larr $constants_list $constants_required_list $package_id $user_id
         # activity_ref and dependent_tasks are the only required lists. 
         # Others can be filled by defaults from scalars or activity types (if exists)
 
         # filter user input
         set activities_filtered_list [list ]
         set depnc_filtered_list [list ]
-        foreach act_unfiltered $act_larr(activity_ref) {
+        foreach act_unfiltered $p2_larr(activity_ref) {
             regsub -all -nocase -- {[^a-z0-9,]+} $act_unfiltered {} act
             lappend activities_filtered_list $act
         }
-        set act_larr(activity_ref) $activities_filtered_list
-        foreach depnc_unfiltered $act_larr(dependent_tasks) {
+        set p2_larr(activity_ref) $activities_filtered_list
+        foreach depnc_unfiltered $p2_larr(dependent_tasks) {
             regsub -all -nocase -- {[^a-z0-9,]+} $depnc_unfiltered {} depnc
             lappend depnc_filtered_list $depnc
         }
-        set act_larr(dependent_tasks) $depnc_filtered_list
+        set p2_larr(dependent_tasks) $depnc_filtered_list
 
     }
 
@@ -475,11 +475,11 @@ ad_proc -public acc_fin::scenario_prettify {
     # build array of activity_ref sequence_num
     # default for each acitivity_ref 1
     # assign an activity_ref one more than the max sequence_num of its dependencies
-    # acitivity_refs are indexes to arrays since no predetermination can be made about act_larr content
+    # acitivity_refs are indexes to arrays since no predetermination can be made about p2_larr content
     set i 0
     set sequence_1 0
-    foreach act $act_larr(activity_ref) {
-        set depnc [lindex $act_larr(dependent_tasks) $i]
+    foreach act $p2_larr(activity_ref) {
+        set depnc [lindex $p2_larr(dependent_tasks) $i]
         # depnc: comma list of dependencies
         # depnc_arr() list of dependencies
         set depnc_arr($act) [split $depnc ,]
@@ -495,13 +495,13 @@ ad_proc -public acc_fin::scenario_prettify {
     # tc_larr(x) is a list_of_lists , denoting normalized percent of area under curve (p021)
     # tc_larr(y) is duration value of curve
     set i 0
-    foreach act $act_larr(activity_ref) {
+    foreach act $p2_larr(activity_ref) {
     #    set time_expected_arr($act) [expr { ( $short + 4 * $med + $long ) / 6. } ]
 
         # If act has a info for calculating a curve, get it
 
     set has_act_tc_larr_p 1
-    if { $act_larr(time_dist_curve_tid) ne "" } {
+    if { $p2_larr(time_dist_curve_tid) ne "" } {
         # get time curve into array tc_larr
         set act_tc_larr(x) [list ]
         set act_tc_larr(y) [list ]
@@ -573,7 +573,7 @@ ad_proc -public acc_fin::scenario_prettify {
     
     # create dependency check equations
     # depnc_eq_arr() is equation that answers question: Are dependencies met for $act?
-    foreach act $act_larr(activity_ref) {
+    foreach act $p2_larr(activity_ref) {
         set eq "1 &&"
         foreach dep $depnc_arr($act) {
             # CODING NOTE:
@@ -587,7 +587,7 @@ ad_proc -public acc_fin::scenario_prettify {
     }
     # main process looping
     set all_calced_p 0
-    set activity_count [llength $act_larr(activity_ref)]
+    set activity_count [llength $p2_larr(activity_ref)]
     set i 0
     set act_seq_list_arr($sequence_1) [list ]
     set act_count_of_seq_arr($sequence_1) 0
@@ -596,7 +596,7 @@ ad_proc -public acc_fin::scenario_prettify {
     # act_count_of_seq_arr($seq_num) is the count of activities in sequence_num
     while { !$all_calced_p && $activity_count > $i } {
         set all_calcd_p 1
-        foreach act $act_larr(activity_ref) {
+        foreach act $p2_larr(activity_ref) {
             set dependencies_met_p [expr $depnc_eq_arr($act) ]
             set act_seq_max $sequence_1
             if { $dependencies_met_p && !$calcd_p_arr($act) } {
@@ -654,7 +654,7 @@ ad_proc -public acc_fin::scenario_prettify {
     }
     set dep_met_p 1
     ns_log Notice "acc_fin::scenario_prettify: path_seg_dur_list $path_seg_dur_list"
-    foreach act $act_larr(activity_ref) {
+    foreach act $p2_larr(activity_ref) {
         set $dep_met_p [expr $depnc_eq_arr($act) && $dep_met_p ]
         # ns_log Notice "acc_fin::scenario_prettify: act $act act_seq_num_arr '$act_seq_num_arr($act)'"
         # ns_log Notice "acc_fin::scenario_prettify: act_seq_list_arr '$act_seq_list_arr($act_seq_num_arr($act))' $act_count_of_seq_arr($act_seq_num_arr($act))"
@@ -676,7 +676,7 @@ ad_proc -public acc_fin::scenario_prettify {
     set extractv1_list [lrange $path_seg_dur_sort1_list 0 ${extract_limit}] 
     # act_freq_in_load_cp_alts_arr counts the number of times an activity is in a path  for the most significant CP alternates
     set max_act_count_per_seq 0
-    foreach act $act_larr(activity_ref) {
+    foreach act $p2_larr(activity_ref) {
         set act_freq_in_load_cp_alts_arr($act) 0
         if { $act_count_of_seq_arr($act) > $max_act_count_per_seq } {
             set max_act_count_per_seq $act_count_of_seq_arr($act)
@@ -689,7 +689,7 @@ ad_proc -public acc_fin::scenario_prettify {
         }
     }
     set act_sig_list [list ]
-    foreach act $act_larr(activity_ref) {
+    foreach act $p2_larr(activity_ref) {
         lappend act_sig_list [list $act $act_freq_in_load_cp_alts_arr($act)]
     }
     set act_sig_sorted_list [lsort -decreasing -integer -index 1 $act_sig_list]
@@ -703,7 +703,7 @@ ad_proc -public acc_fin::scenario_prettify {
     # activity_ref act_seq_num_arr has_direct_dependency_p time_expected direct_dependencies_list
     set base_lists [list ]
     
-    foreach act $act_larr(activity_ref) {
+    foreach act $p2_larr(activity_ref) {
         set has_direct_dependency_p [expr { [llength $depnc_arr($act)] > 0 } ]
         set on_critical_path_p [expr { [lsearch -exact $cp_list $act] > -1 } ]
         set on_a_sig_path_p [expr { $act_freq_in_load_cp_alts_arr($act) > $act_median_count } ]
@@ -736,7 +736,7 @@ ad_proc -public acc_fin::scenario_prettify {
     
     
     # build formatting colors
-    set act_count [llength $act_larr(activity_ref)]
+    set act_count [llength $p2_larr(activity_ref)]
     # contrast decreases on up to 50%
     set contrast_step [expr { int( 16 / ( $max_act_count_per_seq / 2 + 1 ) ) } ]
     set hex_list [list 0 1 2 3 4 5 6 7 8 9 a b c d e f]
