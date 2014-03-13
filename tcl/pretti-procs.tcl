@@ -172,21 +172,22 @@ ad_proc -public acc_fin::pretti_ck_lol {
 }
 
 ad_proc -private acc_fin::curve_import {
-    curve_lists
     c_x_list
     c_y_list
     c_label_list
+    curve_lists
     minimum
-    average
+    median
     maximum
     default_lists
 } {
-    Converts curve data to standard representation for PRETTI processing. 
-    1. If a curve exists in curve_array_name, use it. 
-    2. If a minimum, average, and maximum is available, make a curve of it. 
-    3. if an average value is available, make a curve of it, 
-    4. if an ordered list of lists x,y,label exists, use it as a fallback default, otherwise 
-    5. return a representation of a normalized curve.
+    Returns curve data to standard representation for PRETTI processing. 
+    1. If a curve exists in c_x_list, c_y_list (, c_label_list), use it.
+    2. If a curve exists in curve_lists where each element is a list of x,y(,label), use it.
+    3. If a minimum, median, and maximum is available, make a curve of it. 
+    4. if an median value is available, make a curve of it, 
+    5. if an ordered list of lists x,y,label exists, use it as a fallback default, otherwise 
+    6. return a representation of a normalized curve as a list of lists similar to curve_lists 
 } {
     # In persuit of making curve_data
     #     local curves are represented as a list of lists, with each list a triplet set x, y, label
@@ -200,54 +201,91 @@ ad_proc -private acc_fin::curve_import {
     set standard_deviation 0.682689492137 
     set std_dev_parts [expr { $standard_deviation / 4. } ]
     set outliers [expr { 0.317310507863 / 2. } ]
-    # 1. If a curve exists in curve_array_name, use it. 
-    set curve_lists_len [llength $curve_lists]
+    set c_lists [list ]
 
-
-    if { $curve_lists_len > 0 } {
-        # curve exists. 
-        set point_len [llength [lindex $curve_lists 0] ]
-        # do labels exist?
-        set c_lists [list ]
-        if { $point_len > 2 } {
-            for {set i 0} {$i < $c_larr_y_len } {incr i} {
-                set row [list [lindex $c_larr(x) $i] [lindex $c_larr(y) $i] [lindex $c_larr(label) $i] ]
+    # 1. If a curve exists in c_x_list, c_y_list (, c_label_list), use it.
+    set c_x_list_len [llength $c_x_list]
+    set c_y_list_len [llength $c_y_list]
+    set c_label_list_len [llength $c_label_list]
+    set list_len 0
+    if { $c_x_list_len > 0 && $c_x_list_len < $c_y_list_len } {
+        set list_len $c_x_list_len
+    } elseif { $c_y_list_len > 0 } {
+        set list_len $c_y_list_len
+    }
+    if { $list_len > 0 } {
+        if { $c_label_list_len > 0 } {
+            # x, y and label
+            for {set i 0} {$i < $list_len} {incr i} {
+                set row [list [lindex $c_x_list $i] [lindex $c_y_list $i] [lindex $c_label_list $i] ]
                 lappend c_lists $row
             }
         } else {
-            for {set i 0} {$i < $c_larr_y_len } {incr i} {
-                set row [list [lindex $c_larr(x) $i] [lindex $c_larr(y) $i]]
+            # x and y only
+            for {set i 0} {$i < $list_len} {incr i} {
+                set row [list [lindex $c_x_list $i] [lindex $c_y_list $i] ]
                 lappend c_lists $row
             }
         }
+
+    } 
+
+    # 2. If a curve exists in curve_lists where each element is a list of x,y(,label), use it.
+    set curve_lists_len [llength $curve_lists]
+    if { [llength $c_lists] == 0 && $curve_lists_len > 0 } {
+
+        # curve exists. 
+        set point_len [llength [lindex $curve_lists 0] ]
+        if { $point_len > 1 } {
+            set c_lists $curve_lists
+        }
         
-    } elseif { $minimum ne "" && $average ne "" && $maximum ne "" } {
+    }
+ 
+    # 3. If a minimum, median, and maximum is available, make a curve of it. 
+    # or
+    # 4. if an median value is available, make a curve of it, 
+    if { [llength $c_lists] == 0 && $median ne "" } {
+        set med_label "med"
+        if { $minimum eq "" } {
+            set minimum $median
+            set min_label $med_label
+        } else {
+            set min_label "min"
+        }
+        if { $maximum eq "" } {
+            set maximum $median
+            set max_label $med_label
+        } else {
+            set max_label "max"
+        }
+
         # min,avg,max values available
-        # Geometric average requires all three values
+        # Geometric median requires all three values
         
         # time_expected = ( time_optimistic + 4 * time_most_likely + time_pessimistic ) / 6.
         # per http://en.wikipedia.org/wiki/Program_Evaluation_and_Review_Technique
         
         # Just include the part of x under the area of each y
-        set c_x [list $outliers $st_dev_parts $st_dev_parts $st_dev_parts $st_dev_parts $outliers]
-
-        set c_y [list $p1_arr(time_est_short) $p1_arr(time_est_median) $p1_arr(time_est_median) $p1_arr(time_est_median) $p1_arr(time_est_median) $p1_arr(time_est_long)]
-        set c_label [list "min" "avg" "avg" "avg" "avg" "max"]
-        set c_lists [list ]
+        set c_x_list [list $outliers $st_dev_parts $st_dev_parts $st_dev_parts $st_dev_parts $outliers]
+        set c_y_list [list $minimum $median $median $median $median $maximum]
+        set c_label_list [list $min_label $med_label $med_label $med_label $med_label $max_label]
+        
         for {set i 0} {$i < $c_larr_y_len } {incr i} {
-            set row [list [lindex $c_x $i] [lindex $c_y $i] [lindex $c_label $i]]
+            set row [list [lindex $c_x_list $i] [lindex $c_y_list $i] [lindex $c_label_list $i]]
             lappend c_lists $row
         }
 
 
-    } elseif { [info exists p1_arr(time_est_median) ] } {
-        # assume curve is flat
+    }
+    
+    # 5. if an ordered list of lists x,y,label exists, use it as a fallback default
+    if { [llength $default_lists] > 0 && [llength [lindex $default_lists 0] ] > 1 } {
+        set c_lists $default_lists
+    }
 
-        set tc_larr(x) [list $outliers $st_dev_parts $st_dev_parts $st_dev_parts $st_dev_parts $outliers]
-        set tc_larr(y) [list $p1_arr(time_est_median) $p1_arr(time_est_median) $p1_arr(time_est_median) $p1_arr(time_est_median) $p1_arr(time_est_median) $p1_arr(time_est_median) ]
-        set tc_larr(label) [list "avg" "avg" "avg" "avg" "avg" "avg"]
-
-    } else {
+    # 6. return a representation of a normalized curve as a list of lists similar to curve_lists 
+    if { [llength $c_lists] == 0 } {
         # No time defaults.
         # set duration to 1 for limited block feedback.
 
