@@ -345,6 +345,9 @@ ad_proc -public acc_fin::scenario_prettify {
     
     # get scenario into array p1_arr
     set constants_list [list activity_table_tid activity_table_name task_types_tid task_types_name time_dist_curve_name time_dist_curve_tid cost_dist_curve_name cost_dist_curve_tid time_est_short time_est_median time_est_long time_probability_moment cost_est_low cost_est_median cost_est_high cost_probability_moment]
+    foreach constant $constants_list {
+        set p1_arr($constant) ""
+    }
     set constants_required_list [list activity_table_tid ]
     qss_tid_scalars_to_array $scenario_tid p1_arr $constants_list $constants_required_list $package_id $user_id
     if { $p1_arr(activity_table_name) ne "" } {
@@ -394,139 +397,34 @@ ad_proc -public acc_fin::scenario_prettify {
 
     if { $p1_arr(time_dist_curve_tid) ne "" } {
         # get time curve into array tc_larr
-        set tc_larr(x) [list ]
-        set tc_larr(y) [list ]
-        set tc_larr(label) [list ]
         set constants_list [list y x label]
+        foreach constant $constant_list {
+            set tc_larr($constant) ""
+        }
         set constants_required_list [list y x]
         qss_tid_columns_to_array_of_lists $time_dist_curve_tid tc_larr $constants_list $constants_required_list $package_id $user_id
         #tc_larr(x), tc_larr(y) and optionally tc_larr(label) where _larr refers to an array where each value is a list of column data by row 1..n
-        
-    } elseif { [info exists p1_arr(time_est_short)] && [info exists p1_arr(time_est_median)] && [info exists p1_arr(time_est_long) ] } {
-        # Geometric average requires all three values
-        # set min,avg,max values available
-        
-        # time_expected = ( time_optimistic + 4 * time_most_likely + time_pessimistic ) / 6.
-        # per http://en.wikipedia.org/wiki/Program_Evaluation_and_Review_Technique
-        
-        # p1_arr(time_est_short time_est_median time_est_long  )
-# don't add the x values like this:
-#        set tc_larr(x) [list $outliers ]
-#        for {set i 1} {$i < 5} {incr i} {
-#            set x [expr { $outliers + $i * $st_dev_parts } ]
-#            lappend tc_larr(x) $x
-#        }
-        # last x should be 1.0
-#        lappend tc_larr(x) [expr { $x + $outliers } ]
+    } 
+    set tc_lists [acc_fin::curve_import $tc_larr(x) $tc_larr(y) $tc_larr(label) [list ] $p1_arr(time_est_short) $p1_arr(time_est_median) $p1_arr(time_est_long) [list ] ]
 
-        # Just include the part of x under the area of each y
-        set tc_larr(x) [list $outliers $st_dev_parts $st_dev_parts $st_dev_parts $st_dev_parts $outliers]
-
-        set tc_larr(y) [list $p1_arr(time_est_short) $p1_arr(time_est_median) $p1_arr(time_est_median) $p1_arr(time_est_median) $p1_arr(time_est_median) $p1_arr(time_est_long)]
-        set tc_larr(label) [list "min" "avg" "avg" "avg" "avg" "max"]
-
-    } elseif { [info exists p1_arr(time_est_median) ] } {
-        # assume curve is flat
- #       set standard_deviation 0.682689492137 
- #       set std_dev_parts [expr { $standard_deviation / 4. } ]
- #       set outliers [expr { 0.317310507863 / 2. } ]
-#        set tc_larr(x) [list $outliers ]
-#        for {set i 1} {$i < 5} {incr i} {
-#            set x [expr { $outliers + $i * $st_dev_parts } ]
-#            lappend tc_larr(x) $x
-#        }
-        # last x should be 1.0
-#        lappend tc_larr(x) [expr { $x + $outliers } ]
-
-        set tc_larr(x) [list $outliers $st_dev_parts $st_dev_parts $st_dev_parts $st_dev_parts $outliers]
-        set tc_larr(y) [list $p1_arr(time_est_median) $p1_arr(time_est_median) $p1_arr(time_est_median) $p1_arr(time_est_median) $p1_arr(time_est_median) $p1_arr(time_est_median) ]
-        set tc_larr(label) [list "avg" "avg" "avg" "avg" "avg" "avg"]
-
-    } else {
-        # No time defaults.
-        # set duration to 1 for limited block feedback.
-#        set tc_larr(x) [list $outliers ]
-#        for {set i 1} {$i < 5} {incr i} {
-#            set x [expr { $outliers + $i * $st_dev_parts } ]
-#            lappend tc_larr(x) $x
-#        }
-        # last x should be 1.0
-#        lappend tc_larr(x) [expr { $x + $outliers } ]
-
-        set tc_larr(x) [list $outliers $st_dev_parts $st_dev_parts $st_dev_parts $st_dev_parts $outliers]
-        set tc_larr(y) [list 1. 1. 1. 1. 1. 1.]
-    }
-    set tc_larr_len [llength $tc_larr(y)]
-    set tc_larr(xy) [list ]
-    for {set i 0} {$i < $tc_larr_len } {incr i} {
-        set row [list [lindex $tc_larr(x) $i] [lindex $tc_larr(y) $i]]
-        lappend tc_larr(xy) $row
-    }
-### check flags if any curves are not normalized in x, normalize to 1 and save as a new table (and update original reference in data: p1, P2 or p3)
-
-### Add option in App to normalize any column to 1, sort any column up/down.
-###   which is handy for most cases. 
-### It cannot be done by default for all cases, because order may already be predetermined.
+    #### check flags if any curves are not normalized in x, normalize to 1
+    ### Add option in App to normalize any column to 1, sort any column up/down.
+    ###   which is handy for most cases. 
+    ### It cannot be done by default for all cases, because order may already be predetermined.
     
     # Make cost_curve_data 
     # Don't support cost_dist_curv_eq for now. Interpreting an equation adds a layer of complexity.
     if { $p1_arr(cost_dist_curve_tid) ne "" } {
-        set cc_larr(x) [list ]
-        set cc_larr(y) [list ]
-        set cc_larr(label) [list ]
         set constants_list [list y x label]
+        foreach constant $constants_list {
+            set cc_larr($constant) ""
+        }
         set constants_required_list [list y x]
         set cost_curve_data_lists $cost_dist_curve_tid cc_larr $constants_list $constants_required_list $package_id $user_id
         #cc_larr(x), cc_larr(y) and optionally cc_larr(label) where _larr refers to an array where each value is a list of column data by row 1..n
         
-    } elseif { [info exists p1_arr(cost_est_low)] && [info exists p1_arr(cost_est_median)] && [info exists p1_arr(cost_est_high)] } {
-        # Geometric average requires all three values
-        # set min,avg,max values available 
-        
-        # cost_expected = ( cost_low + 4 * cost_median + cost_high ) / 6.
-       
-        set cc_larr(x) [list $outliers $st_dev_parts $st_dev_parts $st_dev_parts $st_dev_parts $outliers]
-
-        # p1_arr(cost_est_low cost_est_median cost_est_high )
-#        set cc_larr(x) [list $outliers ]
-#        for {set i 1} {$i < 5} {incr i} {
-#            set x [expr { $outliers + $i * $st_dev_parts } ]
-#            lappend cc_larr(x) $x
-#        }
-        # last x should be 1.0
-#        lappend cc_larr(x) [expr { $x + $outliers } ]
-        set cc_larr(y) [list $p1_arr(cost_est_low) $p1_arr(cost_est_median) $p1_arr(cost_est_median) $p1_arr(cost_est_median) $p1_arr(cost_est_median) $p1_arr(cost_est_high)]
-        set cc_larr(label) [list "min" "avg" "avg" "avg" "avg" "max"]
-
-    } elseif { [info exists p1_arr(cost_est_median) ] } {
-        # assume curve is flat
- 
-        set cc_larr(x) [list $outliers $st_dev_parts $st_dev_parts $st_dev_parts $st_dev_parts $outliers]
-#        set cc_larr(x) [list $outliers ]
-#        for {set i 1} {$i < 5} {incr i} {
-#            set x [expr { $outliers + $i * $st_dev_parts } ]
-#            lappend cc_larr(x) $x
-#        }
-        # last x should be 1.0
-#        lappend cc_larr(x) [expr { $x + $outliers } ]
-        set cc_larr(y) [list $p1_arr(cost_est_median) $p1_arr(cost_est_median) $p1_arr(cost_est_median) $p1_arr(cost_est_median) $p1_arr(cost_est_median) $p1_arr(cost_est_median)]
-        set cc_larr(label) [list "avg" "avg" "avg" "avg" "avg" "avg"]
-
-    } else {
-        # No cost defaults.
-        # set duration to 1 for limited block feedback.
-        set cc_larr(x) [list $outliers $st_dev_parts $st_dev_parts $st_dev_parts $st_dev_parts $outliers]
-
-#        set cc_larr(x) [list $outliers ]
-#        for {set i 1} {$i < 5} {incr i} {
-#            set x [expr { $outliers + $i * $st_dev_parts } ]
-#            lappend cc_larr(x) $x
-#        }
-        # last x should be 1.0
-#        lappend cc_larr(x) [expr { $x + $outliers } ]
-        # Since no value provided, using percent of maximum cost of 100%
-        set cc_larr(y) [list 0. 0.5 0.5 0.5 0.5 1.0]
-    }
+    } 
+    set cc_lists [acc_fin::curve_import $cc_larr(x) $cc_larr(y) $cc_larr(label) [list ] $p1_arr(cost_est_low) $p1_arr(cost_est_median) $p1_arr(cost_est_high) [list ] ]
 
   ######  
     # import task_types_list
