@@ -420,7 +420,6 @@ ad_proc -public acc_fin::scenario_prettify {
     ### It cannot be done by default for all cases, because order may already be predetermined.
     
     # Make cost_curve_data 
-    # Don't support cost_dist_curv_eq for now. Interpreting an equation adds a layer of complexity.
     if { $p1_arr(cost_dist_curve_tid) ne "" } {
         set constants_list [list y x label]
         foreach constant $constants_list {
@@ -432,6 +431,8 @@ ad_proc -public acc_fin::scenario_prettify {
         
     } 
     set cc_lists [acc_fin::curve_import $cc_larr(x) $cc_larr(y) $cc_larr(label) [list ] $p1_arr(cost_est_low) $p1_arr(cost_est_median) $p1_arr(cost_est_high) [list ] ]
+
+
 
   ######  
     # import task_types_list
@@ -462,18 +463,8 @@ ad_proc -public acc_fin::scenario_prettify {
         # Others can be filled by defaults from scalars or activity types (if exists)
 
         # filter user input
-        set activities_filtered_list [list ]
-        set depnc_filtered_list [list ]
-        foreach act_unfiltered $p2_larr(activity_ref) {
-            regsub -all -nocase -- {[^a-z0-9,]+} $act_unfiltered {} act
-            lappend activities_filtered_list $act
-        }
-        set p2_larr(activity_ref) $activities_filtered_list
-        foreach depnc_unfiltered $p2_larr(dependent_tasks) {
-            regsub -all -nocase -- {[^a-z0-9,]+} $depnc_unfiltered {} depnc
-            lappend depnc_filtered_list $depnc
-        }
-        set p2_larr(dependent_tasks) $depnc_filtered_list
+        set p2_larr(activity_ref) [acc_fin::list_filter $p2_larr(activity_ref)]
+        set p2_larr(dependent_tasks) [acc_fin::list_filter $p2_larr(dependent_tasks)]
 
     }
 
