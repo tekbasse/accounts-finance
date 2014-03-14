@@ -124,6 +124,18 @@ ad_proc -public acc_fin::task_factors_expand {
     return $pretti_expanded_lol
 }
 
+ad_proc -public acc_fin::list_filter {
+    user_input_list
+} {
+    filters alphanumeric input as a list to meet basic word or reference requirements
+} {
+    set filtered_list [list ]
+    foreach input_unfiltered $user_input_list {
+        regsub -all -nocase -- {[^a-z0-9,]+} $input_unfiltered {} input_filtered
+        lappend filtered_list $input_filtered
+    }
+    return $filtered_list
+}
 
 ad_proc -public acc_fin::table_type_scenario_p {
     a_list_of_lists
@@ -290,7 +302,8 @@ ad_proc -private acc_fin::curve_import {
         # set duration to 1 for limited block feedback.
 
         set tc_larr(x) [list $outliers $st_dev_parts $st_dev_parts $st_dev_parts $st_dev_parts $outliers]
-        set tc_larr(y) [list 1. 1. 1. 1. 1. 1.]
+        # using approximate cumulative distribution y values for standard deviation of 1.
+        set tc_larr(y) [list 0.15 0.3 0.45 0.7 0.82 1.]
     }
 
     # Return an ordered list of lists representing a curve
@@ -388,12 +401,6 @@ ad_proc -public acc_fin::scenario_prettify {
     #     general 3-point (normalized to local median)
     
     
-    # curves take precedence over min,avg,max values.
-    # Task min,avg,max values set boundaries when a default curve.
-    # Don't support time_dist_curv_eq for now. Interpreting an equation adds a layer of complexity.
-    set standard_deviation 0.682689492137 
-    set std_dev_parts [expr { $standard_deviation / 4. } ]
-    set outliers [expr { 0.317310507863 / 2. } ]
 
     if { $p1_arr(time_dist_curve_tid) ne "" } {
         # get time curve into array tc_larr
@@ -430,26 +437,17 @@ ad_proc -public acc_fin::scenario_prettify {
     # import task_types_list
     if { $p1_arr(task_types_tid) ne "" } {
         # load task types table
-        set constants_list [list type dependent_tasks dependent_types name description max_concurrent max_overlapp]
-        set constants_required_list [list type dependent_tasks]
+        set constants_list [list type dependent_tasks dependent_types name description max_concurrent max_overlapp activity_table_tid activity_table_name task_types_tid task_types_name time_dist_curve_name time_dist_curve_tid cost_dist_curve_name cost_dist_curve_tid time_est_short time_est_median time_est_long time_probability_moment cost_est_low cost_est_median cost_est_high cost_probability_moment]
+        set constants_required_list [list type]
         foreach column $constants_list {
             set p3_larr($column) [list ]
         }
         qss_tid_columns_to_array_of_lists $p1_arr(task_types_tid) p3_larr $constants_list $constants_required_list $package_id $user_id
-        # filter user input
-        set types_filtered_list [list ]
-        set depnc_filtered_list [list ]
-        foreach type_unfiltered $p3_larr(type) {
-            regsub -all -nocase -- {[^a-z0-9,]+} $type_unfiltered {} type
-            lappend types_filtered_list $type
-        }
-        set p3_larr(type) $types_filtered_list
-        foreach depnc_unfiltered $p3_larr(dependent_tasks) {
-            regsub -all -nocase -- {[^a-z0-9,]+} $depnc_unfiltered {} depnc
-            lappend depnc_filtered_list $depnc
-        }
-        set p3_larr(dependent_tasks) $depnc_filtered_list
+        # filter user input that is going to be used as references in arrays:
+        set p3_larr(type) [acc_fin::list_filter $p3_larr(type)]
+        set p3_larr(dependent_tasks) [acc_fin::list_filter $p3_larr(dependent_tasks)]
     }
+
 
     # import activity_list
     if { $p1_arr(activity_table_id) ne "" } {
