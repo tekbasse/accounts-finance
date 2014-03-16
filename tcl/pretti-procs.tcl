@@ -124,7 +124,7 @@ ad_proc -public acc_fin::task_factors_expand {
     return $pretti_expanded_lol
 }
 
-ad_proc -public acc_fin::list_filter {
+ad_proc -public acc_fin::list_index_filter {
     user_input_list
 } {
     filters alphanumeric input as a list to meet basic word or reference requirements
@@ -435,6 +435,11 @@ ad_proc -public acc_fin::scenario_prettify {
 
 
   ######  
+    # Going to use a double pointer system for a curve_list_of_lists, where each curve_list is a unique list, referenced by curve_lol index
+    # p3_type_arr($type) gives curve index (to curve_lol)
+    # p2_curve_arr($activity) gives curve index (to curve_lol)
+    # index 0 is default
+
     # import task_types_list
     if { $p1_arr(task_types_tid) ne "" } {
         # load task types table
@@ -445,9 +450,17 @@ ad_proc -public acc_fin::scenario_prettify {
         }
         qss_tid_columns_to_array_of_lists $p1_arr(task_types_tid) p3_larr $constants_list $constants_required_list $package_id $user_id
         # filter user input that is going to be used as references in arrays:
-        set p3_larr(type) [acc_fin::list_filter $p3_larr(type)]
-        set p3_larr(dependent_tasks) [acc_fin::list_filter $p3_larr(dependent_tasks)]
+        set p3_larr(type) [acc_fin::list_index_filter $p3_larr(type)]
+        set p3_larr(dependent_tasks) [acc_fin::list_index_filter $p3_larr(dependent_tasks)]
     }
+    # The multi-level aspect of curve data storage needs a double-pointer to be efficient for projects with large memory footprints
+    # act_curve($act) => curve_ref
+    # type_curve($type) => curve_ref
+    # tid_curve($tid) => curve_ref
+    # where curve_ref is index of curves_lol
+    # where curve_ref = 0 is default
+    # so, add a p2_larr(curve_ref) column which references curves_lol
+    #  add a p3_larr(curve_ref) column
 
 
     # import activity_list
@@ -463,8 +476,8 @@ ad_proc -public acc_fin::scenario_prettify {
         # Others can be filled by defaults from scalars or activity types (if exists)
 
         # filter user input
-        set p2_larr(activity_ref) [acc_fin::list_filter $p2_larr(activity_ref)]
-        set p2_larr(dependent_tasks) [acc_fin::list_filter $p2_larr(dependent_tasks)]
+        set p2_larr(activity_ref) [acc_fin::list_index_filter $p2_larr(activity_ref)]
+        set p2_larr(dependent_tasks) [acc_fin::list_index_filter $p2_larr(dependent_tasks)]
 
     }
 
