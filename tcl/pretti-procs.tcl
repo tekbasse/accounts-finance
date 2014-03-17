@@ -392,7 +392,7 @@ ad_proc -public acc_fin::scenario_prettify {
     }
     
     # Make time_curve_data This is the default unless more specific data is specified in a task list.
-    # The most specific information is used by default. 
+    # The most specific information is used for each activity.
     # Median (most likely) point is assumed along the (cumulative) distribution curve, unless
     # a time_probability_moment is specified.  time_probability_moment is only available as a general term.
     #     local curve
@@ -436,6 +436,16 @@ ad_proc -public acc_fin::scenario_prettify {
 
   ######  
     # Going to use a double pointer system for a curve_list_of_lists, where each curve_list is a unique list, referenced by curve_lol index
+    # curves_lol consists of:
+    #  \[list  \  the curve index
+    #  \[list  \ the list that defines a specific curve
+    #  \[list x1 y1 label1\] \[list x2 y2 label2 \] \[list x3 y3 label3 \] \] <- curve data
+    # hmm.. actually, since each list has a variable length curves_lol will instead be represented as curves_larr(curve_ref) 
+    # even though curve_ref is an integer.  
+    # curves_larr has 2 versions: time as t_c_larr and cost as c_c_larr
+    set time_clarr(0) $tc_lists
+    set cost_clarr(0) $cc_lists
+    set act_t_curve(
     # p3_type_arr($type) gives curve index (to curve_lol)
     # p2_curve_arr($activity) gives curve index (to curve_lol)
     # index 0 is default
@@ -452,6 +462,29 @@ ad_proc -public acc_fin::scenario_prettify {
         # filter user input that is going to be used as references in arrays:
         set p3_larr(type) [acc_fin::list_index_filter $p3_larr(type)]
         set p3_larr(dependent_tasks) [acc_fin::list_index_filter $p3_larr(dependent_tasks)]
+
+        set curvenum 1
+        set i_max [llength $p3_larr(type)]
+        for {set i 0} {$i < $i_max} {incr i} {
+            set type [lindex $p3_larr(type) $i]
+            if { $p3_larr(time_dist_curve_name) ne "" } {
+                set p3_larr(time_dist_curve_tid) [qss_tid_from_name $p3_larr(time_ist_curve_name) ]
+            }
+            if { $p3_larr(time_dist_curve_tid) ne "" } {
+                set constants_list [list y x label]
+                foreach constant $constant_list {
+                    set tc_larr($constant) ""
+                }
+                set constants_required_list [list y x]
+                qss_tid_columns_to_array_of_lists $time_dist_curve_tid tc_larr $constants_list $constants_required_list $package_id $user_id
+                #tc_larr(x), tc_larr(y) and optionally tc_larr(label) where _larr refers to an array where each value is a list of column data by row 1..n
+                set time_clarr($curvenum) [acc_fin::curve_import $tc_larr(x) $tc_larr(y) $tc_larr(label) [list ] [lindex $p3_arr(time_est_short) $i] [lindex $p3_arr(time_est_median) $i] [lindex $p3_arr(time_est_long) $i] $tc_lists ]
+                lappend p3_larr(curve_ref) $curvenum
+            } else {
+                # use the default curve
+                lappend p3_larr(curve_ref) 0
+            }
+        }
     }
     # The multi-level aspect of curve data storage needs a double-pointer to be efficient for projects with large memory footprints
     # act_curve($act) => curve_ref
