@@ -124,6 +124,17 @@ ad_proc -public acc_fin::task_factors_expand {
     return $pretti_expanded_lol
 }
 
+ad_proc -public acc_fin::larr_set {
+    larr_name
+    data_list
+} {
+    assigns a data_list to an index in array larr_name. If the list already exists (exactly), it returns the existing index, otherwise it assignes a new value in array and a new index of array is returned. This procedure is to help reduce memory overhead for lots of list data.
+} {
+    upvar $larr_name larr_name
+#######
+    return $i
+}
+
 ad_proc -public acc_fin::list_index_filter {
     user_input_list
 } {
@@ -473,14 +484,27 @@ ad_proc -public acc_fin::scenario_prettify {
                 set p3_larr(time_dist_curve_tid) [qss_tid_from_name $p3_larr(time_est_curve_name) ]
             }
             if { $p3_larr(time_dist_curve_tid) ne "" } {
-                set constants_list [list y x label]
-                foreach constant $constant_list {
-                    set tc_larr($constant) ""
+                set ctid $p3_larr(time_dist_curve_tid)
+                if { [info exists tc_x_cache($ctid) ] } {
+                    # already loaded tid curve from earlier. grab from time_clarr(ref)
+                    # no, can't use time_clarr, because it refs possibly local min/med/max values
+                    # grab from a separate cache, then apply acc_fin::curve_import on it
+                    set tc_larr(x) $tc_x_cache_larr($ctid)
+                    set tc_larr(y) $tc_y_cache_larr($ctid)
+                    set tc_larr(label) $tc_label_cache_larr($ctid)
+                } else {
+                    set constants_list [list y x label]
+                    foreach constant $constant_list {
+                        set tc_larr($constant) ""
+                    }
+                    set constants_required_list [list y x]
+                    qss_tid_columns_to_array_of_lists $time_dist_curve_tid tc_larr $constants_list $constants_required_list $package_id $user_id
+                    #tc_larr(x), tc_larr(y) and optionally tc_larr(label) where _larr refers to an array where each value is a list of column data by row 1..n
                 }
-                set constants_required_list [list y x]
-                qss_tid_columns_to_array_of_lists $time_dist_curve_tid tc_larr $constants_list $constants_required_list $package_id $user_id
-                #tc_larr(x), tc_larr(y) and optionally tc_larr(label) where _larr refers to an array where each value is a list of column data by row 1..n
+                # import curve given all the available curve choices
                 set time_clarr($t_curvenum) [acc_fin::curve_import $tc_larr(x) $tc_larr(y) $tc_larr(label) [list ] [lindex $p3_arr(time_est_short) $i] [lindex $p3_arr(time_est_median) $i] [lindex $p3_arr(time_est_long) $i] $time_clarr(0) ]
+#### Now that local variation may have been introduced, is there any way to group the curves to minimize memory?
+                # yes. Call a proc that sets the *_clarr. It searches for identical set, and returns index of it, or a new one..
                 lappend p3_larr(t_curve_ref) $t_curvenum
                 incr t_curvenum
             } else {
