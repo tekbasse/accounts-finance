@@ -445,9 +445,9 @@ ad_proc -public acc_fin::scenario_prettify {
     # curves_larr has 2 versions: time as t_c_larr and cost as c_c_larr
     set time_clarr(0) $tc_lists
     set cost_clarr(0) $cc_lists
-    set act_t_curve(
-    # p3_type_arr($type) gives curve index (to curve_lol)
-    # p2_curve_arr($activity) gives curve index (to curve_lol)
+
+    # p3_curve_arr($type) gives curve index (to curve's time_clarr or cost_clarr )
+    # p2_curve_arr($activity) gives curve index (to curve's time_clarr or cost_clarr )
     # index 0 is default
 
     # import task_types_list
@@ -463,12 +463,14 @@ ad_proc -public acc_fin::scenario_prettify {
         set p3_larr(type) [acc_fin::list_index_filter $p3_larr(type)]
         set p3_larr(dependent_tasks) [acc_fin::list_index_filter $p3_larr(dependent_tasks)]
 
-        set curvenum 1
+        set t_curvenum 1
+        set c_curvenum 1
         set i_max [llength $p3_larr(type)]
         for {set i 0} {$i < $i_max} {incr i} {
             set type [lindex $p3_larr(type) $i]
+            # time curve
             if { $p3_larr(time_dist_curve_name) ne "" } {
-                set p3_larr(time_dist_curve_tid) [qss_tid_from_name $p3_larr(time_ist_curve_name) ]
+                set p3_larr(time_dist_curve_tid) [qss_tid_from_name $p3_larr(time_est_curve_name) ]
             }
             if { $p3_larr(time_dist_curve_tid) ne "" } {
                 set constants_list [list y x label]
@@ -478,12 +480,33 @@ ad_proc -public acc_fin::scenario_prettify {
                 set constants_required_list [list y x]
                 qss_tid_columns_to_array_of_lists $time_dist_curve_tid tc_larr $constants_list $constants_required_list $package_id $user_id
                 #tc_larr(x), tc_larr(y) and optionally tc_larr(label) where _larr refers to an array where each value is a list of column data by row 1..n
-                set time_clarr($curvenum) [acc_fin::curve_import $tc_larr(x) $tc_larr(y) $tc_larr(label) [list ] [lindex $p3_arr(time_est_short) $i] [lindex $p3_arr(time_est_median) $i] [lindex $p3_arr(time_est_long) $i] $tc_lists ]
-                lappend p3_larr(curve_ref) $curvenum
+                set time_clarr($t_curvenum) [acc_fin::curve_import $tc_larr(x) $tc_larr(y) $tc_larr(label) [list ] [lindex $p3_arr(time_est_short) $i] [lindex $p3_arr(time_est_median) $i] [lindex $p3_arr(time_est_long) $i] $time_clarr(0) ]
+                lappend p3_larr(t_curve_ref) $t_curvenum
+                incr t_curvenum
             } else {
                 # use the default curve
-                lappend p3_larr(curve_ref) 0
+                lappend p3_larr(t_curve_ref) 0
             }
+            # cost curve
+            if { $p3_larr(cost_dist_curve_name) ne "" } {
+                set p3_larr(cost_dist_curve_tid) [qss_tid_from_name $p3_larr(cost_est_curve_name) ]
+            }
+            if { $p3_larr(cost_dist_curve_tid) ne "" } {
+                set constants_list [list y x label]
+                foreach constant $constant_list {
+                    set cc_larr($constant) ""
+                }
+                set constants_required_list [list y x]
+                qss_tid_columns_to_array_of_lists $cost_dist_curve_tid cc_larr $constants_list $constants_required_list $package_id $user_id
+                #cc_larr(x), cc_larr(y) and optionally cc_larr(label) where _larr refers to an array where each value is a list of column data by row 1..n
+                set cost_clarr($t_curvenum) [acc_fin::curve_import $cc_larr(x) $cc_larr(y) $cc_larr(label) [list ] [lindex $p3_arr(cost_est_low) $i] [lindex $p3_arr(cost_est_median) $i] [lindex $p3_arr(cost_est_high) $i] $cost_clarr(0) ]
+                lappend p3_larr(c_curve_ref) $c_curvenum
+                incr c_curvenum
+            } else {
+                # use the default curve
+                lappend p3_larr(c_curve_ref) 0
+            }
+
         }
     }
     # The multi-level aspect of curve data storage needs a double-pointer to be efficient for projects with large memory footprints
