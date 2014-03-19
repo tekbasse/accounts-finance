@@ -149,12 +149,16 @@ ad_proc -public acc_fin::larr_set {
     return $i
 }
 
-ad_proc -private acc_fin::p3_load_tid {
+ad_proc -private acc_fin::p_load_tid {
+    constants_list
+    constants_required_list
+    p_larr_name
+    tid
 } {
     loads array_name with p3 style table for use with internal code
 } {
+    upvar $p_larr_name p_larr
     upvar p1_larr p1_larr
-    upvar p3_larr p3_larr
     upvar tc_larr tc_larr
     upvar cc_larr cc_larr
     upvar time_clarr time_clarr
@@ -164,28 +168,26 @@ ad_proc -private acc_fin::p3_load_tid {
 #    upvar cc_cache_larr cc_cache_larr
 
     # load task types table
-    set constants_list [list type dependent_tasks dependent_types name description max_concurrent max_overlapp activity_table_tid activity_table_name task_types_tid task_types_name time_dist_curve_name time_dist_curve_tid cost_dist_curve_name cost_dist_curve_tid time_est_short time_est_median time_est_long time_probability_moment cost_est_low cost_est_median cost_est_high cost_probability_moment]
-    set constants_required_list [list type]
     foreach column $constants_list {
-        set p3_larr($column) [list ]
+        set p_larr($column) [list ]
     }
-    qss_tid_columns_to_array_of_lists $p1_arr(task_types_tid) p3_larr $constants_list $constants_required_list $package_id $user_id
+    qss_tid_columns_to_array_of_lists $tid p_larr $constants_list $constants_required_list $package_id $user_id
     # filter user input that is going to be used as references in arrays:
-    set p3_larr(type) [acc_fin::list_index_filter $p3_larr(type)]
-    set p3_larr(dependent_tasks) [acc_fin::list_index_filter $p3_larr(dependent_tasks)]
-    set p3_larr(t_curve_ref) [list ]
-    set p3_larr(c_curve_ref) [list ]
+    set p_larr(type) [acc_fin::list_index_filter $p_larr(type)]
+    set p_larr(dependent_tasks) [acc_fin::list_index_filter $p_larr(dependent_tasks)]
+    set p_larr(t_curve_ref) [list ]
+    set p_larr(c_curve_ref) [list ]
     
-    set i_max [llength $p3_larr(type)]
+    set i_max [llength $p_larr(type)]
     for {set i 0} {$i < $i_max} {incr i} {
-        set type [lindex $p3_larr(type) $i]
+        set type [lindex $p_larr(type) $i]
         
         # time curve
-        if { $p3_larr(time_dist_curve_name) ne "" } {
-            set p3_larr(time_dist_curve_tid) [qss_tid_from_name $p3_larr(time_est_curve_name) ]
+        if { $p_larr(time_dist_curve_name) ne "" } {
+            set p_larr(time_dist_curve_tid) [qss_tid_from_name $p_larr(time_est_curve_name) ]
         }
-        if { $p3_larr(time_dist_curve_tid) ne "" } {
-            set ctid $p3_larr(time_dist_curve_tid)
+        if { $p_larr(time_dist_curve_tid) ne "" } {
+            set ctid $p_larr(time_dist_curve_tid)
             set constants_list [list y x label]
             if { [info exists tc_cache_larr(x,$ctid) ] } {
                 # already loaded tid curve from earlier. 
@@ -207,18 +209,18 @@ ad_proc -private acc_fin::p3_load_tid {
             # import curve given all the available curve choices
             set curve_list [acc_fin::curve_import $tc_larr(x) $tc_larr(y) $tc_larr(label) [list ] [lindex $p3_arr(time_est_short) $i] [lindex $p3_arr(time_est_median) $i] [lindex $p3_arr(time_est_long) $i] $time_clarr(0) ]
             set curvenum [acc_fin::larr_set time_clarr $curve_list]
-            lappend p3_larr(t_curve_ref) $curvenum
+            lappend p_larr(t_curve_ref) $curvenum
         } else {
             # use the default curve
-            lappend p3_larr(t_curve_ref) 0
+            lappend p_larr(t_curve_ref) 0
         }
         
         # cost curve
-        if { $p3_larr(cost_dist_curve_name) ne "" } {
-            set p3_larr(cost_dist_curve_tid) [qss_tid_from_name $p3_larr(cost_est_curve_name) ]
+        if { $p_larr(cost_dist_curve_name) ne "" } {
+            set p_larr(cost_dist_curve_tid) [qss_tid_from_name $p_larr(cost_est_curve_name) ]
         }
-        if { $p3_larr(cost_dist_curve_tid) ne "" } {
-            set ctid $p3_larr(cost_dist_curve_tid)
+        if { $p_larr(cost_dist_curve_tid) ne "" } {
+            set ctid $p_larr(cost_dist_curve_tid)
             set constants_list [list y x label]
             if { [info exists cc_cache_larr(x,$ctid) ] } {
                 # already loaded tid curve from earlier. 
@@ -240,12 +242,11 @@ ad_proc -private acc_fin::p3_load_tid {
             # import curve given all the available curve choices
             set curve_list [acc_fin::curve_import $cc_larr(x) $cc_larr(y) $cc_larr(label) [list ] [lindex $p3_arr(cost_est_low) $i] [lindex $p3_arr(cost_est_median) $i] [lindex $p3_arr(cost_est_high) $i] $cost_clarr(0) ]
             set curvenum [acc_fin::larr_set cost_clarr $curve_list]
-            lappend p3_larr(c_curve_ref) $curvenum
+            lappend p_larr(c_curve_ref) $curvenum
         } else {
             # use the default curve
-            lappend p3_larr(c_curve_ref) 0
+            lappend p_larr(c_curve_ref) 0
         }
-        
     }
     return 1
 }
@@ -578,7 +579,9 @@ ad_proc -public acc_fin::scenario_prettify {
 
     # import task_types_list
     if { $p1_arr(task_types_tid) ne "" } {
-        acc_fin::p3_load_tid
+        set constants_list [list type dependent_tasks dependent_types name description max_concurrent max_overlapp activity_table_tid activity_table_name task_types_tid task_types_name time_dist_curve_name time_dist_curve_tid cost_dist_curve_name cost_dist_curve_tid time_est_short time_est_median time_est_long time_probability_moment cost_est_low cost_est_median cost_est_high cost_probability_moment]
+        set constants_required_list [list type]
+        acc_fin::p_load_tid $constants_list $constants_required_list p3_larr $p1_arr(task_types_tid)
     }
     # The multi-level aspect of curve data storage needs a double-pointer to be efficient for projects with large memory footprints
     # act_curve($act) => curve_ref
@@ -589,18 +592,12 @@ ad_proc -public acc_fin::scenario_prettify {
     # so, add a p2_larr(curve_ref) column which references curves_lol
     #  add a p3_larr(curve_ref) column
 
-
     # import activity_list
     if { $p1_arr(activity_table_id) ne "" } {
         # load activity table
         set constants_list [list activity_ref aid_type dependent_tasks name description max_concurrent max_overlap_pct021 time_est_short time_est_median time_est_long time_est_dist_curve_id time_probability_moment cost_est_low cost_est_median cost_est_high cost_est_dist_curve_id cost_probability_moment]
         set constants_required_list [list activity_ref dependent_tasks]
-        foreach column $constants_list {
-            set p2_larr($column) [list ]
-        }
-        qss_tid_columns_to_array_of_lists $p1_arr(activity_table_id) p2_larr $constants_list $constants_required_list $package_id $user_id
-        # activity_ref and dependent_tasks are the only required lists. 
-        # Others can be filled by defaults from scalars or activity types (if exists)
+        acc_fin::p_load_tid $constants_list $constants_required_list p2_larr $p1_arr(activity_table_tid)
 
         # filter user input
         set p2_larr(activity_ref) [acc_fin::list_index_filter $p2_larr(activity_ref)]
