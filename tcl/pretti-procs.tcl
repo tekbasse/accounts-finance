@@ -158,14 +158,14 @@ ad_proc -private acc_fin::p_load_tid {
     loads array_name with p3 style table for use with internal code
 } {
     upvar $p_larr_name p_larr
-    upvar p1_larr p1_larr
-    upvar tc_larr tc_larr
-    upvar cc_larr cc_larr
     upvar time_clarr time_clarr
     upvar cost_clarr cost_clarr
 # following are not upvar'd because the cache is mainly useless after proc ends
 #    upvar tc_cache_larr tc_cache_larr
 #    upvar cc_cache_larr cc_cache_larr
+# following are not upvar'd because these are temporary arrays for loading list representations of curves
+#    upvar tc_larr tc_larr
+#    upvar cc_larr cc_larr
 
     # load task types table
     foreach column $constants_list {
