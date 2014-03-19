@@ -128,11 +128,126 @@ ad_proc -public acc_fin::larr_set {
     larr_name
     data_list
 } {
-    assigns a data_list to an index in array larr_name. If the list already exists (exactly), it returns the existing index, otherwise it assignes a new value in array and a new index of array is returned. This procedure is to help reduce memory overhead for lots of list data.
+    assigns a data_list to an index in array larr_name in a manner that minimizes memory footprint. If the list already exists (exactly), it returns the existing index, otherwise it assignes a new value in array and a new index of array is returned. This procedure is to help reduce memory overhead for lots of list data.
 } {
     upvar $larr_name larr_name
-#######
+    # If memory issues exist even after using this proc, one can further compress the array by applying a dictionary storage technique.
+    # It may be possible to use the list as an index and gain from tcl internal handling for example.
+    # hmm. Initial tests suggest this array(list) works, but might not be practical to store references..
+    set indexes_list [array names $larr_name]
+    set icount [llength $indexes_list]
+    set i 0
+    set index [lindex $indexes_list $i]
+    while { $i < $icount && $larr_name($index) ne $data_list } {
+        incr i
+        set index [lindex $indexes_list $i]
+    }
+    if { $larr_name($index) ne $data_list } {
+        set i $icount
+        set larr_name($icount) $data_list
+    } 
     return $i
+}
+
+ad_proc -private acc_fin::p3_load_tid {
+} {
+    loads array_name with p3 style table for use with internal code
+} {
+    upvar p1_larr p1_larr
+    upvar p3_larr p3_larr
+    upvar tc_larr tc_larr
+    upvar cc_larr cc_larr
+    upvar time_clarr time_clarr
+    upvar cost_clarr cost_clarr
+# following are not upvar'd because the cache is mainly useless after proc ends
+#    upvar tc_cache_larr tc_cache_larr
+#    upvar cc_cache_larr cc_cache_larr
+
+    # load task types table
+    set constants_list [list type dependent_tasks dependent_types name description max_concurrent max_overlapp activity_table_tid activity_table_name task_types_tid task_types_name time_dist_curve_name time_dist_curve_tid cost_dist_curve_name cost_dist_curve_tid time_est_short time_est_median time_est_long time_probability_moment cost_est_low cost_est_median cost_est_high cost_probability_moment]
+    set constants_required_list [list type]
+    foreach column $constants_list {
+        set p3_larr($column) [list ]
+    }
+    qss_tid_columns_to_array_of_lists $p1_arr(task_types_tid) p3_larr $constants_list $constants_required_list $package_id $user_id
+    # filter user input that is going to be used as references in arrays:
+    set p3_larr(type) [acc_fin::list_index_filter $p3_larr(type)]
+    set p3_larr(dependent_tasks) [acc_fin::list_index_filter $p3_larr(dependent_tasks)]
+    set p3_larr(t_curve_ref) [list ]
+    set p3_larr(c_curve_ref) [list ]
+    
+    set i_max [llength $p3_larr(type)]
+    for {set i 0} {$i < $i_max} {incr i} {
+        set type [lindex $p3_larr(type) $i]
+        
+        # time curve
+        if { $p3_larr(time_dist_curve_name) ne "" } {
+            set p3_larr(time_dist_curve_tid) [qss_tid_from_name $p3_larr(time_est_curve_name) ]
+        }
+        if { $p3_larr(time_dist_curve_tid) ne "" } {
+            set ctid $p3_larr(time_dist_curve_tid)
+            set constants_list [list y x label]
+            if { [info exists tc_cache_larr(x,$ctid) ] } {
+                # already loaded tid curve from earlier. 
+                foreach constant $constant_list {
+                    set tc_larr($constant) $tc_cache_larr($constant,$ctid)
+                }
+            } else {
+                foreach constant $constant_list {
+                    set tc_larr($constant) ""
+                }
+                set constants_required_list [list y x]
+                qss_tid_columns_to_array_of_lists $time_dist_curve_tid tc_larr $constants_list $constants_required_list $package_id $user_id
+                # add to input tid cache
+                foreach constant $constant_list {
+                    set tc_cache_larr($constant,$ctid) $tc_larr($constant)
+                }
+                #tc_larr(x), tc_larr(y) and optionally tc_larr(label) where _larr refers to an array where each value is a list of column data by row 1..n
+            }
+            # import curve given all the available curve choices
+            set curve_list [acc_fin::curve_import $tc_larr(x) $tc_larr(y) $tc_larr(label) [list ] [lindex $p3_arr(time_est_short) $i] [lindex $p3_arr(time_est_median) $i] [lindex $p3_arr(time_est_long) $i] $time_clarr(0) ]
+            set curvenum [acc_fin::larr_set time_clarr $curve_list]
+            lappend p3_larr(t_curve_ref) $curvenum
+        } else {
+            # use the default curve
+            lappend p3_larr(t_curve_ref) 0
+        }
+        
+        # cost curve
+        if { $p3_larr(cost_dist_curve_name) ne "" } {
+            set p3_larr(cost_dist_curve_tid) [qss_tid_from_name $p3_larr(cost_est_curve_name) ]
+        }
+        if { $p3_larr(cost_dist_curve_tid) ne "" } {
+            set ctid $p3_larr(cost_dist_curve_tid)
+            set constants_list [list y x label]
+            if { [info exists cc_cache_larr(x,$ctid) ] } {
+                # already loaded tid curve from earlier. 
+                foreach constant $constant_list {
+                    set cc_larr($constant) $cc_cache_larr($constant,$ctid)
+                }
+            } else {
+                foreach constant $constant_list {
+                    set cc_larr($constant) ""
+                }
+                set constants_required_list [list y x]
+                qss_tid_columns_to_array_of_lists $cost_dist_curve_tid cc_larr $constants_list $constants_required_list $package_id $user_id
+                # add to input tid cache
+                foreach constant $constant_list {
+                    set cc_cache_larr($constant,$ctid) $cc_larr($constant)
+                }
+                #cc_larr(x), cc_larr(y) and optionally cc_larr(label) where _larr refers to an array where each value is a list of column data by row 1..n
+            }
+            # import curve given all the available curve choices
+            set curve_list [acc_fin::curve_import $cc_larr(x) $cc_larr(y) $cc_larr(label) [list ] [lindex $p3_arr(cost_est_low) $i] [lindex $p3_arr(cost_est_median) $i] [lindex $p3_arr(cost_est_high) $i] $cost_clarr(0) ]
+            set curvenum [acc_fin::larr_set cost_clarr $curve_list]
+            lappend p3_larr(c_curve_ref) $curvenum
+        } else {
+            # use the default curve
+            lappend p3_larr(c_curve_ref) 0
+        }
+        
+    }
+    return 1
 }
 
 ad_proc -public acc_fin::list_index_filter {
@@ -463,75 +578,7 @@ ad_proc -public acc_fin::scenario_prettify {
 
     # import task_types_list
     if { $p1_arr(task_types_tid) ne "" } {
-        # load task types table
-        set constants_list [list type dependent_tasks dependent_types name description max_concurrent max_overlapp activity_table_tid activity_table_name task_types_tid task_types_name time_dist_curve_name time_dist_curve_tid cost_dist_curve_name cost_dist_curve_tid time_est_short time_est_median time_est_long time_probability_moment cost_est_low cost_est_median cost_est_high cost_probability_moment]
-        set constants_required_list [list type]
-        foreach column $constants_list {
-            set p3_larr($column) [list ]
-        }
-        qss_tid_columns_to_array_of_lists $p1_arr(task_types_tid) p3_larr $constants_list $constants_required_list $package_id $user_id
-        # filter user input that is going to be used as references in arrays:
-        set p3_larr(type) [acc_fin::list_index_filter $p3_larr(type)]
-        set p3_larr(dependent_tasks) [acc_fin::list_index_filter $p3_larr(dependent_tasks)]
-
-        set t_curvenum 1
-        set c_curvenum 1
-        set i_max [llength $p3_larr(type)]
-        for {set i 0} {$i < $i_max} {incr i} {
-            set type [lindex $p3_larr(type) $i]
-            # time curve
-            if { $p3_larr(time_dist_curve_name) ne "" } {
-                set p3_larr(time_dist_curve_tid) [qss_tid_from_name $p3_larr(time_est_curve_name) ]
-            }
-            if { $p3_larr(time_dist_curve_tid) ne "" } {
-                set ctid $p3_larr(time_dist_curve_tid)
-                if { [info exists tc_x_cache($ctid) ] } {
-                    # already loaded tid curve from earlier. grab from time_clarr(ref)
-                    # no, can't use time_clarr, because it refs possibly local min/med/max values
-                    # grab from a separate cache, then apply acc_fin::curve_import on it
-                    set tc_larr(x) $tc_x_cache_larr($ctid)
-                    set tc_larr(y) $tc_y_cache_larr($ctid)
-                    set tc_larr(label) $tc_label_cache_larr($ctid)
-                } else {
-                    set constants_list [list y x label]
-                    foreach constant $constant_list {
-                        set tc_larr($constant) ""
-                    }
-                    set constants_required_list [list y x]
-                    qss_tid_columns_to_array_of_lists $time_dist_curve_tid tc_larr $constants_list $constants_required_list $package_id $user_id
-                    #tc_larr(x), tc_larr(y) and optionally tc_larr(label) where _larr refers to an array where each value is a list of column data by row 1..n
-                }
-                # import curve given all the available curve choices
-                set time_clarr($t_curvenum) [acc_fin::curve_import $tc_larr(x) $tc_larr(y) $tc_larr(label) [list ] [lindex $p3_arr(time_est_short) $i] [lindex $p3_arr(time_est_median) $i] [lindex $p3_arr(time_est_long) $i] $time_clarr(0) ]
-#### Now that local variation may have been introduced, is there any way to group the curves to minimize memory?
-                # yes. Call a proc that sets the *_clarr. It searches for identical set, and returns index of it, or a new one..
-                lappend p3_larr(t_curve_ref) $t_curvenum
-                incr t_curvenum
-            } else {
-                # use the default curve
-                lappend p3_larr(t_curve_ref) 0
-            }
-            # cost curve
-            if { $p3_larr(cost_dist_curve_name) ne "" } {
-                set p3_larr(cost_dist_curve_tid) [qss_tid_from_name $p3_larr(cost_est_curve_name) ]
-            }
-            if { $p3_larr(cost_dist_curve_tid) ne "" } {
-                set constants_list [list y x label]
-                foreach constant $constant_list {
-                    set cc_larr($constant) ""
-                }
-                set constants_required_list [list y x]
-                qss_tid_columns_to_array_of_lists $cost_dist_curve_tid cc_larr $constants_list $constants_required_list $package_id $user_id
-                #cc_larr(x), cc_larr(y) and optionally cc_larr(label) where _larr refers to an array where each value is a list of column data by row 1..n
-                set cost_clarr($t_curvenum) [acc_fin::curve_import $cc_larr(x) $cc_larr(y) $cc_larr(label) [list ] [lindex $p3_arr(cost_est_low) $i] [lindex $p3_arr(cost_est_median) $i] [lindex $p3_arr(cost_est_high) $i] $cost_clarr(0) ]
-                lappend p3_larr(c_curve_ref) $c_curvenum
-                incr c_curvenum
-            } else {
-                # use the default curve
-                lappend p3_larr(c_curve_ref) 0
-            }
-
-        }
+        acc_fin::p3_load_tid
     }
     # The multi-level aspect of curve data storage needs a double-pointer to be efficient for projects with large memory footprints
     # act_curve($act) => curve_ref
