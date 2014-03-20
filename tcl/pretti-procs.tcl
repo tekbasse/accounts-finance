@@ -618,9 +618,6 @@ ad_proc -public acc_fin::scenario_prettify {
     
     # Build activity map table:
     # activity_ref dependent_tasks
-    # add: activity time curve
-    # add: activity cost curve
-    # add: time_expected cost_expected (based on *_probability_moment)
     
     # build array of activity_ref sequence_num
     # default for each acitivity_ref 1
