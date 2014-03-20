@@ -22,7 +22,7 @@ namespace eval acc_fin {}
 
 # p1 PRETTI Scenario
 #      activity_table_tid
-#      activigy_table_name      name of table containing task network
+#      activity_table_name      name of table containing task network
 #      period_unit          measure of time used in task duration etc.
 #      time_dist_curve_name      a default distribution curve name when a task type doesn't reference one.
 #      time_dist_curve_tid      a default distribution curve table_id, dist_curve_name overrides dist_curve_dtid
@@ -31,6 +31,8 @@ namespace eval acc_fin {}
 #      with_factors_p  defaults to 1 (true). Set to 0 (false) if any factors in p3 are to be ignored.
 #                           This option is useful to intercede in auto factor expansion to add additional
 #                           variation in repeating task detail. (deprecated by auto expansion of nonexisting coefficients).
+#      time_probability_moment A percentage (0..1) along the (cumulative) distribution curve. defaults to 0.5
+#      cost_probability_moment A percentage (0..1) along the (cumulative) distribution curve
 
 # p2 Task Network
 #      activity_ref           reference for an activity, a unique task id, using "activity" to differentiate between table_id's tid 
@@ -54,14 +56,17 @@ namespace eval acc_fin {}
 #      time_est_dist_curve_id Use this distribution curve instead of the time_est short, median and long values
 #                             Consider using a variation of task_type as a reference
 #      time_est_dist_curv_eq  Use this distribution curve equation instead.
-#      time_probability_moment A percentage (0..1) along the (cumulative) distribution curve. defaults to 0.5
+
 
 #      cost_est_low           estimated lowest cost. (Lowest statistical deviation value.)
 #      cost_est_median        estimated median cost. (Statistically, half of deviations are more or less than this.)
 #      cost_est_high          esimage highest cost. (Highest statistical deviation value.)
 #      cost_est_dist_curve_id Use this distribution curve instead of equation and value defaults
 #      cost_est_dist_curv_eq  Use this distribution curve equation. 
-#      cost_probability_moment A percentage (0..1) along the (cumulative) distribution curve
+#
+#      RESERVED columns:
+#      _tCurveRef             integer reference to time curve in time_clarr and   time duration estimate at time_probability_moment in t_est_arr
+#      _cCurveRef             integer reference to cost curve in cost_clarr and   cost duration estimate at cost_probability_moment in c_est_arr
 
 # p3 Task Types:   
 #      type
@@ -73,17 +78,11 @@ namespace eval acc_fin {}
 #      description
 #      max_concurrent       (as an integer, blank = no limit)
 #      max_overlapp_pct021  (as a percentage from 0 to 1, blank = 1)
-#   deprecated:
-#      dependent_tasks      These are other tasks referenced in p2
-#                           How to handle nomenclature collisons? 
-#                           They only collide if p3.dependent_tasks are referenced; and there's no need for this complexity. REMOVED.
+#
+#      RESERVED columns:
+#      _tCurveRef             integer reference to time curve in time_clarr and   time duration estimate at time_probability_moment in t_est_arr
+#      _cCurveRef             integer reference to cost curve in cost_clarr and   cost duration estimate at cost_probability_moment in c_est_arr
 
-# p2e  same as p2, except that factors in p2.dependent_tasks are inactivate
-#      p2.dependent_tasks. It is assumed that any factors in p2.dependent_tasks
-#      have already been expanded and collectively represented as an aggregate task
-#      THIS IS DEPRICATED.
-#      Any task reference with factor is first checked against existing task references.
-#      If task reference with factor is not found, a new one is created and added to p2. 
 
 # cd2 distribution curve table
 #                   Y         where Y = f(x) and f(x) is a 
@@ -175,8 +174,8 @@ ad_proc -private acc_fin::p_load_tid {
     # filter user input that is going to be used as references in arrays:
     set p_larr(type) [acc_fin::list_index_filter $p_larr(type)]
     set p_larr(dependent_tasks) [acc_fin::list_index_filter $p_larr(dependent_tasks)]
-    set p_larr(t_curve_ref) [list ]
-    set p_larr(c_curve_ref) [list ]
+    set p_larr(_tCurveRef) [list ]
+    set p_larr(_cCurveRef) [list ]
     
     set i_max [llength $p_larr(type)]
     for {set i 0} {$i < $i_max} {incr i} {
@@ -209,10 +208,10 @@ ad_proc -private acc_fin::p_load_tid {
             # import curve given all the available curve choices
             set curve_list [acc_fin::curve_import $tc_larr(x) $tc_larr(y) $tc_larr(label) [list ] [lindex $p3_arr(time_est_short) $i] [lindex $p3_arr(time_est_median) $i] [lindex $p3_arr(time_est_long) $i] $time_clarr(0) ]
             set curvenum [acc_fin::larr_set time_clarr $curve_list]
-            lappend p_larr(t_curve_ref) $curvenum
+            lappend p_larr(_tCurveRef) $curvenum
         } else {
             # use the default curve
-            lappend p_larr(t_curve_ref) 0
+            lappend p_larr(_tCurveRef) 0
         }
         
         # cost curve
@@ -242,10 +241,10 @@ ad_proc -private acc_fin::p_load_tid {
             # import curve given all the available curve choices
             set curve_list [acc_fin::curve_import $cc_larr(x) $cc_larr(y) $cc_larr(label) [list ] [lindex $p3_arr(cost_est_low) $i] [lindex $p3_arr(cost_est_median) $i] [lindex $p3_arr(cost_est_high) $i] $cost_clarr(0) ]
             set curvenum [acc_fin::larr_set cost_clarr $curve_list]
-            lappend p_larr(c_curve_ref) $curvenum
+            lappend p_larr(_cCurveRef) $curvenum
         } else {
             # use the default curve
-            lappend p_larr(c_curve_ref) 0
+            lappend p_larr(_cCurveRef) 0
         }
     }
     return 1
@@ -559,22 +558,12 @@ ad_proc -public acc_fin::scenario_prettify {
     } 
     set cc_lists [acc_fin::curve_import $cc_larr(x) $cc_larr(y) $cc_larr(label) [list ] $p1_arr(cost_est_low) $p1_arr(cost_est_median) $p1_arr(cost_est_high) [list ] ]
 
-
-
-  ######  
-    # Going to use a double pointer system for a curve_list_of_lists, where each curve_list is a unique list, referenced by curve_lol index
-    # curves_lol consists of:
-    #  \[list  \  the curve index
-    #  \[list  \ the list that defines a specific curve
-    #  \[list x1 y1 label1\] \[list x2 y2 label2 \] \[list x3 y3 label3 \] \] <- curve data
-    # hmm.. actually, since each list has a variable length curves_lol will instead be represented as curves_larr(curve_ref) 
-    # even though curve_ref is an integer.  
     # curves_larr has 2 versions: time as t_c_larr and cost as c_c_larr
     set time_clarr(0) $tc_lists
     set cost_clarr(0) $cc_lists
 
-    # p3_curve_arr($type) gives curve index (to curve's time_clarr or cost_clarr )
-    # p2_curve_arr($activity) gives curve index (to curve's time_clarr or cost_clarr )
+    # p3_larr($type) gives curve index (to curve's time_clarr or cost_clarr )
+    # p2_l_arr($activity) gives curve index (to curve's time_clarr or cost_clarr )
     # index 0 is default
 
     # import task_types_list
@@ -603,6 +592,17 @@ ad_proc -public acc_fin::scenario_prettify {
         set p2_larr(activity_ref) [acc_fin::list_index_filter $p2_larr(activity_ref)]
         set p2_larr(dependent_tasks) [acc_fin::list_index_filter $p2_larr(dependent_tasks)]
 
+    }
+
+    # Calculate base durations for time_probability_moment
+    set t_moment $p1_arr(time_probability_moment)
+    foreach tCurve [array names time_clarr] {
+        set t_est_arr($tCurve) [qaf_y_of_x_dist_curve $t_moment $time_clarr($tCurve) ]
+    }
+    # Calculate base costs for cost_probability_moment
+    set c_moment $p1_arr(cost_probability_moment)
+    foreach cCurve [array names cost_clarr] {
+        set c_est_arr($cCurve) [qaf_y_of_x_dist_curve $c_moment $cost_clarr($cCurve) ]
     }
 
 
