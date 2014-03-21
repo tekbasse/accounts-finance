@@ -153,12 +153,20 @@ ad_proc -private acc_fin::p_load_tid {
     constants_required_list
     p_larr_name
     tid
+    {p3_larr_name ""}
 } {
-    loads array_name with p3 style table for use with internal code
+    loads array_name with p2 or p3 style table for use with internal code
 } {
     upvar $p_larr_name p_larr
     upvar time_clarr time_clarr
     upvar cost_clarr cost_clarr
+    set task_types_exist_p 0    
+    if { $p3_larr_name ne ""} {
+        upvar $p3_larr_name p3_larr
+        if { [info exists p_larr(type)] && [llength $p_larr(type)] > 0 } {
+            set task_types_exist_p 1
+        } 
+    }
 # following are not upvar'd because the cache is mainly useless after proc ends
 #    upvar tc_cache_larr tc_cache_larr
 #    upvar cc_cache_larr cc_cache_larr
@@ -176,10 +184,9 @@ ad_proc -private acc_fin::p_load_tid {
     set p_larr(dependent_tasks) [acc_fin::list_index_filter $p_larr(dependent_tasks)]
     set p_larr(_tCurveRef) [list ]
     set p_larr(_cCurveRef) [list ]
-    
     set i_max [llength $p_larr(type)]
     for {set i 0} {$i < $i_max} {incr i} {
-        set type [lindex $p_larr(type) $i]
+
         
         # time curve
         if { $p_larr(time_dist_curve_name) ne "" } {
@@ -206,7 +213,14 @@ ad_proc -private acc_fin::p_load_tid {
                 #tc_larr(x), tc_larr(y) and optionally tc_larr(label) where _larr refers to an array where each value is a list of column data by row 1..n
             }
             # import curve given all the available curve choices
-            set curve_list [acc_fin::curve_import $tc_larr(x) $tc_larr(y) $tc_larr(label) [list ] [lindex $p3_arr(time_est_short) $i] [lindex $p3_arr(time_est_median) $i] [lindex $p3_arr(time_est_long) $i] $time_clarr(0) ]
+
+#### if $task_types_exist_p , extract the curve for the type, and assign to $type_tcurve_list otherwise set to blank list
+            if { $task_types_exist_p } {
+                set type [lindex $p_larr(type) $i]
+                set type_i [lsearch $p3_larr(type) $type]
+                set type_tcurve_list [lindex $p3_larr(_tCurveRef) $type_i]
+            }
+            set curve_list [acc_fin::curve_import $tc_larr(x) $tc_larr(y) $tc_larr(label) $type_tcurve_list [lindex $p_arr(time_est_short) $i] [lindex $p_arr(time_est_median) $i] [lindex $p_arr(time_est_long) $i] $time_clarr(0) ]
             set curvenum [acc_fin::larr_set time_clarr $curve_list]
             lappend p_larr(_tCurveRef) $curvenum
         } else {
@@ -238,8 +252,9 @@ ad_proc -private acc_fin::p_load_tid {
                 }
                 #cc_larr(x), cc_larr(y) and optionally cc_larr(label) where _larr refers to an array where each value is a list of column data by row 1..n
             }
+#### if p_larr(type) exists, extract the curve for the type, and assign to $type_ccurve_list otherwise, set to blank list
             # import curve given all the available curve choices
-            set curve_list [acc_fin::curve_import $cc_larr(x) $cc_larr(y) $cc_larr(label) [list ] [lindex $p3_arr(cost_est_low) $i] [lindex $p3_arr(cost_est_median) $i] [lindex $p3_arr(cost_est_high) $i] $cost_clarr(0) ]
+            set curve_list [acc_fin::curve_import $cc_larr(x) $cc_larr(y) $cc_larr(label) type_ccurve_list [lindex $p_arr(cost_est_low) $i] [lindex $p_arr(cost_est_median) $i] [lindex $p_arr(cost_est_high) $i] $cost_clarr(0) ]
             set curvenum [acc_fin::larr_set cost_clarr $curve_list]
             lappend p_larr(_cCurveRef) $curvenum
         } else {
@@ -560,8 +575,6 @@ ad_proc -public acc_fin::scenario_prettify {
     set time_clarr(0) $tc_lists
     set cost_clarr(0) $cc_lists
 
-    # p3_larr($type) gives curve index (to curve's time_clarr or cost_clarr )
-    # p2_l_arr($activity) gives curve index (to curve's time_clarr or cost_clarr )
     # index 0 is default
 
     # import task_types_list
