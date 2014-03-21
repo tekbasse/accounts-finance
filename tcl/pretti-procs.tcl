@@ -217,6 +217,7 @@ ad_proc -private acc_fin::p_load_tid {
             # import curve given all the available curve choices
 
 #### if $task_types_exist_p , extract the curve for the type, and assign to $type_tcurve_list otherwise set to blank list
+#### This should be done using an array.. curve_arr($task) .. Does this array exist?
             if { $task_types_exist_p } {
                 set type [lindex $p_larr(type) $i]
                 set type_i [lsearch $p3_larr(type) $type]
@@ -262,6 +263,7 @@ ad_proc -private acc_fin::p_load_tid {
             set curve_list [acc_fin::curve_import $cc_larr(x) $cc_larr(y) $cc_larr(label) type_ccurve_list [lindex $p_arr(cost_est_low) $i] [lindex $p_arr(cost_est_median) $i] [lindex $p_arr(cost_est_high) $i] $cost_clarr(0) ]
             set curvenum [acc_fin::larr_set cost_clarr $curve_list]
             lappend p_larr(_cCurveRef) $curvenum
+#### add an array:  set type_t_curve_arr($type) $curvenum  and set type_c_curve_arr($type).. 
         } else {
             # use the default curve
             lappend p_larr(_cCurveRef) 0
@@ -589,9 +591,10 @@ ad_proc -public acc_fin::scenario_prettify {
         acc_fin::p_load_tid $constants_list $constants_required_list p3_larr $p1_arr(task_types_tid)
     }
     # The multi-level aspect of curve data storage needs a double-pointer to be efficient for projects with large memory footprints
-    # act_curve($act) => curve_ref
-    # type_curve($type) => curve_ref
-    # tid_curve($tid) => curve_ref
+    # act_curve_arr($act) => curve_ref
+    # type_t_curve_arr($type) => curve_ref
+    # type_c_curve_arr($type) => curve_ref
+    # tid_curve_arr($tid) => curve_ref
     # where curve_ref is index of curves_lol
     # where curve_ref = 0 is default
     # so, add a p2_larr(curve_ref) column which references curves_lol
