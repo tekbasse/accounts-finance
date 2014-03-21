@@ -413,8 +413,6 @@ ad_proc -private acc_fin::curve_import {
             set row [list [lindex $c_x_list $i] [lindex $c_y_list $i] [lindex $c_label_list $i]]
             lappend c_lists $row
         }
-
-
     }
     
     # 5. if an ordered list of lists x,y,label exists, use it as a fallback default
@@ -587,19 +585,21 @@ ad_proc -public acc_fin::scenario_prettify {
         set constants_list [list activity_ref aid_type dependent_tasks name description max_concurrent max_overlap_pct021 time_est_short time_est_median time_est_long time_est_dist_curve_id time_probability_moment cost_est_low cost_est_median cost_est_high cost_est_dist_curve_id cost_probability_moment]
         set constants_required_list [list activity_ref dependent_tasks]
         acc_fin::p_load_tid $constants_list $constants_required_list p2_larr $p1_arr(activity_table_tid)
-
         # filter user input
         set p2_larr(activity_ref) [acc_fin::list_index_filter $p2_larr(activity_ref)]
         set p2_larr(dependent_tasks) [acc_fin::list_index_filter $p2_larr(dependent_tasks)]
-
     }
+#### Now, substitute task_type data (p3_larr) into activity data (p2_larr) when p2_larr data is less detailed or missing.
+    # if p3_larr curve for activity is longer than p2_larr curve, use p3_larr curve.
+    # other substitutions if the p2_larr field is blank.
 
-    # Calculate base durations for time_probability_moment
+
+    # Calculate base durations for time_probability_moment. These work for activities and task types
     set t_moment $p1_arr(time_probability_moment)
     foreach tCurve [array names time_clarr] {
         set t_est_arr($tCurve) [qaf_y_of_x_dist_curve $t_moment $time_clarr($tCurve) ]
     }
-    # Calculate base costs for cost_probability_moment
+    # Calculate base costs for cost_probability_moment. These work for activities and task types
     set c_moment $p1_arr(cost_probability_moment)
     foreach cCurve [array names cost_clarr] {
         set c_est_arr($cCurve) [qaf_y_of_x_dist_curve $c_moment $cost_clarr($cCurve) ]
@@ -620,9 +620,9 @@ ad_proc -public acc_fin::scenario_prettify {
     # activity_ref dependent_tasks
     
     # build array of activity_ref sequence_num
-    # default for each acitivity_ref 1
+    # default for each activity_ref 1
     # assign an activity_ref one more than the max sequence_num of its dependencies
-    # acitivity_refs are indexes to arrays since no predetermination can be made about p2_larr content
+    # activity_refs are indexes to arrays since no predetermination can be made about p2_larr content
     set i 0
     set sequence_1 0
     foreach act $p2_larr(activity_ref) {
