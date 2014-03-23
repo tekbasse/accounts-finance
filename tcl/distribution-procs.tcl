@@ -90,10 +90,12 @@ ad_proc -public qaf_y_of_x_dist_curve {
         lappend x_list [lindex $y_x 1]
     }
     set x_sum [f::sum $x_list]
+    # normalize p to range of x
+    set p_normalized [expr { $p * $x_sum } ]
     # determine y @ x
-    while { $i < $count_max && $p_test < $p} {
+    while { $i < $count_max && $p_test < $p_normalized} {
         set row_list [lindex $y_x_list $i]
-        set x [expr { [lindex $row_list 1] / ( 1.0 * $x_sum ) } ]
+        set x [lindex $row_list 1]
         set p_test [expr { $x + $p_test + 0. } ]
         incr i
     }
@@ -104,7 +106,7 @@ ad_proc -public qaf_y_of_x_dist_curve {
         set row_prev_list [lindex $y_x_list $i]
         set x1 [expr { [lindex $row_prev_list 1] + 0. } ]
         set y1 [expr { [lindex $row_prev_list 0] + 0. } ]
-        set y [expr { ( $y2 - $y1 ) * ( $p - $x1 ) / ( $x2 - $x1) + $y1 } ]
+        set y [expr { ( $y2 - $y1 ) * ( $p_normalized - $x1 ) / ( $x2 - $x1) + $y1 } ]
     } else {
         set y [expr { [lindex $row_list 0] + 0. } ]
     }
