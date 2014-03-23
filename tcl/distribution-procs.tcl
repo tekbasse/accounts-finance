@@ -84,9 +84,16 @@ ad_proc -public qaf_y_of_x_dist_curve {
     set count_max [llength $y_x_pair_list]
     set i 0
     set p_test 0.
+    # normalize x to 1.
+    set x_list [list ]
+    foreach y_x $y_x_list {
+        lappend x_list [lindex $y_x 1]
+    }
+    set x_sum [f::sum $x_list]
+    # determine y @ x
     while { $i < $count_max && $p_test < $p} {
         set row_list [lindex $y_x_list $i]
-        set x [lindex $row_list 1]
+        set x [expr { [lindex $row_list 1] / ( 1.0 * $x_sum ) } ]
         set p_test [expr { $x + $p_test + 0. } ]
         incr i
     }
