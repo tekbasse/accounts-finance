@@ -575,11 +575,6 @@ ad_proc -public acc_fin::scenario_prettify {
     } 
     set tc_lists [acc_fin::curve_import $tc_larr(x) $tc_larr(y) $tc_larr(label) [list ] $p1_arr(time_est_short) $p1_arr(time_est_median) $p1_arr(time_est_long) [list ] ]
 
-    #### check flags if any curves are not normalized in x, normalize to 1
-    ### Add option in App to normalize any column to 1, sort any column up/down.
-    ###   which is handy for most cases. 
-    ### It cannot be done by default for all cases, because order may already be predetermined.
-    
     # Make cost_curve_data 
     if { $p1_arr(cost_dist_curve_tid) ne "" } {
         set constants_list [list y x label]
@@ -641,31 +636,26 @@ ad_proc -public acc_fin::scenario_prettify {
         set c_est_arr($cCurve) [qaf_y_of_x_dist_curve $c_moment $cost_clarr($cCurve) ]
     }
 
-
-    #### load other reference tables
-
     # handy api ref
     # util_commify_number
     # format "% 8.2f" $num
-    # f::sum $list
     
     ### PERTTI calculations
 
     # Build:
-    #  activity map table:  activity_ref dependent_tasks
-    #  array of activity_ref sequence_num
-    # default for each activity_ref 1
-    # assign an activity_ref one more than the max sequence_num of its dependencies
-    # activity_refs are indexes to arrays since no predetermination can be made about p2_larr content
+    #  activity map table:  depnc_larr($activity_ref) dependent_tasks_list
+    #  array of activity_ref sequence_num: act_seq_num_arr($activity_ref) sequence_number
+    # default sequence is 1. 
+    # an activity_ref's sequence is one more than the max sequence_num of its dependencies
     set i 0
     set sequence_1 0
     foreach act $p2_larr(activity_ref) {
         set depnc [lindex $p2_larr(dependent_tasks) $i]
         # depnc: comma list of dependencies
-        # depnc_arr() list of dependencies
-        set depnc_arr($act) [split $depnc ,]
-        # calcd_p_arr($act) Answers question: Has relative sequence number for $act been calculated?
-        set calcd_p_arr($act) 0
+        # depnc_larr() list of dependencies
+        set depnc_larr($act) [split $depnc ";, "]
+        # _c($act) Answers question: Has relative sequence number for $act been calculated?
+        set _c($act) 0
         # act_seq_num_arr is relative sequence number of an activity. 
         set act_seq_num_arr($act) $sequence_1
         incr i
@@ -690,9 +680,10 @@ ad_proc -public acc_fin::scenario_prettify {
     # depnc_eq_arr() is equation that answers question: Are dependencies met for $act?
     foreach act $p2_larr(activity_ref) {
         set eq "1 &&"
-        foreach dep $depnc_arr($act) {
-            # CODING NOTE:
-            # strings generally are okay to 100,000,000+ chars..
+        foreach dep $depnc_larr($act) {
+            # CODING NOTE: strings generally are okay to 100,000,000+ chars..
+            # If there are memory issues, convert eq to a reference_list to calculate elements sequentially.
+
             # array _c() answers question: are all dependencies calculated for activity?
             append eq " _c($dep) &&"
         }
@@ -719,7 +710,7 @@ ad_proc -public acc_fin::scenario_prettify {
                 
                 # max_num: maximum relative sequence number for activity dependencies
                 set max_num 0
-                foreach test_act $depnc_arr($act) {
+                foreach test_act $depnc_larr($act) {
                     set test $act_seq_num_arr($test_act)
                     if { $max_num < $test } {
                         set max_num $test
@@ -743,7 +734,7 @@ ad_proc -public acc_fin::scenario_prettify {
                 # path_duration(path) is the min. path duration to complete dependent paths
                 set path_duration 0
                 # set duration_new to the longest dependent segment.
-                foreach dep_act $depnc_arr($act) {
+                foreach dep_act $depnc_larr($act) {
                     if { $path_dur_arr($dep_act) > $path_duration } {
                         set path_duration $path_dur_arr($dep_act)
                     }
@@ -751,7 +742,7 @@ ad_proc -public acc_fin::scenario_prettify {
                 set duration_arr($act) [expr { $path_duration + $time_expected_arr($act) } ]
                 set path_seg_list_arr($act) [list ]
                 #bad referencing here: separate duration from rest.
-                foreach dep_act $depnc_arr($act) {
+                foreach dep_act $depnc_larr($act) {
                     foreach path_list $path_seg_list_arr($dep_act) {
                         set path_new $path_list
                         lappend path_new $act
@@ -820,10 +811,10 @@ ad_proc -public acc_fin::scenario_prettify {
     set base_lists [list ]
     
     foreach act $p2_larr(activity_ref) {
-        set has_direct_dependency_p [expr { [llength $depnc_arr($act)] > 0 } ]
+        set has_direct_dependency_p [expr { [llength $depnc_larr($act)] > 0 } ]
         set on_critical_path_p [expr { [lsearch -exact $cp_list $act] > -1 } ]
         set on_a_sig_path_p [expr { $act_freq_in_load_cp_alts_arr($act) > $act_median_count } ]
-        set activity_list [list $act $act_seq_num_arr($act) $has_direct_dependency_p $on_critical_path_p $on_a_sig_path_p $act_freq_in_load_cp_alts_arr($act) $duration_arr($act) $time_expected_arr($act) $depnc_arr($act) ]
+        set activity_list [list $act $act_seq_num_arr($act) $has_direct_dependency_p $on_critical_path_p $on_a_sig_path_p $act_freq_in_load_cp_alts_arr($act) $duration_arr($act) $time_expected_arr($act) $depnc_larr($act) ]
         lappend base_lists $activity_list
     }
     
