@@ -649,13 +649,11 @@ ad_proc -public acc_fin::scenario_prettify {
     # format "% 8.2f" $num
     # f::sum $list
     
-    ## # PERT calculations
+    ### PERTTI calculations
 
-    
-    # Build activity map table:
-    # activity_ref dependent_tasks
-    
-    # build array of activity_ref sequence_num
+    # Build:
+    #  activity map table:  activity_ref dependent_tasks
+    #  array of activity_ref sequence_num
     # default for each activity_ref 1
     # assign an activity_ref one more than the max sequence_num of its dependencies
     # activity_refs are indexes to arrays since no predetermination can be made about p2_larr content
@@ -673,66 +671,7 @@ ad_proc -public acc_fin::scenario_prettify {
         incr i
     }
     
-
-    # each element in act_time_est_list is a curve. If curve is blank, the default curve is used.
-    # tc_larr(x) is a list_of_lists , denoting normalized percent of area under curve (p021)
-    # tc_larr(y) is duration value of curve
-    set i 0
-    foreach act $p2_larr(activity_ref) {
-        
-        # If act has a info for calculating a curve, get it
-
-        # More cases have act_tc_larr, so default to 1
-        set has_act_tc_larr_p 1
-        set act_time_est_list [lindex $p2_larr(time_dist_curve_tid) $i]
-        if { $act_time_est_list ne "" } {
-            # get time curve into array tc_larr
-            # use tempoary arr act_tc_larr to pass info from qss_*
-            set act_tc_larr(x) [list ]
-            set act_tc_larr(y) [list ]
-            set act_tc_larr(label) [list ]
-            set constants_list [list y x label]
-            set constants_required_list [list y x]
-            qss_tid_columns_to_array_of_lists $time_dist_curve_tid act_tc_larr $constants_list $constants_required_list $package_id $user_id
-            
-        } elseif { [llength $tc_larr(y) > 0] } {
-            # If there is a default, use it
-            set act_tc_larr(x) $tc_larr(x)
-            set act_tc_larr(y) $tc_larr(y)
-            set act_tc_larr(label) $tc_larr(label)
-            
-        } else {
-            # No time defaults.
-            set has_act_tc_larr_p 0
-        }
-        if { $has_act_tc_larr_p } {
-            set act_tc_larr_len [llength $act_tc_larr(y)]
-            set act_tc_larr(xy) [list ]
-            for {set i 0} {$i < $act_tc_larr_len } {incr i} {
-                set row [list [lindex $act_tc_larr(x) $i] [lindex $act_tc_larr(y) $i]]
-                lappend act_tc_larr(xy) $row
-            }
-            # Set the curve for this act
-            
-            set tcn_larr($act) $act_tc_larr(xy)
-        } else {
-            # use a default curve for this act
-            
-            #### this should check to see if activity type has a dist_curve before using the default...
-            
-            set tcn_larr($act) $tc_larr(xy)
-        }
-        # Calculate the default time_expected
-        set time_expected_arr($act) [qaf_y_of_x_dist_curve $p1_arr(time_probability_moment) $tc_larr(xy) 0]
-        
-        
-        
-        # Set default of path_durations
-        set path_dur_arr($act) $time_expected_arr($act)
-        incr i
-    }
-    
-    # Calculate paths in the main loop to save resouces.
+    # Calculate paths in the main loop to save resources.
     #  Each path is a list of numbers referenced by array, where array is path.
     #  set path_segment_ends_in_lists($act) 
     #         so future segments can quickly reference it to build theirs.
@@ -740,7 +679,7 @@ ad_proc -public acc_fin::scenario_prettify {
     # Some of the references are incomplete paths, but these can be filtered as needed.
     # All paths must be assessed in order to handle all possibilities
     # Paths are used to determine critical path and fast crawl a single path.
-    
+
     # An activity cannot start until the longest dependent segment has completed.
     
     # for strict critical path, create a list of lists, where 
@@ -754,12 +693,13 @@ ad_proc -public acc_fin::scenario_prettify {
         foreach dep $depnc_arr($act) {
             # CODING NOTE:
             # strings generally are okay to 100,000,000+ chars..
-            # considering reducing size of calcd_p_arr to increase capacity
-            # or switch to manually calculate each incompletely calced network
-            append eq " calcd_p_arr($dep) &&"
+            # array _c() answers question: are all dependencies calculated for activity?
+            append eq " _c($dep) &&"
         }
+        # remove the last " &&":
         set eq [string range $eq 0 end-3]
-        regsub -all -- {calcd} $eq {$calcd} depnc_eq_arr($act)
+        # convert _c_arr reference to a variable by adding a dollar sign prefix:
+        regsub -all -- { _c} $eq { $_c} depnc_eq_arr($act)
     }
     # main process looping
     set all_calced_p 0
