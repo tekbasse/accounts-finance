@@ -570,9 +570,7 @@ ad_proc -public acc_fin::scenario_prettify {
     #     local curve
     #     local 3-point (min,median,max)
     #     general curve (normalized to local 1 point median ); local 1 point median is minimum time data requirement
-    #     general 3-point (normalized to local median)
-    
-    
+    #     general 3-point (normalized to local median)    
 
     if { $p1_arr(time_dist_curve_tid) ne "" } {
         # get time curve into array tc_larr
@@ -640,6 +638,8 @@ ad_proc -public acc_fin::scenario_prettify {
     # Removed dependent_tasks from task_type substitution, 
     # because dependent_tasks creates a level of complexity significant enough to be avoided
     # through program set-up.
+    set p3_type_list $p3_larr(type)
+    set p2_task_type_list $p2_larr(aid_type)
     foreach constant $constants_woc_list {
         if { [llength $p2_larr(aid_type) ] > 0 && [llength $p3_larr($constant)] > 0 } {
             set i 0
@@ -647,7 +647,8 @@ ad_proc -public acc_fin::scenario_prettify {
             foreach act $p2_larr(activity_ref) {
                 set p2_value [lindex $p2_col_list $i]
                 if { $p2_value eq "" } {
-                    set p2_col_list [lreplace $p2_col_list $i $i [lindex $p3_larr(name) $i] ]
+                    set ii [lsearch -exact $p3_type_list [lindex $p2_task_type_list $i]]
+                    set p2_col_list [lreplace $p2_col_list $i $i [lindex $p3_larr($constant) $ii] ]
                 }
                 incr i
             }
