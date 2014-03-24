@@ -115,7 +115,8 @@ namespace eval acc_fin {}
 ad_proc -public acc_fin::task_factors_expand {
     a_pretti_lol
 } {
-    Expands dependent tasks with factors in a pretti_list_of_lists by appending new definitions of tasks that match tasks with factors as indexes.
+    Expands dependent tasks with factors in a pretti_list_of_lists 
+    by appending new definitions of tasks that match tasks with factors as indexes.
 } {
 
 
@@ -127,7 +128,14 @@ ad_proc -public acc_fin::larr_set {
     larr_name
     data_list
 } {
-    assigns a data_list to an index in array larr_name in a manner that minimizes memory footprint. If the list already exists (exactly), it returns the existing index, otherwise it assignes a new value in array and a new index of array is returned. This procedure is to help reduce memory overhead for lots of list data.
+    Assigns a data_list to an index in array larr_name 
+    in a manner that minimizes memory footprint. 
+    If the list already exists (exactly), 
+    it returns the existing index, 
+    otherwise it assignes a new index in array and 
+    a new index of array is returned. 
+    This procedure helps reduce memory overhead 
+    for indexes with lots of list data.
 } {
     upvar $larr_name larr_name
     # If memory issues exist even after using this proc, one can further compress the array by applying a dictionary storage technique.
@@ -476,7 +484,10 @@ ad_proc -public acc_fin::scenario_prettify {
     scenario_list_of_lists
     {with_factors_p 0}
 } {
-    processes PRETTI scenario. Returns resulting PRETTI table as a list of lists. If with_factors_p is 1, an intermediary step processes factor multiplicands in dependent_tasks list, appending table with a complete list of expanded, nonrepeating tasks.
+    Processes PRETTI scenario. Returns resulting PRETTI table as a list of lists. 
+    If with_factors_p is 1, an intermediary step processes factor multiplicands 
+    in dependent_tasks list, appending table with a complete list of expanded, 
+    nonrepeating tasks.
 } {
     # load scenario values
     
@@ -621,7 +632,9 @@ ad_proc -public acc_fin::scenario_prettify {
         set p2_larr(dependent_tasks) [acc_fin::list_index_filter $p2_larr(dependent_tasks)]
     }
 #### Now, substitute task_type data (p3_larr) into activity data (p2_larr) when p2_larr data is less detailed or missing.
-    # if p3_larr curve for activity is longer than p2_larr curve, use p3_larr curve.
+    # curve data has already been substituted in p_load_tid
+
+    # If p3_larr curve for activity is longer than p2_larr curve, use p3_larr curve.
     # other substitutions if the p2_larr field is blank.
 
 
@@ -653,7 +666,15 @@ ad_proc -public acc_fin::scenario_prettify {
         set depnc [lindex $p2_larr(dependent_tasks) $i]
         # depnc: comma list of dependencies
         # depnc_larr() list of dependencies
-        set depnc_larr($act) [split $depnc ";, "]
+        # Filter out any blanks
+        set scratch_list [split $depnc ";, "]
+        set scratch2_list [list ]
+        foreach dep $scratch_list {
+            if { $dep ne "" } {
+                lappend scratch2_list $dep
+            }
+        }
+        set depnc_larr($act) $scratch2_list
         # _c($act) Answers question: Has relative sequence number for $act been calculated?
         set _c($act) 0
         # act_seq_num_arr is relative sequence number of an activity. 
@@ -662,17 +683,22 @@ ad_proc -public acc_fin::scenario_prettify {
     }
     
     # Calculate paths in the main loop to save resources.
-    #  Each path is a list of numbers referenced by array, where array is path.
+    #  Each path is a list of numbers referenced by array, where 
+    # array index last path (of a dependency track).
     #  set path_segment_ends_in_lists($act) 
     #         so future segments can quickly reference it to build theirs.
+
     # This keeps path making nearly linear. There are as many path references as there are activities..
-    # Some of the references are incomplete paths, but these can be filtered as needed.
+
+    # Since some activities depend on others, some of the references are 
+    # incomplete activity tracks, but these can be filtered as needed.
+
     # All paths must be assessed in order to handle all possibilities
     # Paths are used to determine critical path and fast crawl a single path.
 
     # An activity cannot start until the longest dependent segment has completed.
     
-    # for strict critical path, create a list of lists, where 
+    # For strict critical path, create a list of lists, where 
     # each list is a list of dependencies from start to finish (aka path)  + the longest duraction path of activity including dependencies.
     # sum the duration for each list. The longest duration is the strict defintion of critical path.
     
