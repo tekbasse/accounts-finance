@@ -631,19 +631,37 @@ ad_proc -public acc_fin::scenario_prettify {
         set p2_larr(activity_ref) [acc_fin::list_index_filter $p2_larr(activity_ref)]
         set p2_larr(dependent_tasks) [acc_fin::list_index_filter $p2_larr(dependent_tasks)]
     }
-#### Now, substitute task_type data (p3_larr) into activity data (p2_larr) when p2_larr data is less detailed or missing.
-    # curve data has already been substituted in p_load_tid
 
-    # If p3_larr curve for activity is longer than p2_larr curve, use p3_larr curve.
-    # other substitutions if the p2_larr field is blank.
+    # Substitute task_type data (p3_larr) into activity data (p2_larr) when p2_larr data is less detailed or missing.
+    # Curve data has already been substituted in p_load_tid
+    # Other substitutions when a p2_larr field is blank.
+    # _woc_ = without curve data
+    set constants_woc_list [list name description]
+    # Removed dependent_tasks from task_type substitution, 
+    # because dependent_tasks creates a level of complexity significant enough to be avoided
+    # through program set-up.
+    foreach constant $constants_woc_list {
+        if { [llength $p2_larr(aid_type) ] > 0 && [llength $p3_larr($constant)] > 0 } {
+            set i 0
+            set p2_col_list $p2_larr($constant)
+            foreach act $p2_larr(activity_ref) {
+                set p2_value [lindex $p2_col_list $i]
+                if { $p2_value eq "" } {
+                    set p2_col_list [lreplace $p2_col_list $i $i [lindex $p3_larr(name) $i] ]
+                }
+                incr i
+            }
+            set p2_larr($constant) $p2_col_list
+        }
+    }
 
 
-    # Calculate base durations for time_probability_moment. These work for activities and task types
+    # Calculate base durations for time_probability_moment. These work for activities and task types.
     set t_moment $p1_arr(time_probability_moment)
     foreach tCurve [array names time_clarr] {
         set t_est_arr($tCurve) [qaf_y_of_x_dist_curve $t_moment $time_clarr($tCurve) ]
     }
-    # Calculate base costs for cost_probability_moment. These work for activities and task types
+    # Calculate base costs for cost_probability_moment. These work for activities and task types.
     set c_moment $p1_arr(cost_probability_moment)
     foreach cCurve [array names cost_clarr] {
         set c_est_arr($cCurve) [qaf_y_of_x_dist_curve $c_moment $cost_clarr($cCurve) ]
