@@ -656,7 +656,6 @@ ad_proc -public acc_fin::scenario_prettify {
         }
     }
 
-
     # Calculate base durations for time_probability_moment. These work for activities and task types.
     set t_moment $p1_arr(time_probability_moment)
     foreach tCurve [array names time_clarr] {
@@ -749,11 +748,11 @@ ad_proc -public acc_fin::scenario_prettify {
     while { !$all_calced_p && $activity_count > $i } {
         set all_calcd_p 1
         foreach act $p2_larr(activity_ref) {
-            set dependencies_met_p [expr $depnc_eq_arr($act) ]
+            set dependencies_met_p [expr { $depnc_eq_arr($act) } ]
             set act_seq_max $sequence_1
             if { $dependencies_met_p && !$calcd_p_arr($act) } {
                 
-                # max_num: maximum relative sequence number for activity dependencies
+                # Calc max_num: maximum relative sequence number for activity dependencies
                 set max_num 0
                 foreach test_act $depnc_larr($act) {
                     set test $act_seq_num_arr($test_act)
@@ -761,6 +760,7 @@ ad_proc -public acc_fin::scenario_prettify {
                         set max_num $test
                     }
                 }
+
                 # Add activity's relative sequence number: act_seq_num_arr
                 set act_seq_nbr [expr { $max_num + 1 } ]
                 set act_seq_num_arr($act) $act_seq_nbr
