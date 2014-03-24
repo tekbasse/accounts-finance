@@ -169,7 +169,7 @@ ad_proc -private acc_fin::p_load_tid {
     upvar time_clarr time_clarr
     upvar cost_clarr cost_clarr
     upvar type_t_curve_arr type_t_curve_arr
-    upvar type_t_curve_arr type_t_curve_arr
+    upvar type_c_curve_arr type_c_curve_arr
     set task_type_column_exists_p 0
     set task_types_exist_p 0    
     set type_tcurve_list [list ]
@@ -286,7 +286,7 @@ ad_proc -private acc_fin::p_load_tid {
         lappend p_larr(_cCurveRef) $ccurvenum
         # If this is a p3_larr, create pointer arrays for use with p2_larr
         if { $task_type_column_exists_p && !$task_types_exist_p } {
-            if {  $type ne "" } {
+            if { $type ne "" } {
                 set type_t_curve_arr($type) $tcurvenum
                 set type_c_curve_arr($type) $ccurvenum
             }
@@ -782,6 +782,9 @@ ad_proc -public acc_fin::scenario_prettify {
                 foreach dep_act $depnc_larr($act) {
                     if { $path_dur_arr($dep_act) > $path_duration } {
                         set path_duration $path_dur_arr($dep_act)
+#####  path_dur_arr( ) has not been set..
+### durations estimates and cost estimates are stored with curve_ref index in: t_est_arr($tCurve) and c_est_arr($cCurve)
+#### activity to curve_refs are stored in p2_larr(_tCurveRef) (a list) and p2_larr(_cCurveRef)
                     }
                 }
                 set duration_arr($act) [expr { $path_duration + $time_expected_arr($act) } ]
