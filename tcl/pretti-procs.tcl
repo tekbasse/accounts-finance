@@ -797,12 +797,16 @@ ad_proc -public acc_fin::scenario_prettify {
                 # path_duration(path) is the min. path duration to complete dependent paths
                 set path_duration 0
                 # set duration_new to the longest dependent segment.
+#### Also, add all the costs of dependent segments...
                 foreach dep_act $depnc_larr($act) {
                     if { $path_dur_arr($dep_act) > $path_duration } {
                         set path_duration $path_dur_arr($dep_act)
                     }
                 }
                 set duration_arr($act) [expr { $path_duration + $time_expected_arr($act) } ]
+
+
+
                 set path_seg_list_arr($act) [list ]
                 foreach dep_act $depnc_larr($act) {
                     foreach path_list $path_seg_list_arr($dep_act) {
