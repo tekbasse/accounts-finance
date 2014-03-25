@@ -666,6 +666,24 @@ ad_proc -public acc_fin::scenario_prettify {
     foreach cCurve [array names cost_clarr] {
         set c_est_arr($cCurve) [qaf_y_of_x_dist_curve $c_moment $cost_clarr($cCurve) ]
     }
+    # Create activity time estimate and cost estimate arrays for repeated use in main loop
+    set i 0
+    foreach act $p2_larr(activity_ref) {
+        set tref [lindex $p2_larr(_tCurveRef) $i]
+        set time_expected_arr($act) $t_est_arr($tref)
+        set cref [lindex $p2_larr(_cCurveRef) $i]
+        set cost_expected_arr($act) $c_est_arr($cref)
+
+        # set the default track duration and costs
+        # Programming note: 
+        # In the main loop, paths are represented as lists, so single element lists are used here for consistency.
+        # However, tref_list and cref_list appear to be unnecessary in that results appear same if using tref and cref.
+        set tref_list [list $tref]
+        set cref_list [list $cref]
+        set path_dur_arr($tref_list)
+        set path_cost_arr($cref_list)
+        incr i
+    }
 
     # handy api ref
     # util_commify_number
@@ -782,9 +800,6 @@ ad_proc -public acc_fin::scenario_prettify {
                 foreach dep_act $depnc_larr($act) {
                     if { $path_dur_arr($dep_act) > $path_duration } {
                         set path_duration $path_dur_arr($dep_act)
-#####  path_dur_arr( ) has not been set..
-### durations estimates and cost estimates are stored with curve_ref index in: t_est_arr($tCurve) and c_est_arr($cCurve)
-#### activity to curve_refs are stored in p2_larr(_tCurveRef) (a list) and p2_larr(_cCurveRef)
                     }
                 }
                 set duration_arr($act) [expr { $path_duration + $time_expected_arr($act) } ]
