@@ -804,18 +804,19 @@ ad_proc -public acc_fin::scenario_prettify {
                 }
                 set duration_arr($act) [expr { $path_duration + $time_expected_arr($act) } ]
                 set path_seg_list_arr($act) [list ]
-                #bad referencing here: separate duration from rest.
                 foreach dep_act $depnc_larr($act) {
                     foreach path_list $path_seg_list_arr($dep_act) {
                         set path_new $path_list
                         lappend path_new $act
                         lappend path_seg_list_arr($act) $path_new
-                        lappend path_seg_dur_list [list $path_new $duration_arr($act)]
+                        set pair_list [list $path_new $duration_arr($act)]
+                        lappend path_seg_dur_list $pair_list
                     }
                 }
                 if { [llength $path_seg_list_arr($act)] eq 0 } {
                     lappend path_seg_list_arr($act) $act
-                    lappend path_seg_dur_list [list $act $duration_arr($act)]
+                    set pair_list [list $act $duration_arr($act)]
+                    lappend path_seg_dur_list $pair_list
                 }
             }
             set all_calcd_p [expr { $all_calcd_p && $calcd_p_arr($act) } ]
