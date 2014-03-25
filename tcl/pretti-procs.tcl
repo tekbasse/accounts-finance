@@ -794,26 +794,33 @@ ad_proc -public acc_fin::scenario_prettify {
                 incr act_count_of_seq_arr($act_seq_nbr)
                 
                 # Analize prior path segments here.
+
                 # path_duration(path) is the min. path duration to complete dependent paths
                 set path_duration 0
-                # set duration_new to the longest dependent segment.
-#### Also, add all the costs of dependent segments...
+                # set duration_new to the longest duration dependent segment.
+                # depnc_larr() is a list of direct dependencies for each activity
                 foreach dep_act $depnc_larr($act) {
                     if { $path_dur_arr($dep_act) > $path_duration } {
                         set path_duration $path_dur_arr($dep_act)
                     }
                 }
+                # duration_arr() is duration of track segment up to (and including) activity.
                 set duration_arr($act) [expr { $path_duration + $time_expected_arr($act) } ]
 
+##### Add all the costs of dependent track segments...
+##### mark which tracks are incomplete (partial track segments), so that they can be filtered out of results and won't be duplicated in total program cost calcs.
 
-
+                # path_seg_list_arr() is an array of partial (and perhaps complete) 
+                # activity paths (or tracks) represented as a list of lists in chronological order (last acitivty last).
+                # For example, if A depends on B and C, and C depends on D then:
+                # path_seg_list_arr(A) == \[list \[list B A\] \[list D C A\] \]
                 set path_seg_list_arr($act) [list ]
                 foreach dep_act $depnc_larr($act) {
                     foreach path_list $path_seg_list_arr($dep_act) {
-                        set path_new $path_list
-                        lappend path_new $act
-                        lappend path_seg_list_arr($act) $path_new
-                        set pair_list [list $path_new $duration_arr($act)]
+                        set path_new_list $path_list
+                        lappend path_new_list $act
+                        lappend path_seg_list_arr($act) $path_new_list
+                        set pair_list [list $path_new_list $duration_arr($act)]
                         lappend path_seg_dur_list $pair_list
                     }
                 }
