@@ -808,17 +808,23 @@ ad_proc -public acc_fin::scenario_prettify {
                 set duration_arr($act) [expr { $path_duration + $time_expected_arr($act) } ]
 
 ##### Add all the costs of dependent track segments...
-##### mark which tracks are incomplete (partial track segments), so that they can be filtered out of results and won't be duplicated in total program cost calcs.
+
 
                 # path_seg_list_arr() is an array of partial (and perhaps complete) 
-                # activity paths (or tracks) represented as a list of lists in chronological order (last acitivty last).
-                # For example, if A depends on B and C, and C depends on D then:
-                # path_seg_list_arr(A) == \[list \[list B A\] \[list D C A\] \]
+                #   activity paths (or tracks) represented as a list of lists in chronological order (last acitivty last).
+                #   For example, if A depends on B and C, and C depends on D then:
+                #   path_seg_list_arr(A) == \[list \[list B A\] \[list D C A\] \]
+                # full_track_p_arr answers question: is this track complete (ie not a subset of another track)?
+                # path_seg_dur_list is a list_of_list pairs: path_list and duration. This allows the paths to be sorted to quickly determine CP.
                 set path_seg_list_arr($act) [list ]
                 foreach dep_act $depnc_larr($act) {
                     foreach path_list $path_seg_list_arr($dep_act) {
                         set path_new_list $path_list
+                        # Mark which tracks are complete (not partial track segments), 
+                        # so that total program cost calculations don't include duplicate, incomplete tracks that remain in path_seg_dur_list
+                        set full_track_p_arr($path_list) 0
                         lappend path_new_list $act
+                        set full_track_p_arr($path_new_list) 1
                         lappend path_seg_list_arr($act) $path_new_list
                         set pair_list [list $path_new_list $duration_arr($act)]
                         lappend path_seg_dur_list $pair_list
@@ -826,6 +832,7 @@ ad_proc -public acc_fin::scenario_prettify {
                 }
                 if { [llength $path_seg_list_arr($act)] eq 0 } {
                     lappend path_seg_list_arr($act) $act
+                    set full_track_p_arr($act) 1
                     set pair_list [list $act $duration_arr($act)]
                     lappend path_seg_dur_list $pair_list
                 }
@@ -834,19 +841,29 @@ ad_proc -public acc_fin::scenario_prettify {
         }
         incr i
     }
+
     set dep_met_p 1
     ns_log Notice "acc_fin::scenario_prettify: path_seg_dur_list $path_seg_dur_list"
     foreach act $p2_larr(activity_ref) {
-        set $dep_met_p [expr $depnc_eq_arr($act) && $dep_met_p ]
+        set $dep_met_p [expr { $depnc_eq_arr($act) && $dep_met_p } ] 
         # ns_log Notice "acc_fin::scenario_prettify: act $act act_seq_num_arr '$act_seq_num_arr($act)'"
         # ns_log Notice "acc_fin::scenario_prettify: act_seq_list_arr '$act_seq_list_arr($act_seq_num_arr($act))' $act_count_of_seq_arr($act_seq_num_arr($act))"
     }
     ns_log Notice "acc_fin::scenario_prettify: dep_met_p $dep_met_p"
     
+    # remove incomplete tracks from path_seg_dur_list by placing only complete tracks in track_dur_list
+    set track_dur_list [list ]
+    foreach {path_list duration} $path_seg_dur_list {
+        if { $full_track_p_arr($path_list) } {
+            set td_list [list $path_list $duration]
+            lappend track_dur_list $td_list
+        }
+    }
+
     # sort by path duration
     # critical path is the longest path. Float is the difference between CP and next longest CP.
     # create an array of paths from longest to shortest to help build base table
-    set path_seg_dur_sort1_list [lsort -decreasing -real -index 1 $path_seg_dur_list]
+    set path_seg_dur_sort1_list [lsort -decreasing -real -index 1 $track_dur_list]
     # Critical Path (CP) is 
     set cp_list [lindex [lindex $path_seg_dur_sort1_list 0] 0]
     #ns_log Notice "acc_fin::scenario_prettify: path_seg_dur_sort1_list $path_seg_dur_sort1_list"
