@@ -932,12 +932,11 @@ ad_proc -public acc_fin::scenario_prettify {
     ns_log Notice "acc_fin::scenario_prettify: primary_sort $primary_sort"
 
 #### save as a new table of type PRETTI 
-    # each column a track with column names:
-    #    cp1-M... cpN-M where at least one activity (count = M) in path is on_critical_path_p
-    #    n1...nP for paths without a CP activity 
+    # each column a track with column names: track_(1..N). track_1 is CP
 
-    #    coloring and formating will be interpreted via the app based on values provided in column cp1 and table type for maximum flexibility.
-    # add any reporting data, such as computation time to comments.
+    # Coloring and formating will be interpreted via the app based on values provided in comments, data from track column cp1 and table type (p5) for maximum flexibility.
+    # Add any reporting data, such as computation time to comments.
+    # Comments data will be interpreted for determining standard deviation for determining fast track highlighting
 
     # prep for conversion to html by adding missing TDs (table cells).
     # primary_sort list_of_lists consists of this order of elements:
