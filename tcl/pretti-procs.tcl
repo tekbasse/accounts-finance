@@ -747,7 +747,7 @@ ad_proc -public acc_fin::scenario_prettify {
         set eq "1 &&"
         foreach dep $depnc_larr($act) {
             # CODING NOTE: strings generally are okay to 100,000,000+ chars..
-            # If there are memory issues, convert eq to a reference_list to calculate elements sequentially.
+            # If there are memory issues, convert eq to an eq_reference_list to calculate elements sequentially. Sort of what it does internally anyway.
 
             # array _c() answers question: are all dependencies calculated for activity?
             append eq " _c($dep) &&"
