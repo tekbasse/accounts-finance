@@ -112,6 +112,9 @@ namespace eval acc_fin {}
 # p5 Project fast-track duration curve
 #  same as cd2
 
+# 
+
+
 ad_proc -public acc_fin::task_factors_expand {
     a_pretti_lol
 } {
@@ -914,7 +917,7 @@ ad_proc -public acc_fin::scenario_prettify {
     # max_act_count_per_seq is the maximum number of activities in a sequence number.
     
     ns_log Notice "acc_fin::scenario_prettify: base_lists $base_lists"
-    # critical path is the longest expexted duration of dependent activities..
+    # critical path is the longest expected duration of dependent activities..
     # so:
     # primary sort is act_seq_num_arr ascending
     # secondary sort is part_of_critical_path_p descending
@@ -927,12 +930,20 @@ ad_proc -public acc_fin::scenario_prettify {
     set primary_sort [lsort -increasing -integer -index 1 $second_sort]
     
     ns_log Notice "acc_fin::scenario_prettify: primary_sort $primary_sort"
-    
-    # prep for conversion to html by adding missing TDs, setting formatting (colors, size etc).
+
+#### save as a new table of type PRETTI 
+    # each column a track with column names:
+    #    cp1-M... cpN-M where at least one activity (count = M) in path is on_critical_path_p
+    #    n1...nP for paths without a CP activity 
+
+    #    coloring and formating will be interpreted via the app based on values provided in column cp1 and table type for maximum flexibility.
+    # add any reporting data, such as computation time to comments.
+
+    # prep for conversion to html by adding missing TDs (table cells).
     # primary_sort list_of_lists consists of this order of elements:
     #  act act_seq_num_arr has_direct_dependency_p on_critical_path_p on_a_sig_path_p act_freq_in_load_cp_alts path_duration time_expected dependencies_list
     # sorted by: act_seq_num on_critical_path_p has_direct_dependency_p duration
-    
+    # don't save the sort info, just the task data per column
     
     # build formatting colors
     set act_count [llength $p2_larr(activity_ref)]
@@ -994,7 +1005,7 @@ ad_proc -public acc_fin::scenario_prettify {
             set hex_nbr_val [expr { $hex_nbr - $contrast_step } ]
             set hex_nbr [lindex $hex_list $hex_nbr_val]
             if { $odd_row_p } {
-                set bgcolor "#ff${hex_nbr}${hex_nbr}99"
+                set bgcolor "#ff${hex_nbr}${hex_nbr}"
             } else {
                 set bgcolor "#${hex_nbr}ff${hex_nbr}"
             }
