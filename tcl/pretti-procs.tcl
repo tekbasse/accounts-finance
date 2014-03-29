@@ -127,6 +127,99 @@ ad_proc -public acc_fin::task_factors_expand {
     return $pretti_expanded_lol
 }
 
+ad_proc -public acc_fin::pretti_table_to_html {
+    pretty_table
+    comments
+} {
+    Interprets a saved p5 pretti output table into html table.
+} {
+   # Coloring and formating will be interpreted via the app based on values provided in comments, data from track column cp1 and table type (p5) for maximum flexibility.   
+    # build formatting colors
+    set act_count [llength $p2_larr(activity_ref)]
+    # contrast decreases on up to 50%
+    set contrast_step [expr { int( 16 / ( $max_act_count_per_seq / 2 + 1 ) ) } ]
+    set hex_list [list 0 1 2 3 4 5 6 7 8 9 a b c d e f]
+    set row_nbr 0
+    set cell_nbr 0
+    set act_seq_num $sequence_1
+    # each row is a relative sequence
+    set cells_per_row $max_act_count_per_seq
+    set cell_formatting_list [list ]
+    set cell_value_list [list ]
+    set table_formatting_lists [list ]
+    set table_value_lists [list ]
+    # act_count_of_seq_arr( sequence_number) is the count of activities at this sequence number
+    foreach cell $primary_sort {
+        set cell_nbr_prev $cell_nbr
+        set act_seq_num_prev $act_seq_num
+        incr cell_nbr
+        set cell_formatting [list ]
+        set cell_value ""
+        # set initial values
+        set act [lindex $cell 0]
+        set act_seq_num [lindex $cell 1]
+        set has_direct_dependency_p [lindex $cell 2]
+        set on_critical_path_p [lindex $cell 3]
+        set on_a_sig_path_p [lindex $cell 4]
+        set act_freq_in_load_cp_alts [lindex $cell 5]
+        set path_duration [lindex $cell 6]
+        set time_expected [lindex $cell 7]
+        set dependencies_list [lindex $cell 8]
+        set dependencies ""
+        set separator ""
+        foreach dependency $dependencies_list {
+            append dependencies $separator $dependency
+            set separator ", "
+        }
+        if { $act_seq_num_prev ne $act_seq_num } {
+            # new row
+            set cell_nbr 0
+            set row_nbr_prev $row_nbr
+            incr row_nbr
+            set hex_nbr_val 16
+            lappend table_formatting_lists $cell_formatting_list
+            lappend table_value_lists $cell_formatting_list
+            set cell_formatting_list [list ]
+            set cell_value_list [list ]
+        }
+        # build cell
+        set cell_value "$act t:${time_expected} T:${path_duration} D:${dependencies} "
+        set odd_row_p [expr { ( $row_nbr / 2. ) == int( $row_nbr / 2 ) } ]
+        # CP in highest contrast (yellow ff9), others in lowering contrast to f70
+        # CP alt in alternating lt blue 99f, lt green 9f9 
+        # others in alternating medium blue/green 66ff, 6f6
+        if { $on_critical_path_p } {
+            set bgcolor "#ffff00"
+        } elseif { $on_a_sig_path_p } {
+            set hex_nbr_val [expr { $hex_nbr - $contrast_step } ]
+            set hex_nbr [lindex $hex_list $hex_nbr_val]
+            if { $odd_row_p } {
+                set bgcolor "#ff${hex_nbr}${hex_nbr}"
+            } else {
+                set bgcolor "#${hex_nbr}ff${hex_nbr}"
+            }
+            
+        } elseif { $odd_row_p } {
+            set bgcolor "#6666ff"
+        } else {
+            set bgcolor "#66ff66"
+        }
+        set cell_formatting bgcolor $bgcolor
+        lappend cell_formatting_list $cell_formatting
+        lappend cell_value_list $cell_value
+    }
+    
+    # build unique list of dependencies
+
+    # html
+    set html_arr(apt) "<h3>Computation report</h3>"
+    
+    append html_arr(apt) [qss_list_of_lists_to_html_table $table_value_lists $table_attribute_list $table_formatting_lists]
+    append html_arr(apt) "Completed $p1_arr(the_time)"
+    append computation_report_html $html_arr(apt)
+    return $computation_report_html
+}
+
 ad_proc -public acc_fin::larr_set {
     larr_name
     data_list
@@ -934,7 +1027,7 @@ ad_proc -public acc_fin::scenario_prettify {
 #### save as a new table of type PRETTI 
     # each column a track with column names: track_(1..N). track_1 is CP
 
-    # Coloring and formating will be interpreted via the app based on values provided in comments, data from track column cp1 and table type (p5) for maximum flexibility.
+ 
     # Add any reporting data, such as computation time to comments.
     # Comments data will be interpreted for determining standard deviation for determining fast track highlighting
 
@@ -943,100 +1036,17 @@ ad_proc -public acc_fin::scenario_prettify {
     #  act act_seq_num_arr has_direct_dependency_p on_critical_path_p on_a_sig_path_p act_freq_in_load_cp_alts path_duration time_expected dependencies_list
     # sorted by: act_seq_num on_critical_path_p has_direct_dependency_p duration
     # don't save the sort info, just the task data per column
-    
-    # build formatting colors
-    set act_count [llength $p2_larr(activity_ref)]
-    # contrast decreases on up to 50%
-    set contrast_step [expr { int( 16 / ( $max_act_count_per_seq / 2 + 1 ) ) } ]
-    set hex_list [list 0 1 2 3 4 5 6 7 8 9 a b c d e f]
-    set row_nbr 0
-    set cell_nbr 0
-    set act_seq_num $sequence_1
-    # each row is a relative sequence
-    set cells_per_row $max_act_count_per_seq
-    set cell_formatting_list [list ]
-    set cell_value_list [list ]
-    set table_formatting_lists [list ]
-    set table_value_lists [list ]
-    # act_count_of_seq_arr( sequence_number) is the count of activities at this sequence number
-    foreach cell $primary_sort {
-        set cell_nbr_prev $cell_nbr
-        set act_seq_num_prev $act_seq_num
-        incr cell_nbr
-        set cell_formatting [list ]
-        set cell_value ""
-        # set initial values
-        set act [lindex $cell 0]
-        set act_seq_num [lindex $cell 1]
-        set has_direct_dependency_p [lindex $cell 2]
-        set on_critical_path_p [lindex $cell 3]
-        set on_a_sig_path_p [lindex $cell 4]
-        set act_freq_in_load_cp_alts [lindex $cell 5]
-        set path_duration [lindex $cell 6]
-        set time_expected [lindex $cell 7]
-        set dependencies_list [lindex $cell 8]
-        set dependencies ""
-        set separator ""
-        foreach dependency $dependencies_list {
-            append dependencies $separator $dependency
-            set separator ", "
-        }
-        if { $act_seq_num_prev ne $act_seq_num } {
-            # new row
-            set cell_nbr 0
-            set row_nbr_prev $row_nbr
-            incr row_nbr
-            set hex_nbr_val 16
-            lappend table_formatting_lists $cell_formatting_list
-            lappend table_value_lists $cell_formatting_list
-            set cell_formatting_list [list ]
-            set cell_value_list [list ]
-        }
-        # build cell
-        set cell_value "$act t:${time_expected} T:${path_duration} D:${dependencies} "
-        set odd_row_p [expr { ( $row_nbr / 2. ) == int( $row_nbr / 2 ) } ]
-        # CP in highest contrast (yellow ff9), others in lowering contrast to f70
-        # CP alt in alternating lt blue 99f, lt green 9f9 
-        # others in alternating medium blue/green 66ff, 6f6
-        if { $on_critical_path_p } {
-            set bgcolor "#ffff00"
-        } elseif { $on_a_sig_path_p } {
-            set hex_nbr_val [expr { $hex_nbr - $contrast_step } ]
-            set hex_nbr [lindex $hex_list $hex_nbr_val]
-            if { $odd_row_p } {
-                set bgcolor "#ff${hex_nbr}${hex_nbr}"
-            } else {
-                set bgcolor "#${hex_nbr}ff${hex_nbr}"
-            }
-            
-        } elseif { $odd_row_p } {
-            set bgcolor "#6666ff"
-        } else {
-            set bgcolor "#66ff66"
-        }
-        set cell_formatting bgcolor $bgcolor
-        lappend cell_formatting_list $cell_formatting
-        lappend cell_value_list $cell_value
-    }
-    
-    # build unique list of dependencies
+
     
     # Build Network Breakdown Table: activity vs. path
     # 
-    # activity_ref predecessors
-    # add: sequence_num time_expected cost_expected
-    # add:
+    # sequence_ref activity_ref predecessors
+    # add: time_expected cost_expected to comments
     
     
     # the_time Time calculation completed
     set p1_arr(the_time) [clock format [clock seconds] -format "%Y %b %d %H:%M:%S"]
     
-    # html
-    set html_arr(apt) "<h3>Computation report</h3>"
-    
-    append html_arr(apt) [qss_list_of_lists_to_html_table $table_value_lists $table_attribute_list $table_formatting_lists]
-    append html_arr(apt) "Completed $p1_arr(the_time)"
-    append computation_report_html $html_arr(apt)
     
     
     
