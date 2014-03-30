@@ -1011,6 +1011,7 @@ ad_proc -public acc_fin::scenario_prettify {
         # 6 track duration
         # 7 time expected of this activity
         # 8 activity dependencies
+#### cells to have time_expected, cost_expected, time_start (path_duration - time_expected), direct dependencies
         set activity_list [list $act $act_seq_num_arr($act) $has_direct_dependency_p $on_critical_path_p $on_a_sig_path_p $act_freq_in_load_cp_alts_arr($act) $duration_arr($act) $time_expected_arr($act) $depnc_larr($act) ]
         lappend base_lists $activity_list
     }
