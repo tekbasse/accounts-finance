@@ -765,19 +765,18 @@ ad_proc -public acc_fin::scenario_prettify {
     # Create activity time estimate and cost estimate arrays for repeated use in main loop
     set i 0
     foreach act $p2_larr(activity_ref) {
+        set $act_list [list $act]
+        # the first paths are single activities, subsequently time expected and duration are same values
         set tref [lindex $p2_larr(_tCurveRef) $i]
-        set time_expected_arr($act) $t_est_arr($tref)
+        set time_expected $t_est_arr($tref)
+        set time_expected_arr($act) $time_expected
+        set path_dur_arr($act_list) $time_expected
+        # the first paths are single activities, subsequently cost expected and path segment costs are same values
         set cref [lindex $p2_larr(_cCurveRef) $i]
-        set cost_expected_arr($act) $c_est_arr($cref)
+        set cost_expected $c_est_arr($cref)
+        set cost_expected_arr($act) $cost_expected
+        set path_cost_arr($act_list) $cost_expected
 
-        # set the default track duration and costs
-        # Programming note: 
-        # In the main loop, paths are represented as lists, so single element lists are used here for consistency.
-        # However, tref_list and cref_list appear to be unnecessary in that results appear same if using tref and cref.
-        set tref_list [list $tref]
-        set cref_list [list $cref]
-        set path_dur_arr($tref_list)
-        set path_cost_arr($cref_list)
         incr i
     }
 
@@ -892,19 +891,22 @@ ad_proc -public acc_fin::scenario_prettify {
                 # Analize prior path segments here.
 
                 # path_duration(path) is the min. path duration to complete dependent paths
-                set path_duration 0
+                set path_duration 0.
+                set paths_cost 0.
                 # set duration_new to the longest duration dependent segment.
                 # depnc_larr() is a list of direct dependencies for each activity
                 foreach dep_act $depnc_larr($act) {
                     if { $path_dur_arr($dep_act) > $path_duration } {
                         set path_duration $path_dur_arr($dep_act)
                     }
+                    # Add all the costs for each dependency path
+                    set paths_cost [expr { $paths_cost + $cost_expected_arr($dep_act) } ]
                 }
                 # duration_arr() is duration of track segment up to (and including) activity.
                 set duration_arr($act) [expr { $path_duration + $time_expected_arr($act) } ]
-
-##### Add all the costs of dependent track segments...
-
+                
+                # cost is cost of all dependent paths plus cost of this activity
+                set cost_arr($act) [expr { $paths_cost + $cost_expected_arr($act) } ]
 
                 # path_seg_list_arr() is an array of partial (and perhaps complete) 
                 #   activity paths (or tracks) represented as a list of lists in chronological order (last acitivty last).
