@@ -1002,6 +1002,15 @@ ad_proc -public acc_fin::scenario_prettify {
         set has_direct_dependency_p [expr { [llength $depnc_larr($act)] > 0 } ]
         set on_critical_path_p [expr { [lsearch -exact $cp_list $act] > -1 } ]
         set on_a_sig_path_p [expr { $act_freq_in_load_cp_alts_arr($act) > $act_median_count } ]
+        # 0 activity_ref
+        # 1 activity_seq_num_arr() ie count of activities in track
+        # 2 Does this activity have any dependencies?
+        # 3 is this the CP?
+        # 4 is this activity referenced in more than a median number of times?
+        # 5 number of times activity is in a path
+        # 6 track duration
+        # 7 time expected of this activity
+        # 8 activity dependencies
         set activity_list [list $act $act_seq_num_arr($act) $has_direct_dependency_p $on_critical_path_p $on_a_sig_path_p $act_freq_in_load_cp_alts_arr($act) $duration_arr($act) $time_expected_arr($act) $depnc_larr($act) ]
         lappend base_lists $activity_list
     }
