@@ -135,8 +135,10 @@ ad_proc -public acc_fin::pretti_table_to_html {
 } {
    # Coloring and formating will be interpreted via the app based on values provided in comments, data from track column cp1 and table type (p5) for maximum flexibility.   
     #### table cells need to indicate a relative time length in addition to dependency.
-    #### Min rows count is same as max activities per path (column)
-    #### 
+    #### Min rows count is greater than max activities per path (column)
+    #### so, use a geometric scale. set time1_unit to smallest activity duration. set time2_unit to max_activities / cp_duration, then
+    #### min row height = time1_unit * time2_unit
+    #### set each activity_height = round( pow( activity_duration ,2) * time2_unit / time1_unit )
 
     # build formatting colors
     set act_count [llength $p2_larr(activity_ref)]
