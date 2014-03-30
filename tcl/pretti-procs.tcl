@@ -134,6 +134,10 @@ ad_proc -public acc_fin::pretti_table_to_html {
     Interprets a saved p5 pretti output table into html table.
 } {
    # Coloring and formating will be interpreted via the app based on values provided in comments, data from track column cp1 and table type (p5) for maximum flexibility.   
+    #### table cells need to indicate a relative time length in addition to dependency.
+    #### Min rows count is same as max activities per path (column)
+    #### 
+
     # build formatting colors
     set act_count [llength $p2_larr(activity_ref)]
     # contrast decreases on up to 50%
@@ -1013,10 +1017,14 @@ ad_proc -public acc_fin::scenario_prettify {
         # 6 track duration
         # 7 time expected of this activity
         # 8 activity dependencies
-#### cells to have time_expected, cost_expected, time_start (path_duration - time_expected), direct dependencies
+        #### cells to have: activity_time_expected, time_start (path_duration - time_expected),time_finish (path_duration)
+        ####                activity_cost_expected, path_costs to complete activity
+        ####                direct dependencies
         set activity_list [list $act $act_seq_num_arr($act) $has_direct_dependency_p $on_critical_path_p $on_a_sig_path_p $act_freq_in_load_cp_alts_arr($act) $duration_arr($act) $time_expected_arr($act) $depnc_larr($act) ]
         lappend base_lists $activity_list
     }
+    
+    ##### comments should include CP duration, CP cost, time_probability_moment, cost_probability_moment, scenario_name, processing_time, time/date finished processing
     
     # act_count_of_seq_arr( sequence_number) is the count of activities at this sequence number
     # max_act_count_per_seq is the maximum number of activities in a sequence number.
