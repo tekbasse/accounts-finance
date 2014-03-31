@@ -135,10 +135,10 @@ ad_proc -public acc_fin::pretti_table_to_html {
 } {
    # Coloring and formating will be interpreted via the app based on values provided in comments, data from track column cp1 and table type (p5) for maximum flexibility.   
     #### table cells need to indicate a relative time length in addition to dependency.
-    #### Min rows count is greater than max activities per path (column)
-    #### so, use a geometric scale. set time1_unit to smallest activity duration. set time2_unit to max_activities / cp_duration, then
-    #### min row height = time1_unit * time2_unit
-    #### set each activity_height = round( pow( activity_duration ,2) * time2_unit / time1_unit )
+   
+    #### set row_size [f::max [list [expr { int( $activity_time_expected * $max_act_count_per_track / $cp_duration_at_pm ) } ] 1]]
+
+    # process table by first dependency of each column first..
 
     # build formatting colors
     set act_count [llength $p2_larr(activity_ref)]
@@ -1026,7 +1026,8 @@ ad_proc -public acc_fin::scenario_prettify {
         lappend base_lists $activity_list
     }
     
-    ##### comments should include CP duration, CP cost, time_probability_moment, cost_probability_moment, scenario_name, processing_time, time/date finished processing
+    ##### comments should include cp_duration_at_pm, cp_cost_at_pm, max_act_count_per_track time_probability_moment, cost_probability_moment, scenario_name, processing_time, time/date finished processing
+    # *_at_pm means at probability moment
     
     # act_count_of_seq_arr( sequence_number) is the count of activities at this sequence number
     # max_act_count_per_seq is the maximum number of activities in a sequence number.
