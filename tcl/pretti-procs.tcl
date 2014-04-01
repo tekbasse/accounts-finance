@@ -1011,6 +1011,7 @@ ad_proc -public acc_fin::scenario_prettify {
     set base_lists [list ]
     foreach {path_list duration} $path_seg_dur_sort1_list {
         set act [lindex $path_list end]
+        set tree_act_cost_arr($act) $cost_arr($act)
         set has_direct_dependency_p [expr { [llength $depnc_larr($act)] > 0 } ]
         set on_critical_path_p [expr { [lsearch -exact $cp_list $act] > -1 } ]
         set on_a_sig_path_p [expr { $act_freq_in_load_cp_alts_arr($act) > $act_median_count } ]
@@ -1031,6 +1032,7 @@ ad_proc -public acc_fin::scenario_prettify {
         lappend base_lists $activity_list
     }
 
+
     ns_log Notice "acc_fin::scenario_prettify: base_lists $base_lists"
     
     # sort by: act_seq_num_arr descending
@@ -1049,8 +1051,17 @@ ad_proc -public acc_fin::scenario_prettify {
     ##### comments should include cp_duration_at_pm, cp_cost_at_pm, max_act_count_per_track time_probability_moment, cost_probability_moment, scenario_name, processing_time, time/date finished processing
     # *_at_pm means at probability moment
     set cp_duration_at_pm [lindex [lindex $primary_sort 0] 1]
-    set cp_cost_at_pm [lindex [lindex $primary_sort 
-    set comments "cp_duration_at_pm=${cp_duration}"
+    # calculate cp_cost_at_pm
+    set cp_cost_at_pm 0.
+    foreach {act tree_cost} [array get tree_act_cost_arr] {
+        set cp_cost_at_pm [expr { $cp_cost_at_pm + $tree_cost } ]
+    }
+    set scenario_stats_list [qss_table_stats $scenario_tid]
+    set scenario_name [lindex $scenario_stats_list 0]
+    set scenario_title [lindex $scenario_stats_list 1]
+    set comments "Scenario report for ${scenario_title}: scenario_name ${scenario_name} , cp_duration_at_pm ${cp_duration_at_pm} , cp_cost_at_pm ${cp_cost_at_pm} , max_act_count_per_track ${act_max_count}"
+    append comments "time_probability_moment ${t_moment} , cost_probability_moment ${c_moment} , , processing_time, time/date finished processing
+"
 
 
 #### save as a new table of type PRETTI 
