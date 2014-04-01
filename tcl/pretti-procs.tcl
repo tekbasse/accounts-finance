@@ -974,10 +974,11 @@ ad_proc -public acc_fin::scenario_prettify {
     
     # Extract most significant CP alternates for a focused table
     # by counting the number of times an act is used in the largest proportion (first half) of paths in path_set_dur_sort1_list
-    set path_count [llength $path_seg_dur_sort1_list]
-    set extract_limit [expr { $path_count / 2 + 1 } ]
-    set extractv1_list [lrange $path_seg_dur_sort1_list 0 ${extract_limit}] 
-    # act_freq_in_load_cp_alts_arr counts the number of times an activity is in a path  for the most significant CP alternates
+
+
+
+    # act_freq_in_load_cp_alts_arr   a count the number of times an activity is in a path 
+    # max_act_count_per_seq          maximum number of activities in a sequence number.
     set max_act_count_per_seq 0
     foreach act $p2_larr(activity_ref) {
         set act_freq_in_load_cp_alts_arr($act) 0
@@ -985,37 +986,34 @@ ad_proc -public acc_fin::scenario_prettify {
             set max_act_count_per_seq $act_count_of_seq_arr($act)
         }
     }
-    foreach path_seg_list $extractv1_list {
+    foreach path_seg_list $path_seg_dur_sort1_list {
         set path2_list [lindex $path_seg_list 0]
         foreach act $path2_list {
             incr act_freq_in_load_cp_alts_arr($act)
         }
     }
+    # Make a list of the activities in the most tracks by count
     set act_sig_list [list ]
     foreach act $p2_larr(activity_ref) {
         lappend act_sig_list [list $act $act_freq_in_load_cp_alts_arr($act)]
     }
     set act_sig_sorted_list [lsort -decreasing -integer -index 1 $act_sig_list]
+    set act_sig_median_pos [expr { [llength $path_seg_dur_sort1_list] / 2 } + 1 ]
     set act_max_count [lindex [lindex $act_sig_sorted_list 0] 1]
-    set act_sig_median_pos [expr { $extract_limit / 2 } + 1 ]
     set act_median_count [lindex [lindex $act_sig_sorted_list $act_sig_median_pos] 1]
     
     # build base table
-    # Table width should be limited to max count of acivities per sequence.
-    
-    # activity_ref act_seq_num_arr has_direct_dependency_p time_expected direct_dependencies_list
+    # Cells need this info for presentation: 
+    #   activity_time_expected, time_start (path_duration - time_expected),time_finish (path_duration)
+    #   activity_cost_expected, path_costs to complete activity
+    #   direct dependencies
+    # and some others for sorting.
     set base_lists [list ]
-    
-    foreach act $p2_larr(activity_ref) {
+    foreach {path_list duration} $path_seg_dur_sort1_list {
+        set act [lindex $path_list end]
         set has_direct_dependency_p [expr { [llength $depnc_larr($act)] > 0 } ]
         set on_critical_path_p [expr { [lsearch -exact $cp_list $act] > -1 } ]
         set on_a_sig_path_p [expr { $act_freq_in_load_cp_alts_arr($act) > $act_median_count } ]
-
-        # Cells need this info for presentation: 
-        #   activity_time_expected, time_start (path_duration - time_expected),time_finish (path_duration)
-        #   activity_cost_expected, path_costs to complete activity
-        #   direct dependencies
-        # and some others for sorting.
 
         #  0 activity_ref
         #  1 activity_seq_num_arr() ie count of activities in track
@@ -1033,27 +1031,27 @@ ad_proc -public acc_fin::scenario_prettify {
         lappend base_lists $activity_list
     }
 
-    ##### comments should include cp_duration_at_pm, cp_cost_at_pm, max_act_count_per_track time_probability_moment, cost_probability_moment, scenario_name, processing_time, time/date finished processing
-    # *_at_pm means at probability moment
-
-    
-
-    # max_act_count_per_seq is the maximum number of activities in a sequence number.
-    
     ns_log Notice "acc_fin::scenario_prettify: base_lists $base_lists"
-    # critical path is the longest expected duration of dependent activities..
-    # so:
-    # primary sort is act_seq_num_arr ascending
-    # secondary sort is part_of_critical_path_p descending
-    # third sort is has_direct_dependency_p descending (1 = true, 0 false)
-    # fourth sort is path duraction descending
     
-    set fourth_sort [lsort -decreasing -real -index 6 $base_lists]
+    # sort by: act_seq_num_arr descending
+    set fourth_sort [lsort -decreasing -real -index 1 $base_lists]
+    # sort by: Q. has_direct_dependency_p? descending (1 = true, 0 false)
     set third_sort [lsort -decreasing -integer -index 2 $fourth_sort]
+    # sort by: Q. on part_of_critical_path_p? descending
     set second_sort [lsort -decreasing -integer -index 3 $third_sort]
-    set primary_sort [lsort -increasing -integer -index 1 $second_sort]
+
+    # critical path is the longest expected duration of dependent activities, so final sort:
+    # sort by path duration descending
+    set primary_sort [lsort -increasing -integer -index 6 $second_sort]
     
     ns_log Notice "acc_fin::scenario_prettify: primary_sort $primary_sort"
+
+    ##### comments should include cp_duration_at_pm, cp_cost_at_pm, max_act_count_per_track time_probability_moment, cost_probability_moment, scenario_name, processing_time, time/date finished processing
+    # *_at_pm means at probability moment
+    set cp_duration_at_pm [lindex [lindex $primary_sort 0] 1]
+    set cp_cost_at_pm [lindex [lindex $primary_sort 
+    set comments "cp_duration_at_pm=${cp_duration}"
+
 
 #### save as a new table of type PRETTI 
     # each column a track with column names: track_(1..N). track_1 is CP
