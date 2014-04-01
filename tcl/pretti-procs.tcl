@@ -591,6 +591,7 @@ ad_proc -public acc_fin::scenario_prettify {
     in dependent_tasks list, appending table with a complete list of expanded, 
     nonrepeating tasks.
 } {
+    set time_start [clock seconds]
     # load scenario values
     
     # load pretti2_lol table
@@ -1059,10 +1060,16 @@ ad_proc -public acc_fin::scenario_prettify {
     set scenario_stats_list [qss_table_stats $scenario_tid]
     set scenario_name [lindex $scenario_stats_list 0]
     set scenario_title [lindex $scenario_stats_list 1]
-    set comments "Scenario report for ${scenario_title}: scenario_name ${scenario_name} , cp_duration_at_pm ${cp_duration_at_pm} , cp_cost_at_pm ${cp_cost_at_pm} , max_act_count_per_track ${act_max_count}"
-    append comments "time_probability_moment ${t_moment} , cost_probability_moment ${c_moment} , , processing_time, time/date finished processing
-"
 
+    set time_end [clock seconds]
+    set time_diff_secs [expr { $time_end - $time_start } ]
+    # the_time Time calculation completed
+    set p1_arr(the_time) [clock format [clock seconds] -format "%Y %b %d %H:%M:%S"]
+
+    set comments "Scenario report for ${scenario_title}: "
+    append comments "scenario_name ${scenario_name} , cp_duration_at_pm ${cp_duration_at_pm} , cp_cost_at_pm ${cp_cost_at_pm} ,"
+    append comments "max_act_count_per_track ${act_max_count} , time_probability_moment ${t_moment} , cost_probability_moment ${c_moment} ,"
+    append comments "processing_time ${time_diff_secs} seconds , time/date finished processing ${p1_larr(the_time)} "
 
 #### save as a new table of type PRETTI 
     # each column a track with column names: track_(1..N). track_1 is CP
@@ -1087,8 +1094,6 @@ ad_proc -public acc_fin::scenario_prettify {
     #  user_id (optional)
 
     
-    # the_time Time calculation completed
-    set p1_arr(the_time) [clock format [clock seconds] -format "%Y %b %d %H:%M:%S"]
     
     
     
