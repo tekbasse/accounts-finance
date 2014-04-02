@@ -759,344 +759,350 @@ ad_proc -public acc_fin::scenario_prettify {
         }
     }
 
-    # Calculate base durations for time_probability_moment. These work for activities and task types.
-    set t_moment $p1_arr(time_probability_moment)
-    foreach tCurve [array names time_clarr] {
-        set t_est_arr($tCurve) [qaf_y_of_x_dist_curve $t_moment $time_clarr($tCurve) ]
-    }
-    # Calculate base costs for cost_probability_moment. These work for activities and task types.
-    set c_moment $p1_arr(cost_probability_moment)
-    foreach cCurve [array names cost_clarr] {
-        set c_est_arr($cCurve) [qaf_y_of_x_dist_curve $c_moment $cost_clarr($cCurve) ]
-    }
-    # Create activity time estimate and cost estimate arrays for repeated use in main loop
-    set i 0
-    foreach act $p2_larr(activity_ref) {
-        set $act_list [list $act]
-        # the first paths are single activities, subsequently time expected and duration are same values
-        set tref [lindex $p2_larr(_tCurveRef) $i]
-        set time_expected $t_est_arr($tref)
-        set time_expected_arr($act) $time_expected
-        set path_dur_arr($act_list) $time_expected
-        # the first paths are single activities, subsequently cost expected and path segment costs are same values
-        set cref [lindex $p2_larr(_cCurveRef) $i]
-        set cost_expected $c_est_arr($cref)
-        set cost_expected_arr($act) $cost_expected
-        set path_cost_arr($act_list) $cost_expected
+    # Multiple probability_moments allowed
+    set t_moment_list [split $p1_arr(time_probability_moment)]
+    set c_moment_list [split $p1_arr(cost_probability_moment)]
+    foreach t_moment $t_moment_list {
 
-        incr i
-    }
+        # Calculate base durations for time_probability_moment. These work for activities and task types.
+        foreach tCurve [array names time_clarr] {
+            set t_est_arr($tCurve) [qaf_y_of_x_dist_curve $t_moment $time_clarr($tCurve) ]
+        }
 
-    # handy api ref
-    # util_commify_number
-    # format "% 8.2f" $num
-    
-    # PERTTI calculations
-
-    # Build:
-    #  activity map table:  depnc_larr($activity_ref) dependent_tasks_list
-    #  array of activity_ref sequence_num: act_seq_num_arr($activity_ref) sequence_number
-    # An activity_ref's sequence is one more than the max sequence_num of its dependencies
-    set i 0
-    set sequence_1 0
-    foreach act $p2_larr(activity_ref) {
-        set depnc [lindex $p2_larr(dependent_tasks) $i]
-        # depnc: comma list of dependencies
-        # depnc_larr() list of dependencies
-        # Filter out any blanks
-        set scratch_list [split $depnc ";, "]
-        set scratch2_list [list ]
-        foreach dep $scratch_list {
-            if { $dep ne "" } {
-                lappend scratch2_list $dep
+        foreach c_moment $c_moment_list {
+            # Calculate base costs for cost_probability_moment. These work for activities and task types.
+            foreach cCurve [array names cost_clarr] {
+                set c_est_arr($cCurve) [qaf_y_of_x_dist_curve $c_moment $cost_clarr($cCurve) ]
             }
-        }
-        set depnc_larr($act) $scratch2_list
-        # _c($act) Answers question: Has relative sequence number for $act been calculated?
-        set _c($act) 0
-        # act_seq_num_arr is relative sequence number of an activity. 
-        set act_seq_num_arr($act) $sequence_1
-        incr i
-    }
-    
-    # Calculate paths in the main loop to save resources.
-    #  Each path is a list of numbers referenced by array, where 
-    #  array indexes last path activity (of a dependency track).
-    #  set path_segment_ends_in_lists($act) 
-    #  so future segments can quickly reference it to build theirs.
-
-    # This keeps path making nearly linear. There are as many path references as there are activities..
-
-    # Since some activities depend on others, some of the references are 
-    # incomplete activity tracks, but these can be filtered as needed.
-
-    # All paths must be assessed in order to handle all possibilities
-    # Paths are used to determine critical path and fast crawl a single path.
-
-    # An activity cannot start until the longest dependent segment has completed.
-    
-    # For strict critical path, create a list of lists, where 
-    # each list is a list of dependencies from start to finish (aka path)  + the longest duraction path of activity including dependencies.
-    # sum the duration for each list. The longest duration is the strict defintion of critical path.
-    
-    # create dependency check equations
-    # depnc_eq_arr() is equation that answers question: Are dependencies met for $act?
-    foreach act $p2_larr(activity_ref) {
-        set eq "1 &&"
-        foreach dep $depnc_larr($act) {
-            # CODING NOTE: strings generally are okay to 100,000,000+ chars..
-            # If there are memory issues, convert eq to an eq_reference_list to calculate elements sequentially. Sort of what it does internally anyway.
-
-            # array _c() answers question: are all dependencies calculated for activity?
-            append eq " _c($dep) &&"
-        }
-        # remove the last " &&":
-        set eq [string range $eq 0 end-3]
-        # convert _c_arr reference to a variable by adding a dollar sign prefix:
-        regsub -all -- { _c} $eq { $_c} depnc_eq_arr($act)
-    }
-    # main process looping
-    set all_calced_p 0
-    set activity_count [llength $p2_larr(activity_ref)]
-    set i 0
-    set act_seq_list_arr($sequence_1) [list ]
-    # act_count_of_seq_arr( sequence_number) is the count of activities at this sequence number
-    set act_count_of_seq_arr($sequence_1) 0
-    set path_seg_dur_list [list ]
-    # act_seq_max is the current maximum path length
-
-    while { !$all_calced_p && $activity_count > $i } {
-        set all_calcd_p 1
-        foreach act $p2_larr(activity_ref) {
-            set dependencies_met_p [expr { $depnc_eq_arr($act) } ]
-            set act_seq_max $sequence_1
-            if { $dependencies_met_p && !$calcd_p_arr($act) } {
+            # Create activity time estimate and cost estimate arrays for repeated use in main loop
+            set i 0
+            foreach act $p2_larr(activity_ref) {
+                set $act_list [list $act]
+                # the first paths are single activities, subsequently time expected and duration are same values
+                set tref [lindex $p2_larr(_tCurveRef) $i]
+                set time_expected $t_est_arr($tref)
+                set time_expected_arr($act) $time_expected
+                set path_dur_arr($act_list) $time_expected
+                # the first paths are single activities, subsequently cost expected and path segment costs are same values
+                set cref [lindex $p2_larr(_cCurveRef) $i]
+                set cost_expected $c_est_arr($cref)
+                set cost_expected_arr($act) $cost_expected
+                set path_cost_arr($act_list) $cost_expected
                 
-                # Calc max_num: maximum relative sequence number for activity dependencies
-                set max_num 0
-                foreach test_act $depnc_larr($act) {
-                    set test $act_seq_num_arr($test_act)
-                    if { $max_num < $test } {
-                        set max_num $test
+                incr i
+            }
+            
+            # handy api ref
+            # util_commify_number
+            # format "% 8.2f" $num
+            
+            # PERTTI calculations
+            
+            # Build:
+            #  activity map table:  depnc_larr($activity_ref) dependent_tasks_list
+            #  array of activity_ref sequence_num: act_seq_num_arr($activity_ref) sequence_number
+            # An activity_ref's sequence is one more than the max sequence_num of its dependencies
+            set i 0
+            set sequence_1 0
+            foreach act $p2_larr(activity_ref) {
+                set depnc [lindex $p2_larr(dependent_tasks) $i]
+                # depnc: comma list of dependencies
+                # depnc_larr() list of dependencies
+                # Filter out any blanks
+                set scratch_list [split $depnc ";, "]
+                set scratch2_list [list ]
+                foreach dep $scratch_list {
+                    if { $dep ne "" } {
+                        lappend scratch2_list $dep
                     }
                 }
-
-                # Add activity's relative sequence number: act_seq_num_arr
-                set act_seq_nbr [expr { $max_num + 1 } ]
-                set act_seq_num_arr($act) $act_seq_nbr
-                set calcd_p_arr($act) 1
-                # increment act_seq_max and set defaults for a new max seq number?
-                if { $act_seq_nbr > $act_seq_max } {
-                    set act_seq_max $act_seq_nbr
-                    set act_seq_list_arr($act_seq_max) [list ]
-                    set act_count_of_seq_arr($act_seq_max) 0
+                set depnc_larr($act) $scratch2_list
+                # _c($act) Answers question: Has relative sequence number for $act been calculated?
+                set _c($act) 0
+                # act_seq_num_arr is relative sequence number of an activity. 
+                set act_seq_num_arr($act) $sequence_1
+                incr i
+            }
+            
+            # Calculate paths in the main loop to save resources.
+            #  Each path is a list of numbers referenced by array, where 
+            #  array indexes last path activity (of a dependency track).
+            #  set path_segment_ends_in_lists($act) 
+            #  so future segments can quickly reference it to build theirs.
+            
+            # This keeps path making nearly linear. There are as many path references as there are activities..
+            
+            # Since some activities depend on others, some of the references are 
+            # incomplete activity tracks, but these can be filtered as needed.
+            
+            # All paths must be assessed in order to handle all possibilities
+            # Paths are used to determine critical path and fast crawl a single path.
+            
+            # An activity cannot start until the longest dependent segment has completed.
+            
+            # For strict critical path, create a list of lists, where 
+            # each list is a list of dependencies from start to finish (aka path)  + the longest duraction path of activity including dependencies.
+            # sum the duration for each list. The longest duration is the strict defintion of critical path.
+            
+            # create dependency check equations
+            # depnc_eq_arr() is equation that answers question: Are dependencies met for $act?
+            foreach act $p2_larr(activity_ref) {
+                set eq "1 &&"
+                foreach dep $depnc_larr($act) {
+                    # CODING NOTE: strings generally are okay to 100,000,000+ chars..
+                    # If there are memory issues, convert eq to an eq_reference_list to calculate elements sequentially. Sort of what it does internally anyway.
+                    
+                    # array _c() answers question: are all dependencies calculated for activity?
+                    append eq " _c($dep) &&"
                 }
-                # add activity to the network for this sequence number
-                lappend act_seq_list_arr($act_seq_nbr) $act
-                incr act_count_of_seq_arr($act_seq_nbr)
-                
-                # Analize prior path segments here.
-
-                # path_duration(path) is the min. path duration to complete dependent paths
-                set path_duration 0.
-                set paths_cost 0.
-                # set duration_new to the longest duration dependent segment.
-                # depnc_larr() is a list of direct dependencies for each activity
-                foreach dep_act $depnc_larr($act) {
-                    if { $path_dur_arr($dep_act) > $path_duration } {
-                        set path_duration $path_dur_arr($dep_act)
+                # remove the last " &&":
+                set eq [string range $eq 0 end-3]
+                # convert _c_arr reference to a variable by adding a dollar sign prefix:
+                regsub -all -- { _c} $eq { $_c} depnc_eq_arr($act)
+            }
+            # main process looping
+            set all_calced_p 0
+            set activity_count [llength $p2_larr(activity_ref)]
+            set i 0
+            set act_seq_list_arr($sequence_1) [list ]
+            # act_count_of_seq_arr( sequence_number) is the count of activities at this sequence number
+            set act_count_of_seq_arr($sequence_1) 0
+            set path_seg_dur_list [list ]
+            # act_seq_max is the current maximum path length
+            
+            while { !$all_calced_p && $activity_count > $i } {
+                set all_calcd_p 1
+                foreach act $p2_larr(activity_ref) {
+                    set dependencies_met_p [expr { $depnc_eq_arr($act) } ]
+                    set act_seq_max $sequence_1
+                    if { $dependencies_met_p && !$calcd_p_arr($act) } {
+                        
+                        # Calc max_num: maximum relative sequence number for activity dependencies
+                        set max_num 0
+                        foreach test_act $depnc_larr($act) {
+                            set test $act_seq_num_arr($test_act)
+                            if { $max_num < $test } {
+                                set max_num $test
+                            }
+                        }
+                        
+                        # Add activity's relative sequence number: act_seq_num_arr
+                        set act_seq_nbr [expr { $max_num + 1 } ]
+                        set act_seq_num_arr($act) $act_seq_nbr
+                        set calcd_p_arr($act) 1
+                        # increment act_seq_max and set defaults for a new max seq number?
+                        if { $act_seq_nbr > $act_seq_max } {
+                            set act_seq_max $act_seq_nbr
+                            set act_seq_list_arr($act_seq_max) [list ]
+                            set act_count_of_seq_arr($act_seq_max) 0
+                        }
+                        # add activity to the network for this sequence number
+                        lappend act_seq_list_arr($act_seq_nbr) $act
+                        incr act_count_of_seq_arr($act_seq_nbr)
+                        
+                        # Analize prior path segments here.
+                        
+                        # path_duration(path) is the min. path duration to complete dependent paths
+                        set path_duration 0.
+                        set paths_cost 0.
+                        # set duration_new to the longest duration dependent segment.
+                        # depnc_larr() is a list of direct dependencies for each activity
+                        foreach dep_act $depnc_larr($act) {
+                            if { $path_dur_arr($dep_act) > $path_duration } {
+                                set path_duration $path_dur_arr($dep_act)
+                            }
+                            # Add all the costs for each dependency path
+                            set paths_cost [expr { $paths_cost + $cost_expected_arr($dep_act) } ]
+                        }
+                        # duration_arr() is duration of track segment up to (and including) activity.
+                        set duration_arr($act) [expr { $path_duration + $time_expected_arr($act) } ]
+                        
+                        # cost is cost of all dependent paths plus cost of this activity
+                        set cost_arr($act) [expr { $paths_cost + $cost_expected_arr($act) } ]
+                        
+                        # path_seg_list_arr() is an array of partial (and perhaps complete) 
+                        #   activity paths (or tracks) represented as a list of lists in chronological order (last acitivty last).
+                        #   For example, if A depends on B and C, and C depends on D then:
+                        #   path_seg_list_arr(A) == \[list \[list B A\] \[list D C A\] \]
+                        # full_track_p_arr answers question: is this track complete (ie not a subset of another track)?
+                        # path_seg_dur_list is a list_of_list pairs: path_list and duration. This allows the paths to be sorted to quickly determine CP.
+                        set path_seg_list_arr($act) [list ]
+                        foreach dep_act $depnc_larr($act) {
+                            foreach path_list $path_seg_list_arr($dep_act) {
+                                set path_new_list $path_list
+                                # Mark which tracks are complete (not partial track segments), 
+                                # so that total program cost calculations don't include duplicate, incomplete tracks that remain in path_seg_dur_list
+                                set full_track_p_arr($path_list) 0
+                                lappend path_new_list $act
+                                set full_track_p_arr($path_new_list) 1
+                                lappend path_seg_list_arr($act) $path_new_list
+                                set pair_list [list $path_new_list $duration_arr($act)]
+                                lappend path_seg_dur_list $pair_list
+                            }
+                        }
+                        if { [llength $path_seg_list_arr($act)] eq 0 } {
+                            lappend path_seg_list_arr($act) $act
+                            set full_track_p_arr($act) 1
+                            set pair_list [list $act $duration_arr($act)]
+                            lappend path_seg_dur_list $pair_list
+                        }
                     }
-                    # Add all the costs for each dependency path
-                    set paths_cost [expr { $paths_cost + $cost_expected_arr($dep_act) } ]
+                    set all_calcd_p [expr { $all_calcd_p && $calcd_p_arr($act) } ]
                 }
-                # duration_arr() is duration of track segment up to (and including) activity.
-                set duration_arr($act) [expr { $path_duration + $time_expected_arr($act) } ]
-                
-                # cost is cost of all dependent paths plus cost of this activity
-                set cost_arr($act) [expr { $paths_cost + $cost_expected_arr($act) } ]
-
-                # path_seg_list_arr() is an array of partial (and perhaps complete) 
-                #   activity paths (or tracks) represented as a list of lists in chronological order (last acitivty last).
-                #   For example, if A depends on B and C, and C depends on D then:
-                #   path_seg_list_arr(A) == \[list \[list B A\] \[list D C A\] \]
-                # full_track_p_arr answers question: is this track complete (ie not a subset of another track)?
-                # path_seg_dur_list is a list_of_list pairs: path_list and duration. This allows the paths to be sorted to quickly determine CP.
-                set path_seg_list_arr($act) [list ]
-                foreach dep_act $depnc_larr($act) {
-                    foreach path_list $path_seg_list_arr($dep_act) {
-                        set path_new_list $path_list
-                        # Mark which tracks are complete (not partial track segments), 
-                        # so that total program cost calculations don't include duplicate, incomplete tracks that remain in path_seg_dur_list
-                        set full_track_p_arr($path_list) 0
-                        lappend path_new_list $act
-                        set full_track_p_arr($path_new_list) 1
-                        lappend path_seg_list_arr($act) $path_new_list
-                        set pair_list [list $path_new_list $duration_arr($act)]
-                        lappend path_seg_dur_list $pair_list
-                    }
-                }
-                if { [llength $path_seg_list_arr($act)] eq 0 } {
-                    lappend path_seg_list_arr($act) $act
-                    set full_track_p_arr($act) 1
-                    set pair_list [list $act $duration_arr($act)]
-                    lappend path_seg_dur_list $pair_list
+                incr i
+            }
+            
+            set dep_met_p 1
+            ns_log Notice "acc_fin::scenario_prettify: path_seg_dur_list $path_seg_dur_list"
+            foreach act $p2_larr(activity_ref) {
+                set $dep_met_p [expr { $depnc_eq_arr($act) && $dep_met_p } ] 
+                # ns_log Notice "acc_fin::scenario_prettify: act $act act_seq_num_arr '$act_seq_num_arr($act)'"
+                # ns_log Notice "acc_fin::scenario_prettify: act_seq_list_arr '$act_seq_list_arr($act_seq_num_arr($act))' $act_count_of_seq_arr($act_seq_num_arr($act))"
+            }
+            ns_log Notice "acc_fin::scenario_prettify: dep_met_p $dep_met_p"
+            
+            # remove incomplete tracks from path_seg_dur_list by placing only complete tracks in track_dur_list
+            set track_dur_list [list ]
+            foreach {path_list duration} $path_seg_dur_list {
+                if { $full_track_p_arr($path_list) } {
+                    set td_list [list $path_list $duration]
+                    lappend track_dur_list $td_list
                 }
             }
-            set all_calcd_p [expr { $all_calcd_p && $calcd_p_arr($act) } ]
+            
+            # sort by path duration
+            # critical path is the longest path. Float is the difference between CP and next longest CP.
+            # create an array of paths from longest to shortest to help build base table
+            set path_seg_dur_sort1_list [lsort -decreasing -real -index 1 $track_dur_list]
+            # Critical Path (CP) is 
+            set cp_list [lindex [lindex $path_seg_dur_sort1_list 0] 0]
+            #ns_log Notice "acc_fin::scenario_prettify: path_seg_dur_sort1_list $path_seg_dur_sort1_list"
+            
+            # Extract most significant CP alternates for a focused table
+            # by counting the number of times an act is used in the largest proportion (first half) of paths in path_set_dur_sort1_list
+            
+            
+            
+            # act_freq_in_load_cp_alts_arr   a count the number of times an activity is in a path 
+            # max_act_count_per_seq          maximum number of activities in a sequence number.
+            set max_act_count_per_seq 0
+            foreach act $p2_larr(activity_ref) {
+                set act_freq_in_load_cp_alts_arr($act) 0
+                if { $act_count_of_seq_arr($act) > $max_act_count_per_seq } {
+                    set max_act_count_per_seq $act_count_of_seq_arr($act)
+                }
+            }
+            foreach path_seg_list $path_seg_dur_sort1_list {
+                set path2_list [lindex $path_seg_list 0]
+                foreach act $path2_list {
+                    incr act_freq_in_load_cp_alts_arr($act)
+                }
+            }
+            # Make a list of the activities in the most tracks by count
+            set act_sig_list [list ]
+            foreach act $p2_larr(activity_ref) {
+                lappend act_sig_list [list $act $act_freq_in_load_cp_alts_arr($act)]
+            }
+            set act_sig_sorted_list [lsort -decreasing -integer -index 1 $act_sig_list]
+            set act_sig_median_pos [expr { [llength $path_seg_dur_sort1_list] / 2 } + 1 ]
+            set act_max_count [lindex [lindex $act_sig_sorted_list 0] 1]
+            set act_median_count [lindex [lindex $act_sig_sorted_list $act_sig_median_pos] 1]
+            
+            # build base table
+            # Cells need this info for presentation: 
+            #   activity_time_expected, time_start (path_duration - time_expected),time_finish (path_duration)
+            #   activity_cost_expected, path_costs to complete activity
+            #   direct dependencies
+            # and some others for sorting.
+            set base_lists [list ]
+            foreach {path_list duration} $path_seg_dur_sort1_list {
+                set act [lindex $path_list end]
+                set tree_act_cost_arr($act) $cost_arr($act)
+                set has_direct_dependency_p [expr { [llength $depnc_larr($act)] > 0 } ]
+                set on_critical_path_p [expr { [lsearch -exact $cp_list $act] > -1 } ]
+                set on_a_sig_path_p [expr { $act_freq_in_load_cp_alts_arr($act) > $act_median_count } ]
+                
+                #  0 activity_ref
+                #  1 activity_seq_num_arr() ie count of activities in track
+                #  2 Q: Does this activity have any dependencies? ie predecessors
+                #  3 Q: Is this the CP?
+                #  4 Q: Is this activity referenced in more than a median number of times?
+                #  5 act_freq_inLolad_cp_alts  count of activity is in a path or track
+                #  6 duration_arr              track duration
+                #  7 activity_time_expected    time expected of this activity
+                #  8 depnc_larr                direct activity dependencies
+                #  9 cost_expected_arr         cost to complete activity
+                # 10 cost_arr                  cost to complete path (including all path dependents)
+                
+                set activity_list [list $act $act_seq_num_arr($act) $has_direct_dependency_p $on_critical_path_p $on_a_sig_path_p $act_freq_in_load_cp_alts_arr($act) $duration_arr($act) $time_expected_arr($act) $depnc_larr($act) $cost_expected_arr($act) $cost_arr($act) ]
+                lappend base_lists $activity_list
+            }
+            
+            
+            ns_log Notice "acc_fin::scenario_prettify: base_lists $base_lists"
+            
+            # sort by: act_seq_num_arr descending
+            set fourth_sort [lsort -decreasing -real -index 1 $base_lists]
+            # sort by: Q. has_direct_dependency_p? descending (1 = true, 0 false)
+            set third_sort [lsort -decreasing -integer -index 2 $fourth_sort]
+            # sort by: Q. on part_of_critical_path_p? descending
+            set second_sort [lsort -decreasing -integer -index 3 $third_sort]
+            
+            # critical path is the longest expected duration of dependent activities, so final sort:
+            # sort by path duration descending
+            set primary_sort [lsort -increasing -integer -index 6 $second_sort]
+            
+            ns_log Notice "acc_fin::scenario_prettify: primary_sort $primary_sort"
+            
+            ##### comments should include cp_duration_at_pm, cp_cost_at_pm, max_act_count_per_track time_probability_moment, cost_probability_moment, scenario_name, processing_time, time/date finished processing
+            # *_at_pm means at probability moment
+            set cp_duration_at_pm [lindex [lindex $primary_sort 0] 1]
+            # calculate cp_cost_at_pm
+            set cp_cost_at_pm 0.
+            foreach {act tree_cost} [array get tree_act_cost_arr] {
+                set cp_cost_at_pm [expr { $cp_cost_at_pm + $tree_cost } ]
+            }
+            set scenario_stats_list [qss_table_stats $scenario_tid]
+            set scenario_name [lindex $scenario_stats_list 0]
+            set scenario_title [lindex $scenario_stats_list 1]
+            
+            set time_end [clock seconds]
+            set time_diff_secs [expr { $time_end - $time_start } ]
+            # the_time Time calculation completed
+            set p1_arr(the_time) [clock format [clock seconds] -format "%Y %b %d %H:%M:%S"]
+            
+            set comments "Scenario report for ${scenario_title}: "
+            append comments "scenario_name ${scenario_name} , cp_duration_at_pm ${cp_duration_at_pm} , cp_cost_at_pm ${cp_cost_at_pm} ,"
+            append comments "max_act_count_per_track ${act_max_count} , time_probability_moment ${t_moment} , cost_probability_moment ${c_moment} ,"
+            append comments "processing_time ${time_diff_secs} seconds , time/date finished processing ${p1_larr(the_time)} "
+            
+            #### save as a new table of type PRETTI 
+            # each column a track with column names: track_(1..N). track_1 is CP
+            
+            # Add any reporting data, such as computation time to comments.
+            # Comments data will be interpreted for determining standard deviation for determining fast track highlighting
+            
+            # prep for conversion to html by adding missing TDs (table cells).
+            # primary_sort list_of_lists consists of this order of elements:
+            #  act act_seq_num_arr has_direct_dependency_p on_critical_path_p on_a_sig_path_p act_freq_in_load_cp_alts path_duration time_expected dependencies_list
+            # sorted by: act_seq_num on_critical_path_p has_direct_dependency_p duration
+            # don't save the sort info, just the task data per column
+            
+            # save using qss_table_create with parameters:
+            #  cells_list_of_lists
+            #  name
+            #  title
+            #  comments
+            #  template_id (optional)
+            #  flags (optional)
+            #  instance_id (optional)
+            #  user_id (optional)
+            
+    
         }
-        incr i
+        # next c_moment
     }
-
-    set dep_met_p 1
-    ns_log Notice "acc_fin::scenario_prettify: path_seg_dur_list $path_seg_dur_list"
-    foreach act $p2_larr(activity_ref) {
-        set $dep_met_p [expr { $depnc_eq_arr($act) && $dep_met_p } ] 
-        # ns_log Notice "acc_fin::scenario_prettify: act $act act_seq_num_arr '$act_seq_num_arr($act)'"
-        # ns_log Notice "acc_fin::scenario_prettify: act_seq_list_arr '$act_seq_list_arr($act_seq_num_arr($act))' $act_count_of_seq_arr($act_seq_num_arr($act))"
-    }
-    ns_log Notice "acc_fin::scenario_prettify: dep_met_p $dep_met_p"
-    
-    # remove incomplete tracks from path_seg_dur_list by placing only complete tracks in track_dur_list
-    set track_dur_list [list ]
-    foreach {path_list duration} $path_seg_dur_list {
-        if { $full_track_p_arr($path_list) } {
-            set td_list [list $path_list $duration]
-            lappend track_dur_list $td_list
-        }
-    }
-
-    # sort by path duration
-    # critical path is the longest path. Float is the difference between CP and next longest CP.
-    # create an array of paths from longest to shortest to help build base table
-    set path_seg_dur_sort1_list [lsort -decreasing -real -index 1 $track_dur_list]
-    # Critical Path (CP) is 
-    set cp_list [lindex [lindex $path_seg_dur_sort1_list 0] 0]
-    #ns_log Notice "acc_fin::scenario_prettify: path_seg_dur_sort1_list $path_seg_dur_sort1_list"
-    
-    # Extract most significant CP alternates for a focused table
-    # by counting the number of times an act is used in the largest proportion (first half) of paths in path_set_dur_sort1_list
-
-
-
-    # act_freq_in_load_cp_alts_arr   a count the number of times an activity is in a path 
-    # max_act_count_per_seq          maximum number of activities in a sequence number.
-    set max_act_count_per_seq 0
-    foreach act $p2_larr(activity_ref) {
-        set act_freq_in_load_cp_alts_arr($act) 0
-        if { $act_count_of_seq_arr($act) > $max_act_count_per_seq } {
-            set max_act_count_per_seq $act_count_of_seq_arr($act)
-        }
-    }
-    foreach path_seg_list $path_seg_dur_sort1_list {
-        set path2_list [lindex $path_seg_list 0]
-        foreach act $path2_list {
-            incr act_freq_in_load_cp_alts_arr($act)
-        }
-    }
-    # Make a list of the activities in the most tracks by count
-    set act_sig_list [list ]
-    foreach act $p2_larr(activity_ref) {
-        lappend act_sig_list [list $act $act_freq_in_load_cp_alts_arr($act)]
-    }
-    set act_sig_sorted_list [lsort -decreasing -integer -index 1 $act_sig_list]
-    set act_sig_median_pos [expr { [llength $path_seg_dur_sort1_list] / 2 } + 1 ]
-    set act_max_count [lindex [lindex $act_sig_sorted_list 0] 1]
-    set act_median_count [lindex [lindex $act_sig_sorted_list $act_sig_median_pos] 1]
-    
-    # build base table
-    # Cells need this info for presentation: 
-    #   activity_time_expected, time_start (path_duration - time_expected),time_finish (path_duration)
-    #   activity_cost_expected, path_costs to complete activity
-    #   direct dependencies
-    # and some others for sorting.
-    set base_lists [list ]
-    foreach {path_list duration} $path_seg_dur_sort1_list {
-        set act [lindex $path_list end]
-        set tree_act_cost_arr($act) $cost_arr($act)
-        set has_direct_dependency_p [expr { [llength $depnc_larr($act)] > 0 } ]
-        set on_critical_path_p [expr { [lsearch -exact $cp_list $act] > -1 } ]
-        set on_a_sig_path_p [expr { $act_freq_in_load_cp_alts_arr($act) > $act_median_count } ]
-
-        #  0 activity_ref
-        #  1 activity_seq_num_arr() ie count of activities in track
-        #  2 Q: Does this activity have any dependencies? ie predecessors
-        #  3 Q: Is this the CP?
-        #  4 Q: Is this activity referenced in more than a median number of times?
-        #  5 act_freq_inLolad_cp_alts  count of activity is in a path or track
-        #  6 duration_arr              track duration
-        #  7 activity_time_expected    time expected of this activity
-        #  8 depnc_larr                direct activity dependencies
-        #  9 cost_expected_arr         cost to complete activity
-        # 10 cost_arr                  cost to complete path (including all path dependents)
-
-        set activity_list [list $act $act_seq_num_arr($act) $has_direct_dependency_p $on_critical_path_p $on_a_sig_path_p $act_freq_in_load_cp_alts_arr($act) $duration_arr($act) $time_expected_arr($act) $depnc_larr($act) $cost_expected_arr($act) $cost_arr($act) ]
-        lappend base_lists $activity_list
-    }
-
-
-    ns_log Notice "acc_fin::scenario_prettify: base_lists $base_lists"
-    
-    # sort by: act_seq_num_arr descending
-    set fourth_sort [lsort -decreasing -real -index 1 $base_lists]
-    # sort by: Q. has_direct_dependency_p? descending (1 = true, 0 false)
-    set third_sort [lsort -decreasing -integer -index 2 $fourth_sort]
-    # sort by: Q. on part_of_critical_path_p? descending
-    set second_sort [lsort -decreasing -integer -index 3 $third_sort]
-
-    # critical path is the longest expected duration of dependent activities, so final sort:
-    # sort by path duration descending
-    set primary_sort [lsort -increasing -integer -index 6 $second_sort]
-    
-    ns_log Notice "acc_fin::scenario_prettify: primary_sort $primary_sort"
-
-    ##### comments should include cp_duration_at_pm, cp_cost_at_pm, max_act_count_per_track time_probability_moment, cost_probability_moment, scenario_name, processing_time, time/date finished processing
-    # *_at_pm means at probability moment
-    set cp_duration_at_pm [lindex [lindex $primary_sort 0] 1]
-    # calculate cp_cost_at_pm
-    set cp_cost_at_pm 0.
-    foreach {act tree_cost} [array get tree_act_cost_arr] {
-        set cp_cost_at_pm [expr { $cp_cost_at_pm + $tree_cost } ]
-    }
-    set scenario_stats_list [qss_table_stats $scenario_tid]
-    set scenario_name [lindex $scenario_stats_list 0]
-    set scenario_title [lindex $scenario_stats_list 1]
-
-    set time_end [clock seconds]
-    set time_diff_secs [expr { $time_end - $time_start } ]
-    # the_time Time calculation completed
-    set p1_arr(the_time) [clock format [clock seconds] -format "%Y %b %d %H:%M:%S"]
-
-    set comments "Scenario report for ${scenario_title}: "
-    append comments "scenario_name ${scenario_name} , cp_duration_at_pm ${cp_duration_at_pm} , cp_cost_at_pm ${cp_cost_at_pm} ,"
-    append comments "max_act_count_per_track ${act_max_count} , time_probability_moment ${t_moment} , cost_probability_moment ${c_moment} ,"
-    append comments "processing_time ${time_diff_secs} seconds , time/date finished processing ${p1_larr(the_time)} "
-
-#### save as a new table of type PRETTI 
-    # each column a track with column names: track_(1..N). track_1 is CP
- 
-    # Add any reporting data, such as computation time to comments.
-    # Comments data will be interpreted for determining standard deviation for determining fast track highlighting
-
-    # prep for conversion to html by adding missing TDs (table cells).
-    # primary_sort list_of_lists consists of this order of elements:
-    #  act act_seq_num_arr has_direct_dependency_p on_critical_path_p on_a_sig_path_p act_freq_in_load_cp_alts path_duration time_expected dependencies_list
-    # sorted by: act_seq_num on_critical_path_p has_direct_dependency_p duration
-    # don't save the sort info, just the task data per column
-
-    # save using qss_table_create with parameters:
-    #  cells_list_of_lists
-    #  name
-    #  title
-    #  comments
-    #  template_id (optional)
-    #  flags (optional)
-    #  instance_id (optional)
-    #  user_id (optional)
-
-    
-    
-    
-    
+    # next t_moment
     
     return $pretti_lol
 }
