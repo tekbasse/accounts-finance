@@ -18,6 +18,7 @@ namespace eval acc_fin {}
 #  p3  task types (can also have dependencies)
 #  cd2 distribution curve
 #  p4  PRETTI report (output)
+#  p5  PRETTI db report (output) (similar format to  p3, where each row represents a path, but in p5 all paths are represented
 #  cd2 Estimated project duration distribution curve (can be used to create other projects)
 
 # p1 PRETTI Scenario
@@ -591,7 +592,7 @@ ad_proc -public acc_fin::scenario_prettify {
     in dependent_tasks list, appending table with a complete list of expanded, 
     nonrepeating tasks.
 } {
-    set time_start [clock seconds]
+    set setup_start [clock seconds]
     # load scenario values
     
     # load pretti2_lol table
@@ -708,7 +709,7 @@ ad_proc -public acc_fin::scenario_prettify {
 
     # import task_types_list
     if { $p1_arr(task_types_tid) ne "" } {
-        set constants_list [list type dependent_tasks dependent_types name description max_concurrent max_overlapp activity_table_tid activity_table_name task_types_tid task_types_name time_dist_curve_name time_dist_curve_tid cost_dist_curve_name cost_dist_curve_tid time_est_short time_est_median time_est_long time_probability_moment cost_est_low cost_est_median cost_est_high cost_probability_moment]
+        set constants_list [list type dependent_tasks dependent_types name description max_concurrent max_overlapp activity_table_tid activity_table_name task_types_tid task_types_name time_dist_curve_name time_dist_curve_tid cost_dist_curve_name cost_dist_curve_tid time_est_short time_est_median time_est_long time_probability_moment cost_est_low cost_est_median cost_est_high cost_probability_moment db_format]
         set constants_required_list [list type]
         acc_fin::p_load_tid $constants_list $constants_required_list p3_larr $p1_arr(task_types_tid)
     }
@@ -763,6 +764,8 @@ ad_proc -public acc_fin::scenario_prettify {
     set t_moment_list [split $p1_arr(time_probability_moment)]
     set c_moment_list [split $p1_arr(cost_probability_moment)]
     # Be sure any new values are nullified between each loop
+    set setup_end [clock seconds]
+    set time_start [clock seconds]
     foreach t_moment $t_moment_list {
 
         # Calculate base durations for time_probability_moment. These work for activities and task types.
@@ -1057,8 +1060,7 @@ ad_proc -public acc_fin::scenario_prettify {
                 set activity_list [list $act $act_seq_num_arr($act) $has_direct_dependency_p $on_critical_path_p $on_a_sig_path_p $act_freq_in_load_cp_alts_arr($act) $duration_arr($act) $time_expected_arr($act) $depnc_larr($act) $cost_expected_arr($act) $cost_arr($act) ]
                 lappend base_lists $activity_list
             }
-            
-            
+
             ns_log Notice "acc_fin::scenario_prettify: base_lists $base_lists"
             
             # sort by: act_seq_num_arr descending
@@ -1104,6 +1106,7 @@ ad_proc -public acc_fin::scenario_prettify {
             
             set time_end [clock seconds]
             set time_diff_secs [expr { $time_end - $time_start } ]
+            set setup_diff_secs [expr { $setup_end - $setup_start } ]
             # the_time Time calculation completed
             set p1_arr(the_time) [clock format [clock seconds] -format "%Y %b %d %H:%M:%S"]
             # comments should include cp_duration_at_pm, cp_cost_at_pm, max_act_count_per_track 
@@ -1112,10 +1115,13 @@ ad_proc -public acc_fin::scenario_prettify {
             set comments "Scenario report for ${scenario_title}: "
             append comments "scenario_name ${scenario_name} , cp_duration_at_pm ${cp_duration_at_pm} , cp_cost_at_pm ${cp_cost_at_pm} ,"
             append comments "max_act_count_per_track ${act_max_count} , time_probability_moment ${t_moment} , cost_probability_moment ${c_moment} ,"
-            append comments "processing_time ${time_diff_secs} seconds , time/date finished processing ${p1_larr(the_time)} "
+            append comments "setup_time ${setup_diff_secs} , main_processing_time ${time_diff_secs} seconds , time/date finished processing ${p1_larr(the_time)} "
             # Add titles before saving
-            set primary_sort [lreplace $primary_sort 0 0 $base_titles_list]
-            
+
+            if { $p1_larr(db_format) ne "" } {
+                set primary_sort [lreplace $primary_sort 0 0 $base_titles_list]
+                qss_table_create $primary_sort "${scenario_name}.p5" "${scenario_title}.p5" $comments "" p5 $package_id $user_id
+            }
             #### save as a new table of type PRETTI 
             # each column a track with column names: track_(1..N). track_1 is CP
             
