@@ -1034,6 +1034,7 @@ ad_proc -public acc_fin::scenario_prettify {
             #   direct dependencies
             # and some others for sorting.
             set base_lists [list ]
+            set base_titles_list [list activity_ref activity_seq_num dependencies_q cp_q significant_q popularity waypoint_duration activity_time direct_dependencies activity_cost waypoint_cost]
             foreach {path_list duration} $path_seg_dur_sort1_list {
                 set act [lindex $path_list end]
                 set tree_act_cost_arr($act) $cost_arr($act)
@@ -1046,7 +1047,7 @@ ad_proc -public acc_fin::scenario_prettify {
                 #  2 Q: Does this activity have any dependencies? ie predecessors
                 #  3 Q: Is this the CP?
                 #  4 Q: Is this activity referenced in more than a median number of times?
-                #  5 act_freq_inLolad_cp_alts  count of activity is in a path or track
+                #  5 act_freq_in_load_cp_alts  count of activity is in a path or track
                 #  6 duration_arr              track duration
                 #  7 activity_time_expected    time expected of this activity
                 #  8 depnc_larr                direct activity dependencies
@@ -1070,10 +1071,8 @@ ad_proc -public acc_fin::scenario_prettify {
             # critical path is the longest expected duration of dependent activities, so final sort:
             # sort by path duration descending
             set primary_sort [lsort -increasing -integer -index 6 $second_sort]
-            
             ns_log Notice "acc_fin::scenario_prettify: primary_sort $primary_sort"
             
-            ##### comments should include cp_duration_at_pm, cp_cost_at_pm, max_act_count_per_track time_probability_moment, cost_probability_moment, scenario_name, processing_time, time/date finished processing
             # *_at_pm means at probability moment
             set cp_duration_at_pm [lindex [lindex $primary_sort 0] 1]
             # calculate cp_cost_at_pm
@@ -1083,17 +1082,39 @@ ad_proc -public acc_fin::scenario_prettify {
             }
             set scenario_stats_list [qss_table_stats $scenario_tid]
             set scenario_name [lindex $scenario_stats_list 0]
+            if { [llength $t_moment_list ] > 1 } {
+                set t_moment_len_list [list ]
+                foreach moment $t_moment_list {
+                    lappend t_moment_len_list [string length $moment]
+                }
+                set t_moment_format "%1.f"
+                append t_moment_format [expr { [f::max $t_moment_len_list] - 2 } ]
+                lappend " t=[format ${t_moment_format} ${t_moment}]"
+            }
+            if { [llength $c_moment_list ] > 1 } {
+                set c_moment_len_list [list ]
+                foreach moment $c_moment_list {
+                    lappend c_moment_len_list [string length $moment]
+                }
+                set c_moment_format "%1.f"
+                append c_moment_format [expr { [f::max $t_moment_len_list] - 2 } ]
+                lappend " c=[format ${c_moment_format} ${c_moment}]"
+            }
             set scenario_title [lindex $scenario_stats_list 1]
             
             set time_end [clock seconds]
             set time_diff_secs [expr { $time_end - $time_start } ]
             # the_time Time calculation completed
             set p1_arr(the_time) [clock format [clock seconds] -format "%Y %b %d %H:%M:%S"]
-            
+            # comments should include cp_duration_at_pm, cp_cost_at_pm, max_act_count_per_track 
+            # time_probability_moment, cost_probability_moment, 
+            # scenario_name, processing_time, time/date finished processing
             set comments "Scenario report for ${scenario_title}: "
             append comments "scenario_name ${scenario_name} , cp_duration_at_pm ${cp_duration_at_pm} , cp_cost_at_pm ${cp_cost_at_pm} ,"
             append comments "max_act_count_per_track ${act_max_count} , time_probability_moment ${t_moment} , cost_probability_moment ${c_moment} ,"
             append comments "processing_time ${time_diff_secs} seconds , time/date finished processing ${p1_larr(the_time)} "
+            # Add titles before saving
+            set primary_sort [lreplace $primary_sort 0 0 $base_titles_list]
             
             #### save as a new table of type PRETTI 
             # each column a track with column names: track_(1..N). track_1 is CP
