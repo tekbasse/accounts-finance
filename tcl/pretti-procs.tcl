@@ -762,20 +762,28 @@ ad_proc -public acc_fin::scenario_prettify {
     # Multiple probability_moments allowed
     set t_moment_list [split $p1_arr(time_probability_moment)]
     set c_moment_list [split $p1_arr(cost_probability_moment)]
+    # Be sure any new values are nullified between each loop
     foreach t_moment $t_moment_list {
 
         # Calculate base durations for time_probability_moment. These work for activities and task types.
+        array unset t_est_arr
         foreach tCurve [array names time_clarr] {
             set t_est_arr($tCurve) [qaf_y_of_x_dist_curve $t_moment $time_clarr($tCurve) ]
         }
 
         foreach c_moment $c_moment_list {
             # Calculate base costs for cost_probability_moment. These work for activities and task types.
+            array unset c_est_arr
             foreach cCurve [array names cost_clarr] {
                 set c_est_arr($cCurve) [qaf_y_of_x_dist_curve $c_moment $cost_clarr($cCurve) ]
             }
             # Create activity time estimate and cost estimate arrays for repeated use in main loop
             set i 0
+            array unset time_expected_arr
+            array unset path_dur_arr
+            array unset cost_expected_arr
+            array unset path_cost_arr
+            array unset depnc_eq_arr
             foreach act $p2_larr(activity_ref) {
                 set $act_list [list $act]
                 # the first paths are single activities, subsequently time expected and duration are same values
@@ -804,6 +812,9 @@ ad_proc -public acc_fin::scenario_prettify {
             # An activity_ref's sequence is one more than the max sequence_num of its dependencies
             set i 0
             set sequence_1 0
+            array unset act_seq_num_arr
+            array unset depnc_larr
+            array unset _c
             foreach act $p2_larr(activity_ref) {
                 set depnc [lindex $p2_larr(dependent_tasks) $i]
                 # depnc: comma list of dependencies
@@ -861,6 +872,8 @@ ad_proc -public acc_fin::scenario_prettify {
                 regsub -all -- { _c} $eq { $_c} depnc_eq_arr($act)
             }
             # main process looping
+            array unset act_seq_list_arr
+            array unset act_count_of_seq_arr
             set all_calced_p 0
             set activity_count [llength $p2_larr(activity_ref)]
             set i 0
@@ -869,7 +882,11 @@ ad_proc -public acc_fin::scenario_prettify {
             set act_count_of_seq_arr($sequence_1) 0
             set path_seg_dur_list [list ]
             # act_seq_max is the current maximum path length
-            
+            array unset duration_arr
+            array unset cost_arr
+            array unset path_seg_list_arr
+            array unset full_track_p_arr
+
             while { !$all_calced_p && $activity_count > $i } {
                 set all_calcd_p 1
                 foreach act $p2_larr(activity_ref) {
@@ -985,6 +1002,8 @@ ad_proc -public acc_fin::scenario_prettify {
             
             # act_freq_in_load_cp_alts_arr   a count the number of times an activity is in a path 
             # max_act_count_per_seq          maximum number of activities in a sequence number.
+            unset act_freq_in_load_cp_alts_arr
+
             set max_act_count_per_seq 0
             foreach act $p2_larr(activity_ref) {
                 set act_freq_in_load_cp_alts_arr($act) 0
