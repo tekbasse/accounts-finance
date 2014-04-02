@@ -1064,19 +1064,19 @@ ad_proc -public acc_fin::scenario_prettify {
             ns_log Notice "acc_fin::scenario_prettify: base_lists $base_lists"
             
             # sort by: act_seq_num_arr descending
-            set fourth_sort [lsort -decreasing -real -index 1 $base_lists]
+            set fourth_sort_lists [lsort -decreasing -real -index 1 $base_lists]
             # sort by: Q. has_direct_dependency_p? descending (1 = true, 0 false)
-            set third_sort [lsort -decreasing -integer -index 2 $fourth_sort]
+            set third_sort_lists [lsort -decreasing -integer -index 2 $fourth_sort_lists]
             # sort by: Q. on part_of_critical_path_p? descending
-            set second_sort [lsort -decreasing -integer -index 3 $third_sort]
+            set second_sort_lists [lsort -decreasing -integer -index 3 $third_sort_lists]
             
             # critical path is the longest expected duration of dependent activities, so final sort:
             # sort by path duration descending
-            set primary_sort [lsort -increasing -integer -index 6 $second_sort]
-            ns_log Notice "acc_fin::scenario_prettify: primary_sort $primary_sort"
+            set primary_sort_lists [lsort -increasing -integer -index 6 $second_sort_lists]
+            ns_log Notice "acc_fin::scenario_prettify: primary_sort_lists $primary_sort_lists"
             
             # *_at_pm means at probability moment
-            set cp_duration_at_pm [lindex [lindex $primary_sort 0] 1]
+            set cp_duration_at_pm [lindex [lindex $primary_sort_lists 0] 1]
             # calculate cp_cost_at_pm
             set cp_cost_at_pm 0.
             foreach {act tree_cost} [array get tree_act_cost_arr] {
@@ -1119,17 +1119,28 @@ ad_proc -public acc_fin::scenario_prettify {
             # Add titles before saving
 
             if { $p1_larr(db_format) ne "" } {
-                set primary_sort [lreplace $primary_sort 0 0 $base_titles_list]
-                qss_table_create $primary_sort "${scenario_name}.p5" "${scenario_title}.p5" $comments "" p5 $package_id $user_id
+                set primary_sort_lists [lreplace $primary_sort_lists 0 0 $base_titles_list]
+                qss_table_create $primary_sort_lists "${scenario_name}.p5" "${scenario_title}.p5" $comments "" p5 $package_id $user_id
             }
             #### save as a new table of type PRETTI 
             # each column a track with column names: track_(1..N). track_1 is CP
+            # each primary_sort_list is a column. Need to convert into rows ie.. transpose.
+            set pretti_lists [list ]
+            set track_num 1
+
+
+                set track_name "track_${track_num}"
+                lappend track_name_list $track_name
+                set 
+                lappend table_row_list
+                incr track_num
+            }
             
             # Add any reporting data, such as computation time to comments.
             # Comments data will be interpreted for determining standard deviation for determining fast track highlighting
             
             # prep for conversion to html by adding missing TDs (table cells).
-            # primary_sort list_of_lists consists of this order of elements:
+            # primary_sort_lists list_of_lists consists of this order of elements:
             #  act act_seq_num_arr has_direct_dependency_p on_critical_path_p on_a_sig_path_p act_freq_in_load_cp_alts path_duration time_expected dependencies_list
             # sorted by: act_seq_num on_critical_path_p has_direct_dependency_p duration
             # don't save the sort info, just the task data per column
