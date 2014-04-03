@@ -940,28 +940,28 @@ ad_proc -public acc_fin::scenario_prettify {
                         # cost is cost of all dependent paths plus cost of this activity
                         set cost_arr($act) [expr { $paths_cost + $cost_expected_arr($act) } ]
                         
-                        # path_seg_list_arr() is an array of partial (and perhaps complete) 
+                        # path_seg_larr() is an array of partial (and perhaps complete) 
                         #   activity paths (or tracks) represented as a list of lists in chronological order (last acitivty last).
                         #   For example, if A depends on B and C, and C depends on D then:
-                        #   path_seg_list_arr(A) == \[list \[list B A\] \[list D C A\] \]
+                        #   path_seg_larr(A) == \[list \[list B A\] \[list D C A\] \]
                         # full_track_p_arr answers question: is this track complete (ie not a subset of another track)?
                         # path_seg_dur_list is a list_of_list pairs: path_list and duration. This allows the paths to be sorted to quickly determine CP.
-                        set path_seg_list_arr($act) [list ]
+                        set path_seg_larr($act) [list ]
                         foreach dep_act $depnc_larr($act) {
-                            foreach path_list $path_seg_list_arr($dep_act) {
+                            foreach path_list $path_seg_larr($dep_act) {
                                 set path_new_list $path_list
                                 # Mark which tracks are complete (not partial track segments), 
                                 # so that total program cost calculations don't include duplicate, incomplete tracks that remain in path_seg_dur_list
                                 set full_track_p_arr($path_list) 0
                                 lappend path_new_list $act
                                 set full_track_p_arr($path_new_list) 1
-                                lappend path_seg_list_arr($act) $path_new_list
+                                lappend path_seg_larr($act) $path_new_list
                                 set pair_list [list $path_new_list $duration_arr($act)]
                                 lappend path_seg_dur_list $pair_list
                             }
                         }
-                        if { [llength $path_seg_list_arr($act)] eq 0 } {
-                            lappend path_seg_list_arr($act) $act
+                        if { [llength $path_seg_larr($act)] eq 0 } {
+                            lappend path_seg_larr($act) $act
                             set full_track_p_arr($act) 1
                             set pair_list [list $act $duration_arr($act)]
                             lappend path_seg_dur_list $pair_list
@@ -1123,27 +1123,58 @@ ad_proc -public acc_fin::scenario_prettify {
                 qss_table_create $primary_sort_lists "${scenario_name}.p5" "${scenario_title}.p5" $comments "" p5 $package_id $user_id
             }
             #### save as a new table of type PRETTI 
-            # each column a track with column names: track_(1..N). track_1 is CP
-            # each primary_sort_list is a column. Need to convert into rows ie.. transpose.
+            # max activity account per track = $act_max_count
+            # whereas
+            # each PRETTI table uses standard delimited text file format.
+            # Need to convert into rows ie.. transpose rows of each column to a track with column names: track_(1..N). track_1 is CP
+            # trac_1 track_2 track_3 ... track_N
+
             set pretti_lists [list ]
+            set title_row_list [list ]
             set track_num 1
+            foreach track_list $primary_sort_lists {
+                # each primary_sort_lists is a track:
+                # activity_ref  is the last activity_ref in the track
+                set activity_ref [lindex $track_list 0]
+                # activity_seq_num 
+                # dependencies_q cp_q significant_q popularity waypoint_duration activity_time 
+                # direct_dependencies activity_cost waypoint_cost
 
-
+                # path_seg_larr($act) is a list of activities in track, from left to right, right being last, referenced by last activity.
+                set track_activity_list $path_seg_larr($activity_ref)
                 set track_name "track_${track_num}"
-                lappend track_name_list $track_name
-                set 
-                lappend table_row_list
+                lappend title_row_list $track_name
+                # in PRETTI table, each track is a column, so each row is built from each column, each column lappends each row..
+                # store each row in: row_larr()
+                for {set i 0} {$i < $act_max_count} {incr i} {
+                    set row_larr($i) [list ]
+                }
+                for {set i 0} {$i < $act_max_count} {incr i} {
+                    set activity [lindex $track_activity_list $i]
+                    if { $activity ne "" } {
+                        # cell should contain this info: "$act t:${time_expected} T:${path_duration} D:${dependencies} "
+                        set cell "$activity "
+                        append cell "t:[lindex $track_list 7] "
+                        append cell "T:[lindex $track_list 6] "
+                        append cell "c:[lindex $track_list 9] "
+                        append cell "C:[lindex $track_list 10] "
+                        append cell "D:(${depnc_larr(${activity})) "
+                        append cell "<!-- [lindex $track_list 4] [lindex $track_list 5] --> "
+                        lappend row_larr($i) $cell
+                    } else {
+                        lappend row_larr($i) ""
+                    }
+                }
                 incr track_num
+            }
+            # combine the rows
+            lappend pretti_lists $title_row_list
+            for {set i 0} {$i < $act_max_count} {incr i} {
+                lappend pretti_lists $row_larr($i)
             }
             
             # Add any reporting data, such as computation time to comments.
             # Comments data will be interpreted for determining standard deviation for determining fast track highlighting
-            
-            # prep for conversion to html by adding missing TDs (table cells).
-            # primary_sort_lists list_of_lists consists of this order of elements:
-            #  act act_seq_num_arr has_direct_dependency_p on_critical_path_p on_a_sig_path_p act_freq_in_load_cp_alts path_duration time_expected dependencies_list
-            # sorted by: act_seq_num on_critical_path_p has_direct_dependency_p duration
-            # don't save the sort info, just the task data per column
             
             # save using qss_table_create with parameters:
             #  cells_list_of_lists
