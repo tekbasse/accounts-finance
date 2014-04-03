@@ -129,17 +129,31 @@ ad_proc -public acc_fin::task_factors_expand {
 }
 
 ad_proc -public acc_fin::pretti_table_to_html {
-    pretty_table
-    comments
+    pretti_tid
+    {instanced_id ""}
 } {
-    Interprets a saved p5 pretti output table into html table.
+    Interprets a saved p4 pretti output table into html table.
 } {
-   # Coloring and formating will be interpreted via the app based on values provided in comments, data from track column cp1 and table type (p5) for maximum flexibility.   
-    #### table cells need to indicate a relative time length in addition to dependency.
-   
-    #### set row_size [f::max [list [expr { int( $activity_time_expected * $max_act_count_per_track / $cp_duration_at_pm ) } ] 1]]
+    if { $instance_id eq "" } {
+        # set instance_id package_id
+        set instance_id [ad_conn package_id]
+    }
+    set user_id [ad_conn user_id]
+    
+    # check permissions
+    set read_p [permission::permission_p -party_id $user_id -object_id $instance_id -privilege read]
+    set pretti_html ""
+    if { $read_p } {
+        # process table by building columns in row per html TABLE TR TD tags
 
-    # process table by first dependency of each column first..
+        # Coloring and formating will be interpreted 
+        # based on values provided in comments, 
+        # data from track_1 and table type (p4) for maximum flexibility.   
+
+        # table cells need to indicate a relative time length in addition to dependency. check
+   
+        # set row_size [f::max [list [expr { int( $activity_time_expected * $max_act_count_per_track / $cp_duration_at_pm ) } ] 1]]
+
 
     # build formatting colors
     set act_count [llength $p2_larr(activity_ref)]
@@ -223,8 +237,9 @@ ad_proc -public acc_fin::pretti_table_to_html {
     
     append html_arr(apt) [qss_list_of_lists_to_html_table $table_value_lists $table_attribute_list $table_formatting_lists]
     append html_arr(apt) "Completed $p1_arr(the_time)"
-    append computation_report_html $html_arr(apt)
-    return $computation_report_html
+    append pretti_html $html_arr(apt)
+}
+    return pretti_html
 }
 
 ad_proc -public acc_fin::larr_set {
