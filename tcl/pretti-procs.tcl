@@ -129,30 +129,41 @@ ad_proc -public acc_fin::task_factors_expand {
 }
 
 ad_proc -public acc_fin::pretti_table_to_html {
-    pretti_tid
-    {instanced_id ""}
+    pretti_lol
+    comments
 } {
     Interprets a saved p4 pretti output table into html table.
 } {
-    if { $instance_id eq "" } {
-        # set instance_id package_id
-        set instance_id [ad_conn package_id]
-    }
-    set user_id [ad_conn user_id]
+    # process table by building columns in row per html TABLE TR TD tags
+    # pretti_lol consists of first row:
+    # track_1 track_2 track_3 ... track_N
+    # subsequent rows:
+    # cell_r1c1 cell_r1c2 cell_r1c3 ... cellr1cN
+    # ...
+    # cell_rMc1 cell_rMc2 cell_rMc3 ... cellrMcN
+    # for N tracks of a maximum of M rows.
+    # Each cell is an activity.
+    # Each column is a track
+    # Track_1 is CP
+    # empty cells have empty string value.
+    # other cells will contain this format:
+    # "$activity "
+    # "t:[lindex $track_list 7] "
+    # "ts:[lindex $track_list 6] "
+    # "c:[lindex $track_list 9] "
+    # "cs:[lindex $track_list 10] "
+    # "d:(${depnc_larr(${activity})) "
+    # "<!-- [lindex $track_list 4] [lindex $track_list 5] --> "
+
+    # values to be extracted from comments:
+    # max_act_count_per_track and cp_duration_at_pm 
+    # Coloring and formating will be interpreted 
+    # based on values provided in comments, 
+    # data from track_1 and table type (p4) for maximum flexibility.   
     
-    # check permissions
-    set read_p [permission::permission_p -party_id $user_id -object_id $instance_id -privilege read]
-    set pretti_html ""
-    if { $read_p } {
-        # process table by building columns in row per html TABLE TR TD tags
-
-        # Coloring and formating will be interpreted 
-        # based on values provided in comments, 
-        # data from track_1 and table type (p4) for maximum flexibility.   
-
-        # table cells need to indicate a relative time length in addition to dependency. check
-   
-        # set row_size [f::max [list [expr { int( $activity_time_expected * $max_act_count_per_track / $cp_duration_at_pm ) } ] 1]]
+    # table cells need to indicate a relative time length in addition to dependency. check
+    
+    # set row_size [f::max [list [expr { int( $activity_time_expected * $max_act_count_per_track / $cp_duration_at_pm ) } ] 1]]
 
 
     # build formatting colors
