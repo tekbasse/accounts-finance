@@ -1155,10 +1155,10 @@ ad_proc -public acc_fin::scenario_prettify {
                         # cell should contain this info: "$act t:${time_expected} T:${path_duration} D:${dependencies} "
                         set cell "$activity "
                         append cell "t:[lindex $track_list 7] "
-                        append cell "T:[lindex $track_list 6] "
+                        append cell "ts:[lindex $track_list 6] "
                         append cell "c:[lindex $track_list 9] "
-                        append cell "C:[lindex $track_list 10] "
-                        append cell "D:(${depnc_larr(${activity})) "
+                        append cell "cs:[lindex $track_list 10] "
+                        append cell "d:(${depnc_larr(${activity})) "
                         append cell "<!-- [lindex $track_list 4] [lindex $track_list 5] --> "
                         lappend row_larr($i) $cell
                     } else {
@@ -1172,26 +1172,13 @@ ad_proc -public acc_fin::scenario_prettify {
             for {set i 0} {$i < $act_max_count} {incr i} {
                 lappend pretti_lists $row_larr($i)
             }
-            
-            # Add any reporting data, such as computation time to comments.
-            # Comments data will be interpreted for determining standard deviation for determining fast track highlighting
-            
-            # save using qss_table_create with parameters:
-            #  cells_list_of_lists
-            #  name
-            #  title
-            #  comments
-            #  template_id (optional)
-            #  flags (optional)
-            #  instance_id (optional)
-            #  user_id (optional)
-            
-    
+            qss_table_create $primary_sort_lists ${scenario_name} ${scenario_title} $comments "" p4 $package_id $user_id
+            # Comments data will be interpreted for determining standard deviation for determining cell highlighting
         }
         # next c_moment
     }
     # next t_moment
     
-    return $pretti_lol
+    return 1
 }
 
