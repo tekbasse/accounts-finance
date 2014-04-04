@@ -156,8 +156,31 @@ ad_proc -public acc_fin::pretti_table_to_html {
     # "d:(${depnc_larr(${activity})) "
     # "<!-- [lindex $track_list 4] [lindex $track_list 5] --> "
 
+    set column_count [llength [lindex $pretti_lol 0]]
+    set row_count [llength $pretti_lol]
+    incr row_count -1
     # values to be extracted from comments:
     # max_act_count_per_track and cp_duration_at_pm 
+    set max_act_count_per_track $row_count
+    regexp -- {[^a-z\_]?max_act_count_per_track[\ \=\:]([0-9]+)[^0-9]} $comments scratch max_act_count_per_track
+    if { $max_act_count_per_track == 0 } {
+        set max_act_count_per_track $row_count
+    }
+    regexp -- {[^a-z\_]?cp_duration_at_pm[\ \=\:]([0-9]+)[^0-9]} $comments scratch cp_duration_at_pm
+    if { $cp_duration_at_pm == 0 } {
+        # Calculate cp_duration_at_pm manually, using track_1 (cp track)
+        foreach row [lrange $pretti_lol 1 end] {
+            set cell [lindex $row 0]
+            if { $cell ne "" } {
+                regexp {t:([0-9\.]+)[^0-9]} $cell $test_num
+            }
+        }
+        if { [ad_var_type_check_number_p $test_num] && $test_num > 0 } {
+            set cp_duration_at_pm $test_num
+        }
+    }
+
+
     # Coloring and formating will be interpreted 
     # based on values provided in comments, 
     # data from track_1 and table type (p4) for maximum flexibility.   
