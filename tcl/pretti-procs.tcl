@@ -159,8 +159,10 @@ ad_proc -public acc_fin::pretti_table_to_html {
     set column_count [llength [lindex $pretti_lol 0]]
     set row_count [llength $pretti_lol]
     incr row_count -1
+
     # values to be extracted from comments:
     # max_act_count_per_track and cp_duration_at_pm 
+    #### Other parameters could be added to comments for changing color scheme/bias
     set max_act_count_per_track $row_count
     regexp -- {[^a-z\_]?max_act_count_per_track[\ \=\:]([0-9]+)[^0-9]} $comments scratch max_act_count_per_track
     if { $max_act_count_per_track == 0 } {
@@ -191,7 +193,6 @@ ad_proc -public acc_fin::pretti_table_to_html {
 #####
 
     # build formatting colors
-    set act_count [llength $p2_larr(activity_ref)]
     # contrast decreases on up to 50%
     set contrast_step [expr { int( 16 / ( $max_act_count_per_seq / 2 + 1 ) ) } ]
     set hex_list [list 0 1 2 3 4 5 6 7 8 9 a b c d e f]
