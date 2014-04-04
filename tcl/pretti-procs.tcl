@@ -145,6 +145,7 @@ ad_proc -public acc_fin::pretti_table_to_html {
     # Each cell is an activity.
     # Each column is a track
     # Track_1 is CP
+
     # empty cells have empty string value.
     # other cells will contain this format:
     # "$activity "
@@ -164,7 +165,7 @@ ad_proc -public acc_fin::pretti_table_to_html {
     # table cells need to indicate a relative time length in addition to dependency. check
     
     # set row_size [f::max [list [expr { int( $activity_time_expected * $max_act_count_per_track / $cp_duration_at_pm ) } ] 1]]
-
+#####
 
     # build formatting colors
     set act_count [llength $p2_larr(activity_ref)]
@@ -1142,13 +1143,14 @@ ad_proc -public acc_fin::scenario_prettify {
             append comments "scenario_name ${scenario_name} , cp_duration_at_pm ${cp_duration_at_pm} , cp_cost_at_pm ${cp_cost_at_pm} ,"
             append comments "max_act_count_per_track ${act_max_count} , time_probability_moment ${t_moment} , cost_probability_moment ${c_moment} ,"
             append comments "setup_time ${setup_diff_secs} , main_processing_time ${time_diff_secs} seconds , time/date finished processing ${p1_larr(the_time)} "
-            # Add titles before saving
 
             if { $p1_larr(db_format) ne "" } {
+                # Add titles before saving as p5 table
                 set primary_sort_lists [lreplace $primary_sort_lists 0 0 $base_titles_list]
                 qss_table_create $primary_sort_lists "${scenario_name}.p5" "${scenario_title}.p5" $comments "" p5 $package_id $user_id
             }
-            #### save as a new table of type PRETTI 
+
+            # save as a new table of type PRETTI 
             # max activity account per track = $act_max_count
             # whereas
             # each PRETTI table uses standard delimited text file format.
