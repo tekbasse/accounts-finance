@@ -206,25 +206,43 @@ ad_proc -public acc_fin::pretti_table_to_html {
     }
     set cell_formating_list [list ]
     lappend cell_formatting_list $title_formatting_list
+
+    # build formatting colors
+    # contrast decreases on up to 50%
+    set contrast_step [expr { int( 16 / ( $max_act_count_per_seq / 2 + 1 ) ) } ]
+    set hex_list [list 0 1 2 3 4 5 6 7 8 9 a b c d e f]
+
     set row_nbr 1
+    set k1 [expr { max_act_count_per_track / $cp_duration_at_pm } ]
     foreach row [lrange $pretti_lol 1 end] {
 
         set formatting_row_list [list ]
         set odd_row_p [expr { ( $row_nbr / 2. ) == int( $row_nbr / 2 ) } ]
         set cell_nbr 0
+        set dec_nbr_val 16
         foreach cell $row {
             regexp {t:([0-9\.]+)[^0-9]} $cell scratch activity_time_expected
-            set row_size [f::max [list [expr { int( $activity_time_expected * $max_act_count_per_track / $cp_duration_at_pm ) } ] 1]]
+            set row_size [f::max [list [expr { int( $activity_time_expected * $k1 ) } ] 1]]
+            # CP in highest contrast (yellow ff9), others in lowering contrast to f70
+            # f becomes e for odd rows
+            # CP alt in alternating lt blue to lt green: 99f .. 9f9 
+            # others in alternating medium blue/green:   66f .. 6f6
             if { $cell_nbr eq 0 } {
                 # on CP
-                set bgcolor "#ffff00"
+                if { $odd_row_p } {
+                    set bgcolor "#eeee99"
+                } else {
+                    set bgcolor "#ffff99"
+                }
+  
             } elseif { $on_a_sig_path_p } {
-                set hex_nbr_val [expr { $hex_nbr - $contrast_step } ]
+                
+                set hex_nbr_val [expr { $dec_nbr_val - $contrast_step } ]
                 set hex_nbr [lindex $hex_list $hex_nbr_val]
                 if { $odd_row_p } {
-                    set bgcolor "#ff${hex_nbr}${hex_nbr}"
+                    set bgcolor "#cc${hex_nbr}${hex_nbr}"
                 } else {
-                    set bgcolor "#${hex_nbr}ff${hex_nbr}"
+                    set bgcolor "#ff${hex_nbr}ff${hex_nbr}"
                 }
                 
             } elseif { $odd_row_p } {
@@ -238,10 +256,6 @@ ad_proc -public acc_fin::pretti_table_to_html {
         lappend cell_formating_list $formatting_row_list
     }
 
-    # build formatting colors
-    # contrast decreases on up to 50%
-    set contrast_step [expr { int( 16 / ( $max_act_count_per_seq / 2 + 1 ) ) } ]
-    set hex_list [list 0 1 2 3 4 5 6 7 8 9 a b c d e f]
     set row_nbr 0
     set cell_nbr 0
     set act_seq_num $sequence_1
@@ -279,7 +293,7 @@ ad_proc -public acc_fin::pretti_table_to_html {
             set cell_nbr 0
             set row_nbr_prev $row_nbr
             incr row_nbr
-            set hex_nbr_val 16
+
             lappend table_formatting_lists $cell_formatting_list
             lappend table_value_lists $cell_formatting_list
             set cell_formatting_list [list ]
