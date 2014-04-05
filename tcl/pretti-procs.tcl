@@ -174,7 +174,7 @@ ad_proc -public acc_fin::pretti_table_to_html {
         foreach row [lrange $pretti_lol 1 end] {
             set cell [lindex $row 0]
             if { $cell ne "" } {
-                regexp {t:([0-9\.]+)[^0-9]} $cell $test_num
+                regexp -- {ts:([0-9\.]+)[^0-9]} $cell scratch test_num
             }
         }
         if { [ad_var_type_check_number_p $test_num] && $test_num > 0 } {
@@ -182,15 +182,61 @@ ad_proc -public acc_fin::pretti_table_to_html {
         }
     }
 
+    # determine list of CP activities
+    set cp_list [list ]
+    foreach row [lrange $pretti_lol 1 end] {
+        set cell [lindex $row 0]
+        if { $cell ne "" } {
+            # activity is not Title of activity, but activity_ref
+            if {  [regexp -- {^([^\ ]+) t:} $cell scratch activity_ref ] } {
+                lappend cp_list $activity
+            }
+        }
+    }
 
     # Coloring and formating will be interpreted 
     # based on values provided in comments, 
     # data from track_1 and table type (p4) for maximum flexibility.   
-    
+
     # table cells need to indicate a relative time length in addition to dependency. check
-    
-    # set row_size [f::max [list [expr { int( $activity_time_expected * $max_act_count_per_track / $cp_duration_at_pm ) } ] 1]]
-#####
+#####    
+    set title_formatting_list [list ]
+    foreach title [lindex $pretti_lol 0] {
+        lappend title_formatting_list ""
+    }
+    set cell_formating_list [list ]
+    lappend cell_formatting_list $title_formatting_list
+    set row_nbr 1
+    foreach row [lrange $pretti_lol 1 end] {
+
+        set formatting_row_list [list ]
+        set odd_row_p [expr { ( $row_nbr / 2. ) == int( $row_nbr / 2 ) } ]
+        set cell_nbr 0
+        foreach cell $row {
+            regexp {t:([0-9\.]+)[^0-9]} $cell scratch activity_time_expected
+            set row_size [f::max [list [expr { int( $activity_time_expected * $max_act_count_per_track / $cp_duration_at_pm ) } ] 1]]
+            if { $cell_nbr eq 0 } {
+                # on CP
+                set bgcolor "#ffff00"
+            } elseif { $on_a_sig_path_p } {
+                set hex_nbr_val [expr { $hex_nbr - $contrast_step } ]
+                set hex_nbr [lindex $hex_list $hex_nbr_val]
+                if { $odd_row_p } {
+                    set bgcolor "#ff${hex_nbr}${hex_nbr}"
+                } else {
+                    set bgcolor "#${hex_nbr}ff${hex_nbr}"
+                }
+                
+            } elseif { $odd_row_p } {
+                set bgcolor "#6666ff"
+            } else {
+                set bgcolor "#66ff66"
+            }
+            set cell_formatting bgcolor $bgcolor
+
+        }
+        lappend cell_formating_list $formatting_row_list
+    }
 
     # build formatting colors
     # contrast decreases on up to 50%
