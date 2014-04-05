@@ -163,6 +163,23 @@ ad_proc -public acc_fin::pretti_table_to_html {
     # values to be extracted from comments:
     # max_act_count_per_track and cp_duration_at_pm 
     #### Other parameters could be added to comments for changing color scheme/bias
+    set contrast_mask_idx ""
+    regexp -- {[^a-z\_]?max_act_count_per_track[\ \=\:]([0-7])[^0-7]} $comments scratch contrast_mask_idx
+    if { [ad_var_type_check_number_p $contrast_mask_idx] && $contrast_mask_idx > -1 && $contrast_mask_idx < 8 } {
+        # do nothing
+    } else {
+        # set default
+        set contrast_mask_idx 1
+    }
+    set colorswap_p ""
+    regexp -- {[^a-z\_]?max_act_count_per_track[\ \=\:]([0-1])[^0-1]} $comments scratch colorswap_p
+    if { [ad_var_type_check_number_p $colorswap_p] && $colorswap_p > -1 && $colorswap_p < 2 } {
+        # do nothing
+    } else {
+        # set default
+        set colorswap_p 0
+    }
+
     set max_act_count_per_track $row_count
     regexp -- {[^a-z\_]?max_act_count_per_track[\ \=\:]([0-9]+)[^0-9]} $comments scratch max_act_count_per_track
     if { $max_act_count_per_track == 0 } {
@@ -199,7 +216,7 @@ ad_proc -public acc_fin::pretti_table_to_html {
     # data from track_1 and table type (p4) for maximum flexibility.   
 
     # table cells need to indicate a relative time length in addition to dependency. check
-#####    
+
     set title_formatting_list [list ]
     foreach title [lindex $pretti_lol 0] {
         lappend title_formatting_list ""
@@ -212,9 +229,21 @@ ad_proc -public acc_fin::pretti_table_to_html {
     set contrast_step [expr { int( 16 / ( $max_act_count_per_seq / 2 + 1 ) ) } ]
     set hex_list [list 0 1 2 3 4 5 6 7 8 9 a b c d e f]
     set bin_list [list 000 100 010 110 001 101 011 111]
-    set contrast_mask 1
+    set contrast_mask [lindex $contrast_mask_idx $bin_list]
+    regsub -all -- {0} $contrast_mask {${cm}} $contrast_mask_hex
+    if { $colorswap_p } {
+        regsub -- {1} $contrast_mask {${c1}} $contrast_mask_hex
+        regsub -- {1} $contrast_mask {${c2}} $contrast_mask_hex
+    } else {
+        regsub -- {1} $contrast_mask {${c2}} $contrast_mask_hex
+        regsub -- {1} $contrast_mask {${c1}} $contrast_mask_hex
+    }
+    # to keep things uncomplicated, if contrast is removed, we're adding back as 3rd color:
+    regsub -- {1} $contrast_mask {${cm}} $contrast_mask_hex
+
+#####    
     set row_nbr 1
-    set k1 [expr { max_act_count_per_track / $cp_duration_at_pm } ]
+    set k1 [expr { $max_act_count_per_track / $cp_duration_at_pm } ]
     foreach row [lrange $pretti_lol 1 end] {
 
         set formatting_row_list [list ]
@@ -224,39 +253,36 @@ ad_proc -public acc_fin::pretti_table_to_html {
         foreach cell $row {
             regexp {t:([0-9\.]+)[^0-9]} $cell scratch activity_time_expected
             set row_size [f::max [list [expr { int( $activity_time_expected * $k1 ) } ] 1]]
-            # CP in highest contrast (yellow ff9), others in lowering contrast to f70
-            # f becomes e for odd rows
+            # CP in highest contrast (yellow ff9), others in lowering contrast to f70, and dimmer contrasts on even rows
+            # f becomes e for even rows etc.
             # CP alt in alternating lt blue to lt green: 99f .. 9f9 
             # others in alternating medium blue/green:   66f .. 6f6
 
             # set contrast 
+            if { $odd_row_p } {
+                set cm ee
+            } else {
+                set cm ff
+            }
 
             # then set color1 and color2 based on activity count, blue lots of count, green is less count
             
             if { $cell_nbr eq 0 } {
                 # on CP
-                if { $odd_row_p } {
-                    set bgcolor "#eeee99"
-                } else {
-                    set bgcolor "#ffff99"
-                }
-  
+                set c1 ff
+                set c2 99
             } elseif { $on_a_sig_path_p } {
-                
+                # dec_nbr_val? = tracks_this_activity / max_activity_count * 16
                 set hex_nbr_val [expr { $dec_nbr_val - $contrast_step } ]
-                set hex_nbr [lindex $hex_list $hex_nbr_val]
-                if { $odd_row_p } {
-                    set bgcolor "#cc${hex_nbr}${hex_nbr}"
-                } else {
-                    set bgcolor "#ff${hex_nbr}ff${hex_nbr}"
-                }
-                
-            } elseif { $odd_row_p } {
-                set bgcolor "#6666ff"
+                set c1 [lindex $hex_list $hex_nbr_val]
+                set c2 [lindex $hex_list [expr { 16 - $hex_nbr_val } ] ]
             } else {
-                set bgcolor "#66ff66"
+
+                set hex_nbr_val [expr { $dec_nbr_val - $contrast_step } ]
+                set c1 [lindex $hex_list $hex_nbr_val]
+                set c2 [lindex $hex_list [expr { 16 - $hex_nbr_val } ] ]
             }
-            set cell_formatting bgcolor $bgcolor
+            set cell_formatting style "background-color: ${contrast_mask_hex};"
 
         }
         lappend cell_formating_list $formatting_row_list
