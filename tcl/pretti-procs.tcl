@@ -211,7 +211,8 @@ ad_proc -public acc_fin::pretti_table_to_html {
     # contrast decreases on up to 50%
     set contrast_step [expr { int( 16 / ( $max_act_count_per_seq / 2 + 1 ) ) } ]
     set hex_list [list 0 1 2 3 4 5 6 7 8 9 a b c d e f]
-
+    set bin_list [list 000 100 010 110 001 101 011 111]
+    set contrast_mask 1
     set row_nbr 1
     set k1 [expr { max_act_count_per_track / $cp_duration_at_pm } ]
     foreach row [lrange $pretti_lol 1 end] {
@@ -227,6 +228,11 @@ ad_proc -public acc_fin::pretti_table_to_html {
             # f becomes e for odd rows
             # CP alt in alternating lt blue to lt green: 99f .. 9f9 
             # others in alternating medium blue/green:   66f .. 6f6
+
+            # set contrast 
+
+            # then set color1 and color2 based on activity count, blue lots of count, green is less count
+            
             if { $cell_nbr eq 0 } {
                 # on CP
                 if { $odd_row_p } {
