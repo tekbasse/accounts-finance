@@ -147,7 +147,7 @@ ad_proc -public acc_fin::pretti_table_to_html {
     # Track_1 is CP
 
     # empty cells have empty string value.
-    # other cells will contain this format:
+    # other cells will contain comment format from acc_fin::scenario_prettify
     # "$activity "
     # "t:[lindex $track_list 7] "
     # "ts:[lindex $track_list 6] "
@@ -172,7 +172,7 @@ ad_proc -public acc_fin::pretti_table_to_html {
         set contrast_mask_idx 1
     }
     set colorswap_p ""
-    regexp -- {[^a-z\_]?max_act_count_per_track[\ \=\:]([0-1])[^0-1]} $comments scratch colorswap_p
+    regexp -- {[^a-z\_]?colorswap_p[\ \=\:]([0-1])[^0-1]} $comments scratch colorswap_p
     if { [ad_var_type_check_number_p $colorswap_p] && $colorswap_p > -1 && $colorswap_p < 2 } {
         # do nothing
     } else {
@@ -226,7 +226,6 @@ ad_proc -public acc_fin::pretti_table_to_html {
 
     # build formatting colors
     # contrast decreases on up to 50%
-    set contrast_step [expr { int( 16 / ( $max_act_count_per_seq / 2 + 1 ) ) } ]
     set hex_list [list 0 1 2 3 4 5 6 7 8 9 a b c d e f]
     set bin_list [list 000 100 010 110 001 101 011 111]
     set contrast_mask [lindex $contrast_mask_idx $bin_list]
@@ -244,13 +243,14 @@ ad_proc -public acc_fin::pretti_table_to_html {
 #####    
     set row_nbr 1
     set k1 [expr { $max_act_count_per_track / $cp_duration_at_pm } ]
+    set k2 [expr {  16. / $column_count }
     foreach row [lrange $pretti_lol 1 end] {
 
         set formatting_row_list [list ]
         set odd_row_p [expr { ( $row_nbr / 2. ) == int( $row_nbr / 2 ) } ]
         set cell_nbr 0
-        set dec_nbr_val 16
         foreach cell $row {
+            set activity_time_expected ""
             regexp {t:([0-9\.]+)[^0-9]} $cell scratch activity_time_expected
             set row_size [f::max [list [expr { int( $activity_time_expected * $k1 ) } ] 1]]
             # CP in highest contrast (yellow ff9), others in lowering contrast to f70, and dimmer contrasts on even rows
@@ -266,23 +266,29 @@ ad_proc -public acc_fin::pretti_table_to_html {
             }
 
             # then set color1 and color2 based on activity count, blue lots of count, green is less count
-            
             if { $cell_nbr eq 0 } {
                 # on CP
                 set c1 ff
                 set c2 99
             } elseif { $on_a_sig_path_p } {
-                # dec_nbr_val? = tracks_this_activity / max_activity_count * 16
-                set hex_nbr_val [expr { $dec_nbr_val - $contrast_step } ]
-                set c1 [lindex $hex_list $hex_nbr_val]
-                set c2 [lindex $hex_list [expr { 16 - $hex_nbr_val } ] ]
+                regexp { ([0-9\.]+) --> } $cell scratch popularity 
+                set dec_nbr_val [f::min [list [expr { int( $popularity * $k2 ) } ] 16]
+                set hex_nbr1 [expr { $dec_nbr_val } ]
+                set hex_nbr2 [expr { 16 - $hex_nbr1 } ]
+                set c1 [lindex $hex_list $hex_nbr1]
+                set c2 [lindex $hex_list $hex_nbr2]
             } else {
-
-                set hex_nbr_val [expr { $dec_nbr_val - $contrast_step } ]
-                set c1 [lindex $hex_list $hex_nbr_val]
-                set c2 [lindex $hex_list [expr { 16 - $hex_nbr_val } ] ]
+                regexp { ([0-9\.]+) --> } $cell scratch popularity 
+                # constrast_step is number from 1 to 7, with 1  being most popular, 7 least popular
+                set contrast_step [f::max [list [f::min [list 7 [expr { int( $popularity * $k2 / 2. ) } ]]] 1]]
+                set dec_nbr_val [f::min [list [expr { int( $popularity * $k2 ) } ] 16]
+                set hex_nbr1 [expr { $dec_nbr_val - $contrast_step } ]
+                set hex_nbr2 [expr { 16 - $hex_nbr1 - $contrast_step } ]
+                set c1 [lindex $hex_list $hex_nbr1]
+                set c2 [lindex $hex_list $hex_nbr2]
             }
-            set cell_formatting style "background-color: ${contrast_mask_hex};"
+                eval "set colorhex #${contrast_mask_hex}"
+                set cell_formatting [list style "background-color: ${colorhex};"]
 
         }
         lappend cell_formating_list $formatting_row_list
@@ -1260,6 +1266,7 @@ ad_proc -public acc_fin::scenario_prettify {
             append comments "max_act_count_per_track ${act_max_count} , time_probability_moment ${t_moment} , cost_probability_moment ${c_moment} ,"
             append comments "setup_time ${setup_diff_secs} , main_processing_time ${time_diff_secs} seconds , time/date finished processing ${p1_larr(the_time)} "
 
+
             if { $p1_larr(db_format) ne "" } {
                 # Add titles before saving as p5 table
                 set primary_sort_lists [lreplace $primary_sort_lists 0 0 $base_titles_list]
@@ -1267,6 +1274,8 @@ ad_proc -public acc_fin::scenario_prettify {
             }
 
             # save as a new table of type PRETTI 
+            append comments "contrast_mask_idx 1 , colorswap_p 0"
+
             # max activity account per track = $act_max_count
             # whereas
             # each PRETTI table uses standard delimited text file format.
