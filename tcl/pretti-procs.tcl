@@ -162,7 +162,7 @@ ad_proc -public acc_fin::pretti_table_to_html {
 
     # values to be extracted from comments:
     # max_act_count_per_track and cp_duration_at_pm 
-    #### Other parameters could be added to comments for changing color scheme/bias
+    # Other parameters could be added to comments for changing color scheme/bias
     set contrast_mask_idx ""
     regexp -- {[^a-z\_]?max_act_count_per_track[\ \=\:]([0-7])[^0-7]} $comments scratch contrast_mask_idx
     if { [ad_var_type_check_number_p $contrast_mask_idx] && $contrast_mask_idx > -1 && $contrast_mask_idx < 8 } {
@@ -219,10 +219,11 @@ ad_proc -public acc_fin::pretti_table_to_html {
 
     set title_formatting_list [list ]
     foreach title [lindex $pretti_lol 0] {
-        lappend title_formatting_list ""
+        lappend title_formatting_list [list style "font-style: bold;"]
     }
-    set cell_formating_list [list ]
-    lappend cell_formatting_list $title_formatting_list
+    set table_attribute_list [list ]
+    set table_formating_list [list ]
+    lappend table_formatting_list $title_formatting_list
 
     # build formatting colors
     # contrast decreases on up to 50%
@@ -230,13 +231,13 @@ ad_proc -public acc_fin::pretti_table_to_html {
     set bin_list [list 000 100 010 110 001 101 011 111]
     set contrast_mask [lindex $contrast_mask_idx $bin_list]
     set contrast_mask_list [split $contrast_mask ""]
-#####    
     set row_nbr 1
     set k1 [expr { $max_act_count_per_track / $cp_duration_at_pm } ]
     set k2 [expr {  16. / $column_count }
+
     foreach row [lrange $pretti_lol 1 end] {
 
-        set formatting_row_list [list ]
+        set row_formatting_list [list ]
         set odd_row_p [expr { ( $row_nbr / 2. ) == int( $row_nbr / 2 ) } ]
         set cell_nbr 0
         foreach cell $row {
@@ -250,16 +251,16 @@ ad_proc -public acc_fin::pretti_table_to_html {
 
             # set contrast 
             if { $odd_row_p } {
-                set c(0) ee
+                set c(0) "ee"
             } else {
-                set c(0) ff
+                set c(0) "ff"
             }
 
             # then set color1 and color2 based on activity count, blue lots of count, green is less count
             if { $cell_nbr eq 0 } {
                 # on CP
-                set c(1) ff
-                set c(2) 99
+                set c(1) "ff"
+                set c(2) "99"
             } elseif { $on_a_sig_path_p } {
                 regexp { ([0-9\.]+) --> } $cell scratch popularity 
                 set dec_nbr_val [f::min [list [expr { int( $popularity * $k2 ) } ] 16]]
@@ -267,6 +268,8 @@ ad_proc -public acc_fin::pretti_table_to_html {
                 set hex_nbr2 [expr { 16 - $hex_nbr1 } ]
                 set c(1) [lindex $hex_list $hex_nbr1]
                 set c(2) [lindex $hex_list $hex_nbr2]
+                append c(1) $c(1)
+                append c(2) $c(2)
             } else {
                 regexp { ([0-9\.]+) --> } $cell scratch popularity 
                 # constrast_step is number from 1 to 7, with 1  being most popular, 7 least popular
@@ -276,109 +279,38 @@ ad_proc -public acc_fin::pretti_table_to_html {
                 set hex_nbr2 [expr { 16 - $hex_nbr1 - $contrast_step } ]
                 set c(1) [lindex $hex_list $hex_nbr1]
                 set c(2) [lindex $hex_list $hex_nbr2]
+                append c(1) $c(1)
+                append c(2) $c(2)
             }
             # contrast_mask_list
-            set colorhex "#"
+            set colorhex ""
             if { $colorswap_p } {
-                set colorref 2
-                set colorinc -1
+                set color_ref 2
+                set color_inc -1
             } else {
-                set colorref 1
-                set colorinc 1
+                set color_ref 1
+                set color_inc 1
             }
             foreach digit $contrast_mask_list {
                 set i $digit
                 if { $digit eq 1 } {
-                    set i $colorref
-                    incr $colorref $colorinc
+                    set i $color_ref
+                    incr $color_ref $color_inc
                     # in case all 3 digits are 1, set the last case to reference 0
-                    set colorinc [expr { -1 * $colorref } ]
+                    set color_inc [expr { -1 * $color_ref } ]
                 }
                 append colorhex $c($i)
             }
-            set cell_formatting [list style "background-color: ${colorhex};"]
+            set cell_formatting [list style "background-color: #${colorhex};"]
+            lappend row_formatting_list $cell_formatting
         }
-        lappend cell_formating_list $formatting_row_list
-    }
-
-    set row_nbr 0
-    set cell_nbr 0
-    set act_seq_num $sequence_1
-    # each row is a relative sequence
-    set cells_per_row $max_act_count_per_seq
-    set cell_formatting_list [list ]
-    set cell_value_list [list ]
-    set table_formatting_lists [list ]
-    set table_value_lists [list ]
-    # act_count_of_seq_arr( sequence_number) is the count of activities at this sequence number
-    foreach cell $primary_sort {
-        set cell_nbr_prev $cell_nbr
-        set act_seq_num_prev $act_seq_num
-        incr cell_nbr
-        set cell_formatting [list ]
-        set cell_value ""
-        # set initial values
-        set act [lindex $cell 0]
-        set act_seq_num [lindex $cell 1]
-        set has_direct_dependency_p [lindex $cell 2]
-        set on_critical_path_p [lindex $cell 3]
-        set on_a_sig_path_p [lindex $cell 4]
-        set act_freq_in_load_cp_alts [lindex $cell 5]
-        set path_duration [lindex $cell 6]
-        set time_expected [lindex $cell 7]
-        set dependencies_list [lindex $cell 8]
-        set dependencies ""
-        set separator ""
-        foreach dependency $dependencies_list {
-            append dependencies $separator $dependency
-            set separator ", "
-        }
-        if { $act_seq_num_prev ne $act_seq_num } {
-            # new row
-            set cell_nbr 0
-            set row_nbr_prev $row_nbr
-            incr row_nbr
-
-            lappend table_formatting_lists $cell_formatting_list
-            lappend table_value_lists $cell_formatting_list
-            set cell_formatting_list [list ]
-            set cell_value_list [list ]
-        }
-        # build cell
-        set cell_value "$act t:${time_expected} T:${path_duration} D:${dependencies} "
-        set odd_row_p [expr { ( $row_nbr / 2. ) == int( $row_nbr / 2 ) } ]
-        # CP in highest contrast (yellow ff9), others in lowering contrast to f70
-        # CP alt in alternating lt blue 99f, lt green 9f9 
-        # others in alternating medium blue/green 66ff, 6f6
-        if { $on_critical_path_p } {
-            set bgcolor "#ffff00"
-        } elseif { $on_a_sig_path_p } {
-            set hex_nbr_val [expr { $hex_nbr - $contrast_step } ]
-            set hex_nbr [lindex $hex_list $hex_nbr_val]
-            if { $odd_row_p } {
-                set bgcolor "#ff${hex_nbr}${hex_nbr}"
-            } else {
-                set bgcolor "#${hex_nbr}ff${hex_nbr}"
-            }
-            
-        } elseif { $odd_row_p } {
-            set bgcolor "#6666ff"
-        } else {
-            set bgcolor "#66ff66"
-        }
-        set cell_formatting bgcolor $bgcolor
-        lappend cell_formatting_list $cell_formatting
-        lappend cell_value_list $cell_value
+        lappend table_formatting_lists $row_formatting_list
     }
     
-    # build unique list of dependencies
-
     # html
-    set html_arr(apt) "<h3>Computation report</h3>"
+    set pretti_html "<h3>Computation report</h3>"
     
-    append html_arr(apt) [qss_list_of_lists_to_html_table $table_value_lists $table_attribute_list $table_formatting_lists]
-    append html_arr(apt) "Completed $p1_arr(the_time)"
-    append pretti_html $html_arr(apt)
+    append pretti_html [qss_list_of_lists_to_html_table $pretty_lol $table_attribute_list $table_formatting_lists]
 }
     return pretti_html
 }
