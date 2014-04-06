@@ -229,17 +229,7 @@ ad_proc -public acc_fin::pretti_table_to_html {
     set hex_list [list 0 1 2 3 4 5 6 7 8 9 a b c d e f]
     set bin_list [list 000 100 010 110 001 101 011 111]
     set contrast_mask [lindex $contrast_mask_idx $bin_list]
-    regsub -all -- {0} $contrast_mask {${cm}} $contrast_mask_hex
-    if { $colorswap_p } {
-        regsub -- {1} $contrast_mask {${c1}} $contrast_mask_hex
-        regsub -- {1} $contrast_mask {${c2}} $contrast_mask_hex
-    } else {
-        regsub -- {1} $contrast_mask {${c2}} $contrast_mask_hex
-        regsub -- {1} $contrast_mask {${c1}} $contrast_mask_hex
-    }
-    # to keep things uncomplicated, if contrast is removed, we're adding back as 3rd color:
-    regsub -- {1} $contrast_mask {${cm}} $contrast_mask_hex
-
+    set contrast_mask_list [split $contrast_mask ""]
 #####    
     set row_nbr 1
     set k1 [expr { $max_act_count_per_track / $cp_duration_at_pm } ]
@@ -260,36 +250,53 @@ ad_proc -public acc_fin::pretti_table_to_html {
 
             # set contrast 
             if { $odd_row_p } {
-                set cm ee
+                set c(0) ee
             } else {
-                set cm ff
+                set c(0) ff
             }
 
             # then set color1 and color2 based on activity count, blue lots of count, green is less count
             if { $cell_nbr eq 0 } {
                 # on CP
-                set c1 ff
-                set c2 99
+                set c(1) ff
+                set c(2) 99
             } elseif { $on_a_sig_path_p } {
                 regexp { ([0-9\.]+) --> } $cell scratch popularity 
-                set dec_nbr_val [f::min [list [expr { int( $popularity * $k2 ) } ] 16]
+                set dec_nbr_val [f::min [list [expr { int( $popularity * $k2 ) } ] 16]]
                 set hex_nbr1 [expr { $dec_nbr_val } ]
                 set hex_nbr2 [expr { 16 - $hex_nbr1 } ]
-                set c1 [lindex $hex_list $hex_nbr1]
-                set c2 [lindex $hex_list $hex_nbr2]
+                set c(1) [lindex $hex_list $hex_nbr1]
+                set c(2) [lindex $hex_list $hex_nbr2]
             } else {
                 regexp { ([0-9\.]+) --> } $cell scratch popularity 
                 # constrast_step is number from 1 to 7, with 1  being most popular, 7 least popular
                 set contrast_step [f::max [list [f::min [list 7 [expr { int( $popularity * $k2 / 2. ) } ]]] 1]]
-                set dec_nbr_val [f::min [list [expr { int( $popularity * $k2 ) } ] 16]
+                set dec_nbr_val [f::min [list [expr { int( $popularity * $k2 ) } ] 16]]
                 set hex_nbr1 [expr { $dec_nbr_val - $contrast_step } ]
                 set hex_nbr2 [expr { 16 - $hex_nbr1 - $contrast_step } ]
-                set c1 [lindex $hex_list $hex_nbr1]
-                set c2 [lindex $hex_list $hex_nbr2]
+                set c(1) [lindex $hex_list $hex_nbr1]
+                set c(2) [lindex $hex_list $hex_nbr2]
             }
-                eval "set colorhex #${contrast_mask_hex}"
-                set cell_formatting [list style "background-color: ${colorhex};"]
-
+            # contrast_mask_list
+            set colorhex "#"
+            if { $colorswap_p } {
+                set colorref 2
+                set colorinc -1
+            } else {
+                set colorref 1
+                set colorinc 1
+            }
+            foreach digit $contrast_mask_list {
+                set i $digit
+                if { $digit eq 1 } {
+                    set i $colorref
+                    incr $colorref $colorinc
+                    # in case all 3 digits are 1, set the last case to reference 0
+                    set colorinc [expr { -1 * $colorref } ]
+                }
+                append colorhex $c($i)
+            }
+            set cell_formatting [list style "background-color: ${colorhex};"]
         }
         lappend cell_formating_list $formatting_row_list
     }
