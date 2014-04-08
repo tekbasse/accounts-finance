@@ -116,18 +116,6 @@ namespace eval acc_fin {}
 # 
 
 
-ad_proc -public acc_fin::task_factors_expand {
-    a_pretti_lol
-} {
-    Expands dependent tasks with factors in a pretti_list_of_lists 
-    by appending new definitions of tasks that match tasks with factors as indexes.
-} {
-
-
-
-    return $pretti_expanded_lol
-}
-
 ad_proc -public acc_fin::pretti_table_to_html {
     pretti_lol
     comments
@@ -813,6 +801,23 @@ ad_proc -public acc_fin::scenario_prettify {
             set p2_larr($constant) $p2_col_list
         }
     }
+
+##### confirm dependencies are met. etc.
+#    Expands dependent tasks with factors in a pretti_list_of_lists 
+#    by appending new definitions of tasks that match tasks with factors as indexes.
+####
+    # This process should auomatically generate coefficients or use existing ones if they exist
+    # Unless acc_fin::scenario_prettify does this?  No. 
+    # Make this a separate proc so that references to itself 
+    # don't accidentally create some kind of infinite recursion? No.. with_factor_p is deprecated. Handled directly in proc.
+
+    # Once final activity_list is built (with any types)
+    # Verify if all dependencies exist
+    # If a dependency doesn't exist, is it dependency reference with a coeffieint?
+    #     If it is a coeffient, generate a new activity with coeffient.
+    #    If not an activity with coefficient, flag an error --missing dependency.
+
+
 
     # Multiple probability_moments allowed
     set t_moment_list [split $p1_arr(time_probability_moment)]
