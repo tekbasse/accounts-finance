@@ -499,51 +499,17 @@ ad_proc -public acc_fin::list_index_filter {
     return $filtered_list
 }
 
-ad_proc -public acc_fin::table_type_scenario_p {
-    a_list_of_lists
+ad_proc -public acc_fin::table_type {
+    table_id
 } {
-    returns 1 if lol table is a pretti scenario
+    returns table flags.
 } {
-    return $test_p
+    set stats_list [qss_table_stats $table_id]
+    # stats: name, title, comments, cell_count, row_count, template_id, flags, trashed, popularity, time last_modified, time created, user_id.
+    set flags [string trim [lindex $stats_list 6]]
+    return $flags
 }
 
-ad_proc -public acc_fin::table_type_distr_p {
-    a_list_of_lists
-} {
-    returns 1 if lol table is a statistical distribution
-} {
-    return $test_p
-}
-
-ad_proc -public acc_fin::table_type_network_p {
-    a_list_of_lists
-} {
-    returns 1 if lol table is a pretti network of dependencies
-} {
-    return $test_p
-}
-
-ad_proc -public acc_fin::table_type_pretti_p {
-    a_list_of_lists
-} {
-    returns 1 if lol table is a pretti output format (special) table
-} {
-    return $test_p
-}
-
-
-
-ad_proc -public acc_fin::pretti_ck_lol {
-    scenario_list_of_lists
-} {
-    returns 1 if scenario is valid for processing
-} {
-        #requires scenario_tid
-        # given scenario_tid 
-        # activity_table contains:
-        # activity_ref predecessors time_est_short time_est_median time_est_long cost_est_low cost_est_median cost_est_high time_dist_curv_eq cost_dist_curv_eq
-    return $valid_p
-}
 
 ad_proc -private acc_fin::curve_import {
     c_x_list
