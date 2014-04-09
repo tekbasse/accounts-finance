@@ -779,13 +779,14 @@ ad_proc -public acc_fin::scenario_prettify {
     # Substitute task_type data (p3_larr) into activity data (p2_larr) when p2_larr data is less detailed or missing.
     # Curve data has already been substituted in p_load_tid
     # Other substitutions when a p2_larr field is blank.
-    # _woc_ = without curve data
+
     set constants_woc_list [list name description]
     # Removed dependent_tasks from task_type substitution, 
     # because dependent_tasks creates a level of complexity significant enough to be avoided
     # through program set-up.
     set p3_type_list $p3_larr(type)
     set p2_task_type_list $p2_larr(aid_type)
+    # _woc_ = without curve data
     foreach constant $constants_woc_list {
         if { [llength $p2_larr(aid_type) ] > 0 && [llength $p3_larr($constant)] > 0 } {
             set i 0
@@ -802,20 +803,52 @@ ad_proc -public acc_fin::scenario_prettify {
         }
     }
 
-##### confirm dependencies are met. etc.
-#    Expands dependent tasks with factors in a pretti_list_of_lists 
-#    by appending new definitions of tasks that match tasks with factors as indexes.
-####
-    # This process should auomatically generate coefficients or use existing ones if they exist
-    # Unless acc_fin::scenario_prettify does this?  No. 
-    # Make this a separate proc so that references to itself 
-    # don't accidentally create some kind of infinite recursion? No.. with_factor_p is deprecated. Handled directly in proc.
+    # Confirm that dependencies exist as activities.
+    #  Expand p2_larr to include dependent activities with coefficients.
+    #  by appending new definitions of tasks that don't yet have defined coefficients.
+    set activities_list $p2_larr(activity_ref)
+    foreach dependencies_list $p2_larr(dependent_tasks) {
+        foreach activity $dependencies_list {
+            if { [lsearch -exact $activities_list $activity] == -1 } {
+            # A dependency doesn't exist
 
-    # Once final activity_list is built (with any types)
-    # Verify if all dependencies exist
-    # If a dependency doesn't exist, is it dependency reference with a coeffieint?
-    #     If it is a coeffient, generate a new activity with coeffient.
-    #    If not an activity with coefficient, flag an error --missing dependency.
+                set term ""
+                set coefficient ""
+                # Is it a dependency referenced with a coeffient?
+                if { [regexp {^([0-9]+)[\*]([^\*]+)} $activity scratch coefficient term] } {
+
+                    # Is $term a defined activity? get index
+                    set term_idx [lsearch -exact $activities_list $term]
+                    if { $term_idx > -1 } {
+                        # Requirements met.
+                        # Generate a new activity with coeffient for this run.                        
+                        foreach constant $constants_list {
+                            lappend p2_larr($constant) [lindex $p2_larr($constant) $term_idx]
+                        }
+                        # create new tCurves and cCurves and references to them.
+                        if { [lindex $p2_larr(_tCurveRef) $term_idx] ne "" } {
+            ####
+                        }
+                        if { [lindex $p2_larr(_cCurveRef) $term_idx] ne "" } {
+            ####
+                    } else {
+                        # No activity defined for this factor (term with coefficient), flag an error --missing dependency.
+                        lappend compute_message_list "Dependency '$term' is undefined, referenced in: '${activity}'."
+                        set error_fail 1
+                    }
+                } else {
+                    # No activity defined for this factor (term with coefficient), flag an error --missing dependency.
+                    lappend compute_message_list "Dependency '${activity}' is undefined as an activity."
+                    set error_fail 1
+
+                }
+            }
+            # else, an activity for the dependency exists. Do nothing.
+        }
+    }
+
+
+
 
 
 
