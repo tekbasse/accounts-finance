@@ -750,6 +750,7 @@ ad_proc -public acc_fin::scenario_prettify {
     # index 0 is default
 
     # import task_types_list
+    #### USe lsearch -glob or -regexp to screen alt columns and create list for custom summary feature.
     if { $p1_arr(task_types_tid) ne "" } {
         set constants_list [list type dependent_tasks dependent_types name description max_concurrent max_overlapp activity_table_tid activity_table_name task_types_tid task_types_name time_dist_curve_name time_dist_curve_tid cost_dist_curve_name cost_dist_curve_tid time_est_short time_est_median time_est_long time_probability_moment cost_est_low cost_est_median cost_est_high cost_probability_moment db_format]
         set constants_required_list [list type]
@@ -766,6 +767,8 @@ ad_proc -public acc_fin::scenario_prettify {
     #  add a p3_larr(curve_ref) column
 
     # import activity_list
+    #### USe lsearch -glob or -regexp to screen alt columns and create list for custom summary feature. [a-z][0-9]
+    #### ..connected to cost_probability_moment.. so columns represent curve IDs..
     if { $p1_arr(activity_table_id) ne "" } {
         # load activity table
         set constants_list [list activity_ref aid_type dependent_tasks name description max_concurrent max_overlap_pct021 time_est_short time_est_median time_est_long time_est_dist_curve_id time_probability_moment cost_est_low cost_est_median cost_est_high cost_est_dist_curve_id cost_probability_moment]
@@ -840,6 +843,7 @@ ad_proc -public acc_fin::scenario_prettify {
                             # if max_concurrent eq "", and max_overlapp eq .3, new curve eq t(pm) * ( .7 + ( c - 1 ) * .3 + .3 ) OR t(pm) * ( 1 + (c - 1) * .3 )
                             # if max_concurrent eq 5, and max_overlapp eq 1, new curve eq. t(pm) * int ( c / 5 ) + ( c/5 > int(c/5) )
                             # if max_concurrent ne "", calculate max_overlap for max_concurrent and for remainder, then add
+                            #         calc separately, so that value of int(c/5)*5 can be re-used to find remainder.
 
                             # save new curve
                             set tcurvenum [acc_fin::larr_set time_clarr $curve_list]
