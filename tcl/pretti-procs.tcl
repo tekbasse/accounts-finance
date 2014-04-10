@@ -807,6 +807,7 @@ ad_proc -public acc_fin::scenario_prettify {
     #  Expand p2_larr to include dependent activities with coefficients.
     #  by appending new definitions of tasks that don't yet have defined coefficients.
     set activities_list $p2_larr(activity_ref)
+
     foreach dependencies_list $p2_larr(dependent_tasks) {
         foreach activity $dependencies_list {
             if { [lsearch -exact $activities_list $activity] == -1 } {
@@ -826,14 +827,36 @@ ad_proc -public acc_fin::scenario_prettify {
                             lappend p2_larr($constant) [lindex $p2_larr($constant) $term_idx]
                         }
                         # create new tCurves and cCurves and references to them.
-                        if { [lindex $p2_larr(_tCurveRef) $term_idx] ne "" } {
-            ####
+                        set tcurvenum [lindex $p2_larr(_tCurveRef) $term_idx]
+                        if { $tcurvenum ne "" } {
+                            # create new curve based on the one referenced 
+                            # parameters: max_overlapp max_concurrent 
+                            #      max_overlapp_pct021  (as a percentage from 0 to 1, blank = 1)
+                            #      max_concurrent       (as an integer, blank = no limit)
+                            # activity curve @tcurvenum
+                            # for each point t(pm) in curve time_clarr($_tCurveRef), max_overlapp, max_concurrent, coeffient c
+                            # if max_concurrent eq "", and max_overlapp eq 1, new curve eq old curve.
+                            # if max_concurrent eq "", and max_overlapp eq 0, new curve eq $coefficient * t(pm)
+                            # if max_concurrent eq "", and max_overlapp eq .3, new curve eq t(pm) * ( .7 + ( c - 1 ) * .3 + .3 ) OR t(pm) * ( 1 + (c - 1) * .3 )
+                            # if max_concurrent eq 5, and max_overlapp eq 1, new curve eq. t(pm) * int ( c / 5 ) + ( c/5 > int(c/5) )
+                            # if max_concurrent ne "", calculate max_overlap for max_concurrent and for remainder, then add
+
+                            # save new curve
+                            set tcurvenum [acc_fin::larr_set time_clarr $curve_list]
+                            # save new reference
+
                         }
                         if { [lindex $p2_larr(_cCurveRef) $term_idx] ne "" } {
             ####
+                            # create new curve
+                            
+                            # save new curve
+                            set ccurvenum [acc_fin::larr_set cost_clarr $curve_list]
+                            # save new reference
+
                     } else {
                         # No activity defined for this factor (term with coefficient), flag an error --missing dependency.
-                        lappend compute_message_list "Dependency '$term' is undefined, referenced in: '${activity}'."
+                        lappend compute_message_list "Dependency '${term}' is undefined, referenced in: '${activity}'."
                         set error_fail 1
                     }
                 } else {
