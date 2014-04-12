@@ -750,7 +750,7 @@ ad_proc -public acc_fin::scenario_prettify {
     # index 0 is default
 
     # import task_types_list
-    #### USe lsearch -glob or -regexp to screen alt columns and create list for custom summary feature.
+    #### USe [lsearch -regexp {[a-z][0-9]} -all -inline $x_list] to screen alt columns and create list for custom summary feature.
     if { $p1_arr(task_types_tid) ne "" } {
         set constants_list [list type dependent_tasks dependent_types name description max_concurrent max_overlapp activity_table_tid activity_table_name task_types_tid task_types_name time_dist_curve_name time_dist_curve_tid cost_dist_curve_name cost_dist_curve_tid time_est_short time_est_median time_est_long time_probability_moment cost_est_low cost_est_median cost_est_high cost_probability_moment db_format]
         set constants_required_list [list type]
@@ -814,17 +814,17 @@ ad_proc -public acc_fin::scenario_prettify {
     foreach dependencies_list $p2_larr(dependent_tasks) {
         foreach activity $dependencies_list {
             if { [lsearch -exact $activities_list $activity] == -1 } {
-            # A dependency doesn't exist
+            # A dependent activity doesn't exist..
 
                 set term ""
                 set coefficient ""
-                # Is it a dependency referenced with a coeffient?
+                # Is $activity an existing activity, but referenced with a coeffient?
                 if { [regexp {^([0-9]+)[\*]([^\*]+)} $activity scratch coefficient term] } {
 
-                    # Is $term a defined activity? get index
+                    # If $term is a defined activity, get index
                     set term_idx [lsearch -exact $activities_list $term]
                     if { $term_idx > -1 } {
-                        # Requirements met.
+                        # Requirements met: There is a coefficient and an existing activity.
                         # Generate a new activity with coeffient for this run.                        
                         foreach constant $constants_list {
                             lappend p2_larr($constant) [lindex $p2_larr($constant) $term_idx]
@@ -848,7 +848,9 @@ ad_proc -public acc_fin::scenario_prettify {
                             # save new curve
                             set tcurvenum [acc_fin::larr_set time_clarr $curve_list]
                             # save new reference
-
+                            lappend $p2_larr(_tCurveRef) $tcurvenum
+                        } else {
+                            lappend $p2_larr(_tCurveRef) ""
                         }
                         if { [lindex $p2_larr(_cCurveRef) $term_idx] ne "" } {
             ####
@@ -857,7 +859,10 @@ ad_proc -public acc_fin::scenario_prettify {
                             # save new curve
                             set ccurvenum [acc_fin::larr_set cost_clarr $curve_list]
                             # save new reference
-
+                            lappend $p2_larr(_cCurveRef) $ccurvenum
+                        } else {
+                            lappend $p2_larr(_cCurveRef) ""
+                        }
                     } else {
                         # No activity defined for this factor (term with coefficient), flag an error --missing dependency.
                         lappend compute_message_list "Dependency '${term}' is undefined, referenced in: '${activity}'."
