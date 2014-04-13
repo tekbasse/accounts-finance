@@ -78,7 +78,7 @@ namespace eval acc_fin {}
 #      name
 #      description
 #      max_concurrent       (as an integer, blank = no limit)
-#      max_overlapp_pct021  (as a percentage from 0 to 1, blank = 1)
+#      max_overlap_pct021  (as a percentage from 0 to 1, blank = 1)
 #
 #      RESERVED columns:
 #      _tCurveRef             integer reference to time curve in time_clarr and   time duration estimate at time_probability_moment in t_est_arr
@@ -750,9 +750,12 @@ ad_proc -public acc_fin::scenario_prettify {
     # index 0 is default
 
     # import task_types_list
-    #### USe [lsearch -regexp {[a-z][0-9]} -all -inline $x_list] to screen alt columns and create list for custom summary feature.
+    #### Use [lsearch -regexp {[a-z][0-9]} -all -inline $x_list] to screen alt debit/credit/"cost/revenue" columns and create list for custom summary feature.
+    #### Use [lsearch -regexp {[a-z][0-9]s} -all -inline $x_list] to screen alt time columns and create list for a scheduling feature
+    #### with parameters defined in scenario or as a separate compilation of pretti output
+
     if { $p1_arr(task_types_tid) ne "" } {
-        set constants_list [list type dependent_tasks dependent_types name description max_concurrent max_overlapp activity_table_tid activity_table_name task_types_tid task_types_name time_dist_curve_name time_dist_curve_tid cost_dist_curve_name cost_dist_curve_tid time_est_short time_est_median time_est_long time_probability_moment cost_est_low cost_est_median cost_est_high cost_probability_moment db_format]
+        set constants_list [list type dependent_tasks dependent_types name description max_concurrent max_overlap activity_table_tid activity_table_name task_types_tid task_types_name time_dist_curve_name time_dist_curve_tid cost_dist_curve_name cost_dist_curve_tid time_est_short time_est_median time_est_long time_probability_moment cost_est_low cost_est_median cost_est_high cost_probability_moment db_format]
         set constants_required_list [list type]
         acc_fin::p_load_tid $constants_list $constants_required_list p3_larr $p1_arr(task_types_tid)
     }
@@ -767,8 +770,9 @@ ad_proc -public acc_fin::scenario_prettify {
     #  add a p3_larr(curve_ref) column
 
     # import activity_list
-    #### USe lsearch -glob or -regexp to screen alt columns and create list for custom summary feature. [a-z][0-9]
+    #### Use lsearch -glob or -regexp to screen alt columns and create list for custom summary feature. [a-z][0-9]
     #### ..connected to cost_probability_moment.. so columns represent curve IDs..
+    #### Use [lsearch -regexp {[a-z][0-9]s} -all -inline $x_list] to screen alt time columns and create list for a scheduling feature.
     if { $p1_arr(activity_table_id) ne "" } {
         # load activity table
         set constants_list [list activity_ref aid_type dependent_tasks name description max_concurrent max_overlap_pct021 time_est_short time_est_median time_est_long time_est_dist_curve_id time_probability_moment cost_est_low cost_est_median cost_est_high cost_est_dist_curve_id cost_probability_moment]
@@ -832,16 +836,17 @@ ad_proc -public acc_fin::scenario_prettify {
                         # create new tCurves and cCurves and references to them.
                         set tcurvenum [lindex $p2_larr(_tCurveRef) $term_idx]
                         if { $tcurvenum ne "" } {
+            ####
                             # create new curve based on the one referenced 
-                            # parameters: max_overlapp max_concurrent 
-                            #      max_overlapp_pct021  (as a percentage from 0 to 1, blank = 1)
+                            # parameters: max_overlap max_concurrent 
+                            #      max_overlap_pct021  (as a percentage from 0 to 1, blank = 1)
                             #      max_concurrent       (as an integer, blank = no limit)
                             # activity curve @tcurvenum
-                            # for each point t(pm) in curve time_clarr($_tCurveRef), max_overlapp, max_concurrent, coeffient c
-                            # if max_concurrent eq "", and max_overlapp eq 1, new curve eq old curve.
-                            # if max_concurrent eq "", and max_overlapp eq 0, new curve eq $coefficient * t(pm)
-                            # if max_concurrent eq "", and max_overlapp eq .3, new curve eq t(pm) * ( .7 + ( c - 1 ) * .3 + .3 ) OR t(pm) * ( 1 + (c - 1) * .3 )
-                            # if max_concurrent eq 5, and max_overlapp eq 1, new curve eq. t(pm) * int ( c / 5 ) + ( c/5 > int(c/5) )
+                            # for each point t(pm) in curve time_clarr($_tCurveRef), max_overlap, max_concurrent, coeffient c
+                            # if max_concurrent eq "", and max_overlap eq 1, new curve eq old curve.
+                            # if max_concurrent eq "", and max_overlap eq 0, new curve eq $coefficient * t(pm)
+                            # if max_concurrent eq "", and max_overlap eq .3, new curve eq t(pm) * ( .7 + ( c - 1 ) * .3 + .3 ) OR t(pm) * ( 1 + (c - 1) * .3 )
+                            # if max_concurrent eq  5,  and max_overlap eq 1, new curve eq. t(pm) * int ( c / 5 ) + ( c/5 > int(c/5) )
                             # if max_concurrent ne "", calculate max_overlap for max_concurrent and for remainder, then add
                             #         calc separately, so that value of int(c/5)*5 can be re-used to find remainder.
 
