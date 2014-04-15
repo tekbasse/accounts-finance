@@ -838,7 +838,7 @@ ad_proc -public acc_fin::scenario_prettify {
                         if { $tcurvenum ne "" } {
             ####
                             # create new curve based on the one referenced 
-                            # parameters: max_overlap max_concurrent 
+                            # parameters: max_concurrent max_overlap_pct021
                             #      max_overlap_pct021  (as a percentage from 0 to 1, blank = 1)
                             #      max_concurrent       (as an integer, blank = no limit)
                             # activity curve @tcurvenum
@@ -850,6 +850,22 @@ ad_proc -public acc_fin::scenario_prettify {
                             # if max_concurrent ne "", calculate max_overlap for max_concurrent and for remainder, then add
                             #         calc separately, so that value of int(c/5)*5 can be re-used to find remainder.
 
+                            # coefficient up to maximum concurrent tracks
+#### hrm. these equations are questionable.. check them again.
+                            set coef2 [f::min [list $coefficient $max_concurrent]]
+
+                            set k3 [expr { ( $coef2 - 1 ) * $max_overlap_pct021 } ]
+                            set k4 [expr { int( $coefficient / $max_concurrent ) * 1. } ]
+                            set k5 [expr { 1. * $coefficient - $k4 * $max_concurrent } ]
+                            set k6 [expr { $k4 + $k5 } ]
+                            foreach point $time_clarr($tcurvenum) {
+                                # point: y x label
+                                set y [lindex $point 0]
+                                set x [lindex $point 1]
+                                set label [lindex $point 2]
+                                set y2 [expr { $y * ( 1. + $k3 ) } ]
+                                set y3 [expr { $y2 * ( $k6 )
+                            }
                             # save new curve
                             set tcurvenum [acc_fin::larr_set time_clarr $curve_list]
                             # save new reference
