@@ -836,22 +836,26 @@ ad_proc -public acc_fin::scenario_prettify {
                         # create new tCurves and cCurves and references to them.
                         set tcurvenum [lindex $p2_larr(_tCurveRef) $term_idx]
                         if { $tcurvenum ne "" } {
-            ####
                             # create new curve based on the one referenced 
                             # parameters: max_concurrent max_overlap_pct021
                             #      max_overlap_pct021  (as a percentage from 0 to 1, blank = 1)
                             #      max_concurrent       (as an integer, blank = no limit)
                             # activity curve @tcurvenum
                             # for each point t(pm) in curve time_clarr($_tCurveRef), max_overlap, max_concurrent, coeffient c
-
+                            if { [ad_var_type_check_number_p $max_overlap_pct021 ] && $max_overlap_pct021 < 2 && $max_overlap_pct021 > -1 } {
+                                # validated
+                            } else {
+                                set max_overlap_pct021 1.
+                            }
                             # coef_p1 * max_concurrent + coef_p2 = $coefficient
                             set coef_p1 [expr { int( $coeffcient / $max_concurrent ) } ]
                             set coef_p2 [expr { $coefficient - $coef_p1 * $max_concurrent } ]
-
+                            # coef_p2 should be at most 1 less than max_concurrent
+                            # max_trailing_pct = 1. - max_overlap_pct021
                             # k3 calculates length of a full block max_concurrent wide
-                            set k3 [expr { 1. + ( $coef_p1 - 1 ) * $max_overlap_pct021 } ]
+                            set k3 [expr { 1. + ( $coef_p1 - 1 ) * ( 1. - $max_overlap_pct021 ) } ]
                             # k4 calculates length of partial blocks (one more activity than full block activity count, but maybe not overlapped as far)
-                            set k4 [expr { 1. + ( $coef_p2 ) * $max_overlap_pct021 } ]
+                            set k4 [expr { 1. + ( $coef_p2 - 1 ) * ( 1. - $max_overlap_pct021 ) } ]
                             # Choose the longer of the two blocks:
                             set k5 [f::max [list $k3 $k4] ]
                             set curve_lol [list ]
