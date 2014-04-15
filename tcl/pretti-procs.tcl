@@ -843,31 +843,29 @@ ad_proc -public acc_fin::scenario_prettify {
                             #      max_concurrent       (as an integer, blank = no limit)
                             # activity curve @tcurvenum
                             # for each point t(pm) in curve time_clarr($_tCurveRef), max_overlap, max_concurrent, coeffient c
-                            # if max_concurrent eq "", and max_overlap eq 1, new curve eq old curve.
-                            # if max_concurrent eq "", and max_overlap eq 0, new curve eq $coefficient * t(pm)
-                            # if max_concurrent eq "", and max_overlap eq .3, new curve eq t(pm) * ( .7 + ( c - 1 ) * .3 + .3 ) OR t(pm) * ( 1 + (c - 1) * .3 )
-                            # if max_concurrent eq  5,  and max_overlap eq 1, new curve eq. t(pm) * int ( c / 5 ) + ( c/5 > int(c/5) )
-                            # if max_concurrent ne "", calculate max_overlap for max_concurrent and for remainder, then add
-                            #         calc separately, so that value of int(c/5)*5 can be re-used to find remainder.
 
-                            # coefficient up to maximum concurrent tracks
-#### hrm. these equations are questionable.. check them again.
-                            set coef2 [f::min [list $coefficient $max_concurrent]]
+                            # coef_p1 * max_concurrent + coef_p2 = $coefficient
+                            set coef_p1 [expr { int( $coeffcient / $max_concurrent ) } ]
+                            set coef_p2 [expr { $coefficient - $coef_p1 * $max_concurrent } ]
 
-                            set k3 [expr { ( $coef2 - 1 ) * $max_overlap_pct021 } ]
-                            set k4 [expr { int( $coefficient / $max_concurrent ) * 1. } ]
-                            set k5 [expr { 1. * $coefficient - $k4 * $max_concurrent } ]
-                            set k6 [expr { $k4 + $k5 } ]
+                            # k3 calculates length of a full block max_concurrent wide
+                            set k3 [expr { 1. + ( $coef_p1 - 1 ) * $max_overlap_pct021 } ]
+                            # k4 calculates length of partial blocks (one more activity than full block activity count, but maybe not overlapped as far)
+                            set k4 [expr { 1. + ( $coef_p2 ) * $max_overlap_pct021 } ]
+                            # Choose the longer of the two blocks:
+                            set k5 [f::max [list $k3 $k4] ]
+                            set curve_lol [list ]
                             foreach point $time_clarr($tcurvenum) {
                                 # point: y x label
                                 set y [lindex $point 0]
                                 set x [lindex $point 1]
                                 set label [lindex $point 2]
-                                set y2 [expr { $y * ( 1. + $k3 ) } ]
-                                set y3 [expr { $y2 * ( $k6 )
+                                set y_new [expr { $y * $k5 } ]
+                                set point_new [list $y_new $x $label]
+                                lappend curve_lol $point_new
                             }
                             # save new curve
-                            set tcurvenum [acc_fin::larr_set time_clarr $curve_list]
+                            set tcurvenum [acc_fin::larr_set time_clarr $curve_lol]
                             # save new reference
                             lappend $p2_larr(_tCurveRef) $tcurvenum
                         } else {
