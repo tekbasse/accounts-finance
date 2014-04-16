@@ -10,6 +10,7 @@ ad_library {
 
 namespace eval acc_fin {}
 
+
 # page flags as pretti_types:
 #  p in positon 1 = PRETTI app specific
 #  p1  scenario
@@ -624,7 +625,6 @@ ad_proc -private acc_fin::curve_import {
     return $c_lists
 }
 
-
 ad_proc -public acc_fin::scenario_prettify {
     scenario_list_of_lists
     {with_factors_p 0}
@@ -639,22 +639,21 @@ ad_proc -public acc_fin::scenario_prettify {
     
     # load pretti2_lol table
     
-
-    if { $with_factors_p } {
-        # append p2 file, call this proc referencing p2 with_factors_p 0 before continuing.
-        set pretti2e_lol [acc_fin::p2_factors_expand $pretti2_lol]
-    }
+    #if { $with_factors_p } {
+    #    # append p2 file, call this proc referencing p2 with_factors_p 0 before continuing.
+    #    set pretti2e_lol [acc_fin::p2_factors_expand $pretti2_lol]
+    #}
     # vertical represents time. All tasks are rounded up to quantized time_unit.
     # Smallest task duration is the number of quantized time_units that result in 1 line of text.
-
+    
     # Represent multiple dependencies of same task for example 99 cartwheels using * as in 99*cartwheels
-
+    
     # Representing task bottlenecks --limits in parallel activity of same type
     # Parallel limits represented by:
     # concurrency_limit: count of tasks of same type that can operate in parallel
     # overlap_limit: a percentage representing amount of overlap allowed.
     #                overlap_limit, in effect, creates progressions of activity
-
+    
     # To find, repeat PRETTI scenario on tracks with CP tasks by task type, then increment by quantized time_unit (row), tracking overages
     # amount to extend CP duration: collision_count / task_type * ( row_counts / ( time_quanta per task_type_duration ) + 1 )
     
@@ -697,8 +696,8 @@ ad_proc -public acc_fin::scenario_prettify {
         # set dist_curve_tid
         set p1_arr(cost_dist_curve_tid) [qss_tid_from_name $p1_arr(cost_dist_curve_name) ]
     }
-
-
+    
+    
     set constants_exist_p 1
     set compute_message_list [list ]
     foreach constant $constants_required_list {
@@ -717,7 +716,7 @@ ad_proc -public acc_fin::scenario_prettify {
     #     local 3-point (min,median,max)
     #     general curve (normalized to local 1 point median ); local 1 point median is minimum time data requirement
     #     general 3-point (normalized to local median)    
-
+    
     if { $p1_arr(time_dist_curve_tid) ne "" } {
         # get time curve into array tc_larr
         set constants_list [list y x label]
@@ -729,7 +728,7 @@ ad_proc -public acc_fin::scenario_prettify {
         #tc_larr(x), tc_larr(y) and optionally tc_larr(label) where _larr refers to an array where each value is a list of column data by row 1..n
     } 
     set tc_lists [acc_fin::curve_import $tc_larr(x) $tc_larr(y) $tc_larr(label) [list ] $p1_arr(time_est_short) $p1_arr(time_est_median) $p1_arr(time_est_long) [list ] ]
-
+    
     # Make cost_curve_data 
     if { $p1_arr(cost_dist_curve_tid) ne "" } {
         set constants_list [list y x label]
@@ -737,23 +736,23 @@ ad_proc -public acc_fin::scenario_prettify {
             set cc_larr($constant) ""
         }
         set constants_required_list [list y x]
-        set cost_curve_data_lists $cost_dist_curve_tid cc_larr $constants_list $constants_required_list $package_id $user_id
+        qss_tid_columns_to_array_of_lists $cost_dist_curve_tid cc_larr $constants_list $constants_required_list $package_id $user_id
         #cc_larr(x), cc_larr(y) and optionally cc_larr(label) where _larr refers to an array where each value is a list of column data by row 1..n
         
     } 
     set cc_lists [acc_fin::curve_import $cc_larr(x) $cc_larr(y) $cc_larr(label) [list ] $p1_arr(cost_est_low) $p1_arr(cost_est_median) $p1_arr(cost_est_high) [list ] ]
-
+    
     # curves_larr has 2 versions: time as t_c_larr and cost as c_c_larr
     set time_clarr(0) $tc_lists
     set cost_clarr(0) $cc_lists
-
+    
     # index 0 is default
-
+    
     # import task_types_list
     #### Use [lsearch -regexp {[a-z][0-9]} -all -inline $x_list] to screen alt debit/credit/"cost/revenue" columns and create list for custom summary feature.
     #### Use [lsearch -regexp {[a-z][0-9]s} -all -inline $x_list] to screen alt time columns and create list for a scheduling feature
     #### with parameters defined in scenario or as a separate compilation of pretti output
-
+    
     if { $p1_arr(task_types_tid) ne "" } {
         set constants_list [list type dependent_tasks dependent_types name description max_concurrent max_overlap activity_table_tid activity_table_name task_types_tid task_types_name time_dist_curve_name time_dist_curve_tid cost_dist_curve_name cost_dist_curve_tid time_est_short time_est_median time_est_long time_probability_moment cost_est_low cost_est_median cost_est_high cost_probability_moment db_format]
         set constants_required_list [list type]
@@ -768,7 +767,7 @@ ad_proc -public acc_fin::scenario_prettify {
     # where curve_ref = 0 is default
     # so, add a p2_larr(curve_ref) column which references curves_lol
     #  add a p3_larr(curve_ref) column
-
+    
     # import activity_list
     #### Use lsearch -glob or -regexp to screen alt columns and create list for custom summary feature. [a-z][0-9]
     #### ..connected to cost_probability_moment.. so columns represent curve IDs..
@@ -782,11 +781,11 @@ ad_proc -public acc_fin::scenario_prettify {
         set p2_larr(activity_ref) [acc_fin::list_index_filter $p2_larr(activity_ref)]
         set p2_larr(dependent_tasks) [acc_fin::list_index_filter $p2_larr(dependent_tasks)]
     }
-
+    
     # Substitute task_type data (p3_larr) into activity data (p2_larr) when p2_larr data is less detailed or missing.
     # Curve data has already been substituted in p_load_tid
     # Other substitutions when a p2_larr field is blank.
-
+    
     set constants_woc_list [list name description]
     # Removed dependent_tasks from task_type substitution, 
     # because dependent_tasks creates a level of complexity significant enough to be avoided
@@ -809,22 +808,22 @@ ad_proc -public acc_fin::scenario_prettify {
             set p2_larr($constant) $p2_col_list
         }
     }
-
+    
     # Confirm that dependencies exist as activities.
     #  Expand p2_larr to include dependent activities with coefficients.
     #  by appending new definitions of tasks that don't yet have defined coefficients.
     set activities_list $p2_larr(activity_ref)
-
+    
     foreach dependencies_list $p2_larr(dependent_tasks) {
         foreach activity $dependencies_list {
             if { [lsearch -exact $activities_list $activity] == -1 } {
-            # A dependent activity doesn't exist..
-
+                # A dependent activity doesn't exist..
+                
                 set term ""
                 set coefficient ""
                 # Is $activity an existing activity, but referenced with a coeffient?
                 if { [regexp {^([0-9]+)[\*]([^\*]+)} $activity scratch coefficient term] } {
-
+                    
                     # If $term is a defined activity, get index
                     set term_idx [lsearch -exact $activities_list $term]
                     if { $term_idx > -1 } {
@@ -906,17 +905,12 @@ ad_proc -public acc_fin::scenario_prettify {
                     # No activity defined for this factor (term with coefficient), flag an error --missing dependency.
                     lappend compute_message_list "Dependency '${activity}' is undefined as an activity."
                     set error_fail 1
-
+                    
                 }
             }
             # else, an activity for the dependency exists. Do nothing.
         }
     }
-
-
-
-
-
 
     # Multiple probability_moments allowed
     set t_moment_list [split $p1_arr(time_probability_moment)]
@@ -925,13 +919,13 @@ ad_proc -public acc_fin::scenario_prettify {
     set setup_end [clock seconds]
     set time_start [clock seconds]
     foreach t_moment $t_moment_list {
-
+        
         # Calculate base durations for time_probability_moment. These work for activities and task types.
         array unset t_est_arr
         foreach tCurve [array names time_clarr] {
             set t_est_arr($tCurve) [qaf_y_of_x_dist_curve $t_moment $time_clarr($tCurve) ]
         }
-
+        
         foreach c_moment $c_moment_list {
             # Calculate base costs for cost_probability_moment. These work for activities and task types.
             array unset c_est_arr
@@ -1047,7 +1041,7 @@ ad_proc -public acc_fin::scenario_prettify {
             array unset cost_arr
             array unset path_seg_list_arr
             array unset full_track_p_arr
-
+            
             while { !$all_calced_p && $activity_count > $i } {
                 set all_calcd_p 1
                 foreach act $p2_larr(activity_ref) {
@@ -1101,7 +1095,7 @@ ad_proc -public acc_fin::scenario_prettify {
                         # path_seg_larr() is an array of partial (and perhaps complete) 
                         #   activity paths (or tracks) represented as a list of lists in chronological order (last acitivty last).
                         #   For example, if A depends on B and C, and C depends on D then:
-                        #   path_seg_larr(A) == \[list \[list B A\] \[list D C A\] \]
+                        #   path_seg_larr(A) == list list B A list D C A
                         # full_track_p_arr answers question: is this track complete (ie not a subset of another track)?
                         # path_seg_dur_list is a list_of_list pairs: path_list and duration. This allows the paths to be sorted to quickly determine CP.
                         set path_seg_larr($act) [list ]
@@ -1129,7 +1123,7 @@ ad_proc -public acc_fin::scenario_prettify {
                 }
                 incr i
             }
-            
+        
             set dep_met_p 1
             ns_log Notice "acc_fin::scenario_prettify: path_seg_dur_list $path_seg_dur_list"
             foreach act $p2_larr(activity_ref) {
@@ -1164,7 +1158,7 @@ ad_proc -public acc_fin::scenario_prettify {
             # act_freq_in_load_cp_alts_arr   a count the number of times an activity is in a path 
             # max_act_count_per_seq          maximum number of activities in a sequence number.
             unset act_freq_in_load_cp_alts_arr
-
+            
             set max_act_count_per_seq 0
             foreach act $p2_larr(activity_ref) {
                 set act_freq_in_load_cp_alts_arr($act) 0
@@ -1218,7 +1212,7 @@ ad_proc -public acc_fin::scenario_prettify {
                 set activity_list [list $act $act_seq_num_arr($act) $has_direct_dependency_p $on_critical_path_p $on_a_sig_path_p $act_freq_in_load_cp_alts_arr($act) $duration_arr($act) $time_expected_arr($act) $depnc_larr($act) $cost_expected_arr($act) $cost_arr($act) ]
                 lappend base_lists $activity_list
             }
-
+            
             ns_log Notice "acc_fin::scenario_prettify: base_lists $base_lists"
             
             # sort by: act_seq_num_arr descending
@@ -1273,24 +1267,24 @@ ad_proc -public acc_fin::scenario_prettify {
             set comments "Scenario report for ${scenario_title}: "
             append comments "scenario_name ${scenario_name} , cp_duration_at_pm ${cp_duration_at_pm} , cp_cost_at_pm ${cp_cost_at_pm} ,"
             append comments "max_act_count_per_track ${act_max_count} , time_probability_moment ${t_moment} , cost_probability_moment ${c_moment} ,"
-            append comments "setup_time ${setup_diff_secs} , main_processing_time ${time_diff_secs} seconds , time/date finished processing ${p1_larr(the_time)} "
-
-
+            append comments "setup_time ${setup_diff_secs} , main_processing_time ${time_diff_secs} seconds , time/date finished processing $p1_larr(the_time) "
+            
+            
             if { $p1_larr(db_format) ne "" } {
                 # Add titles before saving as p5 table
                 set primary_sort_lists [lreplace $primary_sort_lists 0 0 $base_titles_list]
                 qss_table_create $primary_sort_lists "${scenario_name}.p5" "${scenario_title}.p5" $comments "" p5 $package_id $user_id
             }
-
+            
             # save as a new table of type PRETTI 
             append comments "contrast_mask_idx 1 , colorswap_p 0"
-
+            
             # max activity account per track = $act_max_count
             # whereas
             # each PRETTI table uses standard delimited text file format.
             # Need to convert into rows ie.. transpose rows of each column to a track with column names: track_(1..N). track_1 is CP
             # trac_1 track_2 track_3 ... track_N
-
+            
             set pretti_lists [list ]
             set title_row_list [list ]
             set track_num 1
@@ -1301,7 +1295,7 @@ ad_proc -public acc_fin::scenario_prettify {
                 # activity_seq_num 
                 # dependencies_q cp_q significant_q popularity waypoint_duration activity_time 
                 # direct_dependencies activity_cost waypoint_cost
-
+                
                 # path_seg_larr($act) is a list of activities in track, from left to right, right being last, referenced by last activity.
                 set track_activity_list $path_seg_larr($activity_ref)
                 set track_name "track_${track_num}"
@@ -1320,7 +1314,7 @@ ad_proc -public acc_fin::scenario_prettify {
                         append cell "ts:[lindex $track_list 6] "
                         append cell "c:[lindex $track_list 9] "
                         append cell "cs:[lindex $track_list 10] "
-                        append cell "d:(${depnc_larr(${activity})) "
+                        append cell "d:($depnc_larr(${activity})) "
                         append cell "<!-- [lindex $track_list 4] [lindex $track_list 5] --> "
                         lappend row_larr($i) $cell
                     } else {
@@ -1343,4 +1337,5 @@ ad_proc -public acc_fin::scenario_prettify {
     
     return 1
 }
+
 
