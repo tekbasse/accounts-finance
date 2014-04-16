@@ -26,11 +26,8 @@ expr { srand([clock clicks]) }
 # tid = table_id
 array set input_array [list \
     dist_curve_tid ""\
-    scenario_tid ""\
-    scenario_lists [list [list activity_ref A] [list predecessors ""] [list time_est_short 1] [list time_est_median 2] [list time_est_long 4] [list cost_est_low 0] [list cost_est_median 1] [list cost_est_high 4] [list time_dist_curve_eq ""] [list cost_dist_curve_eq ""]]\
-    scenario_text ""\
-    dist_curve_lists [list [list .7 .1 fast] [list 1 .2 normal] [list 1.5 .25 interrupted] [list 2 .1 delayed] [list 4 .375 hurdle] [list 10 .125 hurdles]]\
-    dist_curve_text ""\
+    table_tid ""\
+    table_text ""\
     sample_rate 1\
     period_unit period\
     pct_pooled 1.\
@@ -57,8 +54,7 @@ array set title_array [list \
 			   ]
 
 set user_message_list [list ]
-set dist_curve_default [qss_lists_to_text $input_array(dist_curve_lists)]
-set scenario_default [qss_lists_to_text $input_array(scenario_lists)]
+
 
 # get previous form inputs if they exist
 set form_posted [qf_get_inputs_as_array input_array]
@@ -73,10 +69,8 @@ if { $form_posted } {
         unset input_array(y)
     }
 
-    set dist_curve_tid $input_array(dist_curve_tid)
-    set scenario_tid $input_array(scenario_tid)
-    set scenario_lists $input_array(scenario_lists)
-    set dist_curve_lists $input_array(dist_curve_lists)
+    set table_tid $input_array(table_tid)
+    set table_lists $input_array(table_lists)
     set act_template_id $input_array(act_template_id)
     set act_flags $input_array(act_flags)
     set dc_template_id $input_array(dc_template_id)
@@ -91,7 +85,7 @@ if { $form_posted } {
         e {
             ns_log Notice "pert.tcl:  validated for e"
             set validated 1
-            if { ![qf_is_natural_number $scenario_tid] && ![qf_is_natural_number $dist_curve_tid] } {
+            if { ![qf_is_natural_number $table_tid] } {
                 set mode "n"
                 set next_mode ""
             } 
@@ -99,7 +93,7 @@ if { $form_posted } {
         d {
             ns_log Notice "pert.tcl:  validated for d"
             set validated 1
-            if { ( ![qf_is_natural_number $scenario_tid] && ![qf_is_natural_number $dist_curve_tid] ) || !$delete_p } {
+            if { ( ![qf_is_natural_number $table_tid] ) || !$delete_p } {
                 set mode "p"
                 set next_mode ""
             } 
@@ -107,7 +101,7 @@ if { $form_posted } {
         t {
             ns_log Notice "pert.tcl:  validated for t"
             set validated 1
-            if { ![qf_is_natural_number $scenario_tid] && ![qf_is_natural_number $dist_curve_tid] } {
+            if { ![qf_is_natural_number $table_tid] } {
                 set mode "p"
                 set next_mode ""
             } 
@@ -115,7 +109,7 @@ if { $form_posted } {
         c {
             ns_log Notice "pert.tcl:  validated for c"
             set validated 1
-            if { ![qf_is_natural_number $scenario_tid] } {
+            if { ![qf_is_natural_number $table_tid] } {
                 lappend user_message_list "Table for Scenario has not been specified."
                 set validated 0
                 set mode "p"
@@ -128,8 +122,7 @@ if { $form_posted } {
             set commissions_eq $input_array(commissions_eq)
         }
         w {
-            set scenario_text $input_array(scenario_text)
-            set dist_curve_text $input_array(dist_curve_text)
+            set table_text $input_array(table_text)
             set validated 1
             ns_log Notice "pert.tcl:  validated for w"
         }
@@ -143,7 +136,7 @@ if { $form_posted } {
         }
         default {
             ns_log Notice "pert.tcl:  validated for v"
-            if { [qf_is_natural_number $scenario_tid] || [qf_is_natural_number $dist_curve_tid] } {
+            if { [qf_is_natural_number $table_tid] } {
                 set validated 1
                 set mode "v"
             } else {
@@ -163,41 +156,41 @@ if { $form_posted } {
             # a different user_id makes new context based on current context, otherwise modifies same context
             # or create a new context if no context provided.
             # given:
-            # act_* is scenario_
+            # act_* is table_
             # dc_* is dist_curve_
-            if { [string length $scenario_text] > 0 && $scenario_text ne $scenario_default } {
+            if { [string length $table_text] > 0 && $table_text ne $table_default } {
                 # act_name  Table Name
 
-                if { $input_array(act_name) eq "" && $scenario_tid eq "" } {
+                if { $input_array(act_name) eq "" && $table_tid eq "" } {
                     set act_name "act[clock format [clock seconds] -format %Y%m%d-%X]"
                 } elseif { $input_array(act_name) eq "" } {
-                    set act_name "initCon${scenario_tid}"
+                    set act_name "initCon${table_tid}"
                 } else {
                     set act_name $input_array(act_name)
                 }
                 # act_title Table title
-                if { $input_array(act_title) eq "" && $scenario_tid eq "" } {
+                if { $input_array(act_title) eq "" && $table_tid eq "" } {
                     set act_title "Scenario [clock format [clock seconds] -format %Y%m%d-%X]"
                 } elseif { $input_array(act_title) eq "" } {
-                    set act_title "Scenario ${scenario_tid}"
+                    set act_title "Scenario ${table_tid}"
                 } else {
                     set act_title $input_array(act_title)
                 }
                 ns_log Notice "pert.tcl:  act_name '${act_name}' [string length $act_name]"
                 # act_comments Comments
                 set act_comments $input_array(act_comments)
-                # scenario_text
+                # table_text
            
                 # convert tables from _text to _list
                 set line_break "\n"
                 set delimiter ","
                 # linebreak_char delimiter rows_count columns_count 
-                set act_text_stats [qss_txt_table_stats $scenario_text]
+                set act_text_stats [qss_txt_table_stats $table_text]
                 ns_log Notice "pert.tcl: : act_text_stats $act_text_stats"
                 set line_break [lindex $act_text_stats 0]
                 set delimiter [lindex $act_text_stats 1]
-                ns_log Notice "pert.tcl: : scenario_text ${scenario_text}"
-                set act_lists [qss_txt_to_tcl_list_of_lists $scenario_text $line_break $delimiter]
+                ns_log Notice "pert.tcl: : table_text ${table_text}"
+                set act_lists [qss_txt_to_tcl_list_of_lists $table_text $line_break $delimiter]
                 ns_log Notice "pert.tcl: : set act_lists ${act_lists}"
                 # cleanup input
                 set act_lists_new [list ]
@@ -216,13 +209,13 @@ if { $form_posted } {
                 set act_lists $act_lists_new
                 ns_log Notice "pert.tcl: : create/write table" 
                 ns_log Notice "pert.tcl: : llength act_lists [llength $act_lists]"
-                if { [qf_is_natural_number $scenario_tid] } {
-                    set table_stats [qss_table_stats $scenario_tid]
+                if { [qf_is_natural_number $table_tid] } {
+                    set table_stats [qss_table_stats $table_tid]
                     set name_old [lindex $table_stats 0]
                     set title_old [lindex $table_stats 1]
                     if { $name_old eq $act_name && $title_old eq $act_title } {
-                        ns_log Notice "pert.tcl: : qss_table_write table_id ${scenario_tid}" 
-                        qss_table_write $act_lists $act_name $act_title $act_comments $scenario_tid $act_template_id $act_flags $package_id $user_id
+                        ns_log Notice "pert.tcl: : qss_table_write table_id ${table_tid}" 
+                        qss_table_write $act_lists $act_name $act_title $act_comments $table_tid $act_template_id $act_flags $package_id $user_id
                     } else {
                         # changed name. assume this is a new table
                         ns_log Notice "pert.tcl: : qss_table_create new table scenario because name/title changed"
@@ -246,7 +239,7 @@ if { $form_posted } {
                 }
                 ns_log Notice "pert.tcl:  dc_name '${dc_name}' [string length $dc_name]"
                 # dc_title Table title
-                if { $input_array(dc_title) eq "" && $scenario_tid eq "" } {
+                if { $input_array(dc_title) eq "" && $table_tid eq "" } {
                     set dc_title "Distribution Curve [clock format [clock seconds] -format %Y%m%d-%X]"
                 } elseif { $input_array(dc_title) eq "" } {
                     set dc_title "Distribution Curve ${dist_curve_tid}"
@@ -365,13 +358,10 @@ if { $form_posted } {
         if { $mode eq "d" } {
             #  delete.... removes context     
             ns_log Notice "pert.tcl:  mode = delete"
-            #requires scenario_tid or dist_curve_tid
-            # delete scenario_tid or dist_curve_tid or both, if both supplied
-            if { [qf_is_natural_number $dist_curve_tid] } {
-                qss_table_delete $dist_curve_tid
-            }
-            if { [qf_is_natural_number $scenario_tid] } {
-                qss_table_delete $scenario_tid
+            #requires table_tid
+            # delete table_tid 
+            if { [qf_is_natural_number $table_tid] } {
+                qss_table_delete $table_tid
             }
             set mode $next_mode
             set next_mode ""
@@ -379,25 +369,16 @@ if { $form_posted } {
         if { $mode eq "t" } {
             #  trash
             ns_log Notice "pert.tcl:  mode = trash"
-            #requires scenario_tid or dist_curve_tid
-            # delete scenario_tid or dist_curve_tid or both, if both supplied
-            if { [qf_is_natural_number $dist_curve_tid] && $write_p } {
-                set trashed_p [lindex [qss_table_stats $dist_curve_tid] 7]
+            #requires table_tid
+            # delete table_tid 
+            if { [qf_is_natural_number $table_tid] && $write_p } {
+                set trashed_p [lindex [qss_table_stats $table_tid] 7]
                 if { $trashed_p == 1 } {
                     set trash 0
                 } else {
                     set trash 1
                 }
-                qss_table_trash $trash $dist_curve_tid
-            }
-            if { [qf_is_natural_number $scenario_tid] && $write_p } {
-                set trashed_p [lindex [qss_table_stats $scenario_tid] 7]
-                if { $trashed_p == 1 } {
-                    set trash 0
-                } else {
-                    set trash 1
-                }
-                qss_table_trash $trash $scenario_tid
+                qss_table_trash $trash $table_tid
             }
             set mode "p"
             set next_mode ""
@@ -419,7 +400,7 @@ switch -exact -- $mode {
     e {
         #  edit...... edit/form mode of current context
         ns_log Notice "pert.tcl:  mode = edit"
-        #requires scenario_tid, dist_curve_tid
+        #requires table_tid, dist_curve_tid
         # make a form to edit 
         # get table from ID
 
@@ -428,18 +409,18 @@ switch -exact -- $mode {
         
         qf_input type hidden value w name mode label ""
         
-        if { [qf_is_natural_number $scenario_tid] } {
-            set act_stats_list [qss_table_stats $scenario_tid]
+        if { [qf_is_natural_number $table_tid] } {
+            set act_stats_list [qss_table_stats $table_tid]
             set act_name [lindex $act_stats_list 0]
             set act_title [lindex $act_stats_list 1]
             set act_comments [lindex $act_stats_list 2]
             set act_flags [lindex $act_stats_list 6]
             set act_template_id [lindex $act_stats_list 5]
 
-            set scenario_lists [qss_table_read $scenario_tid]
-            set scenario_text [qss_lists_to_text $scenario_lists]
+            set table_lists [qss_table_read $table_tid]
+            set table_text [qss_lists_to_text $table_lists]
 
-            qf_input type hidden value $scenario_tid name scenario_tid label ""
+            qf_input type hidden value $table_tid name table_tid label ""
             qf_input type hidden value $act_flags name act_flags label ""
             qf_input type hidden value $act_template_id name act_template_id label ""
             qf_append html "<h3>Scenario</h3>"
@@ -450,35 +431,7 @@ switch -exact -- $mode {
             qf_append html "<br>"
             qf_textarea value $act_comments cols 40 rows 3 name act_comments label "Comments:"
             qf_append html "<br>"
-            qf_textarea value $scenario_text cols 40 rows 6 name scenario_text label "Table data:"
-            qf_append html "</div>"
-        }
-        if { [qf_is_natural_number $dist_curve_tid] } {
-            # get table from ID
-            set dc_stats_list [qss_table_stats $dist_curve_tid]
-            set dc_name [lindex $dc_stats_list 0]
-            set dc_title [lindex $dc_stats_list 1]
-            set dc_comments [lindex $dc_stats_list 2]
-            set dc_flags [lindex $dc_stats_list 6]
-            set dc_template_id [lindex $dc_stats_list 5]
-
-            set dist_curve_lists [qss_table_read $dist_curve_tid]
-            set dist_curve_text [qss_lists_to_text $dist_curve_lists]
-            
-            qf_input type hidden value $dist_curve_tid name dist_curve_tid label ""
-            qf_input type hidden value $dc_flags name dc_flags label ""
-            qf_input type hidden value $dc_template_id name dc_template_id label ""
-            qf_append html "<h3>Distribution curve</h3>"
-            qf_append html "<div style=\"width: 70%; text-align: right;\">"
-            qf_input type text value $dc_name name dc_name label "Table name:" size 40 maxlength 40
-            qf_append html "<br>"
-            qf_input type text value $dc_title name dc_title label "Title:" size 40 maxlength 80
-            #        qf_append html "<br><div style=\"vertical-align: top; display: inline-block; border: 1px solid black;\">"
-            qf_append html "<br>"
-            qf_textarea value $dc_comments cols 40 rows 3 name dc_comments label "Comments:"
-            #       qf_append html "</div><br>"
-            qf_append html "<br><div style=\"clear: both;\">"
-            qf_textarea value $dist_curve_text cols 40 rows 20 name dist_curve_text label "Table data:"
+            qf_textarea value $table_text cols 40 rows 6 name table_text label "Table data:"
             qf_append html "</div>"
         }
 
@@ -488,7 +441,7 @@ switch -exact -- $mode {
 
     }
     w {
-        #  save.....  (write) scenario_tid and dist_curve_tid
+        #  save.....  (write) table_tid and dist_curve_tid
         # should already have been handled above
         ns_log Notice "pert.tcl:  mode = save THIS SHOULD NOT BE CALLED."
         # it's called in validation section.
@@ -496,19 +449,15 @@ switch -exact -- $mode {
     n {
         #  new....... creates new, blank context (form)    
         ns_log Notice "pert.tcl:  mode = new"
-        #requires no scenario_tid, dist_curve_tid
-        set scenario_text [qss_lists_to_text $scenario_lists]
-        set dist_curve_text [qss_lists_to_text $dist_curve_lists]
+        #requires no table_tid, dist_curve_tid
+        set table_text ""
 
-        # make a form with no existing scenario_tid and dist_curve_tid
+        # make a form with no existing table_tid and dist_curve_tid
 
-        qf_form action pert method get id 20120530
+        qf_form action pert method get id 20140415
 
         qf_input type hidden value w name mode label ""
-        if { $scenario_tid > 0 && $dist_curve_tid > 0 } {
-            ns_log Warning "mode n while scenario_tid and dist_curve_tid exist"
-        }
-        qf_append html "<h3>Scenario</h3>"
+        qf_append html "<h3>Table</h3>"
         qf_append html "<div style=\"width: 70%; text-align: right;\">"
         qf_input type text value "" name act_name label "Table name:" size 40 maxlength 40
         qf_append html "<br>"
@@ -516,20 +465,7 @@ switch -exact -- $mode {
         qf_append html "<br>"
         qf_textarea value "" cols 40 rows 3 name act_comments label "Comments:"
         qf_append html "<br>"
-        qf_textarea value $scenario_text cols 40 rows 6 name scenario_text label "Table data:"
-        qf_append html "</div>"
-
-        qf_append html "<h3>Distribution curve</h3>"
-        qf_append html "<div style=\"width: 70%; text-align: right;\">"
-        qf_input type text value "" name dc_name label "Table name:" size 40 maxlength 40
-        qf_append html "<br>"
-        qf_input type text value "" name dc_title label "Title:" size 40 maxlength 80
-        #        qf_append html "<br><div style=\"vertical-align: top; display: inline-block; border: 1px solid black;\">"
-        qf_append html "<br>"
-        qf_textarea value "" cols 40 rows 3 name dc_comments label "Comments:"
- #       qf_append html "</div><br>"
-        qf_append html "<br><div style=\"clear: both;\">"
-        qf_textarea value $dist_curve_text cols 40 rows 20 name dist_curve_text label "Table data:"
+        qf_textarea value $table_text cols 40 rows 6 name table_text label "Table data:"
         qf_append html "</div>"
 
         qf_input type submit value "Save"
@@ -539,60 +475,20 @@ switch -exact -- $mode {
     c {
         #  compute... compute/process and write output as a new table, present post_calc results
         ns_log Notice "pert.tcl:  mode = compute"
-        #requires scenario_tid
-        # given scenario_tid 
+        #requires table_tid
+        # given table_tid 
         # activity_table contains:
         # activity_ref predecessors time_est_short time_est_median time_est_long cost_est_low cost_est_median cost_est_high time_dist_curv_eq cost_dist_curv_eq
         set error_fail 0
-        set scenario_lists [qss_table_read $scenario_tid]
-        set constants_list [list scenario_tid activity_table_tid activity_table_name time_dist_curve_name time_dist_curve_tid cost_dist_curve_name cost_dist_curve_tid ]
-        set constants_required_list [list scenario_tid]
-        foreach condition_list $scenario_lists {
+        set table_lists [qss_table_read $table_tid]
+        set constants_list [list table_tid activity_table_tid activity_table_name time_dist_curve_name time_dist_curve_tid cost_dist_curve_name cost_dist_curve_tid ]
+        set constants_required_list [list table_tid]
+        foreach condition_list $table_lists {
             set constant [lindex $condition_list 0]
             if { [lsearch -exact $constants_list $constant] > -1 } {
                 set input_array($constant) [lindex $condition_list 1]
                 set $constant $input_array($constant)
             }
-        }
-        if { [info exists activity_table_name] } {
-            # set set activity_table_tid
-            set table_ids_list [qss_tables $package_id]
-            foreach table_id $table_ids_list {
-                if { [lindex [qss_table_stats $table_id] 0] eq $activity_table_name } {
-                    set activity_table_tid $table_id
-                }
-            }
-
-        } 
-
-        if { [info exists time_dist_curve_name] } {
-            # set dist_curve_tid
-            set table_ids_list [qss_tables $package_id]
-            foreach table_id $table_ids_list {
-                if { [lindex [qss_table_stats $table_id] 0] eq $time_dist_curve_name } {
-                    set time_dist_curve_tid $table_id
-                }
-            }
-
-        } 
-        if { [info exists cost_dist_curve_name] } {
-            # set dist_curve_tid
-            set table_ids_list [qss_tables $package_id]
-            foreach table_id $table_ids_list {
-                if { [lindex [qss_table_stats $table_id] 0] eq $cost_dist_curve_name } {
-                    set cost_dist_curve_tid $table_id
-                }
-            }
-
-        } 
-        if { [info exists activity_table_tid] } {
-            set activity_table_name [lindex [qss_table_stats $activity_table_tid] 0]
-        }
-        if { [info exists time_dist_curve_tid] } {
-            set time_dist_curve_name [lindex [qss_table_stats $time_dist_curve_tid] 0]
-        }
-        if { [info exists cost_dist_curve_tid] } {
-            set cost_dist_curve_name [lindex [qss_table_stats $cost_dist_curve_tid] 0]
         }
         set constants_exist_p 1
         set compute_message_list [list ]
@@ -605,386 +501,36 @@ switch -exact -- $mode {
         }
         
         # interpolate_last_band_p : interpolate last estimate item? choose this if you have a large estimate value that you want to vary over the value range
-
-        # Make time_curve_data 
-        set time_curve_data_lists [qss_table_read $time_dist_curve_tid]
-        # make the distribution curve accessible as lists
-        set time_task_list [list ]
-        set time_probability_list [list ]
-        set time_label_list [list ]
-        set time_val_probability_lists [list ]
-        foreach curve_band_list $time_curve_data_lists {
-            lappend time_task_list [lindex $curve_band_list 0]
-            lappend time_probability_list [lindex $curve_band_list 1]            
-            lappend time_label_list [lindex $curve_band_list 2]
-            lappend time_val_probability_lists [list $time_task_list $time_probability_list]
-        }
-
-        # Make cost_curve_data 
-        set cost_curve_data_lists [qss_table_read $cost_dist_curve_tid]
-        # make the distribution curve accessible as lists
-        set cost_task_list [list ]
-        set cost_probability_list [list ]
-        set cost_label_list [list ]
-        set cost_val_probability_lists [list ]
-        foreach curve_band_list $cost_curve_data_lists {
-            lappend cost_task_list [lindex $curve_band_list 0]
-            lappend cost_probability_list [lindex $curve_band_list 1]            
-            lappend cost_label_list [lindex $curve_band_list 2]
-            lappend cost_val_probability_lists [list $cost_task_list $cost_probability_list]
-        }
-        # handy api ref
-        # util_commify_number
-        # format "% 8.2f" $num
-        # f::sum $list
-
-       ## # PERT calculations
-        # create activity_list
-        # create arrays of activity columns.
-
-        
-        # Build activity map table:
-        # activity_ref predecessors 
-        # add: time_est_short time_est_median time_est_long
-        # add: cost_est_low cost_est_median cost_est_high 
-        # if curves are blank, set expected value to (low + 4 * median + high) / 6.
-        # add: time_expected cost_expected
-        
-        # build array of activity_ref sequence_num
-        # default for each acitivity_ref 1
-        ## assign an activity_ref one more than the max sequence_num of its dependencies
-
-        # defaults, inputs
-        #set act_depnc_list [list a "" b e,c,a c e,f d b,f,c e a f ""]
-        #set act_depnc_list [list a "" b a c "" d a e b f ""]
-        set act_depnc_list [list a "" b "" c "a" d a e "b,c" f d g e]
-        set act_time_est_list [list [list a 2 4 6] [list b 3 5 9] [list c 4 5 7] [list d 4 6 10] [list e 4 5 7] [list f 3 4 8] [list g 3 5 8] ]
-        
-        set act_list [list ]
-        foreach {act_unfiltered depnc_unfiltered} $act_depnc_list {
-            regsub -all -nocase -- {[^a-z0-9,]+} $depnc_unfiltered {} depnc
-            regsub -all -nocase -- {[^a-z0-9,]+} $act_unfiltered {} act
-            # depnc: comma list of dependencies
-            # act: activity
-            lappend act_list $act
-            # depnc_arr() list of dependencies
-            set depnc_arr($act) [split $depnc ,]
-            # calcd_p_arr($act) Q: relative sequence number for $act been calculated?
-            set calcd_p_arr($act) 0
-            # act_seq_num_arr relative sequence number of an activity
-            set sequence_1 0
-            set act_seq_num_arr($act) $sequence_1
-        }
-        
-        # time_expected_arr()
-        # time_est_arr() is a list of short, median, long
-        foreach act_t_list $act_time_est_list {
-            set act [lindex $act_t_list 0]
-            set time_est_arr($act) [lrange $act_t_list 1 3]
-            set short [lindex $act_t_list 1]
-            set med [lindex $act_t_list 2]
-            set long [lindex $act_t_list 3]
-            set time_expected_arr($act) [expr { ( $short + 4 * $med + $long ) / 6. } ]
-            set path_dur_arr($act) $time_expected_arr($act)
-        }
-        
-        # Calculate paths in the main loop to save resouces.
-        #  Each path is a list of numbers referenced by array, where array is path.
-        #  set path_segment_ends_in_lists($act) 
-        #         so future segments can quickly reference it to build theirs.
-        # This keeps path making nearly linear. There are as many path references as there are activities..
-        # Some of the references are incomplete paths, but these can be filtered as needed.
-        # All paths must be assessed in order to handle all possibilities
-        # Paths are used to determine critical path and fast crawl a single path.
-        
-        # An activity cannot start until the longest dependent segment has completed.
-        
-        # for strict critical path, create a list of lists, where 
-        # each list is a list of dependencies from start to finish (aka path)  + the longest duraction path of activity including dependencies.
-        # sum the duration for each list. The longest duration is the strict defintion of critical path.
-        
-        # create dependency check equations
-        # depnc_eq_arr() is equation that answers question: Are dependencies met for $act?
-        foreach act $act_list {
-            set eq "1 &&"
-            foreach dep $depnc_arr($act) {
-                append eq " calcd_p_arr($dep) &&"
-            }
-            set eq [string range $eq 0 end-3]
-            regsub -all -- {calcd} $eq {$calcd} depnc_eq_arr($act)
-        }
-        # main process looping
-        set all_calced_p 0
-        set activity_count [llength $act_list]
-        set i 0
-        set act_seq_list_arr($sequence_1) [list ]
-        set act_count_of_seq_arr($sequence_1) 0
-        set path_seg_dur_list [list ]
-        # act_seq_max is the current maximum path length
-        # act_count_of_seq_arr($seq_num) is the count of activities in sequence_num
-        while { !$all_calced_p && $activity_count > $i } {
-            set all_calcd_p 1
-            foreach act $act_list {
-                set dependencies_met_p [expr $depnc_eq_arr($act) ]
-                set act_seq_max $sequence_1
-                if { $dependencies_met_p && !$calcd_p_arr($act) } {
-                    
-                    # max_num: maximum relative sequence number for activity dependencies
-                    set max_num 0
-                    foreach test_act $depnc_arr($act) {
-                        set test $act_seq_num_arr($test_act)
-                        if { $max_num < $test } {
-                            set max_num $test
-                        }
-                    }
-                    # Add activity's relative sequence number: act_seq_num_arr
-                    set act_seq_nbr [expr { $max_num + 1 } ]
-                    set act_seq_num_arr($act) $act_seq_nbr
-                    set calcd_p_arr($act) 1
-                    # increment act_seq_max and set defaults for a new max seq number?
-                    if { $act_seq_nbr > $act_seq_max } {
-                        set act_seq_max $act_seq_nbr
-                        set act_seq_list_arr($act_seq_max) [list ]
-                        set act_count_of_seq_arr($act_seq_max) 0
-                    }
-                    # add activity to the network for this sequence number
-                    lappend act_seq_list_arr($act_seq_nbr) $act
-                    incr act_count_of_seq_arr($act_seq_nbr)
-                    
-                    # Analize prior path segments here.
-                    # path_duration(path) is the min. path duration to complete dependent paths
-                    set path_duration 0
-                    # set duration_new to the longest dependent segment.
-                    foreach dep_act $depnc_arr($act) {
-                        if { $path_dur_arr($dep_act) > $path_duration } {
-                            set path_duration $path_dur_arr($dep_act)
-                        }
-                    }
-                    set duration_arr($act) [expr { $path_duration + $time_expected_arr($act) } ]
-                    set path_seg_list_arr($act) [list ]
-                    #bad referencing here: separate duration from rest.
-                    foreach dep_act $depnc_arr($act) {
-                        foreach path_list $path_seg_list_arr($dep_act) {
-                            set path_new $path_list
-                            lappend path_new $act
-                            lappend path_seg_list_arr($act) $path_new
-                            lappend path_seg_dur_list [list $path_new $duration_arr($act)]
-                        }
-                    }
-                    if { [llength $path_seg_list_arr($act)] eq 0 } {
-                        lappend path_seg_list_arr($act) $act
-                        lappend path_seg_dur_list [list $act $duration_arr($act)]
-                    }
-                }
-                set all_calcd_p [expr { $all_calcd_p && $calcd_p_arr($act) } ]
-            }
-            incr i
-        }
-        set dep_met_p 1
-        ns_log Notice "pert.tcl: path_seg_dur_list $path_seg_dur_list"
-        foreach act $act_list {
-            set $dep_met_p [expr $depnc_eq_arr($act) && $dep_met_p ]
-            # ns_log Notice "pert.tcl: act $act act_seq_num_arr '$act_seq_num_arr($act)'"
-            # ns_log Notice "pert.tcl: act_seq_list_arr '$act_seq_list_arr($act_seq_num_arr($act))' $act_count_of_seq_arr($act_seq_num_arr($act))"
-        }
-        ns_log Notice "pert.tcl: dep_met_p $dep_met_p"
-        
-        # sort by path duration
-        # critical path is the longest path. Float is the difference between CP and next longest CP.
-        # create an array of paths from longest to shortest to help build base table
-        set path_seg_dur_sort1_list [lsort -decreasing -real -index 1 $path_seg_dur_list]
-        # Critical Path (CP) is 
-        set cp_list [lindex [lindex $path_seg_dur_sort1_list 0] 0]
-        #ns_log Notice "pert.tcl: path_seg_dur_sort1_list $path_seg_dur_sort1_list"
-        
-        # Extract most significant CP alternates for a focused table
-        # by counting the number of times an act is used in the largest proportion (first half) of paths in path_set_dur_sort1_list
-        set path_count [llength $path_seg_dur_sort1_list]
-        set extract_limit [expr { $path_count / 2 + 1 } ]
-        set extractv1_list [lrange $path_seg_dur_sort1_list 0 ${extract_limit}] 
-        # act_freq_in_load_cp_alts_arr counts the number of times an activity is in a path  for the most significant CP alternates
-        set max_act_count_per_seq 0
-        foreach act $act_list {
-            set act_freq_in_load_cp_alts_arr($act) 0
-            if { $act_count_of_seq_arr($act) > $max_act_count_per_seq } {
-                set max_act_count_per_seq $act_count_of_seq_arr($act)
-            }
-        }
-        foreach path_seg_list $extractv1_list {
-            set path2_list [lindex $path_seg_list 0]
-            foreach act $path2_list {
-                incr act_freq_in_load_cp_alts_arr($act)
-            }
-        }
-        set act_sig_list [list ]
-        foreach act $act_list {
-            lappend act_sig_list [list $act $act_freq_in_load_cp_alts_arr($act)]
-        }
-        set act_sig_sorted_list [lsort -decreasing -integer -index 1 $act_sig_list]
-        set act_max_count [lindex [lindex $act_sig_sorted_list 0] 1]
-        set act_sig_median_pos [expr { $extract_limit / 2 } + 1 ]
-        set act_median_count [lindex [lindex $act_sig_sorted_list $act_sig_median_pos] 1]
-        
-        # build base table
-        # Table width should be limited to max count of acivities per sequence.
-        
-        # activity_ref act_seq_num_arr has_direct_dependency_p time_expected direct_dependencies_list
-        set base_lists [list ]
-        
-        foreach act $act_list {
-            set has_direct_dependency_p [expr { [llength $depnc_arr($act)] > 0 } ]
-            set on_critical_path_p [expr { [lsearch -exact $cp_list $act] > -1 } ]
-            set on_a_sig_path_p [expr { $act_freq_in_load_cp_alts_arr($act) > $act_median_count } ]
-            set activity_list [list $act $act_seq_num_arr($act) $has_direct_dependency_p $on_critical_path_p $on_a_sig_path_p $act_freq_in_load_cp_alts_arr($act) $duration_arr($act) $time_expected_arr($act) $depnc_arr($act) ]
-            lappend base_lists $activity_list
-        }
-        
-        # act_count_of_seq_arr( sequence_number) is the count of activities at this sequence number
-        # max_act_count_per_seq is the maximum number of activities in a sequence number.
-        
-        ns_log Notice "pert.tcl: base_lists $base_lists"
-        # critical path is the longest expexted duration of dependent activities..
-        # so:
-        # primary sort is act_seq_num_arr ascending
-        # secondary sort is part_of_critical_path_p descending
-        # third sort is has_direct_dependency_p descending (1 = true, 0 false)
-        # fourth sort is path duraction descending
-        
-        set fourth_sort [lsort -decreasing -real -index 6 $base_lists]
-        set third_sort [lsort -decreasing -integer -index 2 $fourth_sort]
-        set second_sort [lsort -decreasing -integer -index 3 $third_sort]
-        set primary_sort [lsort -increasing -integer -index 1 $second_sort]
-        
-        ns_log Notice "pert.tcl: primary_sort $primary_sort"
-        
-        # prep for conversion to html by adding missing TDs, setting formatting (colors, size etc).
-        # primary_sort list_of_lists consists of this order of elements:
-        #  act act_seq_num_arr has_direct_dependency_p on_critical_path_p on_a_sig_path_p act_freq_in_load_cp_alts path_duration time_expected dependencies_list
-        # sorted by: act_seq_num on_critical_path_p has_direct_dependency_p duration
-        
-        
-        # build formatting colors
-        set act_count [llength $act_list]
-        # contrast decreases on up to 50%
-        set contrast_step [expr { int( 16 / ( $max_act_count_per_seq / 2 + 1 ) ) } ]
-        set hex_list [list 0 1 2 3 4 5 6 7 8 9 a b c d e f]
-        set row_nbr 0
-        set cell_nbr 0
-        set act_seq_num $sequence_1
-        # each row is a relative sequence
-        set cells_per_row $max_act_count_per_seq
-        set cell_formatting_list [list ]
-        set cell_value_list [list ]
-        set table_formatting_lists [list ]
-        set table_value_lists [list ]
-        # act_count_of_seq_arr( sequence_number) is the count of activities at this sequence number
-        foreach cell $primary_sort {
-            set cell_nbr_prev $cell_nbr
-            set act_seq_num_prev $act_seq_num
-            incr cell_nbr
-            set cell_formatting [list ]
-            set cell_value ""
-            # set initial values
-            set act [lindex $cell 0]
-            set act_seq_num [lindex $cell 1]
-            set has_direct_dependency_p [lindex $cell 2]
-            set on_critical_path_p [lindex $cell 3]
-            set on_a_sig_path_p [lindex $cell 4]
-            set act_freq_in_load_cp_alts [lindex $cell 5]
-            set path_duration [lindex $cell 6]
-            set time_expected [lindex $cell 7]
-            set dependencies_list [lindex $cell 8]
-            set dependencies ""
-            set separator ""
-            foreach dependency $dependencies_list {
-                append dependencies $separator $dependency
-                set separator ", "
-            }
-            if { $act_seq_num_prev ne $act_seq_num } {
-                # new row
-                set cell_nbr 0
-                set row_nbr_prev $row_nbr
-                incr row_nbr
-                set hex_nbr_val 16
-                lappend table_formatting_lists $cell_formatting_list
-                lappend table_value_lists $cell_formatting_list
-                set cell_formatting_list [list ]
-                set cell_value_list [list ]
-            }
-            # build cell
-            set cell_value "$act t:${time_expected} T:${path_duration} D:${dependencies} "
-            set odd_row_p [expr { ( $row_nbr / 2. ) == int( $row_nbr / 2 ) } ]
-            # CP in highest contrast (yellow ff9), others in lowering contrast to f70
-            # CP alt in alternating lt blue 99f, lt green 9f9 
-            # others in alternating medium blue/green 66ff, 6f6
-            if { $on_critical_path_p } {
-                set bgcolor "#ffff00"
-            } elseif { $on_a_sig_path_p } {
-                set hex_nbr_val [expr { $hex_nbr - $contrast_step } ]
-                set hex_nbr [lindex $hex_list $hex_nbr_val]
-                if { $odd_row_p } {
-                    set bgcolor "#ff${hex_nbr}${hex_nbr}99"
-                } else {
-                    set bgcolor "#${hex_nbr}ff${hex_nbr}"
-                }
-                
-            } elseif { $odd_row_p } {
-                set bgcolor "#6666ff"
-            } else {
-                set bgcolor "#66ff66"
-            }
-            set cell_formatting bgcolor $bgcolor
-            lappend cell_formatting_list $cell_formatting
-            lappend cell_value_list $cell_value
-        }
-        
-        # build unique list of dependencies
-
-        # Build Network Breakdown Table: activity vs. path
-        # 
-        # activity_ref predecessors
-        # add: sequence_num time_expected cost_expected
-        # add:
-
-        
-        # the_time Time calculation completed
-        set s_arr(the_time) [clock format [clock seconds] -format "%Y %b %d %H:%M:%S"]
-
-        # html
-        set html_arr(apt) "<h3>Computation report</h3>"
-
-        append html_arr(apt) [qss_list_of_lists_to_html_table $table_value_lists $table_attribute_list $table_formatting_lists]
-        append html_arr(apt) "Completed $s_arr(the_time)"
-        append computation_report_html $html_arr(apt)
+##### compute pretti_..
         
     }
     r {
         #  review.... show computed output 
         ns_log Notice "pert.tcl:  mode = review"
-        #requires scenario_tid, dist_curve_tid
+        #requires table_tid, dist_curve_tid
 
         # option not used for this app. No Calcs saved.
     }
     v {
         #  view table(s) (standard, html page document/report)
         ns_log Notice "pert.tcl:  mode = $mode ie. view table"
-        if { [qf_is_natural_number $scenario_tid] && [qf_is_natural_number $dist_curve_tid] && $write_p } {
-            lappend menu_list [list edit "scenario_tid=${scenario_tid}&dist_curve_tid=${dist_curve_tid}&mode=e"]
+        if { [qf_is_natural_number $table_tid] && $write_p } {
+            lappend menu_list [list edit "table_tid=${table_tid}&mode=e"]
             set menu_e_p 1
         } else {
             set menu_e_p 0
         }
-        if { [qf_is_natural_number $scenario_tid] } {
-            set act_stats_list [qss_table_stats $scenario_tid]
+        if { [qf_is_natural_number $table_tid] } {
+            set act_stats_list [qss_table_stats $table_tid]
             set act_name [lindex $act_stats_list 0]
             set act_title [lindex $act_stats_list 1]
             set act_comments [lindex $act_stats_list 2]
-            set scenario_html "<h3>${act_title} (${act_name})</h3>\n"
-            set act_lists [qss_table_read $scenario_tid]
+            set table_html "<h3>${act_title} (${act_name})</h3>\n"
+            set act_lists [qss_table_read $table_tid]
             set act_text [qss_lists_to_text $act_lists]
             set table_tag_atts_list [list border 1 cellpadding 3 cellspacing 0]
-            append scenario_html [qss_list_of_lists_to_html_table $act_lists $table_tag_atts_list]
-            append scenario_html "<p>${act_comments}</p>"
+            append table_html [qss_list_of_lists_to_html_table $act_lists $table_tag_atts_list]
+            append table_html "<p>${act_comments}</p>"
             if { ![qf_is_natural_number $dist_curve_tid] } {
                 # can dist_curve_tid be extracted from scenario?
                 set constants_list [list dist_curve_tid]
@@ -999,28 +545,12 @@ switch -exact -- $mode {
             }
             if { !$menu_e_p && $write_p } {
 
-                lappend menu_list [list edit "scenario_tid=${scenario_tid}&mode=e"]
+                lappend menu_list [list edit "table_tid=${table_tid}&mode=e"]
             }
         }
-        if { [qf_is_natural_number $dist_curve_tid] } {
-            set dc_stats_list [qss_table_stats $dist_curve_tid]
-            set dc_name [lindex $dc_stats_list 0]
-            set dc_title [lindex $dc_stats_list 1]
-            set dc_comments [lindex $dc_stats_list 2]
-            set dist_curve_html "<h3>${dc_title} (${dc_name})</h3>\n"
-
-            # get table from ID
-            set dc_lists [qss_table_read $dist_curve_tid]
-            set dc_text [qss_lists_to_text $dist_curve_lists]
-            set table_tag_atts_list [list border 1 cellpadding 3 cellspacing 0]
-            append dist_curve_html [qss_list_of_lists_to_html_table $dc_lists $table_tag_atts_list]
-            append dist_curve_html "<p>${dc_comments}</p>"
-            if { !$menu_e_p && ![qf_is_natural_number $scenario_tid] && $write_p } {
-                lappend menu_list [list edit "dist_curve_tid=${dist_curve_tid}&mode=e"]
-            }
-        }
-        if { [qf_is_natural_number $scenario_tid] && [qf_is_natural_number $dist_curve_tid] } {
-            lappend menu_list [list compute "scenario_tid=${scenario_tid}&dist_curve_tid=${dist_curve_tid}&mode=c"]
+        # if scenario meets minimum compute requirements, add a compute button to menu:
+        if { [qf_is_natural_number $table_tid] && [qf_is_natural_number $dist_curve_tid] } {
+            lappend menu_list [list compute "table_tid=${table_tid}&mode=c"]
         }
     }
     default {
@@ -1030,8 +560,8 @@ switch -exact -- $mode {
         ns_log Notice "pert.tcl:  mode = $mode ie. default"
 
 
-        # show scenario, dist_curve  tables
-        # sort by template_id, columns
+        # show tables
+        # sort by template_id, columns, and table_type (flags)
 
         set table_ids_list [qss_tables $package_id]
         set table_stats_lists [list ]
@@ -1069,12 +599,8 @@ switch -exact -- $mode {
 
             # convert table row for use with html
             # change name to an active link
-            if { $col_length != 3 || $template_id == 10040 } {
-                set table_ref_name scenario_tid
-
-            } else { 
-                set table_ref_name dist_curve_tid
-            }
+            set table_ref_name table_tid
+            
 
             set active_link "<a\ href=\"pert?${table_ref_name}=${table_id}\">$name</a>"
 
@@ -1096,7 +622,7 @@ switch -exact -- $mode {
             }
 
         }
-        # sort for now. Later, just get scenario_tables with same template_id
+        # sort for now. Later, just get table_tables with same template_id
         set table_stats_sorted_lists $table_stats_lists
         set table_stats_sorted_lists [linsert $table_stats_sorted_lists 0 [list Name Title Comments "Cell count" "Row count" "Columns (avg)"] ]
         set table_tag_atts_list [list border 1 cellspacing 0 cellpadding 3]
