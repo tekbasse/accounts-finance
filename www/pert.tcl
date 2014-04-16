@@ -25,23 +25,8 @@ expr { srand([clock clicks]) }
 
 # tid = table_id
 array set input_array [list \
-    dist_curve_tid ""\
     table_tid ""\
     table_text ""\
-    sample_rate 1\
-    period_unit period\
-    pct_pooled 1.\
-    interpolate_last_band_p 0\
-    act_name ""\
-    act_title ""\
-    act_comments ""\
-    act_template_id ""\
-    act_flags ""\
-    dc_name ""\
-    dc_title ""\
-    dc_comments ""\
-    dc_template_id ""\
-    dc_flags ""\
     submit "" \
     reset "" \
     mode "p" \
@@ -70,11 +55,6 @@ if { $form_posted } {
     }
 
     set table_tid $input_array(table_tid)
-    set table_lists $input_array(table_lists)
-    set act_template_id $input_array(act_template_id)
-    set act_flags $input_array(act_flags)
-    set dc_template_id $input_array(dc_template_id)
-    set dc_flags $input_array(dc_flags)
     # validate input
     # cleanse, validate mode
     # determine input completeness
