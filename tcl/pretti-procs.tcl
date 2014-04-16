@@ -876,11 +876,22 @@ ad_proc -public acc_fin::scenario_prettify {
                             lappend $p2_larr(_tCurveRef) ""
                         }
                         if { [lindex $p2_larr(_cCurveRef) $term_idx] ne "" } {
-            ####
+                            # New curve is isn't affected by overlap or max_concurrent. 
+                            # New curve is simple multiplication of old and coefficient
                             # create new curve
+                            set curve_lol [list ]
+                            foreach point $cost_clarr($ccurvenum) {
+                                # point: y x label
+                                set y [lindex $point 0]
+                                set x [lindex $point 1]
+                                set label [lindex $point 2]
+                                set y_new [expr { $y * $coefficient } ]
+                                set point_new [list $y_new $x $label]
+                                lappend curve_lol $point_new
+                            }
                             
                             # save new curve
-                            set ccurvenum [acc_fin::larr_set cost_clarr $curve_list]
+                            set ccurvenum [acc_fin::larr_set cost_clarr $curve_lol]
                             # save new reference
                             lappend $p2_larr(_cCurveRef) $ccurvenum
                         } else {
