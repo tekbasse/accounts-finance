@@ -96,10 +96,6 @@ if { $form_posted } {
                 set next_mode ""
             } 
             # check for any form inputs?
-            set interpolate_last_band_p $input_array(interpolate_last_band_p)
-            set sample_rate $input_array(sample_rate)
-            set period_unit $input_array(period_unit)
-            set commissions_eq $input_array(commissions_eq)
         }
         w {
             set table_text $input_array(table_text)
@@ -132,6 +128,9 @@ if { $form_posted } {
         # execute validated input
         
         if { $mode eq "w" } {
+            # determine table type P1..5
+####
+
             # write the data
             # a different user_id makes new context based on current context, otherwise modifies same context
             # or create a new context if no context provided.
@@ -208,129 +207,7 @@ if { $form_posted } {
                 }
 
             }
-            if { [string length $dist_curve_text] > 0 && $dist_curve_text ne $dist_curve_default } {
-                # dc_name  Table Name
-                if { $input_array(dc_name) eq "" && $dist_curve_tid eq "" } {
-                    set dc_name "sc[clock format [clock seconds] -format %Y%m%d-%X]"
-                } elseif { $input_array(dc_name) eq "" } {
-                    set dc_name "Distribution Curve ${dist_curve_tid}"
-                } else {
-                    set dc_name $input_array(dc_name)
-                }
-                ns_log Notice "pert.tcl:  dc_name '${dc_name}' [string length $dc_name]"
-                # dc_title Table title
-                if { $input_array(dc_title) eq "" && $table_tid eq "" } {
-                    set dc_title "Distribution Curve [clock format [clock seconds] -format %Y%m%d-%X]"
-                } elseif { $input_array(dc_title) eq "" } {
-                    set dc_title "Distribution Curve ${dist_curve_tid}"
-                } else {
-                    set dc_title $input_array(dc_title)
-                }
-                # dc_comments Comments
-                set dc_comments $input_array(dc_comments)
-                # dist_curve_text
 
-                # convert tables from _text to _list
-                set line_break "\n"
-                set delimiter ","
-                # linebreak_char delimiter rows_count columns_count 
-                set dc_text_stats [qss_txt_table_stats $dist_curve_text]
-                set line_break [lindex $dc_text_stats 0]
-                ns_log Notice "pert.tcl: : dist_curve_text ${dist_curve_text}"
-                set dc_lists [qss_txt_to_tcl_list_of_lists $dist_curve_text $line_break $delimiter]
-                ns_log Notice "pert.tcl: : set dc_lists ${dc_lists}"
-                # cleanup input
-                set dc_lists_new [list ]
-                foreach curve_list $dc_lists {
-                    set row_new [list ]
-                    foreach cell $curve_list {
-                        set cell_new [string trim $cell]
-                        regsub -all -- {[ ][ ]*} $cell_new { } cell_new
-                        lappend row_new $cell_new
-                    }
-                    if { [llength $row_new] > 0 } {
-                        lappend dc_lists_new $row_new
-                    }
-                }
-                set dc_lists $dc_lists_new
-            
-                set curve_pct_list [list ]
-                foreach curve_list $dc_lists {
-                    # area under curve aka probability is second item in list
-                    lappend curve_pct_list [lindex $curve_list 1]
-                }
-
-                # normalize curve_pct_list curve. Total should equal 1. (100%)
-                set rcp_total 0.
-                set curve_error 0
-                foreach curve_pct $curve_pct_list {
-                    # curve_pct must be a number
-                    if { [ad_var_type_check_number_p $curve_pct] } {
-                        set rcp_total [expr { $rcp_total + $curve_pct } ]
-                    } else {
-                        set curve_error 1
-                    }
-                }
-                if { $rcp_total > 0 } {
-                    set adj_factor [expr { 1. / $rcp_total } ]
-                
-                    if { $adj_factor != 1. } {
-                        # edit the probability values
-                        set new_rcp_list [list ]
-                        foreach curve_pct $curve_pct_list {
-                            if { [ad_var_type_check_number_p $curve_pct] } {
-                                set curve_pct_adj [expr { $adj_factor * $curve_pct } ]
-                                lappend new_rcp_list $curve_pct_adj
-                            } else {
-                                lappend "${curve_pct} (ignored)"
-                                set curve_error 1
-                            }
-                        }
-                        set curve_pct_list $new_rcp_list
-                        # now we need to add them back into dc_lists
-                        set dc_lists_new [list ]
-                        set row_nbr 0
-                        foreach curve_list $dc_lists {
-                            set row_new [lreplace $curve_list 1 1 [lindex $curve_pct_list $row_nbr]]
-                            lappend dc_lists_new $row_new
-                            incr row_nbr
-                        }
-                        set dc_lists $dc_lists_new
-                        ns_log Notice "pert.tcl: : adjust probability value sum to 1: results"
-                        ns_log Notice "pert.tcl: : set dc_lists ${dc_lists}"
-                    }
-                    # sort $price_list (and the cooresponding lists).
-                    if { !$curve_error } {
-                        set dc_lists [lsort -index 0 -real $dc_lists]
-                    }
-                } else {
-                    ns_log Notice "pert.tcl: : dist_curve $dist_curve_tid cannot be normalized."
-                    lappend user_message_list "Unable to normalize Distribution Curve. Saved as is."
-                }
-                ns_log Notice "pert.tcl: : sorted dc_lists. Results:"
-                ns_log Notice "pert.tcl: : set dc_lists ${dc_lists}"
-
-                ns_log Notice "pert.tcl: : create/write table" 
-                ns_log Notice "pert.tcl: : length dc_lists [llength $dc_lists]"
-
-
-                if { [qf_is_natural_number $dist_curve_tid] } {
-                    set table_stats [qss_table_stats $dist_curve_tid]
-                    set name_old [lindex $table_stats 0]
-                    set title_old [lindex $table_stats 1]
-                    if { $name_old eq $dc_name && $title_old eq $dc_title } {
-                        ns_log Notice "pert.tcl: : qss_table_write table_id ${dist_curve_tid}" 
-                        qss_table_write $dc_lists $dc_name $dc_title $dc_comments $dist_curve_tid $dc_template_id $dc_flags $package_id $user_id
-                    } else {
-                        # changed name. assume this is a new table
-                        ns_log Notice "pert.tcl: : qss_table_create new table dist_curve"
-                        qss_table_create $dc_lists $dc_name $dc_title $dc_comments $dc_template_id $dc_flags $package_id $user_id
-                    }
-                } else {
-                    ns_log Notice "pert.tcl: : qss_table_create new table dist_curve"
-                    qss_table_create $dc_lists $dc_name $dc_title $dc_comments $dc_template_id $dc_flags $package_id $user_id
-                }
-            }
 
             set mode $next_mode
             set next_mode ""
@@ -457,39 +334,15 @@ switch -exact -- $mode {
         ns_log Notice "pert.tcl:  mode = compute"
         #requires table_tid
         # given table_tid 
-        # activity_table contains:
-        # activity_ref predecessors time_est_short time_est_median time_est_long cost_est_low cost_est_median cost_est_high time_dist_curv_eq cost_dist_curv_eq
-        set error_fail 0
-        set table_lists [qss_table_read $table_tid]
-        set constants_list [list table_tid activity_table_tid activity_table_name time_dist_curve_name time_dist_curve_tid cost_dist_curve_name cost_dist_curve_tid ]
-        set constants_required_list [list table_tid]
-        foreach condition_list $table_lists {
-            set constant [lindex $condition_list 0]
-            if { [lsearch -exact $constants_list $constant] > -1 } {
-                set input_array($constant) [lindex $condition_list 1]
-                set $constant $input_array($constant)
-            }
-        }
-        set constants_exist_p 1
-        set compute_message_list [list ]
-        foreach constant $constants_required_list {
-            if { ![info exists $constant] || ( [info exists $constant] && [set $constant] eq "" ) } {
-                set constants_exist_p 0
-                lappend compute_message_list "Initial condition constant '${constant}' is required but does not exist."
-                set error_fail 1
-            }
-        }
-        
-        # interpolate_last_band_p : interpolate last estimate item? choose this if you have a large estimate value that you want to vary over the value range
 ##### compute pretti_..
         
     }
     r {
         #  review.... show computed output 
         ns_log Notice "pert.tcl:  mode = review"
-        #requires table_tid, dist_curve_tid
+        #requires table_tid
 
-        # option not used for this app. No Calcs saved.
+        # option not used for this app. Calcs are saved as a table. use mode v
     }
     v {
         #  view table(s) (standard, html page document/report)
@@ -511,18 +364,6 @@ switch -exact -- $mode {
             set table_tag_atts_list [list border 1 cellpadding 3 cellspacing 0]
             append table_html [qss_list_of_lists_to_html_table $act_lists $table_tag_atts_list]
             append table_html "<p>${act_comments}</p>"
-            if { ![qf_is_natural_number $dist_curve_tid] } {
-                # can dist_curve_tid be extracted from scenario?
-                set constants_list [list dist_curve_tid]
-                foreach condition_list $act_lists {
-                    set constant [lindex $condition_list 0]
-                    if { [lsearch -exact $constants_list $constant] > -1 } {
-                        set input_array($constant) [lindex $condition_list 1]
-                        set $constant $input_array($constant)
-                        ns_log Notice "pert.tcl: : constant $constant set to $input_array($constant)"
-                    }
-                }
-            }
             if { !$menu_e_p && $write_p } {
 
                 lappend menu_list [list edit "table_tid=${table_tid}&mode=e"]
