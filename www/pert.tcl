@@ -325,7 +325,8 @@ switch -exact -- $mode {
         qf_textarea value $table_text cols 40 rows 6 name table_text label "Table data:"
         qf_append html "</div>"
 
-        qf_input type submit value "Save"
+        qf_input type submit value "Save" name test class btn
+
         qf_close
         set form_html [qf_read]
     }
@@ -422,7 +423,7 @@ switch -exact -- $mode {
             # change name to an active link
             set table_ref_name table_tid
             
-
+##### each active_link becomes a separate form..
             set active_link "<a\ href=\"pert?${table_ref_name}=${table_id}\">$name</a>"
 
             if { ( $admin_p || $table_user_id == $user_id ) && $trashed_p == 1 } {
@@ -462,6 +463,13 @@ switch -exact -- $mode {
 }
 # end of switches
 
+#       convert menus to use buttons like this: qf_input type submit value "Save" name test class btn
+#### but first have to figure out how to pass i8ln values.. ???? converts to test=Save...
+####         qf_input type submit value "#jhkjhk.Save2#" name test2 class btn
+# the way to do it is pass the name.. the name is fieldname and is consistent regardless of il8n value
+# and only gets passed if input type button is submitted.. 
+# so, to establish both mode and next_mode, combined both and identify uniquely with a prefix z
+# for example, zn for mode=n next_mode="" etc
 set menu_html ""
 foreach item_list $menu_list {
     set label [lindex $item_list 0]
