@@ -262,7 +262,7 @@ switch -exact -- $mode {
         # get table from ID
 
 
-        qf_form action pert method get id 20120531
+        set form_id [qf_form action pert method get id 20120531]
         
         qf_input type hidden value w name mode label ""
         
@@ -293,8 +293,8 @@ switch -exact -- $mode {
         }
 
         qf_input type submit value "Save"
-        qf_close
-        set form_html [qf_read]
+        qf_close id $form_id
+        set form_html [qf_read id $form_id]
 
     }
     w {
@@ -311,7 +311,7 @@ switch -exact -- $mode {
 
         # make a form with no existing table_tid and dist_curve_tid
 
-        qf_form action pert method get id 20140415
+        set form_id [qf_form action pert method get id 20140415]
 
         qf_input type hidden value w name mode label ""
         qf_append html "<h3>Table</h3>"
@@ -327,8 +327,8 @@ switch -exact -- $mode {
 
         qf_input type submit value "Save" name test class btn
 
-        qf_close
-        set form_html [qf_read]
+        qf_close form_id $form_id
+        set form_html [qf_read form_id $form_id]
     }
     c {
         #  compute... compute/process and write output as a new table, present post_calc results
@@ -493,8 +493,8 @@ foreach item_list $menu_list {
 foreach {name value} [array get form_input_arr] {
     qf_input form_id $form_id type hidden value $value name $name label ""
 }
-qf_close $form_id
-set menu_html [qf_read]
+qf_close form_id $form_id
+set menu_html [qf_read form_id $form_id]
 
 set user_message_html ""
 foreach user_message $user_message_list {
