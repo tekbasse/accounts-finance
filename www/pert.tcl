@@ -471,11 +471,30 @@ switch -exact -- $mode {
 # so, to establish both mode and next_mode, combined both and identify uniquely with a prefix z
 # for example, zn for mode=n next_mode="" etc
 set menu_html ""
+array unset form_input_arr
+set form_id [qf_form action pert method post id 20140417]
 foreach item_list $menu_list {
     set label [lindex $item_list 0]
     set url [lindex $item_list 1]
-    append menu_html "<a href=\"pert?${url}\">${label}</a>&nbsp;"
+    set url_list [split $url "&="]
+
+    foreach {val1 val2} $url_list {
+        # buttons reverse the use of name and value for mode..
+        if { $val1 eq "mode" } {
+            set value "#accounts-finance.${label}#"
+            set name $val2
+            qf_input form_id $form_id type submit value $value name $name class btn
+        } else {
+            set form_input_arr($val1) $val2
+        }
+    }
+#    append menu_html "<a href=\"pert?${url}\">${label}</a>&nbsp;"
 }
+foreach {name value} [array get form_input_arr] {
+    qf_input form_id $form_id type hidden value $value name $name label ""
+}
+qf_close $form_id
+set menu_html [qf_read]
 
 set user_message_html ""
 foreach user_message $user_message_list {
