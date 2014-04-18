@@ -14,6 +14,12 @@
 <msg key="edit">Edit</msg>
 <msg key="name">Name</msg>
 <msg key="new">New</msg>
+<msg key="process">Process</msg>
+<msg key="revision">Revision</msg>
+<msg key="select">Select</msg>
+<msg key="sort_by_Y_ascending">Sort by Y ascending</msg>
 <msg key="title">Title</msg>
+<msg key="trash">Trash</msg>
+<msg key="untrash">Untrash</msg>
 <msg key="view">View</msg>
 </message_catalog>
