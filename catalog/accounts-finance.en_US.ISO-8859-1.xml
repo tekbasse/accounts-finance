@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<message_catalog package_key="accounts-finance" package_version="0.1d" locale="en_US" charset="ISO-8859-1">
+<msg key="Dataset">Dataset</msg>
+<msg key="Edit">Edit</msg>
+<msg key="Internal_Notes">Internal Notes</msg>
+<msg key="Name">Name</msg>
+<msg key="Name_missing_">Name missing!</msg>
+<msg key="Notes">Notes</msg>
+<msg key="Save">Save</msg>
+<msg key="Save_">Save </msg>
+<msg key="Save_as_new">Save as new</msg>
+<msg key="delete">Delete</msg>
+<msg key="delete_all">Delete All</msg>
+<msg key="edit">Edit</msg>
+<msg key="name">Name</msg>
+<msg key="new">New</msg>
+<msg key="title">Title</msg>
+<msg key="view">View</msg>
+</message_catalog>
