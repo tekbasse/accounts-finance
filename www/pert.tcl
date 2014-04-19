@@ -1,6 +1,6 @@
 # generic header for static .adp pages
 
-set title "PERT program"
+set title "PRETTI"
 set context [list $title]
 
 set package_id [ad_conn package_id]
@@ -52,6 +52,16 @@ if { $form_posted } {
     }
     if { [info exists input_array(y) ] } {
         unset input_array(y)
+    }
+
+    # following is part of dynamic menu processing using form tags instead of url/GET..
+    set input_array_idx_list [array names input_array]
+    set modes_idx [lsearch -regexp $input_array_idx_list {z[vprnwctde][vc]?}]
+    if { $modes_idx > -1 && $mode eq "p" } {
+        set modes [lindex $input_array_idx_list $modes_idx]
+        # modes 0 0 is z
+        set mode [string range $modes 1 1]
+        set next_mode [string range $modes 2 2]
     }
 
     set table_tid $input_array(table_tid)
@@ -477,16 +487,23 @@ foreach item_list $menu_list {
     set label [lindex $item_list 0]
     set url [lindex $item_list 1]
     set url_list [split $url "&="]
-
+    set name1 ""
+    set name2 ""
     foreach {val1 val2} $url_list {
-        # buttons reverse the use of name and value for mode..
+        # buttons reverse the use of name and value for mode and next_mode
         if { $val1 eq "mode" } {
             set value "#accounts-finance.${label}#"
-            set name $val2
-            qf_input form_id $form_id type submit value $value name $name class btn
+            set name1 $val2
+        } elseif { $val1 eq "next_mode" } {
+            set value "#accounts-finance.${label}#"
+            set name2 $val2
         } else {
             set form_input_arr($val1) $val2
         }
+    }
+    if { $name1 ne "" } {
+        set name "z${name1}${name2}"
+        qf_input form_id $form_id type submit value $value name $name class btn
     }
 #    append menu_html "<a href=\"pert?${url}\">${label}</a>&nbsp;"
 }
