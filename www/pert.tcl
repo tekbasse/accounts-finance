@@ -303,8 +303,8 @@ switch -exact -- $mode {
         }
 
         qf_input type submit value "Save"
-        qf_close id $form_id
-        set form_html [qf_read id $form_id]
+        qf_close form_id $form_id
+        set form_html [qf_read form_id $form_id]
 
     }
     w {
