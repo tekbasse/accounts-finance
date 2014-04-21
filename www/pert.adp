@@ -21,24 +21,8 @@
 
 </if>
 
-<if @scenario_html@ not nil>
-<div style="width: 50%; float: right;">
-</div>
-@scenario_html;noquote@
-</if>
-
-<if @activities_table_html@ not nil>
-@activities_table_html;noquote@
-</if>
-
-<if @time_dist_curve_html@ not nil>
-@time_dist_curve_html;noquote@
-</if>
-<if @cost_dist_curve_html@ not nil>
-@cost_dist_curve_html;noquote@
-</if>
-<if @dist_curve_html@ not nil>
-@dist_curve_html;noquote@
+<if @table_html@ not nil>
+@table_html;noquote@
 </if>
 
 <if @compute_message_html@ not nil>

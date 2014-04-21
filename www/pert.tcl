@@ -22,10 +22,14 @@ expr { srand([clock clicks]) }
 # c/sales_curve/dist_curve/g
 
 # _curve_lists [list [list .7 .1 fast] [list 1 .15 median] [list 2 .1 delayed] [list 4 .375 hurdle] [list 10 .125 hurdles]]
-
+set table_default ""
 # tid = table_id
 array set input_array [list \
     table_tid ""\
+    table_template_id ""\
+    table_name ""\
+    table_title ""\
+    table_comments ""\
     table_text ""\
     submit "" \
     reset "" \
@@ -148,42 +152,43 @@ if { $form_posted } {
             # act_* is table_
             # dc_* is dist_curve_
             if { [string length $table_text] > 0 && $table_text ne $table_default } {
-                # act_name  Table Name
+                # table_name  Table Name
 
-                if { $input_array(act_name) eq "" && $table_tid eq "" } {
-                    set act_name "act[clock format [clock seconds] -format %Y%m%d-%X]"
-                } elseif { $input_array(act_name) eq "" } {
-                    set act_name "initCon${table_tid}"
+                if { $input_array(table_name) eq "" && $table_tid eq "" } {
+                    set table_name "table[clock format [clock seconds] -format %Y%m%d-%X]"
+                } elseif { $input_array(table_name) eq "" } {
+                    set table_name "initCon${table_tid}"
                 } else {
-                    set act_name $input_array(act_name)
+                    set table_name $input_array(table_name)
                 }
-                # act_title Table title
-                if { $input_array(act_title) eq "" && $table_tid eq "" } {
-                    set act_title "Scenario [clock format [clock seconds] -format %Y%m%d-%X]"
-                } elseif { $input_array(act_title) eq "" } {
-                    set act_title "Scenario ${table_tid}"
+                # table_title Table title
+                if { $input_array(table_title) eq "" && $table_tid eq "" } {
+                    set table_title "Scenario [clock format [clock seconds] -format %Y%m%d-%X]"
+                } elseif { $input_array(table_title) eq "" } {
+                    set table_title "Scenario ${table_tid}"
                 } else {
-                    set act_title $input_array(act_title)
+                    set table_title $input_array(table_title)
                 }
-                ns_log Notice "pert.tcl:  act_name '${act_name}' [string length $act_name]"
-                # act_comments Comments
-                set act_comments $input_array(act_comments)
+                ns_log Notice "pert.tcl:  table_name '${table_name}' [string length $table_name]"
+                # table_comments Comments
+                set table_comments $input_array(table_comments)
                 # table_text
            
                 # convert tables from _text to _list
                 set line_break "\n"
                 set delimiter ","
                 # linebreak_char delimiter rows_count columns_count 
-                set act_text_stats [qss_txt_table_stats $table_text]
-                ns_log Notice "pert.tcl: : act_text_stats $act_text_stats"
-                set line_break [lindex $act_text_stats 0]
-                set delimiter [lindex $act_text_stats 1]
+                set table_text_stats [qss_txt_table_stats $table_text]
+                ns_log Notice "pert.tcl: : table_text_stats $table_text_stats"
+                set line_break [lindex $table_text_stats 0]
+                set delimiter [lindex $table_text_stats 1]
+
                 ns_log Notice "pert.tcl: : table_text ${table_text}"
-                set act_lists [qss_txt_to_tcl_list_of_lists $table_text $line_break $delimiter]
-                ns_log Notice "pert.tcl: : set act_lists ${act_lists}"
+                set table_lists [qss_txt_to_tcl_list_of_lists $table_text $line_break $delimiter]
+                ns_log Notice "pert.tcl: : set table_lists ${table_lists}"
                 # cleanup input
-                set act_lists_new [list ]
-                foreach condition_list $act_lists {
+                set table_lists_new [list ]
+                foreach condition_list $table_lists {
                     set row_new [list ]
                     foreach cell $condition_list {
                         set cell_new [string trim $cell]
@@ -192,28 +197,32 @@ if { $form_posted } {
                         #ns_log Notice "pert.tcl:  new cell '$cell_new'"
                     }
                     if { [llength $row_new] > 0 } {
-                        lappend act_lists_new $row_new
+                        lappend table_lists_new $row_new
                     }
                 }
-                set act_lists $act_lists_new
+                set table_lists $table_lists_new
                 ns_log Notice "pert.tcl: : create/write table" 
-                ns_log Notice "pert.tcl: : llength act_lists [llength $act_lists]"
+                ns_log Notice "pert.tcl: : llength table_lists [llength $table_lists]"
+                ##### detect table flags
+                set table_flags ""
+
                 if { [qf_is_natural_number $table_tid] } {
                     set table_stats [qss_table_stats $table_tid]
                     set name_old [lindex $table_stats 0]
                     set title_old [lindex $table_stats 1]
-                    if { $name_old eq $act_name && $title_old eq $act_title } {
+                    set table_template_id [lindex $table_stats 5]
+                    if { $name_old eq $table_name && $title_old eq $title } {
                         ns_log Notice "pert.tcl: : qss_table_write table_id ${table_tid}" 
-                        qss_table_write $act_lists $act_name $act_title $act_comments $table_tid $act_template_id $act_flags $package_id $user_id
+                        qss_table_write $table_lists $table_name $table_title $table_comments $table_tid $table_template_id $table_flags $package_id $user_id
                     } else {
                         # changed name. assume this is a new table
                         ns_log Notice "pert.tcl: : qss_table_create new table scenario because name/title changed"
-                        qss_table_create $act_lists $act_name $act_title $act_comments $act_template_id $act_flags $package_id $user_id
+                        qss_table_create $table_lists $table_name $table_title $table_comments $table_template_id $table_flags $package_id $user_id
 
                     }
                 } else {
                     ns_log Notice "pert.tcl: : qss_table_create new table scenario"
-                    qss_table_create $act_lists $act_name $act_title $act_comments $act_template_id $act_flags $package_id $user_id
+                    qss_table_create $table_lists $table_name $table_title $table_comments "" $table_flags $package_id $user_id
                 }
 
             }
@@ -267,7 +276,7 @@ switch -exact -- $mode {
     e {
         #  edit...... edit/form mode of current context
         ns_log Notice "pert.tcl:  mode = edit"
-        #requires table_tid, dist_curve_tid
+        #requires table_tid
         # make a form to edit 
         # get table from ID
 
@@ -277,26 +286,26 @@ switch -exact -- $mode {
         qf_input type hidden value w name mode label ""
         
         if { [qf_is_natural_number $table_tid] } {
-            set act_stats_list [qss_table_stats $table_tid]
-            set act_name [lindex $act_stats_list 0]
-            set act_title [lindex $act_stats_list 1]
-            set act_comments [lindex $act_stats_list 2]
-            set act_flags [lindex $act_stats_list 6]
-            set act_template_id [lindex $act_stats_list 5]
+            set table_stats_list [qss_table_stats $table_tid]
+            set table_name [lindex $table_stats_list 0]
+            set table_title [lindex $table_stats_list 1]
+            set table_comments [lindex $table_stats_list 2]
+            set table_flags [lindex $table_stats_list 6]
+            set table_template_id [lindex $table_stats_list 5]
 
             set table_lists [qss_table_read $table_tid]
             set table_text [qss_lists_to_text $table_lists]
 
             qf_input type hidden value $table_tid name table_tid label ""
-            qf_input type hidden value $act_flags name act_flags label ""
-            qf_input type hidden value $act_template_id name act_template_id label ""
+            qf_input type hidden value $table_flags name table_flags label ""
+            qf_input type hidden value $table_template_id name table_template_id label ""
             qf_append html "<h3>Scenario</h3>"
             qf_append html "<div style=\"width: 70%; text-align: right;\">"
-            qf_input type text value $act_name name act_name label "Table name:" size 40 maxlength 40
+            qf_input type text value $table_name name table_name label "Table name:" size 40 maxlength 40
             qf_append html "<br>"
-            qf_input type text value $act_title name act_title label "Title:" size 40 maxlength 80
+            qf_input type text value $table_title name table_title label "Title:" size 40 maxlength 80
             qf_append html "<br>"
-            qf_textarea value $act_comments cols 40 rows 3 name act_comments label "Comments:"
+            qf_textarea value $table_comments cols 40 rows 3 name table_comments label "Comments:"
             qf_append html "<br>"
             qf_textarea value $table_text cols 40 rows 6 name table_text label "Table data:"
             qf_append html "</div>"
@@ -308,7 +317,7 @@ switch -exact -- $mode {
 
     }
     w {
-        #  save.....  (write) table_tid and dist_curve_tid
+        #  save.....  (write) table_tid 
         # should already have been handled above
         ns_log Notice "pert.tcl:  mode = save THIS SHOULD NOT BE CALLED."
         # it's called in validation section.
@@ -316,21 +325,21 @@ switch -exact -- $mode {
     n {
         #  new....... creates new, blank context (form)    
         ns_log Notice "pert.tcl:  mode = new"
-        #requires no table_tid, dist_curve_tid
+        #requires no table_tid
         set table_text ""
 
-        # make a form with no existing table_tid and dist_curve_tid
+        # make a form with no existing table_tid 
 
         set form_id [qf_form action pert method get id 20140415]
 
         qf_input type hidden value w name mode label ""
         qf_append html "<h3>Table</h3>"
         qf_append html "<div style=\"width: 70%; text-align: right;\">"
-        qf_input type text value "" name act_name label "Table name:" size 40 maxlength 40
+        qf_input type text value "" name table_name label "Table name:" size 40 maxlength 40
         qf_append html "<br>"
-        qf_input type text value "" name act_title label "Title:" size 40 maxlength 80
+        qf_input type text value "" name table_title label "Title:" size 40 maxlength 80
         qf_append html "<br>"
-        qf_textarea value "" cols 40 rows 3 name act_comments label "Comments:"
+        qf_textarea value "" cols 40 rows 3 name table_comments label "Comments:"
         qf_append html "<br>"
         qf_textarea value $table_text cols 40 rows 6 name table_text label "Table data:"
         qf_append html "</div>"
@@ -341,15 +350,15 @@ switch -exact -- $mode {
         set form_html [qf_read form_id $form_id]
     }
     c {
-        #  compute... compute/process and write output as a new table, present post_calc results
-        ns_log Notice "pert.tcl:  mode = compute"
+        #  process... compute/process and write output as a new table, present post_calc results
+        ns_log Notice "pert.tcl:  mode = process"
         #requires table_tid
         # given table_tid 
-##### compute pretti_..
+##### process pretti_..
         
     }
     r {
-        #  review.... show computed output 
+        #  review.... show processd output 
         ns_log Notice "pert.tcl:  mode = review"
         #requires table_tid
 
@@ -365,24 +374,24 @@ switch -exact -- $mode {
             set menu_e_p 0
         }
         if { [qf_is_natural_number $table_tid] } {
-            set act_stats_list [qss_table_stats $table_tid]
-            set act_name [lindex $act_stats_list 0]
-            set act_title [lindex $act_stats_list 1]
-            set act_comments [lindex $act_stats_list 2]
-            set table_html "<h3>${act_title} (${act_name})</h3>\n"
-            set act_lists [qss_table_read $table_tid]
-            set act_text [qss_lists_to_text $act_lists]
+            set table_stats_list [qss_table_stats $table_tid]
+            set table_name [lindex $table_stats_list 0]
+            set table_title [lindex $table_stats_list 1]
+            set table_comments [lindex $table_stats_list 2]
+            set table_html "<h3>${table_title} (${table_name})</h3>\n"
+            set table_lists [qss_table_read $table_tid]
+            set table_text [qss_lists_to_text $table_lists]
             set table_tag_atts_list [list border 1 cellpadding 3 cellspacing 0]
-            append table_html [qss_list_of_lists_to_html_table $act_lists $table_tag_atts_list]
-            append table_html "<p>${act_comments}</p>"
+            append table_html [qss_list_of_lists_to_html_table $table_lists $table_tag_atts_list]
+            append table_html "<p>${table_comments}</p>"
             if { !$menu_e_p && $write_p } {
 
                 lappend menu_list [list edit "table_tid=${table_tid}&mode=e"]
             }
         }
-        # if scenario meets minimum compute requirements, add a compute button to menu:
-        if { [qf_is_natural_number $table_tid] && [qf_is_natural_number $dist_curve_tid] } {
-            lappend menu_list [list compute "table_tid=${table_tid}&mode=c"]
+        # if scenario meets minimum process requirements, add a process button to menu:
+        if { [qf_is_natural_number $table_tid] } {
+            lappend menu_list [list process "table_tid=${table_tid}&mode=c"]
         }
     }
     default {
@@ -417,7 +426,7 @@ switch -exact -- $mode {
             set stats_list [lrange $stats_orig_list 0 5]
             set table_id [lindex $stats_list 0]
             set name [lindex $stats_list 1]
-            set template_id [lindex $stats_orig_list 6]
+            set table_template_id [lindex $stats_orig_list 6]
             set table_user_id [lindex $stats_orig_list 12]
             set trashed_p [lindex $stats_orig_list 8]
             # adding average col. length
