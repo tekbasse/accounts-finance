@@ -1,14 +1,12 @@
 # generic header for static .adp pages
 
-set title "PRETTI"
-set context [list $title]
 
 set package_id [ad_conn package_id]
 set user_id [ad_conn user_id]
 set write_p [permission::permission_p -party_id $user_id -object_id $package_id -privilege write]
 set admin_p [permission::permission_p -party_id $user_id -object_id $package_id -privilege admin]
 set delete_p [permission::permission_p -party_id $user_id -object_id $package_id -privilege delete]
-# randmize rand with seed from clock for building a scenario from dist curves
+# randmize rand with seed from clock
 expr { srand([clock clicks]) }
 
 ## change initial_conditions_lists columns from:
@@ -18,11 +16,8 @@ expr { srand([clock clicks]) }
 # for report, add:
 # seuqence_nbr expected track_ref
 
-# c/initial_conditions/scenario/g
-# c/sales_curve/dist_curve/g
-
-# _curve_lists [list [list .7 .1 fast] [list 1 .15 median] [list 2 .1 delayed] [list 4 .375 hurdle] [list 10 .125 hurdles]]
 set table_default ""
+set mode_name "#accounts-finance.tables#"
 # tid = table_id
 array set input_array [list \
     table_tid ""\
@@ -85,26 +80,26 @@ if { $form_posted } {
             } 
         }
         d {
-            ns_log Notice "pert.tcl:  validated for d"
             set validated 1
             if { ( ![qf_is_natural_number $table_tid] ) || !$delete_p } {
+                ns_log Notice "pert.tcl table_tid '${table_tid}' or delete_p $delete_p is not valid for mode d"
                 set mode "p"
                 set next_mode ""
             } 
         }
         t {
-            ns_log Notice "pert.tcl:  validated for t"
             set validated 1
             if { ![qf_is_natural_number $table_tid] } {
+                ns_log Notice "pert.tcl table_tid '${table_tid}' is not valid for mode t"
                 set mode "p"
                 set next_mode ""
             } 
         }
         c {
-            ns_log Notice "pert.tcl:  validated for c"
             set validated 1
             if { ![qf_is_natural_number $table_tid] } {
-                lappend user_message_list "Table for Scenario has not been specified."
+                ns_log Notice "pert.tcl table_tid '${table_tid}' is not valid for mode c"
+                lappend user_message_list "Table has not been specified."
                 set validated 0
                 set mode "p"
                 set next_mode ""
@@ -163,9 +158,9 @@ if { $form_posted } {
                 }
                 # table_title Table title
                 if { $input_array(table_title) eq "" && $table_tid eq "" } {
-                    set table_title "Scenario [clock format [clock seconds] -format %Y%m%d-%X]"
+                    set table_title "Table [clock format [clock seconds] -format %Y%m%d-%X]"
                 } elseif { $input_array(table_title) eq "" } {
-                    set table_title "Scenario ${table_tid}"
+                    set table_title "Table ${table_tid}"
                 } else {
                     set table_title $input_array(table_title)
                 }
@@ -211,17 +206,17 @@ if { $form_posted } {
                     set name_old [lindex $table_stats 0]
                     set title_old [lindex $table_stats 1]
                     set table_template_id [lindex $table_stats 5]
-                    if { $name_old eq $table_name && $title_old eq $title } {
-                        ns_log Notice "pert.tcl: : qss_table_write table_id ${table_tid}" 
+                    if { $name_old eq $table_name && $title_old eq $table_title } {
+                        ns_log Notice "pert.tcl: : qss_table_write table_tid ${table_tid}" 
                         qss_table_write $table_lists $table_name $table_title $table_comments $table_tid $table_template_id $table_flags $package_id $user_id
                     } else {
                         # changed name. assume this is a new table
-                        ns_log Notice "pert.tcl: : qss_table_create new table scenario because name/title changed"
+                        ns_log Notice "pert.tcl: : qss_table_create new table because name/title changed"
                         qss_table_create $table_lists $table_name $table_title $table_comments $table_template_id $table_flags $package_id $user_id
 
                     }
                 } else {
-                    ns_log Notice "pert.tcl: : qss_table_create new table scenario"
+                    ns_log Notice "pert.tcl: : qss_table_create new table"
                     qss_table_create $table_lists $table_name $table_title $table_comments "" $table_flags $package_id $user_id
                 }
 
@@ -276,6 +271,7 @@ switch -exact -- $mode {
     e {
         #  edit...... edit/form mode of current context
         ns_log Notice "pert.tcl:  mode = edit"
+        set mode_name "#accounts-finance.edit#"
         #requires table_tid
         # make a form to edit 
         # get table from ID
@@ -299,7 +295,7 @@ switch -exact -- $mode {
             qf_input type hidden value $table_tid name table_tid label ""
             qf_input type hidden value $table_flags name table_flags label ""
             qf_input type hidden value $table_template_id name table_template_id label ""
-            qf_append html "<h3>Scenario</h3>"
+            qf_append html "<h3>Table</h3>"
             qf_append html "<div style=\"width: 70%; text-align: right;\">"
             qf_input type text value $table_name name table_name label "Table name:" size 40 maxlength 40
             qf_append html "<br>"
@@ -325,6 +321,7 @@ switch -exact -- $mode {
     n {
         #  new....... creates new, blank context (form)    
         ns_log Notice "pert.tcl:  mode = new"
+        set mode_name "#accounts-finance.new#"
         #requires no table_tid
         set table_text ""
 
@@ -352,6 +349,7 @@ switch -exact -- $mode {
     c {
         #  process... compute/process and write output as a new table, present post_calc results
         ns_log Notice "pert.tcl:  mode = process"
+        set mode_name "#accounts-finance.process#"
         #requires table_tid
         # given table_tid 
 ##### process pretti_..
@@ -367,6 +365,7 @@ switch -exact -- $mode {
     v {
         #  view table(s) (standard, html page document/report)
         ns_log Notice "pert.tcl:  mode = $mode ie. view table"
+        set mode_name "#accounts-finance.view#"
         if { [qf_is_natural_number $table_tid] && $write_p } {
             lappend menu_list [list edit "table_tid=${table_tid}&mode=e"]
             set menu_e_p 1
@@ -389,15 +388,14 @@ switch -exact -- $mode {
                 lappend menu_list [list edit "table_tid=${table_tid}&mode=e"]
             }
         }
-        # if scenario meets minimum process requirements, add a process button to menu:
+        ##### if scenario meets minimum process requirements, add a process button to menu:
         if { [qf_is_natural_number $table_tid] } {
             lappend menu_list [list process "table_tid=${table_tid}&mode=c"]
         }
     }
     default {
         # default includes v,p
-
-        #  present...... presents a list of contexts/scenarios to choose from
+        #  present...... presents a list of contexts/tables to choose from
         ns_log Notice "pert.tcl:  mode = $mode ie. default"
 
 
@@ -421,6 +419,10 @@ switch -exact -- $mode {
             lappend tables_stats_lists $stats_mod_list
         }
         set tables_stats_lists [lsort -index 6 -real $tables_stats_lists]
+        set select_label "#accounts-finance.select#"
+        set untrash_label "#accounts-finance.untrash#"
+        set trash_label "#accounts-finance.trash#"
+        set delete_label "#accounts-finance.delete#"
 
         foreach stats_orig_list $tables_stats_lists {
             set stats_list [lrange $stats_orig_list 0 5]
@@ -440,21 +442,29 @@ switch -exact -- $mode {
 
             # convert table row for use with html
             # change name to an active link
-            set table_ref_name table_tid
+            # set table_ref_name table_tid
             
 ##### each active_link becomes a separate form..
-            set active_link "<a\ href=\"pert?${table_ref_name}=${table_id}\">$name</a>"
-
+#            set active_link "<a\ href=\"pert?${table_ref_name}=${table_id}\">$name</a>"
+            set active_link "$name "
+            set random [clock clicks]
+            set random "[clock clicks][string range [expr { rand() } ] 2 end]"
+            set form_id [qf_form action pert method get id 20140420-$random]
+            qf_input type submit value $select_label name "zv" class btn
+            qf_input type hidden value $table_id name table_tid
             if { ( $admin_p || $table_user_id == $user_id ) && $trashed_p == 1 } {
-                set trash_label "untrash"
-                append active_link " \[<a href=\"pert?${table_ref_name}=${table_id}&mode=t\">${trash_label}</a>\]"
+                #append active_link " \[<a href=\"pert?${table_ref_name}=${table_id}&mode=t\">${untrash_label}</a>\]"
+                qf_input type submit value $untrash_label name "zt" class btn
             } elseif { $table_user_id == $user_id || $admin_p } {
-                set trash_label "trash"
-                append active_link " \[<a href=\"pert?${table_ref_name}=${table_id}&mode=t\">${trash_label}</a>\]"
+                #append active_link " \[<a href=\"pert?${table_ref_name}=${table_id}&mode=t\">${trash_label}</a>\]"
+                qf_input type submit value $trash_label name "zt" class btn
             } 
             if { $delete_p && $trashed_p == 1 } {
-                append active_link " \[<a href=\"pert?${table_ref_name}=${table_id}&mode=d\">delete</a>\]"
+                #append active_link " \[<a href=\"pert?${table_ref_name}=${table_id}&mode=d\">${delete_label}</a>\]"
+                qf_input type submit value $delete_label name "zd" class btn
             } 
+            qf_close form_id $form_id
+            append active_link [qf_read form_id $form_id]
             set stats_list [lreplace $stats_list 0 1 $active_link]
             if { $trashed_p == 1 } {
                 lappend table_trashed_lists $stats_list
@@ -526,3 +536,6 @@ set user_message_html ""
 foreach user_message $user_message_list {
     append user_message_html "<li>${user_message}</li>"
 }
+
+set title "PRETTI ${mode_name}"
+set context [list [list pert $title] $mode_name]
