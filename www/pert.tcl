@@ -9,12 +9,7 @@ set delete_p [permission::permission_p -party_id $user_id -object_id $package_id
 # randmize rand with seed from clock
 expr { srand([clock clicks]) }
 
-## change initial_conditions_lists columns from:
-# sale_max revenue_target pct_pooled interpolate_last_band_p growth_curve_eq commissions_eq interval_start interval_size interval_count sales_curve_name sales_curve_tid
-# to:
-# activity_ref predecessors time_est_short time_est_median time_est_long cost_est_low cost_est_median cost_est_high time_dist_curv_eq cost_dist_curv_eq
-# for report, add:
-# seuqence_nbr expected track_ref
+#### add table type (flags)
 
 set table_default ""
 set mode_name "#accounts-finance.tables#"
@@ -277,7 +272,7 @@ switch -exact -- $mode {
         # get table from ID
 
 
-        set form_id [qf_form action pert method get id 20120531]
+        set form_id [qf_form action pert method post id 20120531 hash_check 1]
         
         qf_input type hidden value w name mode label ""
         
@@ -327,7 +322,7 @@ switch -exact -- $mode {
 
         # make a form with no existing table_tid 
 
-        set form_id [qf_form action pert method get id 20140415]
+        set form_id [qf_form action pert method post id 20140415 hash_check 1]
 
         qf_input type hidden value w name mode label ""
         qf_append html "<h3>Table</h3>"
@@ -423,7 +418,7 @@ switch -exact -- $mode {
         set untrash_label "#accounts-finance.untrash#"
         set trash_label "#accounts-finance.trash#"
         set delete_label "#accounts-finance.delete#"
-
+        set table_titles_list [list #accounts-finance.ID# #accounts-finance.Name# #accounts-finance.Title# #accounts-finance.Actions# #accounts-finance.Comments# #accounts-finance.Cells# #accounts-finance.Rows# #accounts-finance.Columns#]
         foreach stats_orig_list $tables_stats_lists {
             set stats_list [lrange $stats_orig_list 0 5]
             set table_id [lindex $stats_list 0]
@@ -446,10 +441,9 @@ switch -exact -- $mode {
             
 ##### each active_link becomes a separate form..
 #            set active_link "<a\ href=\"pert?${table_ref_name}=${table_id}\">$name</a>"
-            set active_link "$name "
             set random [clock clicks]
             set random "[clock clicks][string range [expr { rand() } ] 2 end]"
-            set form_id [qf_form action pert method get id 20140420-$random]
+            set form_id [qf_form action pert method post id 20140420-$random hash_check 1]
             qf_input type submit value $select_label name "zv" class btn
             qf_input type hidden value $table_id name table_tid
             if { ( $admin_p || $table_user_id == $user_id ) && $trashed_p == 1 } {
@@ -464,8 +458,9 @@ switch -exact -- $mode {
                 qf_input type submit value $delete_label name "zd" class btn
             } 
             qf_close form_id $form_id
-            append active_link [qf_read form_id $form_id]
-            set stats_list [lreplace $stats_list 0 1 $active_link]
+            set active_link [qf_read form_id $form_id]
+            #set stats_list [lreplace $stats_list 1 1 $active_link]
+            set stats_list [linsert $stats_list 3 $active_link]
             if { $trashed_p == 1 } {
                 lappend table_trashed_lists $stats_list
             } else {
@@ -475,13 +470,13 @@ switch -exact -- $mode {
         }
         # sort for now. Later, just get table_tables with same template_id
         set table_stats_sorted_lists $table_stats_lists
-        set table_stats_sorted_lists [linsert $table_stats_sorted_lists 0 [list Name Title Comments "Cell count" "Row count" "Columns (avg)"] ]
+        set table_stats_sorted_lists [linsert $table_stats_sorted_lists 0 $table_titles_list ]
         set table_tag_atts_list [list border 1 cellspacing 0 cellpadding 3]
         set table_stats_html [qss_list_of_lists_to_html_table $table_stats_sorted_lists $table_tag_atts_list $cell_formating_list]
         # trashed
         if { [llength $table_trashed_lists] > 0 && $write_p } {
             set table_trashed_sorted_lists $table_trashed_lists
-            set table_trashed_sorted_lists [linsert $table_trashed_sorted_lists 0 [list Name Title Comments "Cell count" "Row count" "Columns (avg)"] ]
+            set table_trashed_sorted_lists [linsert $table_trashed_sorted_lists 0 $table_titles_list ]
             set table_tag_atts_list [list border 1 cellspacing 0 cellpadding 3]
 
             set table_trashed_html "<h3>Trashed tables</h3>\n"
@@ -492,16 +487,9 @@ switch -exact -- $mode {
 }
 # end of switches
 
-#       convert menus to use buttons like this: qf_input type submit value "Save" name test class btn
-#### but first have to figure out how to pass i8ln values.. ???? converts to test=Save...
-####         qf_input type submit value "#jhkjhk.Save2#" name test2 class btn
-# the way to do it is pass the name.. the name is fieldname and is consistent regardless of il8n value
-# and only gets passed if input type button is submitted.. 
-# so, to establish both mode and next_mode, combined both and identify uniquely with a prefix z
-# for example, zn for mode=n next_mode="" etc
 set menu_html ""
 array unset form_input_arr
-set form_id [qf_form action pert method post id 20140417]
+set form_id [qf_form action pert method post id 20140417 hash_check 1]
 foreach item_list $menu_list {
     set label [lindex $item_list 0]
     set url [lindex $item_list 1]
