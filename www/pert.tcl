@@ -36,7 +36,7 @@ set user_message_list [list ]
 
 
 # get previous form inputs if they exist
-set form_posted [qf_get_inputs_as_array input_array]
+set form_posted [qf_get_inputs_as_array input_array hash_check 1]
 set mode $input_array(mode)
 set next_mode $input_array(next_mode)
 
@@ -146,6 +146,7 @@ if { $form_posted } {
 
                 if { $input_array(table_name) eq "" && $table_tid eq "" } {
                     set table_name "table[clock format [clock seconds] -format %Y%m%d-%X]"
+                    regsub -all -- {[\.\:\-]} $table_name {} table_name 
                 } elseif { $input_array(table_name) eq "" } {
                     set table_name "initCon${table_tid}"
                 } else {
@@ -479,7 +480,7 @@ switch -exact -- $mode {
             set table_trashed_sorted_lists [linsert $table_trashed_sorted_lists 0 $table_titles_list ]
             set table_tag_atts_list [list border 1 cellspacing 0 cellpadding 3]
 
-            set table_trashed_html "<h3>#accounts-finance.Trashed# #accounts-finance.tables#</h3>\n"
+            set table_trashed_html "<h3>#accounts-finance.trashed# #accounts-finance.tables#</h3>\n"
             append table_trashed_html [qss_list_of_lists_to_html_table $table_trashed_sorted_lists $table_tag_atts_list $cell_formating_list]
             append table_stats_html $table_trashed_html
         }
