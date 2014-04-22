@@ -10,111 +10,164 @@ ad_library {
 
 namespace eval acc_fin {}
 
+ad_proc -public acc_fin::pretti_type_flag {
+    table_lists_name
+} {
+    Guesses which type of pretti table
+} {
+upvar $table_lists_name table_lists
+    # page flags as pretti_types:
+    #  p in positon 1 = PRETTI app specific
+    #  p1  scenario
+    #  p2  task network (unique tasks and their dependencies)
+    #  p2e task network with all factors expanded (internal -depricated )
+    #  p3  task types (can also have dependencies)
+    #  cd2 distribution curve
+    #  p4  PRETTI report (output)
+    #  p5  PRETTI db report (output) (similar format to  p3, where each row represents a path, but in p5 all paths are represented
+    #  cd2 Estimated project duration distribution curve (can be used to create other projects)
 
-# page flags as pretti_types:
-#  p in positon 1 = PRETTI app specific
-#  p1  scenario
-#  p2  task network (unique tasks and their dependencies)
-#  p2e task network with all factors expanded (internal -depricated )
-#  p3  task types (can also have dependencies)
-#  cd2 distribution curve
-#  p4  PRETTI report (output)
-#  p5  PRETTI db report (output) (similar format to  p3, where each row represents a path, but in p5 all paths are represented
-#  cd2 Estimated project duration distribution curve (can be used to create other projects)
+    # get first row
+    set title_list [lindex $table_lists 0]
+    
 
-# p1 PRETTI Scenario
-#      activity_table_tid
-#      activity_table_name      name of table containing task network
-#      period_unit          measure of time used in task duration etc.
-#      time_dist_curve_name      a default distribution curve name when a task type doesn't reference one.
-#      time_dist_curve_tid      a default distribution curve table_id, dist_curve_name overrides dist_curve_dtid
-#      cost_dist_curve_name      a default distribution curve name when a task type doesn't reference one.
-#      cost_dist_curve_tid      a default distribution curve table_id, dist_curve_name overrides dist_curve_dtid
-#      with_factors_p  defaults to 1 (true). Set to 0 (false) if any factors in p3 are to be ignored.
-#                           This option is useful to intercede in auto factor expansion to add additional
-#                           variation in repeating task detail. (deprecated by auto expansion of nonexisting coefficients).
-#      time_probability_moment A percentage (0..1) along the (cumulative) distribution curve. defaults to 0.5
-#      cost_probability_moment A percentage (0..1) along the (cumulative) distribution curve
+}
 
-# p2 Task Network
-#      activity_ref           reference for an activity, a unique task id, using "activity" to differentiate between table_id's tid 
-#                             An activity reference is essential a function as in f() with no attributes,
-#                             However, there is room to grow this by extending a function to include explicitly set paramemters
-#                             within the function, similar to how app-model handles functions aka vectors
-#                             The multiple of an activity is respresented by a whole number followed by an "*" 
-#                             with no spaces between (when spaces are used as an activity delimiter), or
-#                             with spaces allowed (when commas or another character is used as an activity delimiter.
-#                
-#      aid_type               activity type from p3
-#      dependent_tasks        direct predecessors , activity_ref of activiites this activity depends on.
-#      name                   defaults to type's name (if exists else blank)
-#      description            defaults to type's description (if exists else blank)
-#      max_concurrent         defaults to type's max_concurrent 
-#      max_overlap_pct021     defaults to type's max_overlap_pct021
+ad_proc -private acc_fin::pretti_columns_list {
+    type
+    {required_only_p 0}
+} {
+    Returns a list of column names used by pretti table type. If required_only_p is 1, only returns the required columns for specified type. Reserved words are not included in the list.
+} {
+    set sref $type
+    lappend sref $required_only_p
+    switch -exact $sref {
+        p10 {
+            # p1 PRETTI Scenario
+            #      activity_table_tid
+            #      activity_table_name      name of table containing task network
+            #      period_unit          measure of time used in task duration etc.
+            #      time_dist_curve_name      a default distribution curve name when a task type doesn't reference one.
+            #      time_dist_curve_tid      a default distribution curve table_id, dist_curve_name overrides dist_curve_dtid
+            #      cost_dist_curve_name      a default distribution curve name when a task type doesn't reference one.
+            #      cost_dist_curve_tid      a default distribution curve table_id, dist_curve_name overrides dist_curve_dtid
+            #      with_factors_p  defaults to 1 (true). Set to 0 (false) if any factors in p3 are to be ignored.
+            #                           This option is useful to intercede in auto factor expansion to add additional
+            #                           variation in repeating task detail. (deprecated by auto expansion of nonexisting coefficients).
+            #      time_probability_moment A percentage (0..1) along the (cumulative) distribution curve. defaults to 0.5
+            #      cost_probability_moment A percentage (0..1) along the (cumulative) distribution curve
+            #set ret_list \[list name value\]
+            set ret_list [list activity_table_tid activity_table_name task_types_tid task_types_name time_dist_curve_name time_dist_curve_tid cost_dist_curve_name cost_dist_curve_tid time_est_short time_est_median time_est_long time_probability_moment cost_est_low cost_est_median cost_est_high cost_probability_moment]
+        }
+        p11 {
+            #set ret_list \[list name value\]
+            set ret_list [list activity_table_tid ]
+        }
+        p20 {
+            # p2 Task Network
+            #      activity_ref           reference for an activity, a unique task id, using "activity" to differentiate between table_id's tid 
+            #                             An activity reference is essential a function as in f() with no attributes,
+            #                             However, there is room to grow this by extending a function to include explicitly set paramemters
+            #                             within the function, similar to how app-model handles functions aka vectors
+            #                             The multiple of an activity is respresented by a whole number followed by an "*" 
+            #                             with no spaces between (when spaces are used as an activity delimiter), or
+            #                             with spaces allowed (when commas or another character is used as an activity delimiter.
+            #                
+            #      aid_type               activity type from p3
+            #      dependent_tasks        direct predecessors , activity_ref of activiites this activity depends on.
+            #      name                   defaults to type's name (if exists else blank)
+            #      description            defaults to type's description (if exists else blank)
+            #      max_concurrent         defaults to type's max_concurrent 
+            #      max_overlap_pct021     defaults to type's max_overlap_pct021
+            
+            #      time_est_short         estimated shortest duration. (Lowest statistical deviation value)
+            #      time_est_median        estimated median duration. (Statistically, half of deviations are more or less than this.) 
+            #      time_est_long          esimated longest duration. (Highest statistical deviation value.)
+            #      time_est_dist_curve_id Use this distribution curve instead of the time_est short, median and long values
+            #                             Consider using a variation of task_type as a reference
+            #      time_est_dist_curv_eq  Use this distribution curve equation instead.
+            
+            #      cost_est_low           estimated lowest cost. (Lowest statistical deviation value.)
+            #      cost_est_median        estimated median cost. (Statistically, half of deviations are more or less than this.)
+            #      cost_est_high          esimage highest cost. (Highest statistical deviation value.)
+            #      cost_est_dist_curve_id Use this distribution curve instead of equation and value defaults
+            #      cost_est_dist_curv_eq  Use this distribution curve equation. 
+            #
+            #      RESERVED columns:
+            #      _tCurveRef             integer reference to time curve in time_clarr and   time duration estimate at time_probability_moment in t_est_arr
+            #      _cCurveRef             integer reference to cost curve in cost_clarr and   cost duration estimate at cost_probability_moment in c_est_arr
+            set ret_list [list activity_ref aid_type dependent_tasks name description max_concurrent max_overlap_pct021 time_est_short time_est_median time_est_long time_est_dist_curve_id time_probability_moment cost_est_low cost_est_median cost_est_high cost_est_dist_curve_id cost_probability_moment]
 
-#      time_est_short         estimated shortest duration. (Lowest statistical deviation value)
-#      time_est_median        estimated median duration. (Statistically, half of deviations are more or less than this.) 
-#      time_est_long          esimated longest duration. (Highest statistical deviation value.)
-#      time_est_dist_curve_id Use this distribution curve instead of the time_est short, median and long values
-#                             Consider using a variation of task_type as a reference
-#      time_est_dist_curv_eq  Use this distribution curve equation instead.
+        }
+        p21 {
+            set ret_list [list activity_ref dependent_tasks]
+        }
+        p30 {
+            # p3 Task Types:   
+            #      type
+            #      dependent_types      Other dependent types required by this type. (possible reference collisions. type_refs != activity_refs.
+            #
+            #####                       dependent_types should be checked against activity_dependents' types 
+            #                           to confirm that all dependencies are satisified.
+            #      name
+            #      description
+            #      max_concurrent       (as an integer, blank = no limit)
+            #      max_overlap_pct021  (as a percentage from 0 to 1, blank = 1)
+            #
+            #      RESERVED columns:
+            #      _tCurveRef             integer reference to time curve in time_clarr and   time duration estimate at time_probability_moment in t_est_arr
+            #      _cCurveRef             integer reference to cost curve in cost_clarr and   cost duration estimate at cost_probability_moment in c_est_arr
+            set ret_list [list type dependent_tasks dependent_types name description max_concurrent max_overlap activity_table_tid activity_table_name task_types_tid task_types_name time_dist_curve_name time_dist_curve_tid cost_dist_curve_name cost_dist_curve_tid time_est_short time_est_median time_est_long time_probability_moment cost_est_low cost_est_median cost_est_high cost_probability_moment db_format]            
+        }
+        p31 {
+            set ret_list [list type]
+            # if changing p3 or p2 lists, see also constants_woc_list in this file.
+        }
+        p40 {
+            # each column is track_{number} and generated by code so not used in this context
 
+            # p4 Display modes
+            #  
+            #  tracks within n% of CP duration, n represented as %12100 or a duration of time as total lead slack
+            #  tracks w/ n fixed count closest to CP duration. A n=1 shows CP track only.
+            #  tracks that contain at least 1 CP track 
 
-#      cost_est_low           estimated lowest cost. (Lowest statistical deviation value.)
-#      cost_est_median        estimated median cost. (Statistically, half of deviations are more or less than this.)
-#      cost_est_high          esimage highest cost. (Highest statistical deviation value.)
-#      cost_est_dist_curve_id Use this distribution curve instead of equation and value defaults
-#      cost_est_dist_curv_eq  Use this distribution curve equation. 
-#
-#      RESERVED columns:
-#      _tCurveRef             integer reference to time curve in time_clarr and   time duration estimate at time_probability_moment in t_est_arr
-#      _cCurveRef             integer reference to cost curve in cost_clarr and   cost duration estimate at cost_probability_moment in c_est_arr
-
-# p3 Task Types:   
-#      type
-#      dependent_types      Other dependent types required by this type. (possible reference collisions. type_refs != activity_refs.
-#
-#####                       dependent_types should be checked against activity_dependents' types 
-#                           to confirm that all dependencies are satisified.
-#      name
-#      description
-#      max_concurrent       (as an integer, blank = no limit)
-#      max_overlap_pct021  (as a percentage from 0 to 1, blank = 1)
-#
-#      RESERVED columns:
-#      _tCurveRef             integer reference to time curve in time_clarr and   time duration estimate at time_probability_moment in t_est_arr
-#      _cCurveRef             integer reference to cost curve in cost_clarr and   cost duration estimate at cost_probability_moment in c_est_arr
-
-
-# cd2 distribution curve table
-#                   Y         where Y = f(x) and f(x) is a 
-#                             probability mass function ie probability density function as a distribution
-#                             http://en.wikipedia.org/wiki/Probability_mass_function
-#                             http://en.wikipedia.org/wiki/Probability_density_function
-#                         aka http://en.wikipedia.org/wiki/Discrete_probability_distribution#Discrete_probability_distribution
-#                             The discrete values are the values of Y included in the table
-
-#                    X        Where X = the probability of Y.
-#                             These can be counts of a sample or a frequency.  When the table is saved,
-#                             the total area under the distribution is normalized to 1.
-
-#                   label     Where label represents the value of Y at x. This is a short phrase or reference
-#                             that identifies a boundary point in the distribution.
-# A three point (short/median/long or low/median/high) estimation curve can be respresented as
-# a discrete set of six points:  minimum median median median median maximum 
-# of standard bell curve probabilities (outliers + standard deviation).
-# Thereby allowing *_probability_moment variable to be used in estimates with lower statistical resolution.
-
-# p4 Display modes
-#  
-#  tracks within n% of CP duration, n represented as %12100 or a duration of time as total lead slack
-#  tracks w/ n fixed count closest to CP duration. A n=1 shows CP track only.
-#  tracks that contain at least 1 CP track 
-
-# p5 Project fast-track duration curve
-#  same as cd2
-
-# 
+        }
+        p41 {
+            # each column is track_{number} and generated by code so not used in this context
+        }
+        p50 {
+            # p5 Project fast-track duration curve
+            #  same as cd2
+            # cd2 distribution curve table
+            #                   Y         where Y = f(x) and f(x) is a 
+            #                             probability mass function ie probability density function as a distribution
+            #                             http://en.wikipedia.org/wiki/Probability_mass_function
+            #                             http://en.wikipedia.org/wiki/Probability_density_function
+            #                         aka http://en.wikipedia.org/wiki/Discrete_probability_distribution#Discrete_probability_distribution
+            #                             The discrete values are the values of Y included in the table
+            
+            #                    X        Where X = the probability of Y.
+            #                             These can be counts of a sample or a frequency.  When the table is saved,
+            #                             the total area under the distribution is normalized to 1.
+            
+            #                   label     Where label represents the value of Y at x. This is a short phrase or reference
+            #                             that identifies a boundary point in the distribution.
+            # A three point (short/median/long or low/median/high) estimation curve can be respresented as
+            # a discrete set of six points:  minimum median median median median maximum 
+            # of standard bell curve probabilities (outliers + standard deviation).
+            # Thereby allowing *_probability_moment variable to be used in estimates with lower statistical resolution.
+            set ret_list [list y x label]
+        }
+        p51 {
+            set ret_list [list y x]
+        }
+        default {
+            set ret_list [list ]
+        }
+    }
+    return $ret_list
+}
 
 
 ad_proc -public acc_fin::pretti_table_to_html {
@@ -403,7 +456,7 @@ ad_proc -private acc_fin::p_load_tid {
         }
         if { $p_larr(time_dist_curve_tid) ne "" } {
             set ctid $p_larr(time_dist_curve_tid)
-            set constants_list [list y x label]
+            set constants_list [acc_fin::pretti_columns_list p5]
             if { [info exists tc_cache_larr(x,$ctid) ] } {
                 # already loaded tid curve from earlier. 
                 foreach constant $constant_list {
@@ -413,7 +466,7 @@ ad_proc -private acc_fin::p_load_tid {
                 foreach constant $constant_list {
                     set tc_larr($constant) ""
                 }
-                set constants_required_list [list y x]
+                set constants_required_list [acc_fin::pretti_columns_list p5 1]
                 qss_tid_columns_to_array_of_lists $time_dist_curve_tid tc_larr $constants_list $constants_required_list $package_id $user_id
                 # add to input tid cache
                 foreach constant $constant_list {
@@ -435,7 +488,7 @@ ad_proc -private acc_fin::p_load_tid {
         }
         if { $p_larr(cost_dist_curve_tid) ne "" } {
             set ctid $p_larr(cost_dist_curve_tid)
-            set constants_list [list y x label]
+            set constants_list [acc_fin::pretti_columns_list p5]
             if { [info exists cc_cache_larr(x,$ctid) ] } {
                 # already loaded tid curve from earlier. 
                 foreach constant $constant_list {
@@ -445,7 +498,7 @@ ad_proc -private acc_fin::p_load_tid {
                 foreach constant $constant_list {
                     set cc_larr($constant) ""
                 }
-                set constants_required_list [list y x]
+                set constants_required_list [acc_fin::pretti_columns_list p5 1]
                 qss_tid_columns_to_array_of_lists $cost_dist_curve_tid cc_larr $constants_list $constants_required_list $package_id $user_id
                 # add to input tid cache
                 foreach constant $constant_list {
@@ -674,11 +727,11 @@ ad_proc -public acc_fin::scenario_prettify {
     set error_fail 0
     
     # get scenario into array p1_arr
-    set constants_list [list activity_table_tid activity_table_name task_types_tid task_types_name time_dist_curve_name time_dist_curve_tid cost_dist_curve_name cost_dist_curve_tid time_est_short time_est_median time_est_long time_probability_moment cost_est_low cost_est_median cost_est_high cost_probability_moment]
+    set constants_list [acc_fin::pretti_columns_list p1]
     foreach constant $constants_list {
         set p1_arr($constant) ""
     }
-    set constants_required_list [list activity_table_tid ]
+    set constants_required_list [acc_fin::pretti_columns_list p1 1]
     qss_tid_scalars_to_array $scenario_tid p1_arr $constants_list $constants_required_list $package_id $user_id
     if { $p1_arr(activity_table_name) ne "" } {
         # set activity_table_tid
@@ -719,11 +772,11 @@ ad_proc -public acc_fin::scenario_prettify {
     
     if { $p1_arr(time_dist_curve_tid) ne "" } {
         # get time curve into array tc_larr
-        set constants_list [list y x label]
+        set constants_list [acc_fin::pretti_columns_list p5]
         foreach constant $constant_list {
             set tc_larr($constant) ""
         }
-        set constants_required_list [list y x]
+        set constants_required_list [acc_fin::pretti_columns_list p5 1]
         qss_tid_columns_to_array_of_lists $time_dist_curve_tid tc_larr $constants_list $constants_required_list $package_id $user_id
         #tc_larr(x), tc_larr(y) and optionally tc_larr(label) where _larr refers to an array where each value is a list of column data by row 1..n
     } 
@@ -731,11 +784,11 @@ ad_proc -public acc_fin::scenario_prettify {
     
     # Make cost_curve_data 
     if { $p1_arr(cost_dist_curve_tid) ne "" } {
-        set constants_list [list y x label]
+        set constants_list [acc_fin::pretti_columns_list p5]
         foreach constant $constants_list {
             set cc_larr($constant) ""
         }
-        set constants_required_list [list y x]
+        set constants_required_list [acc_fin::pretti_columns_list p5 1]
         qss_tid_columns_to_array_of_lists $cost_dist_curve_tid cc_larr $constants_list $constants_required_list $package_id $user_id
         #cc_larr(x), cc_larr(y) and optionally cc_larr(label) where _larr refers to an array where each value is a list of column data by row 1..n
         
@@ -754,8 +807,8 @@ ad_proc -public acc_fin::scenario_prettify {
     #### with parameters defined in scenario or as a separate compilation of pretti output
     
     if { $p1_arr(task_types_tid) ne "" } {
-        set constants_list [list type dependent_tasks dependent_types name description max_concurrent max_overlap activity_table_tid activity_table_name task_types_tid task_types_name time_dist_curve_name time_dist_curve_tid cost_dist_curve_name cost_dist_curve_tid time_est_short time_est_median time_est_long time_probability_moment cost_est_low cost_est_median cost_est_high cost_probability_moment db_format]
-        set constants_required_list [list type]
+        set constants_list [acc_fin::pretti_columns_list p3]
+        set constants_required_list [acc_fin::pretti_columns_list p3 1]
         acc_fin::p_load_tid $constants_list $constants_required_list p3_larr $p1_arr(task_types_tid)
     }
     # The multi-level aspect of curve data storage needs a double-pointer to be efficient for projects with large memory footprints
@@ -774,8 +827,8 @@ ad_proc -public acc_fin::scenario_prettify {
     #### Use [lsearch -regexp {[a-z][0-9]s} -all -inline $x_list] to screen alt time columns and create list for a scheduling feature.
     if { $p1_arr(activity_table_id) ne "" } {
         # load activity table
-        set constants_list [list activity_ref aid_type dependent_tasks name description max_concurrent max_overlap_pct021 time_est_short time_est_median time_est_long time_est_dist_curve_id time_probability_moment cost_est_low cost_est_median cost_est_high cost_est_dist_curve_id cost_probability_moment]
-        set constants_required_list [list activity_ref dependent_tasks]
+        set constants_list [acc_fin::pretti_columns_list p2]
+        set constants_required_list [acc_fin::pretti_columns_list p2 1]
         acc_fin::p_load_tid $constants_list $constants_required_list p2_larr $p1_arr(activity_table_tid)
         # filter user input
         set p2_larr(activity_ref) [acc_fin::list_index_filter $p2_larr(activity_ref)]
@@ -785,7 +838,8 @@ ad_proc -public acc_fin::scenario_prettify {
     # Substitute task_type data (p3_larr) into activity data (p2_larr) when p2_larr data is less detailed or missing.
     # Curve data has already been substituted in p_load_tid
     # Other substitutions when a p2_larr field is blank.
-    
+    #  Effectively, this is acc_fin::pretti_columns_list p2  -  acc_fin::pretti_columns_list p3, but some of p3 fields are not same such as aid_type vs type.. 
+    # and p3 includes default modifiers from p1 as well.
     set constants_woc_list [list name description]
     # Removed dependent_tasks from task_type substitution, 
     # because dependent_tasks creates a level of complexity significant enough to be avoided
