@@ -418,7 +418,7 @@ switch -exact -- $mode {
         set untrash_label "#accounts-finance.untrash#"
         set trash_label "#accounts-finance.trash#"
         set delete_label "#accounts-finance.delete#"
-        set table_titles_list [list #accounts-finance.ID# #accounts-finance.Name# #accounts-finance.Title# #accounts-finance.Actions# #accounts-finance.Comments# #accounts-finance.Cells# #accounts-finance.Rows# #accounts-finance.Columns#]
+        set table_titles_list [list #accounts-finance.ID# #accounts-finance.Name# #accounts-finance.title# #accounts-finance.actions# #accounts-finance.comments# #accounts-finance.cells# #accounts-finance.rows# #accounts-finance.columns#]
         foreach stats_orig_list $tables_stats_lists {
             set stats_list [lrange $stats_orig_list 0 5]
             set table_id [lindex $stats_list 0]
@@ -479,7 +479,7 @@ switch -exact -- $mode {
             set table_trashed_sorted_lists [linsert $table_trashed_sorted_lists 0 $table_titles_list ]
             set table_tag_atts_list [list border 1 cellspacing 0 cellpadding 3]
 
-            set table_trashed_html "<h3>Trashed tables</h3>\n"
+            set table_trashed_html "<h3>#accounts-finance.Trashed# #accounts-finance.tables#</h3>\n"
             append table_trashed_html [qss_list_of_lists_to_html_table $table_trashed_sorted_lists $table_tag_atts_list $cell_formating_list]
             append table_stats_html $table_trashed_html
         }

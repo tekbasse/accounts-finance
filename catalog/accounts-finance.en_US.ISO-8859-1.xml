@@ -2,6 +2,7 @@
 <message_catalog package_key="accounts-finance" package_version="0.1d" locale="en_US" charset="ISO-8859-1">
 <msg key="Dataset">Dataset</msg>
 <msg key="Edit">Edit</msg>
+<msg key="ID">ID</msg>
 <msg key="Internal_Notes">Internal Notes</msg>
 <msg key="Name">Name</msg>
 <msg key="Name_missing_">Name missing!</msg>
@@ -9,6 +10,10 @@
 <msg key="Save">Save</msg>
 <msg key="Save_">Save </msg>
 <msg key="Save_as_new">Save as new</msg>
+<msg key="actions">Actions</msg>
+<msg key="cells">Cells</msg>
+<msg key="columns">Columns</msg>
+<msg key="comments">Comments</msg>
 <msg key="delete">Delete</msg>
 <msg key="delete_all">Delete All</msg>
 <msg key="edit">Edit</msg>
@@ -16,11 +21,13 @@
 <msg key="new">New</msg>
 <msg key="process">Process</msg>
 <msg key="revision">Revision</msg>
+<msg key="rows">Rows</msg>
 <msg key="select">Select</msg>
 <msg key="sort_by_Y_ascending">Sort by Y ascending</msg>
 <msg key="tables">Tables</msg>
 <msg key="title">Title</msg>
 <msg key="trash">Trash</msg>
+<msg key="trashed">Trashed</msg>
 <msg key="untrash">Untrash</msg>
 <msg key="view">View</msg>
 </message_catalog>
