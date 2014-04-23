@@ -29,6 +29,7 @@ upvar $table_lists_name table_lists
 
     # get first row
     set title_list [lindex $table_lists 0]
+    set type_return ""
     # check for type p1 separate from the other cases, because the table is specified differently from other cases.
     set p(p1) 0
     set name_idx [lsearch -exact $title_list name]
@@ -46,55 +47,56 @@ upvar $table_lists_name table_lists
             set p(p1) [expr { $p(p1) && ( [lsearch -exact $name_list $check] > -1 ) } ]
         }
     }
-
-    # filter other p table types by required minimums first
-    set type_list [list p2 p3 p4 p5]
-    foreach type $type_list {
-        set p($type) 1
-        set check_list [acc_fin::pretti_columns_list $type 1]
-        foreach check $check_list {
-            set p($type) [expr { $p($type) && ( [lsearch -exact $title_list $check] ) } ]
-        }
-    }
-
-    # how many types might this table be?
-    set type1_list [list p0 p1 p2 p3 p4 p5]
-    set type1_p_list [list ]
-    set type_return ""
-    foreach type1 $type1_list {
-        if { $p($type1) } {
-            lappend type1_p_list $type1
-        }
-    }
-    set type_count [llength $type1_p_list]
-    if { $type_count > 1 } {
-        if { $p(p2) && $p(p3) && $type_count == 2 } {
-            if { [lsearch -exact $title_list "aid_type" ] } {
-                set type_return "p2"
-            } elseif { [lsearch -exact $title_list "type" ] } {
-                set type_return "p3"
-            } 
-        } else {
-            set type3_list [list ]
-            # Which type best meets full list of implemented column names?
-            foreach type $type1_p_list {
-                set name_list [acc_fin::pretti_columns_list $type 0]
-                set name_list_count [llength $name_list]
-                set exists_count 0
-                foreach name $names_list {
-                    if { [lsearch -exact $title_list $name] > -1 } {
-                        incr exists_count
-                    }
-                }
-                set type_pct_list [list $type [expr { ( $exists_count * 1. ) / ( $name_list_count * 1. ) } ] ]
-                lappend type3_list $type_pct_list
-            }
-            set type3_list [lsort -real -index 1 -decreasing $type3_list]
-            set type_return [lindex [lindex $type3_list 0] 0]
-        }
+    if { $p(p1) } {
+        set type_return "p1"
     } else {
-        # append is used here in case no type meets the criteria, an empty string is returned
-        append type_return [lindex $type1_p_list 0]
+        # filter other p table types by required minimums first
+        set type_list [list p2 p3 p4 p5]
+        foreach type $type_list {
+            set p($type) 1
+            set check_list [acc_fin::pretti_columns_list $type 1]
+            foreach check $check_list {
+                set p($type) [expr { $p($type) && ( [lsearch -exact $title_list $check] ) } ]
+            }
+        }
+        
+        # how many types might this table be?
+        set type1_p_list [list ]
+        foreach type $type_list {
+            if { $p($type) } {
+                lappend type1_p_list $type
+            }
+        }
+        set type_count [llength $type1_p_list]
+        if { $type_count > 1 } {
+            if { $p(p2) && $p(p3) && $type_count == 2 } {
+                if { [lsearch -exact $title_list "aid_type" ] } {
+                    set type_return "p2"
+                } elseif { [lsearch -exact $title_list "type" ] } {
+                    set type_return "p3"
+                } 
+            } else {
+                set type3_list [list ]
+                # Which type best meets full list of implemented column names?
+                foreach type $type1_p_list {
+                    set name_list [acc_fin::pretti_columns_list $type 0]
+                    set name_list_count [llength $name_list]
+                    set exists_count 0
+                    foreach name $names_list {
+                        if { [lsearch -exact $title_list $name] > -1 } {
+                            incr exists_count
+                        }
+                    }
+                    set type_pct_list [list $type [expr { ( $exists_count * 1. ) / ( $name_list_count * 1. ) } ] ]
+                    lappend type3_list $type_pct_list
+                }
+                set type3_list [lsort -real -index 1 -decreasing $type3_list]
+                set type_return [lindex [lindex $type3_list 0] 0]
+            }
+        } else {
+            # append is used here in case no type meets the criteria, an empty string is returned
+            append type_return [lindex $type1_p_list 0]
+        }
     }
             
     return $type_return
