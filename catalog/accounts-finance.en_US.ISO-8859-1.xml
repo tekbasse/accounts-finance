@@ -22,6 +22,7 @@
 <msg key="delete_all">Delete All</msg>
 <msg key="distribution_curve">Distribution Curve</msg>
 <msg key="edit">Edit</msg>
+<msg key="last_modified">Last Modified</msg>
 <msg key="name">Name</msg>
 <msg key="new">New</msg>
 <msg key="process">Process</msg>
@@ -35,6 +36,7 @@
 <msg key="title">Title</msg>
 <msg key="trash">Trash</msg>
 <msg key="trashed">Trashed</msg>
+<msg key="type">Type</msg>
 <msg key="untrash">Untrash</msg>
 <msg key="view">View</msg>
 </message_catalog>

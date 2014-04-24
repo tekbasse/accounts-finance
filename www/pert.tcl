@@ -131,13 +131,10 @@ if { $form_posted } {
         
         if { $mode eq "w" } {
             # determine table type P1..5
-####
             # write the data
             # a different user_id makes new context based on current context, otherwise modifies same context
             # or create a new context if no context provided.
-            # given:
-            # act_* is table_
-            # dc_* is dist_curve_
+
             if { [string length $table_text] > 0 && $table_text ne $table_default } {
                 # table_name  Table Name
 
@@ -191,7 +188,7 @@ if { $form_posted } {
                 set table_lists $table_lists_new
                 ns_log Notice "pert.tcl: : create/write table" 
                 ns_log Notice "pert.tcl: : llength table_lists [llength $table_lists]"
-                ##### detect table flags
+                # detect table type for flags
                 set table_flags [acc_fin::pretti_type_flag $table_lists]
 
                 if { [qf_is_natural_number $table_tid] } {
@@ -367,9 +364,11 @@ switch -exact -- $mode {
         }
         if { [qf_is_natural_number $table_tid] } {
             set table_stats_list [qss_table_stats $table_tid]
+            # name, title, comments, cell_count, row_count, template_id, flags, trashed, popularity, time last_modified, time created, user_id
             set table_name [lindex $table_stats_list 0]
             set table_title [lindex $table_stats_list 1]
             set table_comments [lindex $table_stats_list 2]
+            set table_flags [lindex $table_stats_list 6]
             set table_html "<h3>${table_title} (${table_name})</h3>\n"
             set table_lists [qss_table_read $table_tid]
             set table_text [qss_lists_to_text $table_lists]
@@ -381,8 +380,8 @@ switch -exact -- $mode {
                 lappend menu_list [list edit "table_tid=${table_tid}&mode=e"]
             }
         }
-        ##### if scenario meets minimum process requirements, add a process button to menu:
-        if { [qf_is_natural_number $table_tid] } {
+        # if table is a scenario (meets minimum process requirements), add a process button to menu:
+        if { [qf_is_natural_number $table_tid] && $table_flags eq "p1" } {
             lappend menu_list [list process "table_tid=${table_tid}&mode=c"]
         }
     }
@@ -416,14 +415,21 @@ switch -exact -- $mode {
         set untrash_label "#accounts-finance.untrash#"
         set trash_label "#accounts-finance.trash#"
         set delete_label "#accounts-finance.delete#"
-        set table_titles_list [list #accounts-finance.ID# #accounts-finance.Name# #accounts-finance.title# #accounts-finance.actions# #accounts-finance.comments# #accounts-finance.cells# #accounts-finance.rows# #accounts-finance.columns#]
+        set table_titles_list [list "#accounts-finance.ID#" "#accounts-finance.Name#" "#accounts-finance.title#" "#accounts-finance.actions#" "#accounts-finance.comments#" "#accounts-finance.cells#" "#accounts-finance.rows#" "#accounts-finance.columns#" "#accounts-finance.type#" "#accounts-finance.last_modified#"]
+        array set table_types_list [list "p1" "#accounts-finance.scenario#" \
+                                        "p2" "#accounts-finance.activity#" \
+                                        "p3" "#accounts-finance.task#" \
+                                        "p4" "#accounts-finance.PRETTI_rows#" \
+                                        "p5" "#accounts-finance.PRETTI_cells#" ]
         foreach stats_orig_list $tables_stats_lists {
             set stats_list [lrange $stats_orig_list 0 5]
             set table_id [lindex $stats_list 0]
             set name [lindex $stats_list 1]
             set table_template_id [lindex $stats_orig_list 6]
-            set table_user_id [lindex $stats_orig_list 12]
+            set table_flags [lindex $stats_orig_list 7]
             set trashed_p [lindex $stats_orig_list 8]
+            set last_modified [lindex $stats_orig_list 10]
+            set table_user_id [lindex $stats_orig_list 12]
             # adding average col. length
             set denominator [expr { [lindex $stats_list 5] } ]
             if { $denominator > 0 } {
@@ -437,12 +443,17 @@ switch -exact -- $mode {
             # change name to an active link
             # set table_ref_name table_tid
             
-##### each active_link becomes a separate form..
-#            set active_link "<a\ href=\"pert?${table_ref_name}=${table_id}\">$name</a>"
+            # each $active_link becomes a separate form..
+
+            ## app can be setup to use name_link with a dedicated index.vuh
+            # set name_link "<a\ href=\"${name}\">${name}</a>"
             set random [clock clicks]
             set random "[clock clicks][string range [expr { rand() } ] 2 end]"
             set form_id [qf_form action pert method post id 20140420-$random hash_check 1]
+
+            ## if using name_link, comment out this next line:
             qf_input type submit value $select_label name "zv" class btn
+
             qf_input type hidden value $table_id name table_tid
             if { ( $admin_p || $table_user_id == $user_id ) && $trashed_p == 1 } {
                 #append active_link " \[<a href=\"pert?${table_ref_name}=${table_id}&mode=t\">${untrash_label}</a>\]"
@@ -457,8 +468,9 @@ switch -exact -- $mode {
             } 
             qf_close form_id $form_id
             set active_link [qf_read form_id $form_id]
-            #set stats_list [lreplace $stats_list 1 1 $active_link]
+            #set stats_list [lreplace $stats_list 1 1 $name_link]
             set stats_list [linsert $stats_list 3 $active_link]
+            lappend stats_list $table_flags $last_modified
             if { $trashed_p == 1 } {
                 lappend table_trashed_lists $stats_list
             } else {
