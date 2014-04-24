@@ -9,8 +9,6 @@ set delete_p [permission::permission_p -party_id $user_id -object_id $package_id
 # randmize rand with seed from clock
 expr { srand([clock clicks]) }
 
-#### add table type (flags)
-
 set table_default ""
 set mode_name "#accounts-finance.tables#"
 # tid = table_id
@@ -134,7 +132,6 @@ if { $form_posted } {
         if { $mode eq "w" } {
             # determine table type P1..5
 ####
-
             # write the data
             # a different user_id makes new context based on current context, otherwise modifies same context
             # or create a new context if no context provided.
@@ -195,7 +192,7 @@ if { $form_posted } {
                 ns_log Notice "pert.tcl: : create/write table" 
                 ns_log Notice "pert.tcl: : llength table_lists [llength $table_lists]"
                 ##### detect table flags
-                set table_flags ""
+                set table_flags [acc_fin::pretti_type_flag $table_lists]
 
                 if { [qf_is_natural_number $table_tid] } {
                     set table_stats [qss_table_stats $table_tid]
