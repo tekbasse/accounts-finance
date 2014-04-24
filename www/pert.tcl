@@ -189,7 +189,7 @@ if { $form_posted } {
                 ns_log Notice "pert.tcl: : create/write table" 
                 ns_log Notice "pert.tcl: : llength table_lists [llength $table_lists]"
                 # detect table type for flags
-                set table_flags [acc_fin::pretti_type_flag $table_lists]
+                set table_flags [acc_fin::pretti_type_flag table_lists]
 
                 if { [qf_is_natural_number $table_tid] } {
                     set table_stats [qss_table_stats $table_tid]
@@ -421,6 +421,7 @@ switch -exact -- $mode {
                                         "p3" "#accounts-finance.task#" \
                                         "p4" "#accounts-finance.PRETTI_rows#" \
                                         "p5" "#accounts-finance.PRETTI_cells#" ]
+        # table_id, name, title, comments, cell_count, row_count, template_id, flags, trashed, popularity, time last_modified, time created, user_id
         foreach stats_orig_list $tables_stats_lists {
             set stats_list [lrange $stats_orig_list 0 5]
             set table_id [lindex $stats_list 0]
