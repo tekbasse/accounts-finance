@@ -65,7 +65,7 @@ if { $form_posted } {
 
     switch -exact -- $mode {
         e {
-            ns_log Notice "pert.tcl:  validated for e"
+            ns_log Notice "pert.tcl.68:  validated for e"
             set validated 1
             if { ![qf_is_natural_number $table_tid] } {
                 set mode "n"
@@ -83,7 +83,7 @@ if { $form_posted } {
         t {
             set validated 1
             if { ![qf_is_natural_number $table_tid] } {
-                ns_log Notice "pert.tcl table_tid '${table_tid}' is not valid for mode t"
+                ns_log Notice "pert.tcl.86: table_tid '${table_tid}' is not valid for mode t"
                 set mode "p"
                 set next_mode ""
             } 
@@ -91,7 +91,7 @@ if { $form_posted } {
         c {
             set validated 1
             if { ![qf_is_natural_number $table_tid] } {
-                ns_log Notice "pert.tcl table_tid '${table_tid}' is not valid for mode c"
+                ns_log Notice "pert.tcl.94: table_tid '${table_tid}' is not valid for mode c"
                 lappend user_message_list "Table has not been specified."
                 set validated 0
                 set mode "p"
@@ -102,18 +102,18 @@ if { $form_posted } {
         w {
             set table_text $input_array(table_text)
             set validated 1
-            ns_log Notice "pert.tcl:  validated for w"
+            ns_log Notice "pert.tcl.105:  validated for w"
         }
         n {
             set validated 1
-            ns_log Notice "pert.tcl:  validated for n"
+            ns_log Notice "pert.tcl.109:  validated for n"
         }
         r {
             set validated 1
-            ns_log Notice "pert.tcl:  validated for r"
+            ns_log Notice "pert.tcl.113:  validated for r"
         }
         default {
-            ns_log Notice "pert.tcl:  validated for v"
+            ns_log Notice "pert.tcl.116:  validated for v"
             if { [qf_is_natural_number $table_tid] } {
                 set validated 1
                 set mode "v"
@@ -154,7 +154,7 @@ if { $form_posted } {
                 } else {
                     set table_title $input_array(table_title)
                 }
-                ns_log Notice "pert.tcl:  table_name '${table_name}' [string length $table_name]"
+                ns_log Notice "pert.tcl.157:  table_name '${table_name}' [string length $table_name]"
                 # table_comments Comments
                 set table_comments $input_array(table_comments)
                 # table_text
@@ -164,13 +164,13 @@ if { $form_posted } {
                 set delimiter ","
                 # linebreak_char delimiter rows_count columns_count 
                 set table_text_stats [qss_txt_table_stats $table_text]
-                ns_log Notice "pert.tcl: : table_text_stats $table_text_stats"
+                ns_log Notice "pert.tcl.167: table_text_stats $table_text_stats"
                 set line_break [lindex $table_text_stats 0]
                 set delimiter [lindex $table_text_stats 1]
 
-                ns_log Notice "pert.tcl: : table_text ${table_text}"
+                ns_log Notice "pert.tcl.171: table_text ${table_text}"
                 set table_lists [qss_txt_to_tcl_list_of_lists $table_text $line_break $delimiter]
-                ns_log Notice "pert.tcl: : set table_lists ${table_lists}"
+                ns_log Notice "pert.tcl.173: set table_lists ${table_lists}"
                 # cleanup input
                 set table_lists_new [list ]
                 foreach condition_list $table_lists {
@@ -179,34 +179,35 @@ if { $form_posted } {
                         set cell_new [string trim $cell]
                         regsub -all -- {[ ][ ]*} $cell_new { } cell_new
                         lappend row_new $cell_new
-                        #ns_log Notice "pert.tcl:  new cell '$cell_new'"
+                        #ns_log Notice "pert.tcl.182:  new cell '$cell_new'"
                     }
                     if { [llength $row_new] > 0 } {
                         lappend table_lists_new $row_new
                     }
                 }
                 set table_lists $table_lists_new
-                ns_log Notice "pert.tcl: : create/write table" 
-                ns_log Notice "pert.tcl: : llength table_lists [llength $table_lists]"
+                ns_log Notice "pert.tcl.189: : create/write table" 
+                ns_log Notice "pert.tcl.190: : llength table_lists [llength $table_lists]"
                 # detect table type for flags
                 set table_flags [acc_fin::pretti_type_flag table_lists]
-
+                ns_log Notice "pert.tcl.193: table_flags $table_flags"
                 if { [qf_is_natural_number $table_tid] } {
                     set table_stats [qss_table_stats $table_tid]
                     set name_old [lindex $table_stats 0]
                     set title_old [lindex $table_stats 1]
                     set table_template_id [lindex $table_stats 5]
-                    if { $name_old eq $table_name && $title_old eq $table_title } {
-                        ns_log Notice "pert.tcl: : qss_table_write table_tid ${table_tid}" 
-                        qss_table_write $table_lists $table_name $table_title $table_comments $table_tid $table_template_id $table_flags $package_id $user_id
-                    } else {
+# For revisioning purposes, create a new table each time.
+#                    if { $name_old eq $table_name && $title_old eq $table_title } {
+#                        ns_log Notice "pert.tcl.201: qss_table_write table_tid ${table_tid}" 
+#                        qss_table_write $table_lists $table_name $table_title $table_comments $table_tid $table_template_id $table_flags $package_id $user_id
+#                    } else {
                         # changed name. assume this is a new table
-                        ns_log Notice "pert.tcl: : qss_table_create new table because name/title changed"
+#                        ns_log Notice "pert.tcl.205: qss_table_create new table because name/title changed"
                         qss_table_create $table_lists $table_name $table_title $table_comments $table_template_id $table_flags $package_id $user_id
 
-                    }
+#                    }
                 } else {
-                    ns_log Notice "pert.tcl: : qss_table_create new table"
+                    ns_log Notice "pert.tcl.210: qss_table_create new table"
                     qss_table_create $table_lists $table_name $table_title $table_comments "" $table_flags $package_id $user_id
                 }
 
@@ -218,7 +219,7 @@ if { $form_posted } {
         }
         if { $mode eq "d" } {
             #  delete.... removes context     
-            ns_log Notice "pert.tcl:  mode = delete"
+            ns_log Notice "pert.tcl.222:  mode = delete"
             #requires table_tid
             # delete table_tid 
             if { [qf_is_natural_number $table_tid] } {
@@ -229,7 +230,7 @@ if { $form_posted } {
         }
         if { $mode eq "t" } {
             #  trash
-            ns_log Notice "pert.tcl:  mode = trash"
+            ns_log Notice "pert.tcl.233:  mode = trash"
             #requires table_tid
             # delete table_tid 
             if { [qf_is_natural_number $table_tid] && $write_p } {
@@ -260,7 +261,7 @@ if { $write_p } {
 switch -exact -- $mode {
     e {
         #  edit...... edit/form mode of current context
-        ns_log Notice "pert.tcl:  mode = edit"
+        ns_log Notice "pert.tcl.264:  mode = edit"
         set mode_name "#accounts-finance.edit#"
         #requires table_tid
         # make a form to edit 
@@ -305,12 +306,12 @@ switch -exact -- $mode {
     w {
         #  save.....  (write) table_tid 
         # should already have been handled above
-        ns_log Notice "pert.tcl:  mode = save THIS SHOULD NOT BE CALLED."
+        ns_log Notice "pert.tcl.309:  mode = save THIS SHOULD NOT BE CALLED."
         # it's called in validation section.
     }
     n {
         #  new....... creates new, blank context (form)    
-        ns_log Notice "pert.tcl:  mode = new"
+        ns_log Notice "pert.tcl.314:  mode = new"
         set mode_name "#accounts-finance.new#"
         #requires no table_tid
         set table_text ""
@@ -338,7 +339,7 @@ switch -exact -- $mode {
     }
     c {
         #  process... compute/process and write output as a new table, present post_calc results
-        ns_log Notice "pert.tcl:  mode = process"
+        ns_log Notice "pert.tcl.342:  mode = process"
         set mode_name "#accounts-finance.process#"
         #requires table_tid
         # given table_tid 
@@ -347,14 +348,14 @@ switch -exact -- $mode {
     }
     r {
         #  review.... show processd output 
-        ns_log Notice "pert.tcl:  mode = review"
+        ns_log Notice "pert.tcl.351:  mode = review"
         #requires table_tid
 
         # option not used for this app. Calcs are saved as a table. use mode v
     }
     v {
         #  view table(s) (standard, html page document/report)
-        ns_log Notice "pert.tcl:  mode = $mode ie. view table"
+        ns_log Notice "pert.tcl.358:  mode = $mode ie. view table"
         set mode_name "#accounts-finance.view#"
         if { [qf_is_natural_number $table_tid] && $write_p } {
             lappend menu_list [list edit "table_tid=${table_tid}&mode=e"]
@@ -388,7 +389,7 @@ switch -exact -- $mode {
     default {
         # default includes v,p
         #  present...... presents a list of contexts/tables to choose from
-        ns_log Notice "pert.tcl:  mode = $mode ie. default"
+        ns_log Notice "pert.tcl.392:  mode = $mode ie. default"
 
 
         # show tables
