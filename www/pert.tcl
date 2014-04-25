@@ -193,19 +193,25 @@ if { $form_posted } {
                 ns_log Notice "pert.tcl.193: table_flags $table_flags"
                 if { [qf_is_natural_number $table_tid] } {
                     set table_stats [qss_table_stats $table_tid]
+                    # name, title, comments, cell_count, row_count, template_id, flags, trashed, popularity, time last_modified, time created, user_id.
                     set name_old [lindex $table_stats 0]
                     set title_old [lindex $table_stats 1]
+                    set comments_old [lindex $table_stats 2]
                     set table_template_id [lindex $table_stats 5]
-# For revisioning purposes, create a new table each time.
-#                    if { $name_old eq $table_name && $title_old eq $table_title } {
-#                        ns_log Notice "pert.tcl.201: qss_table_write table_tid ${table_tid}" 
-#                        qss_table_write $table_lists $table_name $table_title $table_comments $table_tid $table_template_id $table_flags $package_id $user_id
-#                    } else {
-                        # changed name. assume this is a new table
-#                        ns_log Notice "pert.tcl.205: qss_table_create new table because name/title changed"
-                        qss_table_create $table_lists $table_name $table_title $table_comments $table_template_id $table_flags $package_id $user_id
 
-#                    }
+                    # For revisioning purposes, create a new table each time, except:
+                    # Don't create a new table if it is exactly the same as the old one... ie same table, name, title
+
+                    # Old method wrote to the same table using qss_table_write when name and title were the same regardless of comments or content.
+
+                    # Get table_lists_old table_comments_old and compare..
+                    set table_old_lists [qss_table_read $table_tid]
+                    if { $table_name eq $name_old && $table_title eq $title_old && $table_comments eq $comments_old && $table_lists eq $table_old_lists } {
+                        # Don't create a new table. The new one is exactly like the old one..
+                    } else {
+                        qss_table_create $table_lists $table_name $table_title $table_comments $table_template_id $table_flags $package_id $user_id
+                    }
+
                 } else {
                     ns_log Notice "pert.tcl.210: qss_table_create new table"
                     qss_table_create $table_lists $table_name $table_title $table_comments "" $table_flags $package_id $user_id
