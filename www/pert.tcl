@@ -438,8 +438,8 @@ switch -exact -- $mode {
             set trashed_p [lindex $stats_orig_list 8]
             set last_modified [lindex $stats_orig_list 10]
             if { $last_modified ne "" } {
-                regsub {[\.][0-9]+} $last_modified {} last_modified
-                set last_modified [lc_time_fmt [lc_time_system_to_conn $last_modified ] "%x %X"]
+                set last_modified [lc_time_fmt $last_modified "%x %X"]
+                set last_modified [lc_time_system_to_conn $last_modified ]
             }
             set table_user_id [lindex $stats_orig_list 12]
             # adding average col. length
