@@ -50,7 +50,7 @@ upvar $table_lists_name table_lists
         set type_return "p1"
     } else {
         # filter other p table types by required minimums first
-        set type_list [list "p2" "p3" "p4" "cd"]
+        set type_list [list "p2" "p3" "p4" "p5" "cd"]
         foreach type $type_list {
             set p($type) 1
             set check_list [acc_fin::pretti_columns_list $type 1]
@@ -1327,7 +1327,7 @@ ad_proc -public acc_fin::scenario_prettify {
             #   direct dependencies
             # and some others for sorting.
             set base_lists [list ]
-            set base_titles_list [list activity_ref activity_seq_num dependencies_q cp_q significant_q popularity waypoint_duration activity_time direct_dependencies activity_cost waypoint_cost]
+            set base_titles_list [acc_fin::pretti_columns_list p5 1]
             foreach {path_list duration} $path_seg_dur_sort1_list {
                 set act [lindex $path_list end]
                 set tree_act_cost_arr($act) $cost_arr($act)
