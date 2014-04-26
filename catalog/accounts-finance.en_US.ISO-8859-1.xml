@@ -44,7 +44,7 @@
 <msg key="cost_probability_moment">Cost Probability Moment</msg>
 <msg key="cost_probability_moment_def">A percentage along one or more (cumulative) distribution curves representing a range of costs.</msg>
 <msg key="cp_q">In Critical Path?</msg>
-<msg key="cp_q_def">Answers question about a track of activities. 1 is yes, 0 is no.</msg>
+<msg key="cp_q_def">Answers question about an activity. 1 is yes, 0 is no.</msg>
 <msg key="curve">Curve</msg>
 <msg key="db_format">Database Format</msg>
 <msg key="db_format_def">A format to use for a report.</msg>
