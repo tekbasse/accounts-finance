@@ -15,7 +15,7 @@ ad_proc -public acc_fin::pretti_type_flag {
 } {
     Guesses which type of pretti table
 } {
-upvar $table_lists_name table_lists
+    upvar $table_lists_name table_lists
     # page flags as pretti_types:
     #  p in positon 1 = PRETTI app specific
     #  p1  scenario
@@ -153,25 +153,25 @@ ad_proc -private acc_fin::pretti_columns_list {
             #      name                   defaults to type's name (if exists else blank)
             #      description            defaults to type's description (if exists else blank)
             #      max_concurrent         defaults to type's max_concurrent 
-            #      max_overlap_pct021     defaults to type's max_overlap_pct021
+            #      max_overlap_pct     defaults to type's max_overlap_pct021
             
             #      time_est_short         estimated shortest duration. (Lowest statistical deviation value)
             #      time_est_median        estimated median duration. (Statistically, half of deviations are more or less than this.) 
             #      time_est_long          esimated longest duration. (Highest statistical deviation value.)
-            #      time_est_dist_curve_id Use this distribution curve instead of the time_est short, median and long values
+            #      time_dist_curve_tid Use this distribution curve instead of the time_est short, median and long values
             #                             Consider using a variation of task_type as a reference
-            #      time_est_dist_curv_eq  Use this distribution curve equation instead.
+            #      time_dist_curv_eq  Use this distribution curve equation instead.
             
             #      cost_est_low           estimated lowest cost. (Lowest statistical deviation value.)
             #      cost_est_median        estimated median cost. (Statistically, half of deviations are more or less than this.)
             #      cost_est_high          esimage highest cost. (Highest statistical deviation value.)
-            #      cost_est_dist_curve_id Use this distribution curve instead of equation and value defaults
-            #      cost_est_dist_curv_eq  Use this distribution curve equation. 
+            #      cost_dist_curve_tid Use this distribution curve instead of equation and value defaults
+            #      cost_dist_curv_eq  Use this distribution curve equation. 
             #
             #      RESERVED columns:
             #      _tCurveRef             integer reference to time curve in time_clarr and   time duration estimate at time_probability_moment in t_est_arr
             #      _cCurveRef             integer reference to cost curve in cost_clarr and   cost duration estimate at cost_probability_moment in c_est_arr
-            set ret_list [list activity_ref aid_type dependent_tasks name description max_concurrent max_overlap_pct021 time_est_short time_est_median time_est_long time_est_dist_curve_id time_probability_moment cost_est_low cost_est_median cost_est_high cost_est_dist_curve_id cost_probability_moment]
+            set ret_list [list activity_ref aid_type dependent_tasks name description max_concurrent max_overlap_pct time_est_short time_est_median time_est_long time_dist_curve_tid time_probability_moment cost_est_low cost_est_median cost_est_high cost_dist_curve_tid cost_probability_moment]
 
         }
         p21 {
@@ -192,7 +192,7 @@ ad_proc -private acc_fin::pretti_columns_list {
             #      RESERVED columns:
             #      _tCurveRef             integer reference to time curve in time_clarr and   time duration estimate at time_probability_moment in t_est_arr
             #      _cCurveRef             integer reference to cost curve in cost_clarr and   cost duration estimate at cost_probability_moment in c_est_arr
-            set ret_list [list type dependent_tasks dependent_types name description max_concurrent max_overlap activity_table_tid activity_table_name task_types_tid task_types_name time_dist_curve_name time_dist_curve_tid cost_dist_curve_name cost_dist_curve_tid time_est_short time_est_median time_est_long time_probability_moment cost_est_low cost_est_median cost_est_high cost_probability_moment db_format]            
+            set ret_list [list type dependent_tasks dependent_types name description max_concurrent max_overlap_pct activity_table_tid activity_table_name task_types_tid task_types_name time_dist_curve_name time_dist_curve_tid cost_dist_curve_name cost_dist_curve_tid time_est_short time_est_median time_est_long time_probability_moment cost_est_low cost_est_median cost_est_high cost_probability_moment db_format]            
         }
         p31 {
             set ret_list [list type]
@@ -909,7 +909,7 @@ ad_proc -public acc_fin::scenario_prettify {
     #### Use lsearch -glob or -regexp to screen alt columns and create list for custom summary feature. [a-z][0-9]
     #### ..connected to cost_probability_moment.. so columns represent curve IDs..
     #### Use [lsearch -regexp {[a-z][0-9]s} -all -inline $x_list] to screen alt time columns and create list for a scheduling feature.
-    if { $p1_arr(activity_table_id) ne "" } {
+    if { $p1_arr(activity_table_tid) ne "" } {
         # load activity table
         set constants_list [acc_fin::pretti_columns_list p2]
         set constants_required_list [acc_fin::pretti_columns_list p2 1]
@@ -975,24 +975,24 @@ ad_proc -public acc_fin::scenario_prettify {
                         if { $tcurvenum ne "" } {
                             # create new curve based on the one referenced 
                             # parameters: max_concurrent max_overlap_pct021
-                            #      max_overlap_pct021  (as a percentage from 0 to 1, blank = 1)
+                            #      max_overlap_pct  (as a percentage from 0 to 1, blank = 1)
                             #      max_concurrent       (as an integer, blank = no limit)
                             # activity curve @tcurvenum
-                            # for each point t(pm) in curve time_clarr($_tCurveRef), max_overlap, max_concurrent, coeffient c
-                            if { [ad_var_type_check_number_p $max_overlap_pct021 ] && $max_overlap_pct021 < 2 && $max_overlap_pct021 > -1 } {
+                            # for each point t(pm) in curve time_clarr($_tCurveRef), max_overlap_pct, max_concurrent, coeffient c
+                            if { [ad_var_type_check_number_p $max_overlap_pct ] && $max_overlap_pct < 2 && $max_overlap_pct > -1 } {
                                 # validated
                             } else {
-                                set max_overlap_pct021 1.
+                                set max_overlap_pct 1.
                             }
                             # coef_p1 * max_concurrent + coef_p2 = $coefficient
                             set coef_p1 [expr { int( $coeffcient / $max_concurrent ) } ]
                             set coef_p2 [expr { $coefficient - $coef_p1 * $max_concurrent } ]
                             # coef_p2 should be at most 1 less than max_concurrent
-                            # max_trailing_pct = 1. - max_overlap_pct021
+                            # max_trailing_pct = 1. - max_overlap_pct
                             # k3 calculates length of a full block max_concurrent wide
-                            set k3 [expr { 1. + ( $coef_p1 - 1 ) * ( 1. - $max_overlap_pct021 ) } ]
+                            set k3 [expr { 1. + ( $coef_p1 - 1 ) * ( 1. - $max_overlap_pct ) } ]
                             # k4 calculates length of partial blocks (one more activity than full block activity count, but maybe not overlapped as far)
-                            set k4 [expr { 1. + ( $coef_p2 - 1 ) * ( 1. - $max_overlap_pct021 ) } ]
+                            set k4 [expr { 1. + ( $coef_p2 - 1 ) * ( 1. - $max_overlap_pct ) } ]
                             # Choose the longer of the two blocks:
                             set k5 [f::max [list $k3 $k4] ]
                             set curve_lol [list ]
