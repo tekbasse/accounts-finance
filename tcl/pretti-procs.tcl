@@ -20,12 +20,11 @@ upvar $table_lists_name table_lists
     #  p in positon 1 = PRETTI app specific
     #  p1  scenario
     #  p2  task network (unique tasks and their dependencies)
-    #  p2e task network with all factors expanded (internal -depricated )
     #  p3  task types (can also have dependencies)
-    #  cd2 distribution curve
+    #  dc distribution curve
     #  p4  PRETTI report (output)
     #  p5  PRETTI db report (output) (similar format to  p3, where each row represents a path, but in p5 all paths are represented
-    #  cd2 Estimated project duration distribution curve (can be used to create other projects)
+    #  dc Estimated project duration distribution curve (can be used to create other projects)
 
     # get first row
     set title_list [lindex $table_lists 0]
@@ -51,7 +50,7 @@ upvar $table_lists_name table_lists
         set type_return "p1"
     } else {
         # filter other p table types by required minimums first
-        set type_list [list "p2" "p3" "p4" "p5"]
+        set type_list [list "p2" "p3" "p4" "cd"]
         foreach type $type_list {
             set p($type) 1
             set check_list [acc_fin::pretti_columns_list $type 1]
@@ -214,8 +213,15 @@ ad_proc -private acc_fin::pretti_columns_list {
             set ret_list [list track_1]
         }
         p50 {
-            # p5 Project fast-track duration curve
-            #  same as cd2
+            # each row is a cell, in format of detailed PRETTI internal output. See code. All columns are required to reproduce output to p4 (including p4 comments).
+
+            set ret_list [list activity_ref activity_seq_num dependencies_q cp_q significant_q popularity waypoint_duration activity_time direct_dependencies activity_cost waypoint_cost]
+        }
+        p51 {
+            # each row is a cell, in format of detailed PRETTI internal output. See code. 
+            set ret_list [list activity_ref activity_seq_num dependencies_q cp_q significant_q popularity waypoint_duration activity_time direct_dependencies activity_cost waypoint_cost]
+        }
+        cd0 {
             # cd2 distribution curve table
             #                   Y         where Y = f(x) and f(x) is a 
             #                             probability mass function ie probability density function as a distribution
@@ -534,7 +540,7 @@ ad_proc -private acc_fin::p_load_tid {
         }
         if { $p_larr(time_dist_curve_tid) ne "" } {
             set ctid $p_larr(time_dist_curve_tid)
-            set constants_list [acc_fin::pretti_columns_list p5]
+            set constants_list [acc_fin::pretti_columns_list cd]
             if { [info exists tc_cache_larr(x,$ctid) ] } {
                 # already loaded tid curve from earlier. 
                 foreach constant $constant_list {
@@ -544,7 +550,7 @@ ad_proc -private acc_fin::p_load_tid {
                 foreach constant $constant_list {
                     set tc_larr($constant) ""
                 }
-                set constants_required_list [acc_fin::pretti_columns_list p5 1]
+                set constants_required_list [acc_fin::pretti_columns_list cd 1]
                 qss_tid_columns_to_array_of_lists $time_dist_curve_tid tc_larr $constants_list $constants_required_list $package_id $user_id
                 # add to input tid cache
                 foreach constant $constant_list {
@@ -566,7 +572,7 @@ ad_proc -private acc_fin::p_load_tid {
         }
         if { $p_larr(cost_dist_curve_tid) ne "" } {
             set ctid $p_larr(cost_dist_curve_tid)
-            set constants_list [acc_fin::pretti_columns_list p5]
+            set constants_list [acc_fin::pretti_columns_list cd]
             if { [info exists cc_cache_larr(x,$ctid) ] } {
                 # already loaded tid curve from earlier. 
                 foreach constant $constant_list {
@@ -576,7 +582,7 @@ ad_proc -private acc_fin::p_load_tid {
                 foreach constant $constant_list {
                     set cc_larr($constant) ""
                 }
-                set constants_required_list [acc_fin::pretti_columns_list p5 1]
+                set constants_required_list [acc_fin::pretti_columns_list cd 1]
                 qss_tid_columns_to_array_of_lists $cost_dist_curve_tid cc_larr $constants_list $constants_required_list $package_id $user_id
                 # add to input tid cache
                 foreach constant $constant_list {
@@ -850,11 +856,11 @@ ad_proc -public acc_fin::scenario_prettify {
     
     if { $p1_arr(time_dist_curve_tid) ne "" } {
         # get time curve into array tc_larr
-        set constants_list [acc_fin::pretti_columns_list p5]
+        set constants_list [acc_fin::pretti_columns_list cd]
         foreach constant $constant_list {
             set tc_larr($constant) ""
         }
-        set constants_required_list [acc_fin::pretti_columns_list p5 1]
+        set constants_required_list [acc_fin::pretti_columns_list cd 1]
         qss_tid_columns_to_array_of_lists $time_dist_curve_tid tc_larr $constants_list $constants_required_list $package_id $user_id
         #tc_larr(x), tc_larr(y) and optionally tc_larr(label) where _larr refers to an array where each value is a list of column data by row 1..n
     } 
@@ -862,11 +868,11 @@ ad_proc -public acc_fin::scenario_prettify {
     
     # Make cost_curve_data 
     if { $p1_arr(cost_dist_curve_tid) ne "" } {
-        set constants_list [acc_fin::pretti_columns_list p5]
+        set constants_list [acc_fin::pretti_columns_list cd]
         foreach constant $constants_list {
             set cc_larr($constant) ""
         }
-        set constants_required_list [acc_fin::pretti_columns_list p5 1]
+        set constants_required_list [acc_fin::pretti_columns_list cd 1]
         qss_tid_columns_to_array_of_lists $cost_dist_curve_tid cc_larr $constants_list $constants_required_list $package_id $user_id
         #cc_larr(x), cc_larr(y) and optionally cc_larr(label) where _larr refers to an array where each value is a list of column data by row 1..n
         
