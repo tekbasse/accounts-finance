@@ -72,7 +72,7 @@
 <msg key="max_overlap_pct">Percent Maximum Overlap</msg>
 <msg key="max_overlap_pct_def">A decimal percentage (0 to 1) of maximum amount of overlap between concurrent operations of same activity.</msg>
 <msg key="name">Name</msg>
-<msg key="name_def">Specifies a column containing variable names.</msg>
+<msg key="name_def">A unique word used as a reference as in a variable or table name.</msg>
 <msg key="new">New</msg>
 <msg key="popularity">Popularity</msg>
 <msg key="popularity_def">An indication to the relative use of item compared to others.</msg>
@@ -81,6 +81,7 @@
 <msg key="report_table_p4_def">A tabular report with one track per column.</msg>
 <msg key="report_table_p5">Report Table (p5)</msg>
 <msg key="report_table_p5_def">A tabular report with one activity per row.</msg>
+<msg key="required">Required</msg>
 <msg key="revision">Revision</msg>
 <msg key="rows">Rows</msg>
 <msg key="scenario">Scenario</msg>
@@ -113,6 +114,8 @@
 <msg key="time_probability_moment">Time Probability Moment</msg>
 <msg key="time_probability_moment_def">A percentage along one or more (cumulative) distribution curves representing a range of durations.</msg>
 <msg key="title">Title</msg>
+<msg key="track_1">CP</msg>
+<msg key="track_1_def">Critical Path</msg>
 <msg key="trash">Trash</msg>
 <msg key="trashed">Trashed</msg>
 <msg key="type">Task Type</msg>
@@ -130,5 +133,5 @@
 <msg key="x">X</msg>
 <msg key="x_def">A number representing a relative weighted value or decimal probability percent (0 to 1) of variable Y occurring within a discrete (possibly cumulative) distribution.</msg>
 <msg key="y">Y</msg>
-<msg key="y_def">A value of time, cost or other measure in a discrete set of variable Y, where each value is associated with a probability or relative weighted frequency.</msg>
+<msg key="y_def">A value of time, cost or other measure in a discrete set of variable Y values, where each value is associated with a probability or relative weighted frequency.</msg>
 </message_catalog>

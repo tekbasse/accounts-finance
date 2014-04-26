@@ -171,7 +171,7 @@ ad_proc -private acc_fin::pretti_columns_list {
             #      RESERVED columns:
             #      _tCurveRef             integer reference to time curve in time_clarr and   time duration estimate at time_probability_moment in t_est_arr
             #      _cCurveRef             integer reference to cost curve in cost_clarr and   cost duration estimate at cost_probability_moment in c_est_arr
-            set ret_list [list activity_ref aid_type dependent_tasks name description max_concurrent max_overlap_pct time_est_short time_est_median time_est_long time_dist_curve_tid time_probability_moment cost_est_low cost_est_median cost_est_high cost_dist_curve_tid cost_probability_moment]
+            set ret_list [list activity_ref aid_type dependent_tasks name description max_concurrent max_overlap_pct time_est_short time_est_median time_est_long time_dist_curve_tid time_dist_curve_name time_probability_moment cost_est_low cost_est_median cost_est_high cost_dist_curve_tid cost_dist_curve_name cost_probability_moment]
 
         }
         p21 {
