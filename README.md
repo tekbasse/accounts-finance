@@ -16,11 +16,12 @@ It is not tied to vertical web applications, such as OpenACS ecommerce package.
 
 license
 -------
-Copyright (c) 2013-4 Benjamin Brink
+Copyright (c) 2014 Benjamin Brink
 po box 20, Marylhurst, OR 97036-0020 usa
 email: kappa@dekka.com
 
-Finance Package is open source and published under the GNU General Public License, consistent with the OpenACS system: http://www.gnu.org/licenses/gpl.html
+Finance Package is open source and published under the GNU General Public License, 
+consistent with the OpenACS system license: http://www.gnu.org/licenses/gpl.html
 A local copy is available at accounts-finance/www/doc/LICENSE.html
 
     This program is free software: you can redistribute it and/or modify
