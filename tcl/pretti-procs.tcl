@@ -664,9 +664,6 @@ ad_proc -private acc_fin::curve_import {
     #     default curve represented as a list of lists
     #     if no default available, create one based on a normalized standard.
 
-    set standard_deviation 0.682689492137 
-    set std_dev_parts [expr { $standard_deviation / 4. } ]
-    set outliers [expr { 0.317310507863 / 2. } ]
     set c_lists [list ]
 
     # 1. If a curve exists in c_x_list, c_y_list (, c_label_list), use it.
@@ -711,6 +708,10 @@ ad_proc -private acc_fin::curve_import {
     # 3. If a minimum, median, and maximum is available, make a curve of it. 
     # or
     # 4. if an median value is available, make a curve of it, 
+    #set standard_deviation 0.682689492137 
+    #set std_dev_parts [expr { $standard_deviation / 4. } ]
+    #set outliers [expr { 0.317310507863 / 2. } ]
+
     if { [llength $c_lists] == 0 && $median ne "" } {
         set med_label "med"
         if { $minimum eq "" } {
@@ -726,14 +727,66 @@ ad_proc -private acc_fin::curve_import {
             set max_label "max"
         }
 
-        # min,avg,max values available
+        # min,med,max values available
         # Geometric median requires all three values
         
         # time_expected = ( time_optimistic + 4 * time_most_likely + time_pessimistic ) / 6.
         # per http://en.wikipedia.org/wiki/Program_Evaluation_and_Review_Technique
-        
+
+        # Build a curve using Normal Distribution calculations as a base
+        # Split the curve into two tails, in case med - min value does not equal max - med.
+        # Left tail represents minimum to median.
+        # So, create a standard_deviation for left side by assuming curve is symmetric:
+        # set std_dev_left [expr { sqrt( 2 * pow( $minimum - $median , 2) + 4 * pow( $median - $median , 2) ) } ]
+        # resolves to:
+        # set std_dev_left [expr { sqrt( 2 * pow( $minimum - $median , 2)  ) } ]
+        # which further resolves to:
+        set std_dev_left [expr { sqrt( 2. ) * abs( $median - $minimum ) } ]
+        # Right tail represents median to maximum.
+        set std_dev_right [expr { sqrt( 2. ) * abs( $maximum - $median ) } ]
+        # f(x) is the normal distribution function. x = 0 at $median
+        # if k = ( $maximum - $minimum ) / ( ( $curve_p_count - 1. ) * 2. * $pi )
+        # f(x) = k * pow( $e , -0.5 * pow( $x - $median , 2. ) )
+        # where x  is -2. * std_dev_left to 2. * std_dev
+        # and value at x is :
+        # if x < 0
+        # $minimum + sigma f( $x from -2. * $std_dev_left to x = 0 ) * curve_p_count / 2.
+        # if x => 0
+        # $median + sigma f( $x from x = 0 to 2. * $std_dev_right ) * curve_p_count / 2.
+        #### 
+        set curve_p_count 24.
+        set pi 3.14159265358979
+        set sqrt_2pi [expr { sqrt( 2. * $pi ) } ]
+        set e 2.718281828459
+        set a $minimum
+        set a 0.
+        set x0 [expr { $std_dev_left * -2. } ]
+        set x1 [expr { $std_dev_right * 2. } ]
+
+        # Right Tail calcs
+
+        set k [expr { 2. * ( $median - $minimum ) / ( ( $curve_p_count - 1. ) * $sqrt_2pi ) } ]
+        set k [expr { 1. / $sqrt_2pi } ]
+
+        set x_incr [expr { $std_dev_left * 2. * 2. / $curve_p_count } ]
+        set x_prev $x0
+        # x_p is the probability moment
+        # a is area under curve to x_p
+        set x_p $x1
+        set f1 0.
+        for {set x [expr { $x0 + $x_incr * 0.9999999999 } ] } {$x <= $x_p } { set x [expr { $x + $x_incr } ] } { 
+            set f2 [expr { $k * pow( $e , -0.5 * pow( $x , 2. ) ) } ] 
+            set x_prev $x
+            set a [expr { $a + $x_incr * ( $f2 + $f1 ) / 2. } ]
+            set f1 $f2
+        }
+
+
+
+
+
         # Just include the part of x under the area of each y
-        set c_x_list [list $outliers $st_dev_parts $st_dev_parts $st_dev_parts $st_dev_parts $outliers]
+        set c_x_list [list $outliers $std_dev_parts $std_dev_parts $std_dev_parts $std_dev_parts $outliers]
         set c_y_list [list $minimum $median $median $median $median $maximum]
         set c_label_list [list $min_label $med_label $med_label $med_label $med_label $max_label]
         
@@ -753,7 +806,7 @@ ad_proc -private acc_fin::curve_import {
         # No time defaults.
         # set duration to 1 for limited block feedback.
 
-        set tc_larr(x) [list $outliers $st_dev_parts $st_dev_parts $st_dev_parts $st_dev_parts $outliers]
+        set tc_larr(x) [list $outliers $std_dev_parts $std_dev_parts $std_dev_parts $std_dev_parts $outliers]
         # using approximate cumulative distribution y values for standard deviation of 1.
         set tc_larr(y) [list 0.15 0.3 0.45 0.7 0.82 1.]
     }
