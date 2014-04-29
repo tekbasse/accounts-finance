@@ -10,6 +10,156 @@ ad_library {
 
 namespace eval acc_fin {}
 
+ad_proc -public acc_fin::pert_omp_to_normal_distribution_curve {
+    optimistic
+    most_likely
+    pessimistic
+    {n_points "24"}
+} {
+    Creates a normal curve in PRETTI dc table format representing characteristics of 
+    a PERT expected time function (Te), where 
+    Te = ( o + 4 * m + p ) and o = optimistic time, m = most likely time, and p = pessimistic time.
+    The normal distribution curve has lower limit (o), upper limit (p) and median (m). The area under the curve is normalized to 1.
+} {
+    # first case is always the minimum point. For calculation purposes, subtract one from n_points
+    set n_points [expr { $n_points - 1} ]
+
+    # Build a curve using Normal Distribution calculations as a base
+    # Split the curve into two tails, in case med - min value does not equal max - med.
+    # Left tail represents minimum to median.
+    # So, create a standard_deviation for left side by assuming curve is symmetric:
+    # set std_dev_left [expr { sqrt( 2 * pow( $minimum - $median , 2) + 4 * pow( $median - $median , 2) ) } ]
+    # resolves to:
+    # set std_dev_left [expr { sqrt( 2 * pow( $minimum - $median , 2)  ) } ]
+    # which further reduces to:
+    set std_dev_left [expr { sqrt( 2. ) * abs( $median - $minimum ) } ]
+    # Right tail represents median to maximum.
+    set std_dev_right [expr { sqrt( 2. ) * abs( $maximum - $median ) } ]
+    
+    # f(x) is the normal distribution function. x = 0 at $median
+    
+    # for each section of the curve divided into $n_points sections:
+    # k = ( $maximum - $minimum ) / ( ( $n_points - 1. ) * 2. * $pi )
+    # f(x) = k * pow( $e , -0.5 * pow( $x - $median , 2. ) )
+    # where x  is -2. * std_dev_left to 2. * std_dev
+    # and value at x is :
+    # if x < 0
+    # $minimum + sigma f( $x from -2. * $std_dev_left to x = 0 ) * n_points / 2.
+    # if x => 0
+    # $median + sigma f( $x from x = 0 to 2. * $std_dev_right ) * n_points / 2.
+    
+    # Determine x points. Start with 0 to get critical area near distribution peak.
+    if { $std_dev_left > $std_dev_right } {
+        # if there is an odd number of points, use the extra point on the longer side
+        set right_p_count [expr { int( $n_points / 2. ) } ]
+        set left_p_count [expr { $n_points - $right_p_count } ]
+        # first point is 0.
+        set left_x_list [list 0.]
+        for { set i 1} { $i < $left_p_count } {incr i} {
+            set x [expr { ( ( $i + 1. ) / ( $left_p_count * -1. ) ) * $std_dev_left } ]
+            lappend left_x_list $x
+        }
+        # create x_list
+        set x_list [list ]
+        # reverse order for left tail
+        for {set i [expr { $left_p_count - 1}]} {$i > -1} {incr i -1} {
+            lappend x_list [lindex $left_x_list $i]
+        }
+        # 0 is in left_x_list
+        set right_x_list [list ]
+        for { set i 0} { $i < $right_p_count } {incr i} {
+            set x [expr { ( ( $i + 1. ) / ( $right_p_count * -1. ) ) * $std_dev_right } ]
+            lappend x_list $x
+        }
+    } else {
+        # if there is an odd number of points, use the extra point on the longer side
+        set left_p_count [expr { int( $n_points / 2. ) } ]
+        set right_p_count [expr { $n_points - $left_p_count } ]
+        # first point is 0.
+        set left_x_list [list 0.]
+        for { set i 1} { $i < $left_p_count } {incr i} {
+            set x [expr { ( ( $i + 1. ) / ( $left_p_count * -1. ) ) * $std_dev_left } ]
+            lappend left_x_list $x
+        }
+        # create x_list
+        set x_list [list ]
+        # reverse order for left tail
+        for {set i [expr { $left_p_count - 1}]} {$i > -1} {incr i -1} {
+            lappend x_list [lindex $left_x_list $i]
+        }
+        # 0 is in left_x_list
+        set right_x_list [list ]
+        for { set i 0} { $i < $right_p_count } {incr i} {
+            set x [expr { ( ( $i + 1. ) / ( $right_p_count * -1. ) ) * $std_dev_right } ]
+            lappend x_list $x
+        }
+    }
+    # determine y, y = f(x) 
+    #set pi 3.14159265358979
+    set pi [expr { atan2( 0. , -1. ) } ]
+    #set e 2.718281828459  see exp()
+    set sqrt_2pi [expr { sqrt( 2. * $pi ) } ]
+    
+    
+    set y_list [list ]
+    #set x_normalized_list [list ]
+    set x_new_list [list ]
+    set x0 [lindex $x_list 0]
+    set x1 [lindex $x_list end]
+    set a $optimistic
+    set k [expr { ( $pessimistic - $optimistic ) / ( ( $n_points - 1. ) * $sqrt_2pi ) } ]
+    
+    set x_prev $x0
+    set y1 [expr { $k * exp( -0.5 * pow( $x_prev , 2. ) ) } ]         
+    foreach x [lrange $x_list 1 end] {
+        set y2 [expr { $k * exp( -0.5 * pow( $x , 2. ) ) } ]
+        set delta_x [expr { $x - $x_prev } ]
+        set a [expr { $a + $delta_x * ( $y2 + $y1 ) / 2. } ]
+        #set x_norm [expr { ( $x - $x0 ) / ( $x1 - $x0 ) } ]
+        lappend y_list $a
+        # Just include the part of x under the area of each y
+        #lappend x_normalized_list $x_norm
+        lappend x_new_list $delta_x
+        set y1 $y2
+        set x_prev $x
+    }
+    # confirm that pessimistic case is included
+    if { [lindex $y_list end] < $pessimistic } {
+        # reset end point for maximum case.
+        set x [expr { [f::sum $x_new_list] } ]
+        if { $x < 1. } {
+            set x [expr { 1. - $x } ]
+        } else {
+            set x [lindex $x_new_list end]
+        }
+        set y_list [lreplace $y_list end end $pessimistic]
+        set x_new_list [lreplace $x_new_list end end $x]
+    }
+
+    set curve_lists [list ]
+    lappend curve_lists [list y x]
+    # add the minimum case
+    lappend curve_lists [list $optimistic 0.]
+    set i 0
+    foreach y $y_list {
+        set point [list $y [lindex $x_new_list $i] ]
+        lappend curve_lists $point
+        incr i
+    }
+    return $curve_lists
+}
+
+
+ad_proc -public acc_fin::pretti_geom_avg_of_curve {
+    curve_lol
+} {
+    Given a curve with x and y, finds the geometric average determined by: (y1*x1 + y2*x2 .. yN*xN ) / sum(x1..xN)
+} {
+    # This is a generalization of the PERT Time-expected function
+
+}
+
+
 ad_proc -public acc_fin::pretti_type_flag {
     table_lists_name
 } {
@@ -733,67 +883,7 @@ ad_proc -private acc_fin::curve_import {
         # time_expected = ( time_optimistic + 4 * time_most_likely + time_pessimistic ) / 6.
         # per http://en.wikipedia.org/wiki/Program_Evaluation_and_Review_Technique
 
-        # Build a curve using Normal Distribution calculations as a base
-        # Split the curve into two tails, in case med - min value does not equal max - med.
-        # Left tail represents minimum to median.
-        # So, create a standard_deviation for left side by assuming curve is symmetric:
-        # set std_dev_left [expr { sqrt( 2 * pow( $minimum - $median , 2) + 4 * pow( $median - $median , 2) ) } ]
-        # resolves to:
-        # set std_dev_left [expr { sqrt( 2 * pow( $minimum - $median , 2)  ) } ]
-        # which further resolves to:
-        set std_dev_left [expr { sqrt( 2. ) * abs( $median - $minimum ) } ]
-        # Right tail represents median to maximum.
-        set std_dev_right [expr { sqrt( 2. ) * abs( $maximum - $median ) } ]
-        # f(x) is the normal distribution function. x = 0 at $median
-        # if k = ( $maximum - $minimum ) / ( ( $curve_p_count - 1. ) * 2. * $pi )
-        # f(x) = k * pow( $e , -0.5 * pow( $x - $median , 2. ) )
-        # where x  is -2. * std_dev_left to 2. * std_dev
-        # and value at x is :
-        # if x < 0
-        # $minimum + sigma f( $x from -2. * $std_dev_left to x = 0 ) * curve_p_count / 2.
-        # if x => 0
-        # $median + sigma f( $x from x = 0 to 2. * $std_dev_right ) * curve_p_count / 2.
-        #### 
-        set curve_p_count 24.
-        set pi 3.14159265358979
-        set sqrt_2pi [expr { sqrt( 2. * $pi ) } ]
-        set e 2.718281828459
-        set a $minimum
-        set a 0.
-        set x0 [expr { $std_dev_left * -2. } ]
-        set x1 [expr { $std_dev_right * 2. } ]
-
-        # Right Tail calcs
-
-        set k [expr { 2. * ( $median - $minimum ) / ( ( $curve_p_count - 1. ) * $sqrt_2pi ) } ]
-        set k [expr { 1. / $sqrt_2pi } ]
-
-        set x_incr [expr { $std_dev_left * 2. * 2. / $curve_p_count } ]
-        set x_prev $x0
-        # x_p is the probability moment
-        # a is area under curve to x_p
-        set x_p $x1
-        set f1 0.
-        for {set x [expr { $x0 + $x_incr * 0.9999999999 } ] } {$x <= $x_p } { set x [expr { $x + $x_incr } ] } { 
-            set f2 [expr { $k * pow( $e , -0.5 * pow( $x , 2. ) ) } ] 
-            set x_prev $x
-            set a [expr { $a + $x_incr * ( $f2 + $f1 ) / 2. } ]
-            set f1 $f2
-        }
-
-
-
-
-
-        # Just include the part of x under the area of each y
-        set c_x_list [list $outliers $std_dev_parts $std_dev_parts $std_dev_parts $std_dev_parts $outliers]
-        set c_y_list [list $minimum $median $median $median $median $maximum]
-        set c_label_list [list $min_label $med_label $med_label $med_label $med_label $max_label]
-        
-        for {set i 0} {$i < $c_larr_y_len } {incr i} {
-            set row [list [lindex $c_x_list $i] [lindex $c_y_list $i] [lindex $c_label_list $i]]
-            lappend c_lists $row
-        }
+        set c_lists [acc_fin::pert_omp_to_normal_distribution_curve $minimum $median $maximum ]
     }
     
     # 5. if an ordered list of lists x,y,label exists, use it as a fallback default
