@@ -10,19 +10,19 @@ ad_library {
 
 namespace eval acc_fin {}
 
-ad_proc -public acc_fin::pert_omp_to_normal_distribution_curve {
+ad_proc -public acc_fin::pert_omp_to_normal_dc {
     optimistic
     most_likely
     pessimistic
     {n_points "24"}
 } {
-    Creates a normal curve in PRETTI dc table format representing characteristics of 
+    Creates a normal distribution curve in PRETTI table format representing characteristics of 
     a PERT expected time function (Te), where 
-    Te = ( o + 4 * m + p ) and o = optimistic time, m = most likely time, and p = pessimistic time.
-    The normal distribution curve has lower limit (o), upper limit (p) and median (m). The area under the curve is normalized to 1.
+    Te = ( o + 4 * m + p ) / 6 and o = optimistic time, m = most likely time, and p = pessimistic time.
+    The normal distribution curve has lower limit (o), upper limit (p) and median (m). 
 } {
     # first case is always the minimum point. For calculation purposes, subtract one from n_points
-    set n_points [expr { $n_points - 1} ]
+    set n_points [expr { $n_points - 1 } ]
 
     # Build a curve using Normal Distribution calculations as a base
     # Split the curve into two tails, in case med - min value does not equal max - med.
@@ -94,12 +94,12 @@ ad_proc -public acc_fin::pert_omp_to_normal_distribution_curve {
             lappend x_list $x
         }
     }
+
     # determine y, y = f(x) 
     #set pi 3.14159265358979
     set pi [expr { atan2( 0. , -1. ) } ]
     #set e 2.718281828459  see exp()
     set sqrt_2pi [expr { sqrt( 2. * $pi ) } ]
-    
     
     set y_list [list ]
     #set x_normalized_list [list ]
@@ -153,10 +153,24 @@ ad_proc -public acc_fin::pert_omp_to_normal_distribution_curve {
 ad_proc -public acc_fin::pretti_geom_avg_of_curve {
     curve_lol
 } {
-    Given a curve with x and y, finds the geometric average determined by: (y1*x1 + y2*x2 .. yN*xN ) / sum(x1..xN)
+    Given a curve with x and y columns, finds the geometric average determined by: (y1*x1 + y2*x2 .. yN*xN ) / sum(x1..xN)
 } {
     # This is a generalization of the PERT Time-expected function
-
+    set constants_list [list x y]
+    # get first row of titles
+    set title_list [lindex $curve_lol 0]
+    set y_idx [lsearch -exact $title_list y]
+    set x_idx [lsearch -exact $title_list x]
+    set x_sum 0.
+    set numerator 0.
+    foreach point_list [lrange $curve_lol 1 end] {
+        set x [lindex $point_list $x_idx]
+        set y [lindex $point_list $y_idx]
+        set x_sum [expr { $x_sum + $x } ]
+        set numerator [expr { $numerator + $x * $y * 1. } ]
+    }
+    set geometric_avg [expr { $numerator / $x_sum } ]
+    return $geometric_avg
 }
 
 
@@ -883,7 +897,7 @@ ad_proc -private acc_fin::curve_import {
         # time_expected = ( time_optimistic + 4 * time_most_likely + time_pessimistic ) / 6.
         # per http://en.wikipedia.org/wiki/Program_Evaluation_and_Review_Technique
 
-        set c_lists [acc_fin::pert_omp_to_normal_distribution_curve $minimum $median $maximum ]
+        set c_lists [acc_fin::pert_omp_to_normal_dc $minimum $median $maximum ]
     }
     
     # 5. if an ordered list of lists x,y,label exists, use it as a fallback default
