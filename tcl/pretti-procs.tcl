@@ -21,6 +21,7 @@ ad_proc -public acc_fin::pert_omp_to_normal_dc {
     Te = ( o + 4 * m + p ) / 6 and o = optimistic time, m = most likely time, and p = pessimistic time.
     The normal distribution curve has lower limit (o), upper limit (p) and median (m). 
 } {
+    ns_log Notice "acc_fin::pert_omp_to_normal_dc.24: optimistic $optimistic most_likely $most_likely pessimistic $pessimistic n_points $n_points"
     # first case is always the minimum point. For calculation purposes, subtract one from n_points
     set n_points [expr { $n_points - 1 } ]
     # nomenclature of inputs  statistics:
@@ -39,7 +40,7 @@ ad_proc -public acc_fin::pert_omp_to_normal_dc {
     set std_dev_left [expr { sqrt( 2. ) * abs( $most_likely - $optimistic ) } ]
     # Right tail represents median to maximum.
     set std_dev_right [expr { sqrt( 2. ) * abs( $pessimistic - $most_likely ) } ]
-    
+    ns_log Notice "acc_fin::pert_omp_to_normal_dc.42: std_dev_left $std_dev_left std_dev_right $std_dev_right"
     # f(x) is the normal distribution function. x = 0 at $median
     
     # for each section of the curve divided into $n_points sections:
@@ -72,7 +73,7 @@ ad_proc -public acc_fin::pert_omp_to_normal_dc {
         # 0 is in left_x_list
         set right_x_list [list ]
         for { set i 0} { $i < $right_p_count } {incr i} {
-            set x [expr { ( ( $i + 1. ) / ( $right_p_count * -1. ) ) * $std_dev_right } ]
+            set x [expr { ( ( $i + 1. ) / ( $right_p_count ) ) * $std_dev_right } ]
             lappend x_list $x
         }
     } else {
@@ -94,41 +95,49 @@ ad_proc -public acc_fin::pert_omp_to_normal_dc {
         # 0 is in left_x_list
         set right_x_list [list ]
         for { set i 0} { $i < $right_p_count } {incr i} {
-            set x [expr { ( ( $i + 1. ) / ( $right_p_count * -1. ) ) * $std_dev_right } ]
+            set x [expr { ( ( $i + 1. ) / ( $right_p_count ) ) * $std_dev_right } ]
             lappend x_list $x
         }
     }
-
+#    ns_log Notice "acc_fin::pert_omp_to_normal_dc.101: right_x_list $right_x_list"
+#    ns_log Notice "acc_fin::pert_omp_to_normal_dc.102: left_x_list $left_x_list"
+    ns_log Notice "acc_fin::pert_omp_to_normal_dc.103: x_list $x_list"
     # determine y, y = f(x) 
     #set pi 3.14159265358979
     set pi [expr { atan2( 0. , -1. ) } ]
     #set e 2.718281828459  see exp()
     set sqrt_2pi [expr { sqrt( 2. * $pi ) } ]
-    
     set y_list [list ]
-    #set x_normalized_list [list ]
     set x_new_list [list ]
     set x0 [lindex $x_list 0]
     set x1 [lindex $x_list end]
-    set a $optimistic
-    set k [expr { ( $pessimistic - $optimistic ) / ( ( $n_points - 1. ) * $sqrt_2pi ) } ]
-    
+    set x_range [expr { $x1 - $x0 } ]
+    set y_range [expr { $pessimistic - $optimistic } ]
+    set a 0.
+    # set k [expr { 1. / ( $sqrt_2pi ) } ]
     set x_prev $x0
-    set y1 [expr { $k * exp( -0.5 * pow( $x_prev , 2. ) ) } ]         
+    set y1 [expr { exp( -0.5 * pow( $x_prev , 2. ) ) / $sqrt_2pi } ] 
+    #ns_log Notice "acc_fin::pert_omp_to_normal_dc.119: pi $pi sqrt_2pi $sqrt_2pi k $k y1 $y1"
     foreach x [lrange $x_list 1 end] {
-        set y2 [expr { $k * exp( -0.5 * pow( $x , 2. ) ) } ]
+        set y2 [expr { exp( -0.5 * pow( $x , 2. ) ) / $sqrt_2pi } ]
         set delta_x [expr { $x - $x_prev } ]
+        # a is area under curve
         set a [expr { $a + $delta_x * ( $y2 + $y1 ) / 2. } ]
-        #set x_norm [expr { ( $x - $x0 ) / ( $x1 - $x0 ) } ]
-        lappend y_list $a
+        set dx_normalized [expr { $delta_x / $x_range } ]
+        set f_x [expr { $optimistic + $y_range * $a } ]
+
+        ns_log Notice "acc_fin::pert_omp_to_normal_dc.125: y2 $y2 delta_x $delta_x a $a f_x $f_x x_new $dx_normalized"
+
+        lappend y_list $f_x
         # Just include the part of x under the area of each y
-        #lappend x_normalized_list $x_norm
-        lappend x_new_list $delta_x
+        lappend x_new_list $dx_normalized
         set y1 $y2
         set x_prev $x
     }
+    ns_log Notice "acc_fin::pert_omp_to_normal_dc.132: y_list $y_list"
     # confirm that pessimistic case is included
     if { [lindex $y_list end] < $pessimistic } {
+        ns_log Notice "acc_fin::pert_omp_to_normal_dc.134: resetting pessimistic point"
         # reset end point for maximum case.
         set x [expr { [f::sum $x_new_list] } ]
         if { $x < 1. } {
