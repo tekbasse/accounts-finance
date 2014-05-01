@@ -159,17 +159,24 @@ ad_proc -public acc_fin::pretti_geom_avg_of_curve {
     set constants_list [list x y]
     # get first row of titles
     set title_list [lindex $curve_lol 0]
-    set y_idx [lsearch -exact $title_list y]
-    set x_idx [lsearch -exact $title_list x]
-    set x_sum 0.
-    set numerator 0.
-    foreach point_list [lrange $curve_lol 1 end] {
-        set x [lindex $point_list $x_idx]
-        set y [lindex $point_list $y_idx]
-        set x_sum [expr { $x_sum + $x } ]
-        set numerator [expr { $numerator + $x * $y * 1. } ]
+    set y_idx [lsearch -exact $title_list "y"]
+    set x_idx [lsearch -exact $title_list "x"]
+    set geometric_avg ""
+    if { $y_idx > -1 && $x_idx > -1 } {
+        set x_sum 0.
+        set numerator 0.
+        foreach point_list [lrange $curve_lol 1 end] {
+            set x [lindex $point_list $x_idx]
+            set y [lindex $point_list $y_idx]
+            set x_sum [expr { $x_sum + $x } ]
+            set numerator [expr { $numerator + $x * $y * 1. } ]
+        }
+        if { $x_sum != 0. } {
+            set geometric_avg [expr { $numerator / $x_sum } ]
+        }
+    } else {
+        ns_log Notice "acc_fin::pretti_geom_avg_of_curve.178: y_idx $y_idx x_idx $x_idx"
     }
-    set geometric_avg [expr { $numerator / $x_sum } ]
     return $geometric_avg
 }
 
