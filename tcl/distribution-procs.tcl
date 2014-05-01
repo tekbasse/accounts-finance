@@ -80,7 +80,7 @@ ad_proc -public qaf_y_of_x_dist_curve {
     to interpolate when p is between two discrete points that represent a continuous curve. if first row contains labels x and y as labels, 
     these positions will be used to extract data from remaining rows. a pair y,x is assumed
 }  {
-#    ns_log Notice "qaf_y_of_x_dist_curve.83: p $p y_x_lol $y_x_lol interpolate_p $interpolate_p" 
+    ns_log Notice "qaf_y_of_x_dist_curve.83: p $p interpolate_p $interpolate_p y_x_lol $y_x_lol " 
    set p [expr { $p + 0. } ]
     set first_row_list [lindex $y_x_lol 0]
     set x_idx [lsearch -exact $first_row_list "x"]
@@ -101,21 +101,23 @@ ad_proc -public qaf_y_of_x_dist_curve {
     set x_sum [f::sum $x_list]
     # normalize p to range of x
     set p_normalized [expr { $p * $x_sum } ]
+    ns_log Notice "qaf_y_of_x_dist_curve.104: x_sum $x_sum p $p p_normalized $p_normalized"
     # determine y @ x
     set i $data_row_1
     set row_idx $i
     set count_max [llength $y_x_lol]
-    ns_log Notice "qaf_y_of_x_dist_curve.108: row_idx $row_idx p_test $p_test p_normalized $p_normalized count_max $count_max"
+    ns_log Notice "qaf_y_of_x_dist_curve.108: row_idx $row_idx p_test $p_test count_max $count_max"
     while { $i < $count_max && $p_test < $p_normalized } {
         set row_list [lindex $y_x_lol $i]
         set x [lindex $row_list $x_idx]
         set p_test [expr { $x + $p_test } ]
         set row_idx $i
-
+    ns_log Notice "qaf_y_of_x_dist_curve.110: row_idx $row_idx p_test $p_test"
         incr i
     }
-    ns_log Notice "qaf_y_of_x_dist_curve.114: row_idx $row_idx p_test $p_test p_normalized $p_normalized count_max $count_max"
-    if { $interpolate_p && $row_idx > $data_row_1 } {
+    ns_log Notice "qaf_y_of_x_dist_curve.114: row_idx $row_idx p_test $p_test"
+
+    if { $interpolate_p && $row_idx > $data_row_1 && $p_test != $p_normalized } {
         set x2 $x
         set y2 [expr { [lindex $row_list $y_idx] + 0. } ]
         set row_prev_idx [expr  { $row_idx - 1 } ]
@@ -123,21 +125,63 @@ ad_proc -public qaf_y_of_x_dist_curve {
         set x1 [expr { [lindex $row_prev_list $x_idx] + 0. } ]
         set y1 [expr { [lindex $row_prev_list $y_idx] + 0. } ]
         set delta_x [expr { $x2 - $x1 } ]
+        ns_log Notice "qaf_y_of_x_dist_curve.127: x1 $x1 y1 $y1 x2 $x2 y2 $y2 delta_x $delta_x"
         if { $delta_x != 0. } {
-            set y [expr { $y1 + ( $y2 - $y1 ) * ( $p_normalized - $x1 ) / $delta_x } ]
+            set diff_pct [expr { ( $p_normalized - $x1 ) / $delta_x } ]
+            if { $diff_pct > 0. && $diff_pct < 1. } {
+                set y [expr { $y1 + ( $y2 - $y1 ) * $diff_pct } ]
+            } else {
+                # delta_x must be really small
+                # approximate by taking the average between y1 and y2
+                ns_log Notice "qaf_y_of_x_dist_curve.135: diff_pct out of bounds with $diff_pct. Approximating with average of y1 and y2"
+                set y [expr { ( $y1 + $y2 ) / 2. } ]
+            }
         } else {
             # two points with same x in curve?
             # average the two y's
             set y [expr { ( $y2 + $y1 ) / 2. } ]
             ns_log Notice "qaf_y_of_x_dist_curve.126: two points in curve have same x. interpolating by averaging at x = $x1"
         }
+    } elseif { $interpolate_p && $row_idx == $data_row_1 } {
+        # Interpolate forward instead of backward
+        set row_list [lindex $y_x_lol $data_row_1 ]
+        set x1 [expr { [lindex $row_list $x_idx] + 0. } ]
+        if { $p_test == $x1 } {
+            set y [expr { [lindex $row_list $y_idx] + 0. } ]
+        } else {
+            set y1 [expr { [lindex $row_list $y_idx] + 0. } ]
+            set row_next_idx [expr  { $row_idx + 1 } ]
+            set row_next_list [lindex $y_x_lol $row_next_idx]
+            set x2 [expr { [lindex $row_next_list $x_idx] + 0. } ]
+            set y2 [expr { [lindex $row_next_list $y_idx] + 0. } ]
+            set delta_x [expr { $x2 - $x1 } ]
+            ns_log Notice "qaf_y_of_x_dist_curve.158: x1 $x1 y1 $y1 x2 $x2 y2 $y2 delta_x $delta_x"
+            if { $delta_x != 0. } {
+                set diff_pct [expr { ( $p_normalized - $x1 ) / $delta_x } ]
+                if { $diff_pct > 0. && $diff_pct < 1. } {
+                    set y [expr { $y1 + ( $y2 - $y1 ) * $diff_pct } ]
+                } else {
+                    # delta_x must be really small
+                    # approximate by taking the average between y1 and y2
+                    ns_log Notice "qaf_y_of_x_dist_curve.166: diff_pct out of bounds with $diff_pct. Approximating with average of y1 and y2"
+                    set y [expr { ( $y1 + $y2 ) / 2. } ]
+                }
+            } else {
+                # two points with same x in curve?
+                # average the two y's
+                set y [expr { ( $y2 + $y1 ) / 2. } ]
+                ns_log Notice "qaf_y_of_x_dist_curve.126: two points in curve have same x. interpolating by averaging at x = $x1"
+            }
+            
+        }
     } else {
+        # row_idx >= data_row_1 && p_test == p_normalized  
         if { ![info exists row_list] } {
             set row_list [lindex $y_x_lol $i]
         }
         set y [expr { [lindex $row_list $y_idx] + 0. } ]
     }
-
+    ns_log Notice "qaf_y_of_x_dist_curve.141: y $y"
     return $y
 }
 
