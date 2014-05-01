@@ -67,12 +67,12 @@ ad_proc -public acc_fin::pert_omp_to_normal_dc {
         # create x_list
         set x_list [list ]
         # reverse order for left tail
-        for {set i [expr { $left_p_count - 1}]} {$i > -1} {incr i -1} {
+        for {set i [expr { $left_p_count - 1 } ] } { $i > -1 } { incr i -1 } {
             lappend x_list [lindex $left_x_list $i]
         }
         # 0 is in left_x_list
         set right_x_list [list ]
-        for { set i 0} { $i < $right_p_count } {incr i} {
+        for { set i 0 } { $i < $right_p_count } { incr i } {
             set x [expr { ( ( $i + 1. ) / ( $right_p_count ) ) * $std_dev_right } ]
             lappend x_list $x
         }
@@ -109,13 +109,13 @@ ad_proc -public acc_fin::pert_omp_to_normal_dc {
     set sqrt_2pi [expr { sqrt( 2. * $pi ) } ]
     set y_list [list ]
     set x_new_list [list ]
-    set x0 [lindex $x_list 0]
-    set x1 [lindex $x_list end]
-    set x_range [expr { $x1 - $x0 } ]
+    set x_leftmost [lindex $x_list 0]
+    set x_rightmost [lindex $x_list end]
+    set x_range [expr { $x_rightmost - $x_leftmost } ]
     set y_range [expr { $pessimistic - $optimistic } ]
     set a 0.
     # set k [expr { 1. / ( $sqrt_2pi ) } ]
-    set x_prev $x0
+    set x_prev $x_leftmost
     set y1 [expr { exp( -0.5 * pow( $x_prev , 2. ) ) / $sqrt_2pi } ] 
     #ns_log Notice "acc_fin::pert_omp_to_normal_dc.119: pi $pi sqrt_2pi $sqrt_2pi k $k y1 $y1"
     foreach x [lrange $x_list 1 end] {
@@ -126,7 +126,7 @@ ad_proc -public acc_fin::pert_omp_to_normal_dc {
         set dx_normalized [expr { $delta_x / $x_range } ]
         set f_x [expr { $optimistic + $y_range * $a } ]
 
-        ns_log Notice "acc_fin::pert_omp_to_normal_dc.125: y2 $y2 delta_x $delta_x a $a f_x $f_x x_new $dx_normalized"
+#        ns_log Notice "acc_fin::pert_omp_to_normal_dc.125: y2 $y2 delta_x $delta_x a $a f_x $f_x x_new $dx_normalized"
 
         lappend y_list $f_x
         # Just include the part of x under the area of each y
@@ -134,17 +134,17 @@ ad_proc -public acc_fin::pert_omp_to_normal_dc {
         set y1 $y2
         set x_prev $x
     }
-    ns_log Notice "acc_fin::pert_omp_to_normal_dc.132: y_list $y_list"
+#    ns_log Notice "acc_fin::pert_omp_to_normal_dc.132: y_list $y_list"
     # confirm that pessimistic case is included
     if { [lindex $y_list end] < $pessimistic } {
-        ns_log Notice "acc_fin::pert_omp_to_normal_dc.134: resetting pessimistic point"
+#        ns_log Notice "acc_fin::pert_omp_to_normal_dc.134: resetting pessimistic point"
         # reset end point for maximum case.
-        set x [expr { [f::sum $x_new_list] } ]
-        if { $x < 1. } {
-            set x [expr { 1. - $x } ]
-        } else {
+#        set x [expr { [f::sum $x_new_list] } ]
+#        if { $x < 1. } {
+#            set x [expr { 1. - $x } ]
+#        } else {
             set x [lindex $x_new_list end]
-        }
+#        }
         set y_list [lreplace $y_list end end $pessimistic]
         set x_new_list [lreplace $x_new_list end end $x]
     }
