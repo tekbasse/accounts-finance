@@ -4,14 +4,14 @@ ad_library {
     @creation-date 2014-04-30
 }
 
-aa_register pert_OMP_curve_conversions {
+aa_register_case pert_OMP_curve_conversions {
     Test acc_fin::pretti_geom_avg_of_curve proc
 } {    
-
+    
     aa_run_with_teardown \
         -rollback \
         -test_code {
-
+            
             # Use examples from 
             # http://en.wikipedia.org/wiki/Program_Evaluation_and_Review_Technique
             # Te = time_expected
@@ -43,7 +43,7 @@ G,3,5,8,5.17\n
                 set geo_avg [acc_fin::pretti_geom_avg_of_curve $curve_lol]
                 set geo_avg_fmt [string range $geo_avg 0 $expected_time_len]
                 aa_equals "Activity $activity: Te calced matches Te expected" $expected_time $geo_avg_fmt
-
+                
                 # test making a curve based on min/med/max values
                 set optimistic [expr { [lindex $row_cells_list 1] + .0 } ]
                 set median [expr { [lindex $row_cells_list 2] + .0 } ]
@@ -71,8 +71,8 @@ G,3,5,8,5.17\n
                         aa_true "Activity $activity: $n_points point curve within $t_pct % @median" $median_p
                         aa_true "Activity $activity: $n_points point curve within $t_pct % @pessimistic" $pessimistic_p
                     }
+                }                
             }
-
         }
 }
 
