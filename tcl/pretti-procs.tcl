@@ -59,7 +59,7 @@ ad_proc -public acc_fin::pert_omp_to_normal_dc {
         set right_p_count [expr { int( $n_points / 2. ) } ]
         set left_p_count [expr { $n_points - $right_p_count } ]
         # first point is 0.
-        set left_x_list [list 0.]
+        set left_x_list [list "0."]
         for { set i 1} { $i < $left_p_count } {incr i} {
             set x [expr { ( ( $i + 1. ) / ( $left_p_count * -1. ) ) * $std_dev_left } ]
             lappend left_x_list $x
@@ -81,7 +81,7 @@ ad_proc -public acc_fin::pert_omp_to_normal_dc {
         set left_p_count [expr { int( $n_points / 2. ) } ]
         set right_p_count [expr { $n_points - $left_p_count } ]
         # first point is 0.
-        set left_x_list [list 0.]
+        set left_x_list [list "0."]
         for { set i 1} { $i < $left_p_count } {incr i} {
             set x [expr { ( ( $i + 1. ) / ( $left_p_count * -1. ) ) * $std_dev_left } ]
             lappend left_x_list $x
@@ -118,21 +118,36 @@ ad_proc -public acc_fin::pert_omp_to_normal_dc {
     set x_prev $x_leftmost
     set y1 [expr { exp( -0.5 * pow( $x_prev , 2. ) ) / $sqrt_2pi } ] 
     #ns_log Notice "acc_fin::pert_omp_to_normal_dc.119: pi $pi sqrt_2pi $sqrt_2pi k $k y1 $y1"
+    set zero_idx [lsearch -exact $x_list "0."]
+    if { $zero_idx == -1 } {
+        ns_log Warning "acc_fin::pert_omp_to_normal_dc.123: No '0.' for zero_idx. Bad curve likely."
+        set zero_idx [llength $left_x_list]
+        incr zero_idx -1
+    }
+    # left range of y
+    set y_range_arr(1) [expr { $most_likely - $optimistic } ]
+    # right range of y
+    set y_range_arr(0) [expr { $pessimistic - $most_likely } ]
+    set i 0
     foreach x [lrange $x_list 1 end] {
+        set leftside_p [expr { $i < $zero_idx } ]
         set y2 [expr { exp( -0.5 * pow( $x , 2. ) ) / $sqrt_2pi } ]
         set delta_x [expr { $x - $x_prev } ]
         # a is area under curve
         set a [expr { $a + $delta_x * ( $y2 + $y1 ) / 2. } ]
-        set dx_normalized [expr { $delta_x / $x_range } ]
-        set f_x [expr { $optimistic + $y_range * $a } ]
+        #set dx_normalized [expr { $delta_x / $x_range } ]
+
+        # Use two equations, one for left side, one for right side:
+        set f_x [expr { $optimistic + 2. * $y_range_arr($leftside_p) * $a } ]
 
 #        ns_log Notice "acc_fin::pert_omp_to_normal_dc.125: y2 $y2 delta_x $delta_x a $a f_x $f_x x_new $dx_normalized"
 
         lappend y_list $f_x
         # Just include the part of x under the area of each y
-        lappend x_new_list $dx_normalized
+        lappend x_new_list $delta_x
         set y1 $y2
         set x_prev $x
+        incr i
     }
 #    ns_log Notice "acc_fin::pert_omp_to_normal_dc.132: y_list $y_list"
     # confirm that pessimistic case is included
