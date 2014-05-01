@@ -44,7 +44,7 @@ ad_proc -public acc_fin::pert_omp_to_normal_dc {
     # f(x) is the normal distribution function. x = 0 at $median
     
     # for each section of the curve divided into $n_points sections:
-    # k = ( $maximum - $minimum ) / ( ( $n_points - 1. ) * 2. * $pi )
+    # k = 1. / ( 2. * $pi )
     # f(x) = k * pow( $e , -0.5 * pow( $x - $median , 2. ) )
     # where x  is -2. * std_dev_left to 2. * std_dev
     # and value at x is :
@@ -124,10 +124,12 @@ ad_proc -public acc_fin::pert_omp_to_normal_dc {
         set zero_idx [llength $left_x_list]
         incr zero_idx -1
     }
-    # left range of y
+    # left tail
     set y_range_arr(1) [expr { $most_likely - $optimistic } ]
-    # right range of y
+    set std_dev_arr(1) $std_dev_left
+    # right tail
     set y_range_arr(0) [expr { $pessimistic - $most_likely } ]
+    set std_dev_arr(0) $std_dev_right
     set i 0
     foreach x [lrange $x_list 1 end] {
         set leftside_p [expr { $i < $zero_idx } ]
@@ -141,10 +143,13 @@ ad_proc -public acc_fin::pert_omp_to_normal_dc {
         set f_x [expr { $optimistic + 2. * $y_range_arr($leftside_p) * $a } ]
 
 #        ns_log Notice "acc_fin::pert_omp_to_normal_dc.125: y2 $y2 delta_x $delta_x a $a f_x $f_x x_new $dx_normalized"
-
+        if { [expr { abs( $i - $zero_idx ) } ] < 2 } {
+            ns_log Notice "acc_fin::pert_omp_to_normal_dc.147: y2 $y2 y1 $y1 $x $x_prev delta_x $delta_x a $a f_x $f_x leftside_p $leftside_p"
+        }
         lappend y_list $f_x
         # Just include the part of x under the area of each y
         lappend x_new_list $delta_x
+        
         set y1 $y2
         set x_prev $x
         incr i
@@ -174,6 +179,11 @@ ad_proc -public acc_fin::pert_omp_to_normal_dc {
         lappend curve_lists $point
         incr i
     }
+    set points_count [expr { [llength $curve_lists] - 1 } ]
+    if { $points_count != $n_points } {
+        ns_log Warning "acc_fin::pert_omp_to_normal_dc.179: curve has $points_count points instead of requested $n_points points."
+    }
+
     return $curve_lists
 }
 
