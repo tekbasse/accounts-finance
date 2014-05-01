@@ -23,6 +23,10 @@ ad_proc -public acc_fin::pert_omp_to_normal_dc {
 } {
     # first case is always the minimum point. For calculation purposes, subtract one from n_points
     set n_points [expr { $n_points - 1 } ]
+    # nomenclature of inputs  statistics:
+    # set median $most_likely
+    # set minimum $optimistic
+    # set maximum $pessimistic
 
     # Build a curve using Normal Distribution calculations as a base
     # Split the curve into two tails, in case med - min value does not equal max - med.
@@ -32,9 +36,9 @@ ad_proc -public acc_fin::pert_omp_to_normal_dc {
     # resolves to:
     # set std_dev_left [expr { sqrt( 2 * pow( $minimum - $median , 2)  ) } ]
     # which further reduces to:
-    set std_dev_left [expr { sqrt( 2. ) * abs( $median - $minimum ) } ]
+    set std_dev_left [expr { sqrt( 2. ) * abs( $most_likely - $optimistic ) } ]
     # Right tail represents median to maximum.
-    set std_dev_right [expr { sqrt( 2. ) * abs( $maximum - $median ) } ]
+    set std_dev_right [expr { sqrt( 2. ) * abs( $pessimistic - $most_likely ) } ]
     
     # f(x) is the normal distribution function. x = 0 at $median
     

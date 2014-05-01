@@ -76,39 +76,60 @@ ad_proc -public qaf_y_of_x_dist_curve {
     {interpolate_p 0}
 } {
     returns y where p is in the range of x ie y(p,x).  Where p is some probability between 0 and 1. 
-    Assumes y_x_lol is an ordered list of y-x list representing a curve. Set interpolate_p to 1
-    to interpolate when p is between two discrete points that represent a continuous curve.
+    Assumes y_x_lol is an ordered list of lists representing a curve. Set interpolate_p to 1
+    to interpolate when p is between two discrete points that represent a continuous curve. if first row contains labels x and y as labels, 
+    these positions will be used to extract data from remaining rows. a pair y,x is assumed
 }  {
     set p [expr { $p + 0. } ]
-
-    set count_max [llength $y_x_pair_list]
-    set i 0
+    set first_row_list [lindex $y_x_lol 0]
+    set x_idx [lsearch -exact $first_row_list "x"]
+    set y_idx [lsearch -exact $first_row_list "y"]
+    if { $y_idx == -1 || $x_idx == -1 } {
+        set x_idx 1
+        set y_idx 0
+        set data_row_1 0
+    } else {
+        set data_row_1 1
+    }
     set p_test 0.
     # normalize x to 1.
     set x_list [list ]
-    foreach y_x $y_x_list {
-        lappend x_list [lindex $y_x 1]
+    foreach y_x [lrange $y_x_lol $data_row_1 end] {
+        lappend x_list [lindex $y_x $x_idx]
     }
     set x_sum [f::sum $x_list]
     # normalize p to range of x
     set p_normalized [expr { $p * $x_sum } ]
     # determine y @ x
+    set i $data_row_1
+    set count_max [llength $y_x_lol]
     while { $i < $count_max && $p_test < $p_normalized} {
-        set row_list [lindex $y_x_list $i]
-        set x [lindex $row_list 1]
+        set row_list [lindex $y_x_lol $i]
+        set x [lindex $row_list $x_idx]
         set p_test [expr { $x + $p_test + 0. } ]
         incr i
     }
-    if { $interpolate_p } {
+    if { $interpolate_p && $i > $data_row_1 } {
         set x2 $x
-        set y2 [expr { [lindex $row_list 0] + 0. } ]
+        set y2 [expr { [lindex $row_list $y_idx] + 0. } ]
         incr i -1
-        set row_prev_list [lindex $y_x_list $i]
-        set x1 [expr { [lindex $row_prev_list 1] + 0. } ]
-        set y1 [expr { [lindex $row_prev_list 0] + 0. } ]
-        set y [expr { ( $y2 - $y1 ) * ( $p_normalized - $x1 ) / ( $x2 - $x1) + $y1 } ]
+        set row_prev_list [lindex $y_x_lol $i]
+        set x1 [expr { [lindex $row_prev_list $x_idx] + 0. } ]
+        set y1 [expr { [lindex $row_prev_list $y_idx] + 0. } ]
+        set delta_x [expr { $x2 - $x1 } ]
+        if { $delta_x != 0. } {
+            set y [expr { ( $y2 - $y1 ) * ( $p_normalized - $x1 ) / $delta_x + $y1 } ]
+        } else {
+            # two points with same x in curve?
+            # average the two y's
+            set y [expr { ( $y2 + $y1 ) / 2. } ]
+            ns_log Notice "qaf_y_of_x_dist_curve.126: two points in curve have same x. interpolating by averaging at x = $x1"
+        }
     } else {
-        set y [expr { [lindex $row_list 0] + 0. } ]
+        if { ![info exists row_list] } {
+            set row_list [lindex $y_x_lol $i]
+        }
+        set y [expr { [lindex $row_list $y_idx] + 0. } ]
     }
 
     return $y
