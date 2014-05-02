@@ -14,16 +14,19 @@ ad_proc -public acc_fin::pert_omp_to_normal_dc {
     optimistic
     most_likely
     pessimistic
-    {n_points "24"}
+    {n_points "23"}
 } {
     Creates a normal distribution curve in PRETTI table format representing characteristics of 
     a PERT expected time function (Te), where 
     Te = ( o + 4 * m + p ) / 6 and o = optimistic time, m = most likely time, and p = pessimistic time.
     The normal distribution curve has lower limit (o), upper limit (p) and median (m). 
+    The curve is an odd number of points for all cases, because the area of each tail must be equal
+    in order to keep the median centered (symetric about the median).
 } {
     ns_log Notice "acc_fin::pert_omp_to_normal_dc.24: optimistic $optimistic most_likely $most_likely pessimistic $pessimistic n_points $n_points"
     # first case is always the minimum point. For calculation purposes, subtract one from n_points
-    set n_points [expr { $n_points - 1 } ]
+    set n_points [expr { int( int( $n_points / 2. ) * 2. + 1. ) } ]
+    set t_points [expr { int( $n_points / 2. ) } ]
     # nomenclature of inputs  statistics:
     # set median $most_likely
     # set minimum $optimistic
