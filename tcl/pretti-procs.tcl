@@ -111,10 +111,11 @@ ad_proc -public acc_fin::pert_omp_to_normal_dc {
             set x_prev $x
         }
         set a_arr($ii) [f::sum $a_larr($ii)]
-        ns_log Notice "acc_fin::pert_omp_to_normal_dc.107: a_arr($ii) $a_arr($ii)"
+#        ns_log Notice "acc_fin::pert_omp_to_normal_dc.107: a_arr($ii) $a_arr($ii)"
     }
     # tail areas must be equal.
     if { $a_arr(1) != $a_arr(0) } {
+        ns_log Notice "acc_fin::pert_omp_to_normal_dc.118: a_arr(0) != $a_arr(1) Attempting fix."
         if { $a_arr(1) > $a_arr(0) } {
             set order2_list $order_larr(0)
         } elseif { $a_arr(0) > $a_arr(1) } {
@@ -125,7 +126,9 @@ ad_proc -public acc_fin::pert_omp_to_normal_dc {
         set c [lindex $order2_list 0]
         # $d is the area that needs to match $c
         set d [lindex $order2_list 1]
-        set a_diff [expr { $a_arr($c) - $a_arr($d) } ]
+        ns_log Notice "Attempting to match area of tail $c by modifying area of tail $d."
+
+       set a_diff [expr { $a_arr($c) - $a_arr($d) } ]
         # Add $a_diff to the first area of $d
         # but, delta_x is not calculated at this point.
         # so, add x_diff to each value of x in $d tail (but the first one).
@@ -180,7 +183,8 @@ ad_proc -public acc_fin::pert_omp_to_normal_dc {
         # Report if adjustment is less than optimally effective
         set a2_diff [expr { $a_arr(1) - $a_arr(0) } ]
         if { [expr { abs( $a2_diff ) } ] > 0.0001 } {
-            ns_log Notice "acc_fin::pert_omp_to_normal_dc.164: tail areas are significantly different (a2_diff > 0.0001)."
+            ns_log Notice "acc_fin::pert_omp_to_normal_dc.163: tail areas are significantly different (a2_diff > 0.0001)."
+            ns_log Notice "acc_fin::pert_omp_to_normal_dc.164: a_arr($d) $a_arr($d) a_arr($c) $a_arr($c)"
             ns_log Notice "acc_fin::pert_omp_to_normal_dc.165: a_diff $a_diff a2_diff $a2_diff"
             ns_log Notice "acc_fin::pert_omp_to_normal_dc.166: optimistic $optimistic most_likely $most_likely pessimistic $pessimistic n_points $n_points"
         }
@@ -214,7 +218,8 @@ ad_proc -public acc_fin::pert_omp_to_normal_dc {
         # note: x already normalized
         set x [lindex $x_larr(0) $i]
         set y2 [lindex $nd_larr(0) $i]
-        set delta_x [expr { $x - $x_prev } ]
+        # going backwards, so delta_x sign is reversed.
+        set delta_x [expr { $x_prev - $x } ]
         # a is area under curve
             ns_log Notice "acc_fin::pert_omp_to_normal_dc.205: a '$a' delta_x '$delta_x' y2 '$y2' y1 '$y1' "
         set a [expr { $a + $delta_x * ( $y1 + $y2 ) / 2. } ]
