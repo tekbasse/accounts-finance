@@ -73,15 +73,15 @@ ad_proc -public acc_fin::pert_omp_to_normal_dc {
         set order_list $order_larr(1)
     }
     # $a is the tail with the largest standard deviation
-    set $a [lindex $order_list 0]
-    set $b [lindex $order_list 1]
+    set a [lindex $order_list 0]
+    set b [lindex $order_list 1]
     # if there is an odd number of points, use the extra point on the longer side
     set p_count($b) [expr { int( $n_points / 2. ) } ]
     set p_count($a) [expr { $n_points - $p_count($b) } ]
 
     # create tails and their analogs
     # from median to double standard deviation to approximate OMP calculations
-    for ii $order_list {
+    foreach ii $order_list {
         set x_larr($ii) [list ]
         set nd_larr($ii) [list ]
         set a_larr($ii) [list ]
@@ -176,17 +176,18 @@ ad_proc -public acc_fin::pert_omp_to_normal_dc {
     # right tail
     set y_range_arr(1) [expr { $pessimistic - $most_likely } ]
 
-    set x_prev [lindex $x_larr(0) 0]
-    set xi 0.
+
+    # build final left tail
+    set curve_lists [list ]
+    lappend curve_lists [list y x]
+
+    set x_prev [lindex $x_larr(0) end]
     # standard conversion is:
     #set y1 [lindex $nd_larr(0) 0]
     # but y1 is $optimistic
     set y1 $optimistic
-    # build final left tail
-    set curve_lists [list ]
-    lappend curve_lists [list y x]
     # tail must end with a = 0.5 for median
-    set a [expr { 0.5 - $a_larr(0) } ]
+    set a [expr { 0.5 - $a_arr(0) } ]
 
     # add the minimum case
     set point_list [list $y1 $a]
@@ -194,39 +195,57 @@ ad_proc -public acc_fin::pert_omp_to_normal_dc {
 
     # x_count is one after start of left tail: last index - 1 ie: length - 2
     set x_count [expr { [llength $x_larr(0)] - 2 } ]
-    for {set i $x_count} { $i > -1 } {incr i -1}
+    for {set i $x_count} { $i > -1 } {incr i -1} {
         set x [lindex $x_larr(0) $i]
         set y2 [lindex $nd_larr(0) $i]
         set delta_x [expr { $x - $x_prev } ]
         # a is area under curve
         set a [expr { $a + $delta_x * ( $y1 + $y2 ) / 2. } ]
-
-        #set xi [expr { $xi + $delta_x } ]
-        # xi is a
+        
         # Use two equations, one for left side, one for right side:
         set f_x [expr { $optimistic + 2. * $y_range_arr(0) * $a } ]
 
-#        set point_list [list $f_x $xi]
         set point_list [list $f_x $a]
         # reverse order of left tail
-        lappend curve_lists $point_list]
-        incr i
+        lappend curve_lists $point_list
     }
-
-
-
-    lappend curve_lists [list $optimistic 0.]
-    set i 0
-    foreach y $y_list {
-        set point [list $y [lindex $x_new_list $i] ]
-        lappend curve_lists $point
-        incr i
+    set a3_diff [expr { 0.5 - $a } ]
+    if { $a3_diff > 0.00001 } {
+        ns_log Warning "acc_fin::pert_omp_to_normal_dc.214: a should be ( within 0.00001 of) 0.5 at this point. Instead, a is: ${a3_diff}."
     }
+    # Similar pattern (of left tail) for final right tail
+    # is f::sum $a_arr(1) is near 0.5
+    # a = right tail's  0.5 + 0.5 - $a_arr(1)
+    set a [expr { 1. - $a_arr(1) } ]
+    set y1 $most_likely
+    set x_prev [lindex $x_larr(1) 0]
+    # add the median case
+    set point_list [list $y1 $a]
+    lappend curve_lists $point_list
+
+    foreach x [lrange $x_larr(1) 1 end] {
+        set y2 [lindex $nd_larr(1) $i]
+        set delta_x [expr { $x - $x_prev } ]
+        # a is area under curve
+        set a [expr { $a + $delta_x * ( $y1 + $y2 ) / 2. } ]
+        
+        # Use two equations, one for left side, one for right side:
+        set f_x [expr { $pessimistic + 2. * $y_range_arr(1) * $a } ]
+
+        set point_list [list $f_x $a]
+        # reverse order of left tail
+        lappend curve_lists $point_list
+    }
+    # modify last point
+    set curve_lists [lrange $curve_lists 0 end-1]
+    set point_list [list $optimistic $a]
+    lappend curve_lists $point_list
+
+    # remove header for point count
     set points_count [expr { [llength $curve_lists] - 1 } ]
     if { $points_count != $n_points } {
         ns_log Warning "acc_fin::pert_omp_to_normal_dc.179: curve has $points_count points instead of requested $n_points points."
     }
-
     return $curve_lists
 }
 
