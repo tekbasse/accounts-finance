@@ -86,40 +86,49 @@ ad_proc -public acc_fin::pert_omp_to_normal_dc {
         set a 0.
         set x_prev 0.
         set k0 [expr { $std_dev($ii) / ( $p_count($ii) * -1. ) } ]
+        set y1 [expr { exp( -0.5 * pow( $x_prev , 2. ) ) / $sqrt_2pi } ] 
         for {set i 0 } { $i < $p_count($ii) } { incr i } {
             set x [expr { $k0 * ( $i + 1. ) } ]
             lappend x_larr($ii) $x
             # Calculate nd = f(x) = for the normal distribution of this tail
-            set y2 [expr { exp( -0.5 * pow( $x_prev , 2. ) ) / $sqrt_2pi } ] 
+            set y2 [expr { exp( -0.5 * pow( $x , 2. ) ) / $sqrt_2pi } ] 
             lappend nd_larr($ii) $y2
             # Calculate area under normal distribution curve.
             set delta_x [expr { $x - $x_prev } ]
             set a [expr { $a + $delta_x * ( $y2 + $y1 ) / 2. } ]
             lappend a_larr($ii) $a
+            set y1 $y2
+            set x_prev $x
         }
         set a_arr($ii) [f::sum $a_larr($ii)]
     }
     # tail areas must be equal.
-    if { $a_arr($a) != $a_arr($b) } {
-        if { $a_arr($a) > $a_arr($b) } {
+    if { $a_arr(1) != $a_arr(0) } {
+        if { $a_arr(1) > $a_arr(0) } {
             set order2_list $order_larr(0)
-        } elseif { $a_arr($b) > $a_arr(a) } {
+        } elseif { $a_arr(0) > $a_arr(1) } {
             # The smaller standard deviation has the largest area.
             set order2_list $order_larr(1)
         }
+        # $c is the area to match
         set c [lindex $order2_list 0]
+        # $d is the area that needs to match $c
         set d [lindex $order2_list 1]
         set a_diff [expr { $a_arr($c) - $a_arr($d) } ]
         # Add $a_diff to the first area of $d
         # but, delta_x is not calculated at this point.
         # so, add x_diff to each value of x in $d tail (but the first one).
         # a_old s/b 0 at this point
-        set a_old [lindex $a_larr($d) 0]
-        set a_new [expr { $a_old + $a_diff } ]
-        set a_larr($d) [lreplace $a_larr($d) 0 0 $a_new]
+        set nd0 [lindex $nd_larr($d) 0]
+        set x0 [lindex $x_larr($d) 0]
+        set nd1 [lindex $nd_larr($d) 1]
+        set x1 [lindex $x_larr($d) 1]
+        set y [expr { ( $nd0 + $nd1 ) / 2. } ]
+        set a01_old [expr {  $y * ( $x1 - $x0 ) } ]
+        set a01_new [expr { $a01_old + $a_diff } ]
+        set x_new [expr { $a_new / $y } ]
         # determine new delta_x
-        set nd1 [lindex $nd_larr($d) 0]
-        set x_diff [expr { $a_new / $nd1 } ]
+        set x_diff [expr { $x_new - $x1 } ]
         # modify tail.
         set x_list_new [list ]
         lappend x_list_new [lindex $x_larr($d) 0]
@@ -127,9 +136,34 @@ ad_proc -public acc_fin::pert_omp_to_normal_dc {
             set x_new [expr { $x + $x_diff } ]
             lappend x_list_new $x_new
         }
-
-
-
+        set a_new [expr { $a_diff + $a_arr($d) } ]
+        # choose the area that best matches a_larr($a)
+        set test [expr { $a_new - $a_arr($d) } ]
+        if { $test < $a_diff } {
+            # adjustment fits better than original
+            set x_larr($d) $x_list_new
+            # Recalc everything based on x
+            set nd_larr($d) [list ]
+            set a 0.
+            set x_prev [lindex $x_list_new 0]
+            set y1 [expr { exp( -0.5 * pow( $x_prev , 2. ) ) / $sqrt_2pi } ] 
+            foreach x [lrange $x_larr($d) 1 end]
+            # use x_larr($d), do not re-calc x_larr()
+            # Calculate nd = f(x) = for the normal distribution of this tail
+            set y2 [expr { exp( -0.5 * pow( $x , 2. ) ) / $sqrt_2pi } ] 
+            lappend nd_larr($ii) $y2
+            # Calculate area under normal distribution curve.
+            set delta_x [expr { $x - $x_prev } ]
+            set a [expr { $a + $delta_x * ( $y2 + $y1 ) / 2. } ]
+            lappend a_larr($ii) $a
+            set y1 $y2
+            set x_prev $x
+        }
+        set a_arr($d) [f::sum $a_larr($d)]
+        set a2_diff [expr { $a_arr(1) - $a_arr(0) } ]
+        if { [expr { abs( $a2_diff ) } ] > 0.0001 } {
+            ns_log Notice "acc_fin::pert_omp_to_normal_dc.164: tail areas do not match. a2_diff = $a2_diff ie > 0.0001"
+        }
     }
 
 
