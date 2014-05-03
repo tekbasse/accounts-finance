@@ -46,7 +46,7 @@ G,3,5,8,5.17\n
                     # test Time expected geometric average
                     set geo_avg [acc_fin::pretti_geom_avg_of_curve $curve_lol]
                     set geo_avg_fmt [string range $geo_avg 0 $expected_time_len]
-                    aa_equals "Test1${activity}: Te calced matches Te expected" $geo_avg_fmt $expected_time
+                    aa_equals "Test1${activity}: Te of curve vs. classic Te" $geo_avg_fmt $expected_time
                     
                     # test making a curve based on min/med/max values
                     set optimistic [expr { [lindex $row_cells_list 1] + 0. } ]
@@ -56,29 +56,29 @@ G,3,5,8,5.17\n
                     #set tolerance_list [list .01 .02 .05 .1 .2]
                     set tolerance_list [list .01]
                     foreach n_points $n_points_list {
-                        aa_log "testing conversion of OMP values to curve using acc_fin::pert_omp_to_normal_dc"
+                        aa_log "testing OMP values to curve using acc_fin::pert_omp_to_normal_dc"
                         # confirm curve's representation at critical original parameters o,m,p:
                         set curve2_lol [acc_fin::pert_omp_to_normal_dc $optimistic $median $pessimistic $n_points]
                         set optimistic2 [qaf_y_of_x_dist_curve 0 $curve2_lol 1]
                         set median2 [qaf_y_of_x_dist_curve .5 $curve2_lol 1]
                         set pessimistic2 [qaf_y_of_x_dist_curve 1 $curve2_lol 1]
 
-                        aa_equals "Test2${activity}@$n_points point curve matches @ optimistic" $optimistic2 $optimistic
-                        aa_equals "Test3${activity}@$n_points point curve matches @ median" $median2 $median
-                        aa_equals "Test4${activity}@$n_points point curve matches @ pessimistic" $pessimistic2 $pessimistic
+                        aa_equals "Test2 for '${activity}' w/ ${n_points}-point curve matches @ optimistic" $optimistic2 $optimistic
+                        aa_equals "Test3 for '${activity}' w/ ${n_points}-point curve matches @ median" $median2 $median
+                        aa_equals "Test4 for '${activity}' w/ ${n_points}-point curve matches @ pessimistic" $pessimistic2 $pessimistic
 
                         aa_log "testing acc_fin::pretti_geom_avg_of_curve"
                         set curv_geo_avg [acc_fin::pretti_geom_avg_of_curve $curve2_lol]
                         set curv_avg_fmt [string range $curv_geo_avg 0 $expected_time_len]
-                        aa_equals "Test5${activity}: Curve Te matches expected Te" $curv_avg_fmt $expected_time
+                        aa_equals "Test5 for Te of ${activity}'s Curve matches classic Te" $curv_avg_fmt $expected_time
                         foreach tolerance $tolerance_list {
                             set t_pct [expr { int( $tolerance * 100. ) } ]
                             set optimistic_p [expr { ( ( ( $optimistic2 - $optimistic ) / $optimistic ) - 1. ) < $tolerance } ]
                             set median_p [expr { ( ( ( $median2 - $median ) / $median ) - 1. ) < $tolerance } ]
                             set pessimistic_p [expr { ( ( ( $pessimistic2 - $pessimistic ) / $pessimistic ) - 1. ) < $tolerance } ]
-                            aa_true "Test6${activity}@$n_points point curve within $t_pct % @optimistic" $optimistic_p
-                            aa_true "Test7${activity}@$n_points point curve within $t_pct % @median" $median_p
-                            aa_true "Test8${activity}@$n_points point curve within $t_pct % @pessimistic" $pessimistic_p
+                            aa_true "Test6 for '${activity}' w/ ${n_points}-point curve within $t_pct % margin  @optimistic" $optimistic_p
+                            aa_true "Test7 for '${activity}' w/ ${n_points}-point curve within $t_pct % margin @median" $median_p
+                            aa_true "Test8 for '${activity}' w/ ${n_points}-point curve within $t_pct % margin @pessimistic" $pessimistic_p
                         }
                     }
                 }                
