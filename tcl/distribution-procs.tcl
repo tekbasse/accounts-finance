@@ -101,7 +101,7 @@ ad_proc -public qaf_y_of_x_dist_curve {
     }
     set x_sum [f::sum $x_list]
     # normalize p to range of x
-    set p_normalized [expr { $p * $x_sum } ]
+    set p_normalized [expr { $p * $x_sum * 1. } ]
     ns_log Notice "qaf_y_of_x_dist_curve.104: x_sum $x_sum p $p p_normalized $p_normalized"
     # determine y @ x
     set i $data_row_1
@@ -152,6 +152,9 @@ ad_proc -public qaf_y_of_x_dist_curve {
     } else {
         # row_idx >= data_row_1 && p_test == p_normalized  
         if { ![info exists row_list] } {
+            set row_list [lindex $y_x_lol $row_idx]
+        } else {
+            incr $row_idx
             set row_list [lindex $y_x_lol $row_idx]
         }
         set y [expr { [lindex $row_list $y_idx] + 0. } ]
