@@ -93,7 +93,7 @@ ad_proc -public qaf_y_of_x_dist_curve {
     } else {
         set data_row_1 1
     }
-    set p_test 0.
+
     # normalize x to 1.. first extract x list
     set x_list [list ]
     foreach y_x [lrange $y_x_lol $data_row_1 end] {
@@ -104,18 +104,21 @@ ad_proc -public qaf_y_of_x_dist_curve {
     set p_normalized [expr { $p * $x_sum * 1. } ]
     ns_log Notice "qaf_y_of_x_dist_curve.104: x_sum $x_sum p $p p_normalized $p_normalized"
     # determine y @ x
-    set i $data_row_1
-    set row_idx $i
+
     set count_max [llength $y_x_lol]
+    set i $count_max
+    set row_idx $i
+    set p_test $x_sum
     ns_log Notice "qaf_y_of_x_dist_curve.108: row_idx $row_idx p_test $p_test count_max $count_max"
-    while { $i < $count_max && $p_test < $p_normalized } {
+    # counting backwards
+    while { $p_test > $p_normalized && $i >= $data_row_1 } {
         set row_list [lindex $y_x_lol $i]
         set x [lindex $row_list $x_idx]
         set y [lindex $row_list $y_idx]
-        set p_test [expr { $x + $p_test } ]
+        set p_test [expr { $p_test - $x } ]
         set row_idx $i
     ns_log Notice "qaf_y_of_x_dist_curve.110: row_idx $row_idx p_test $p_test x $x y $y"
-        incr i
+        incr i -1
     }
     ns_log Notice "qaf_y_of_x_dist_curve.114: row_idx $row_idx p_test $p_test"
 
@@ -127,35 +130,17 @@ ad_proc -public qaf_y_of_x_dist_curve {
         set row_prev_idx [expr  { $row_idx - 1 } ]
         set row_prev_list [lindex $y_x_lol $row_prev_idx]
         set x1 [expr { $x2 - [expr { [lindex $row_prev_list $x_idx] + 0. } ] } ]
-#        set x1 [expr { [lindex $row_prev_list $x_idx] + 0. } ]
         set y1 [expr { [lindex $row_prev_list $y_idx] + 0. } ]
+        set y [qaf_interpolatep2p2_at_x $x1 $y1 $x2 $y2 $p_normalized
 
-        set delta_x [expr { $x2 - $x1 } ]
-#        set delta_x $x
-        ns_log Notice "qaf_y_of_x_dist_curve.127: x1 $x1 y1 $y1 x2 $x2 y2 $y2 delta_x $delta_x"
-        if { $delta_x != 0. } {
-            set diff_pct [expr { ( $p_normalized - $x1 ) / $delta_x } ]
-            if { $diff_pct > 0. && $diff_pct < 1. } {
-                set y [expr { $y1 + ( $y2 - $y1 ) * $diff_pct } ]
-            } else {
-                # delta_x must be really small
-                # approximate by taking the average between y1 and y2
-                ns_log Notice "qaf_y_of_x_dist_curve.135: diff_pct out of bounds with $diff_pct. Approximating with average of y1 and y2"
-                set y [expr { ( $y1 + $y2 ) / 2. } ]
-            }
-        } else {
-            # two points with same x in curve?
-            # average the two y's
-            set y [expr { ( $y2 + $y1 ) / 2. } ]
-            ns_log Notice "qaf_y_of_x_dist_curve.126: two points in curve have same x. interpolating by averaging at x = $x1"
-        }
     } else {
         # row_idx >= data_row_1 && p_test == p_normalized  
+#### stoppping here.. lightning
         if { ![info exists row_list] } {
-            set row_list [lindex $y_x_lol $row_idx]
+            set row_list [lindex $y_x_lol $row_prev_idx]
         } else {
-            incr $row_idx
-            set row_list [lindex $y_x_lol $row_idx]
+            set row_prev_idx [expr  { $row_idx + 1 } ]
+            set row_list [lindex $y_x_lol $row_prev_idx]
         }
         set y [expr { [lindex $row_list $y_idx] + 0. } ]
     }
