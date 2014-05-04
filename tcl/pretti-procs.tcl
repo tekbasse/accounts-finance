@@ -10,6 +10,33 @@ ad_library {
 
 namespace eval acc_fin {}
 
+ad_proc -public acc_fin::pert_omp_to_strict_dc {
+    optimistic
+    most_likely
+    pessimistic
+} {
+    Creates a curve in PRETTI table format representing strict characteristics of 
+    a PERT expected time function (Te), where 
+    Te = ( o + 4 * m + p ) / 6 and o = optimistic time, m = most likely time, and p = pessimistic time.
+    This 3 point curve has lower limit (o), upper limit (p) and median (m). 
+} {
+    ns_log Notice "acc_fin::pert_omp_to_strict_dc.24: optimistic $optimistic most_likely $most_likely pessimistic $pessimistic"
+    # nomenclature of inputs  statistics:
+    # set median $most_likely
+    # set minimum $optimistic
+    # set maximum $pessimistic
+    set curve_lists [list ]
+    lappend curve_lists [list y x]
+    set one_sixth [expr { 1. / 6. } ]
+    set point_list [list $optimistic $one_sixth]
+    lappend curve_lists $point_list
+    set point_list [list $most_likely [expr { 4. / 6. } ] ]
+    lappend curve_lists $point_list
+    set point_list [list $pessimistic $one_sixth]
+    lappend curve_lists $point_list
+    return $curve_lists
+}
+
 ad_proc -public acc_fin::pert_omp_to_normal_dc {
     optimistic
     most_likely
@@ -327,23 +354,27 @@ ad_proc -public acc_fin::pretti_geom_avg_of_curve {
     Given a curve with x and y columns, finds the geometric average determined by: (y1*x1 + y2*x2 .. yN*xN ) / sum(x1..xN)
 } {
     # This is a generalization of the PERT Time-expected function
-    set constants_list [list x y]
+    set constants_list [list y x]
     # get first row of titles
     set title_list [lindex $curve_lol 0]
     set y_idx [lsearch -exact $title_list "y"]
     set x_idx [lsearch -exact $title_list "x"]
     set geometric_avg ""
     if { $y_idx > -1 && $x_idx > -1 } {
-        set x_sum 0.
-        set numerator 0.
+        set x_list [list ]
+        set numerator_list [list ]
         foreach point_list [lrange $curve_lol 1 end] {
             set x [lindex $point_list $x_idx]
             set y [lindex $point_list $y_idx]
-            set x_sum [expr { $x_sum + $x } ]
-            set numerator [expr { $numerator + $x * $y * 1. } ]
+            lappend x_list $x
+            lappend  numerator_list [expr { $x * $y * 1. } ]
         }
+        set x_sum [f::sum $x_list ]
         if { $x_sum != 0. } {
+            set numerator [f::sum $numerator_list ]
             set geometric_avg [expr { $numerator / $x_sum } ]
+        } else {
+            ns_log Notice "acc_fin::pretti_geom_avg_of_curve.170: divide by zero caught for x_sum. numerator $numerator"
         }
     } else {
         ns_log Notice "acc_fin::pretti_geom_avg_of_curve.178: y_idx $y_idx x_idx $x_idx"

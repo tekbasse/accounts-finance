@@ -43,15 +43,16 @@ G,3,5,8,5.17\n
                         set row [list $y $x [ad_generate_random_string]]
                         lappend curve_lol $row
                     }
-                    # test Time expected geometric average
-                    set geo_avg [acc_fin::pretti_geom_avg_of_curve $curve_lol]
-                    set geo_avg_fmt [string range $geo_avg 0 $expected_time_len]
-                    aa_equals "Test1${activity}: Te of curve vs. classic Te" $geo_avg_fmt $expected_time
                     
                     # test making a curve based on min/med/max values
                     set optimistic [expr { [lindex $row_cells_list 1] + 0. } ]
                     set median [expr { [lindex $row_cells_list 2] + 0. } ]
                     set pessimistic [expr { [lindex $row_cells_list 3] + 0. } ]
+                    # test Time expected geometric average
+                    
+                    set geo_avg [expr { ( $optimistic + 4. * $median + $pessimistic ) / 6. } ] 
+                    set geo_avg_fmt [string range $geo_avg 0 $expected_time_len]
+                    aa_equals "Test1 for ${activity}: calced Te vs. pre-calced Te" $geo_avg_fmt $expected_time
                     set n_points_list [list 24]
                     #set tolerance_list [list .01 .02 .05 .1 .2]
                     set tolerance_list [list .01]
@@ -65,22 +66,37 @@ G,3,5,8,5.17\n
                         set optimistic2 [qaf_round_to_decimals $optimistic2 6]
                         set median2 [qaf_round_to_decimals $median2 6]
                         set pessimistic2 [qaf_round_to_decimals $pessimistic2 6 ]
-                        aa_equals "Test2 for '${activity}' w/ ${n_points}-point curve matches @ optimistic" $optimistic2 $optimistic
-                        aa_equals "Test3 for '${activity}' w/ ${n_points}-point curve matches @ median" $median2 $median
-                        aa_equals "Test4 for '${activity}' w/ ${n_points}-point curve matches @ pessimistic" $pessimistic2 $pessimistic
+                        aa_equals "Test2N for '${activity}' w/ ${n_points}-point Normal curve matches @ optimistic" $optimistic2 $optimistic
+                        aa_equals "Test3N for '${activity}' w/ ${n_points}-point Normal curve matches @ median" $median2 $median
+                        aa_equals "Test4N for '${activity}' w/ ${n_points}-point Normal curve matches @ pessimistic" $pessimistic2 $pessimistic
+                        # create a strict curve to test against.
+                        set curve3_lol [acc_fin::pert_omp_to_strict_dc $optimistic $median $pessimistic]
+                        set optimistic3 [qaf_y_of_x_dist_curve 0 $curve3_lol 1]
+                        set median3 [qaf_y_of_x_dist_curve .5 $curve3_lol 1]
+                        set pessimistic3 [qaf_y_of_x_dist_curve 1 $curve3_lol 1]
+                        aa_equals "Test2S for '${activity}' w/ 3-point Strict curve matches @ optimistic" $optimistic3 $optimistic
+                        aa_equals "Test3S for '${activity}' w/ 3-point Strict curve matches @ median" $median3 $median
+                        aa_equals "Test4S for '${activity}' w/ 3-point Strict curve matches @ pessimistic" $pessimistic3 $pessimistic
+
 
                         aa_log "testing acc_fin::pretti_geom_avg_of_curve"
                         set curv_geo_avg [acc_fin::pretti_geom_avg_of_curve $curve2_lol]
                         set curv_avg_fmt [string range $curv_geo_avg 0 $expected_time_len]
-                        aa_equals "Test5 for Te of ${activity}'s Curve matches classic Te" $curv_avg_fmt $expected_time
+                        set test5_p [expr { $curv_geo_avg > $expected_time } ]                        
+                        aa_true "Test5N for Te of ${activity}'s Normal Curve ${curv_geo_avg} is greater than pre-calced Te ${expected_time}" $test5_p
+
+                        set curv_geo_avg2 [acc_fin::pretti_geom_avg_of_curve $curve3_lol]
+                        set curv_avg_fmt2 [string range $curv_geo_avg 0 $expected_time_len]
+                        aa_equals "Test5S for Te of ${activity}'s Strict Curve matches pre-calced Te" $curv_avg_fmt2 $expected_time
+
                         foreach tolerance $tolerance_list {
                             set t_pct [expr { int( $tolerance * 100. ) } ]
-                            set optimistic_p [expr { ( ( ( $optimistic2 - $optimistic ) / $optimistic ) - 1. ) < $tolerance } ]
-                            set median_p [expr { ( ( ( $median2 - $median ) / $median ) - 1. ) < $tolerance } ]
-                            set pessimistic_p [expr { ( ( ( $pessimistic2 - $pessimistic ) / $pessimistic ) - 1. ) < $tolerance } ]
-                            aa_true "Test6 for '${activity}' w/ ${n_points}-point curve within $t_pct % margin  @optimistic" $optimistic_p
-                            aa_true "Test7 for '${activity}' w/ ${n_points}-point curve within $t_pct % margin @median" $median_p
-                            aa_true "Test8 for '${activity}' w/ ${n_points}-point curve within $t_pct % margin @pessimistic" $pessimistic_p
+                            set optimistic_p [expr { ( abs( $optimistic2 - $optimistic ) / $optimistic ) < $tolerance } ]
+                            set median_p [expr { ( abs( $median2 - $median ) / $median ) < $tolerance } ]
+                            set pessimistic_p [expr { ( abs( $pessimistic2 - $pessimistic ) / $pessimistic ) < $tolerance } ]
+                            aa_true "Test6N for '${activity}' w/ ${n_points}-point normal curve within $t_pct % margin  @optimistic" $optimistic_p
+                            aa_true "Test7N for '${activity}' w/ ${n_points}-point normal curve within $t_pct % margin @median" $median_p
+                            aa_true "Test8N for '${activity}' w/ ${n_points}-point normal curve within $t_pct % margin @pessimistic" $pessimistic_p
                         }
                     }
                 }                
