@@ -73,11 +73,11 @@ ad_proc -public acc_fin::pert_omp_to_normal_dc {
         set order_list $order_larr(1)
     }
     # $a is the tail with the largest standard deviation
-    set a [lindex $order_list 0]
-    set b [lindex $order_list 1]
+    set e [lindex $order_list 0]
+    set f [lindex $order_list 1]
     # if there is an odd number of points, use the extra point on the longer side
-    set p_count($b) [expr { int( $n_points / 2. ) } ]
-    set p_count($a) [expr { $n_points - $p_count($b) } ]
+    set p_count($f) [expr { int( $n_points / 2. ) } ]
+    set p_count($e) [expr { $n_points - $p_count($f) } ]
 
     # create tails and their analogs
     # from median to double standard deviation to approximate OMP calculations
@@ -90,7 +90,7 @@ ad_proc -public acc_fin::pert_omp_to_normal_dc {
         set 2rho [expr { 4. * $std_dev($ii) } ]
         set k0 [expr { $2rho / ( $p_count($ii) * 1. ) } ]
         set y1 [expr { exp( -0.5 * pow( $x_prev , 2. ) ) / $sqrt_2pi } ] 
-
+        ns_log Notice "acc_fin::pert_omp_to_normal_dc.93: ii $ii e $e f $f 2rho $2rho k0 $k0 p_count($ii)"
         # for i = 1 to p_count 
         for {set i 0 } { $i < $p_count($ii) } { incr i } {
             # range of x over f(x) is -2. * std_dev_left to 2. * std_dev_right
@@ -115,7 +115,7 @@ ad_proc -public acc_fin::pert_omp_to_normal_dc {
     }
     # tail areas must be equal.
     if { $a_arr(1) != $a_arr(0) } {
-        ns_log Notice "acc_fin::pert_omp_to_normal_dc.118: a_arr(0) != $a_arr(1) Attempting fix."
+        ns_log Notice "acc_fin::pert_omp_to_normal_dc.118: a_arr(0) of $a_arr(0) != $a_arr(1) $a_arr(1) Attempting fix."
         if { $a_arr(1) > $a_arr(0) } {
             set order2_list $order_larr(0)
         } elseif { $a_arr(0) > $a_arr(1) } {
@@ -153,7 +153,7 @@ ad_proc -public acc_fin::pert_omp_to_normal_dc {
             lappend x_list_new $x_new
         }
         set a_new [expr { $a_diff + $a_arr($d) } ]
-        # choose the area that best matches a_larr($a)
+        # choose the area that best matches a_larr($e)
         set test [expr { $a_new - $a_arr($d) } ]
         if { $test < $a_diff } {
             # Adjustment fits better than original, replace original tail
