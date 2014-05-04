@@ -31,4 +31,14 @@ ad_proc -public interpolatep1p2_at_x {
     }
     return $p3_y
 }
- 
+
+ad_proc -public qaf_round_to_decimals {
+    number
+    {exponent "0"}
+} {
+    Rounds a number to n decimal places
+} {
+    set magnitude [expr { pow( 10. , $exponent ) } ] 
+    set rounded [expr { round( $number * $magnitude ) / $magnitude } ]
+    return $rounded
+}

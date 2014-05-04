@@ -62,7 +62,9 @@ G,3,5,8,5.17\n
                         set optimistic2 [qaf_y_of_x_dist_curve 0 $curve2_lol 1]
                         set median2 [qaf_y_of_x_dist_curve .5 $curve2_lol 1]
                         set pessimistic2 [qaf_y_of_x_dist_curve 1 $curve2_lol 1]
-
+                        set optimistic2 [qaf_round_to_decimals $optimistic2 6]
+                        set median2 [qaf_round_to_decimals $median2 6]
+                        set pessimistic2 [qaf_round_to_decimals $pessimistic2 6 ]
                         aa_equals "Test2 for '${activity}' w/ ${n_points}-point curve matches @ optimistic" $optimistic2 $optimistic
                         aa_equals "Test3 for '${activity}' w/ ${n_points}-point curve matches @ median" $median2 $median
                         aa_equals "Test4 for '${activity}' w/ ${n_points}-point curve matches @ pessimistic" $pessimistic2 $pessimistic
