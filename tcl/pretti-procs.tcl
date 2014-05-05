@@ -48,12 +48,281 @@ ad_proc -public acc_fin::pert_omp_to_normal_dc {
     Te = ( o + 4 * m + p ) / 6 and o = optimistic time, m = most likely time, and p = pessimistic time.
     The normal distribution curve has lower limit (o), upper limit (p) and median (m). 
 } {
+    ns_log Notice "acc_fin::pert_omp_to_normal_dc.23: starting"
+    ns_log Notice "acc_fin::pert_omp_to_normal_dc.24: optimistic $optimistic most_likely $most_likely pessimistic $pessimistic n_points $n_points"
+    # nomenclature of inputs  statistics:
+    # set median $most_likely
+    # set minimum $optimistic
+    # set maximum $pessimistic
+    set n_points [f::max [expr { int( $n_points ) } ] 3]
+    set n_areas  [expr { int( $n_points - 1 ) } ]
+
+    #set pi 3.14159265358979
+    set pi [expr { atan2( 0. , -1. ) } ]
+    #set e 2.718281828459  see exp()
+    set sqrt_2pi [expr { sqrt( 2. * $pi ) } ]
+    set sqrt_2 [expr { sqrt( 2. ) } ]
+    set optimistic [expr { $optimistic * 1. } ]
+    set most_likely [expr { $most_likely * 1. } ]
+    set pessimistic [expr { $pessimistic * 1. } ]
+    # Symetric calculations use indexed arrays to swap between tails.
+    # Index of:
+    # 0 = left tail
+    # 1 = right tail
+
+    # Build a curve using Normal Distribution calculations as a base
+
+    # Split the curve into two tails, in case med - min value does not equal max - med.
+
+    # Left tail represents minimum to median.
+    # So, create a standard_deviation for left side by assuming curve is symmetric:
+    # set std_dev_left [expr { sqrt( 2 * pow( $minimum - $median , 2) + 4 * pow( $median - $median , 2) ) } ]
+    # resolves to:
+    # set std_dev_left [expr { sqrt( 2 * pow( $minimum - $median , 2)  ) } ]
+    # which further reduces to:
+    set std_dev(0) [expr { $sqrt_2 * abs( $most_likely - $optimistic ) } ]
+    # Right tail represents median to maximum.
+    set std_dev(1) [expr { $sqrt_2 * abs( $pessimistic - $most_likely ) } ]
+    #ns_log Notice "acc_fin::pert_omp_to_normal_dc.42: std_dev_left $std_dev(0) std_dev_right $std_dev(1)"
+    # f(x) is the normal distribution function. x = 0 at $median
+    
+    # for each section of the curve divided into p_count() ie ($n_areas /2) sections of approximately equal area.
+    # since each tail has area circa 0.5, delta_area is circa 0.5 / p_count()
+    # given 2 points on curve f(x) = y, (x0,y0), (x1,y1) defines an approximate area, where 
+    # delta_area = 0.5 * ( y0 + y1 ) ( x1 - x0 )   and
+    # delta_area = 0.5 / p_count
+
+    # given x0,y0, n_areas,  if y1 is estimated as y0 - y_range / p_count
+    # x1 is approx 1 / ( n_areas * ( y0 + y1) ) 
+    # if y1 is approximated equal to y0
+    # x1 is approx 1 / (n_areas * 2 * y0 )
+    
+    # f(x) = k * pow( $e , -0.5 * pow( $x - $median , 2. ) )
+    # where k = 1. / sqrt( 2. * $pi )
+    # where x  is -2. * std_dev_left to 2. * std_dev_right
+    # and value at x is :
+    # if x < 0
+    # $minimum + sigma f( $x from -2. * $std_dev_left to x = 0 ) * p_count()
+    # if x => 0
+    # $median + sigma f( $x from x = 0 to 2. * $std_dev_right ) * p_count()
+    
+    # Determine x points. Start with 0 to get critical area near distribution peak.
+    set order_larr(0) [list 0 1]
+    set order_larr(1) [list 1 0]
+    if { $std_dev(0) > $std_dev(1) } {
+        set order_list $order_larr(0)
+    } else {
+        set order_list $order_larr(1)
+    }
+    # $e is the tail with the largest standard deviation
+    set e [lindex $order_list 0]
+    set f [lindex $order_list 1]
+    # if there is an odd number of areas, use the extra one on the longer side
+    set p_count($f) [expr { int( $n_areas / 2. ) } ]
+    set p_count($e) [expr { $n_areas - $p_count($f) } ]
+
+    # create tails and their analogs
+    # ns_log Notice "acc_fin::pert_omp_to_normal_dc.83: ** Create tails"
+    # from median to double standard deviation to approximate OMP calculations
+
+    # left tail, assume symmetric, but calculate to reduce error
+    set y_range_arr(0) [expr { ( $most_likely - $optimistic ) } ]
+    set fx_limit(0) $optimistic
+    # right tail, assume symmetric
+    set y_range_arr(1) [expr { ( $pessimistic - $most_likely ) } ]
+    set fx_limit(1) $pessimistic
+#####
+    set bias_median 0.01
+    foreach ii $order_list {
+        set x_larr($ii) [list ]
+        set y_larr($ii) [list ]
+        set a_larr($ii) [list ]
+        set da_larr($ii) [list ]
+        set fx_larr($ii) [list ]
+        # standard deviation = sigma
+        set 4sigma [expr { 4. * $std_dev($ii) } ]
+        set k0 [expr { $4sigma / ( $p_count($ii) * 1. ) } ]
+        set k3 [expr { $k0 / 2. } ]
+        set k2 [expr { $n_areas * 2. } ]
+
+        # range of x over f(x) is -2. * std_dev_left to 2. * std_dev_right
+        # let's break the areas somewhat equally, or to increase with each iteration
+        # x2 can be approximated all sorts of ways. 
+        # A linear progression is used.
+        # Integration over a partial derivative might be more appropriate later.
+        
+        set a 0.
+        set a_prev $a
+    
+        set x1 0.
+        set y1 [expr { exp( -0.5 * pow( $x1 , 2. ) ) / $sqrt_2pi } ] 
+
+        # estimate:
+        set block_count [lindex [qaf_triangular_numbers $p_count($ii)] end]
+        set numerator 1.
+        ns_log Notice "acc_fin::pert_omp_to_normal_dc.90: ii $ii p_count($ii) $p_count($ii) block_count $block_count numerator $numerator std_dev($ii) $std_dev($ii)" 
+        set k4 [expr { 4. * $std_dev($ii) / $block_count } ]
+
+        # for i = 1 to p_count 
+        lappend y_larr($ii) $y1
+        lappend x_larr($ii) $x1
+
+        # At the end of the loop, calculate the last point manually.
+
+        ns_log Notice "acc_fin::pert_omp_to_normal_dc.99: i '' x1 '$x1' delta_x '' y2 '' y1 '$y1' a '$a' delta_a '' f_x '' numerator $numerator"
+        for {set i 0 } { $i < $p_count($ii) } { incr i } {
+            
+            set x2 [expr { $numerator * $k4 } ]
+            lappend x_larr($ii) $x2
+            # Calculate fx = f(x) = for the normal distribution of this tail
+            # Probability density function:
+            set y2 [expr { exp( -0.5 * pow( $x2 , 2. ) ) / $sqrt_2pi } ] 
+            lappend y_larr($ii) $y2
+            # Calculate area under normal distribution curve.
+            # delta_x is arguably $k0 if unchanging
+            set delta_x [expr { $x2 - $x1 } ]
+
+            set a [expr { $a + $delta_x * ( $y2 + $y1 ) / 2. } ]
+            set delta_a [expr { $a - $a_prev } ]
+##### delta_a keeps shrinking left to right.. skewing median.. debug.
+            if { $ii } {
+                # Right tail
+                set f_x [expr { $most_likely + $y_range_arr(1) * 2. * $a } ]
+            } else {
+                # Left tail
+                set f_x [expr { $optimistic + $y_range_arr(0) * 2. * $a } ]
+            }
+            ns_log Notice "acc_fin::pert_omp_to_normal_dc.100: i $i x1 '$x1' delta_x '$delta_x' y2 '$y2' y1 '$y1' a '$a' delta_a '$delta_a' f_x '$f_x' numerator $numerator"
+            lappend a_larr($ii) $a
+            lappend da_larr($ii) $delta_a
+            lappend fx_larr($ii) $f_x
+
+            set y1 $y2
+            set x1 $x2
+            set a_prev $a
+            set numerator [expr { $numerator + 1. } ]
+        }
+        # Tie up loose ends with this last area.
+        # total area must be 0.5
+        set a [f::sum $da_larr($ii)]
+        if { $ii } {
+            # right tail 
+            set delta_a [f::max [expr { 0.5 - $bias_median - $a } ] 0.]
+        } else {
+            # left tail
+            set delta_a [f::max [expr { 0.5 + $bias_median - $a } ] 0.]
+        }
+        ns_log Notice "acc_fin::pert_omp_to_normal_dc.101: tail end a $a delta_a $delta_a"
+        # and x2 equals 2* std_dev($ii)
+        set x2 $std_dev($ii) 
+        lappend x_larr($ii) $x2
+
+        # given x1,y1,x2 and $a, 
+        set y2 [expr { 2. * $delta_a / ( ( ( $p_count($ii) - 1. ) * ( $x2 - $x1 ) ) - $y1 ) } ]
+        lappend y_larr($ii) $y2
+        # Calculate area under normal distribution curve.
+        set delta_x [expr { $x2 - $x1 } ]
+
+        ns_log Notice "acc_fin::pert_omp_to_normal_dc.105: i $i x1 '$x1' delta_x '$delta_x' y2 '$y2' y1 '$y1' a '$a' delta_a '$delta_a' f_x '$f_x' numerator $numerator"
+        lappend a_larr($ii) $a
+        lappend da_larr($ii) $delta_a
+        lappend fx_larr($ii) $fx_limit($ii)
+        set a_arr($ii) [f::sum $da_larr($ii)]
+
+    }
+    ns_log Notice "acc_fin::pert_omp_to_normal_dc.116: a_arr(0) $a_arr(0) a_arr(1) $a_arr(1)"
+    # tail areas must be equal.
+    if { $a_arr(1) != $a_arr(0) } {
+        ns_log Notice "acc_fin::pert_omp_to_normal_dc.118: a_arr(0) of $a_arr(0) != a_arr(1) $a_arr(1)"
+    }
+
+    # build final left tail  0
+    set curve_lists [list ]
+    lappend curve_lists [list y x]
+    # reverse order of left tail
+    set i_count [expr { [llength $da_larr(0)] - 1 } ]
+    set a 0
+    #set f_x [lindex $fx_larr(0) 0]
+    set f_x $fx_limit(0)
+    set delta_a [lindex $da_larr(0) $i_count]
+    set a [expr { $a + $delta_a } ]
+    ns_log Notice "acc_fin::pert_omp_to_normal_dc.236: i '' delta_a '$delta_a' a '$a' f_x '$f_x'"
+    set point_list [list $f_x $delta_a]
+    lappend curve_lists $point_list
+#    incr i_count -1
+    for {set i 1} { $i < $i_count } {incr i} {
+        set f_x [lindex $fx_larr(0) $i]
+        set delta_a [lindex $da_larr(0) $i]
+        set a [expr { $a + $delta_a } ]
+        ns_log Notice "acc_fin::pert_omp_to_normal_dc.234: i '$i' delta_a '$delta_a' a '$a' f_x '$f_x'"
+        set point_list [list $f_x $delta_a]
+        lappend curve_lists $point_list
+    }
+    # last item this tail
+    
+    #set f_x [lindex $fx_larr(0) $i]
+    set f_x $most_likely
+    set delta_a [lindex $da_larr(0) $i_count]
+    set a [expr { $a + $delta_a } ]
+    ns_log Notice "acc_fin::pert_omp_to_normal_dc.236: i '$i_count' delta_a '$delta_a' a '$a' f_x '$f_x'"
+    set point_list [list $f_x $delta_a]
+    lappend curve_lists $point_list
+    
+    # build final right tail 1
+    set i 0
+    set f_x [lindex $fx_larr(1) $i]
+    #set f_x $most_likely
+    set delta_a [lindex $da_larr(1) $i]
+    set a [expr { $a + $delta_a } ]
+    ns_log Notice "acc_fin::pert_omp_to_normal_dc.240: i '$i' delta_a '$delta_a' a '$a' f_x '$f_x'"
+    set point_list [list $f_x $delta_a]
+    lappend curve_lists $point_list
+    set i_count [expr { [llength $da_larr(1)] - 2 } ]
+    for {set i 1} { $i < $i_count } {incr i } {
+        set f_x [lindex $fx_larr(1) $i]
+        set delta_a [lindex $da_larr(1) $i]
+        set a [expr { $a + $delta_a } ]
+        ns_log Notice "acc_fin::pert_omp_to_normal_dc.243: i '$i' delta_a '$delta_a' a '$a' f_x '$f_x'"
+        set point_list [list $f_x $delta_a]
+        lappend curve_lists $point_list
+    }
+    
+    #set f_x [lindex $fx_larr(1) $i]
+    set f_x $pessimistic
+    set delta_a [lindex $da_larr(1) $i_count]
+    set a [expr { $a + $delta_a } ]
+    ns_log Notice "acc_fin::pert_omp_to_normal_dc.246: i '$i' delta_a '$delta_a' a '$a' f_x '$f_x'"
+    set point_list [list $f_x $delta_a]
+    lappend curve_lists $point_list
+
+    # remove header for point count
+    # but add a point because each item is an area, and there are area_count + 1 points
+    set points_count [expr { [llength $curve_lists] } ]
+    if { $points_count != $n_points } {
+        ns_log Warning "acc_fin::pert_omp_to_normal_dc.288: curve has $points_count points instead of requested $n_points points. curve_lists $curve_lists"
+    }
+    return $curve_lists
+}
+
+
+ad_proc -public acc_fin::pert_omp_to_normal_dc_old {
+    optimistic
+    most_likely
+    pessimistic
+    {n_points "24"}
+} {
+    Creates a normal distribution curve in PRETTI table format representing characteristics of 
+    a PERT expected time function (Te), where 
+    Te = ( o + 4 * m + p ) / 6 and o = optimistic time, m = most likely time, and p = pessimistic time.
+    The normal distribution curve has lower limit (o), upper limit (p) and median (m). 
+} {
     #ns_log Notice "acc_fin::pert_omp_to_normal_dc.23: starting"
 #    ns_log Notice "acc_fin::pert_omp_to_normal_dc.24: optimistic $optimistic most_likely $most_likely pessimistic $pessimistic n_points $n_points"
     # nomenclature of inputs  statistics:
     # set median $most_likely
     # set minimum $optimistic
     # set maximum $pessimistic
+    set error_p 0
     set n_points [f::max [expr { int( $n_points - 2 ) } ] 6]
     set n_areas  [expr { int( $n_points - 2 ) } ]
 
@@ -126,10 +395,15 @@ ad_proc -public acc_fin::pert_omp_to_normal_dc {
         set y1 [expr { exp( -0.5 * pow( $x_prev , 2. ) ) / $sqrt_2pi } ] 
  #       ns_log Notice "acc_fin::pert_omp_to_normal_dc.93: ii $ii e $e f $f 4sigma $4sigma k0 $k0 p_count($ii) $p_count($ii)"
         # for i = 1 to p_count 
+
+
+
+##### problem. $a should not be 0. for any saved cases.. 
+
         lappend nd_larr($ii) $y1
         lappend x_larr($ii) $x_prev
-        lappend a_larr($ii) $a
-        lappend da_larr($ii) $a
+#        lappend a_larr($ii) $a
+#        lappend da_larr($ii) $a
  #       ns_log Notice "acc_fin::pert_omp_to_normal_dc.99: i '' x_prev $x_prev delta_x '' y2 '' y1 '$y1' a '$a'"
         for {set i 0 } { $i < $p_count($ii) } { incr i } {
             # range of x over f(x) is -2. * std_dev_left to 2. * std_dev_right
@@ -140,11 +414,11 @@ ad_proc -public acc_fin::pert_omp_to_normal_dc {
             set y2 [expr { exp( -0.5 * pow( $x , 2. ) ) / $sqrt_2pi } ] 
             lappend nd_larr($ii) $y2
             # Calculate area under normal distribution curve.
-            # delta_x is arguably $k0
+            # delta_x is arguably $k0 if unchanging
             set delta_x [expr { $x - $x_prev } ]
- #           ns_log Notice "acc_fin::pert_omp_to_normal_dc.100: i $i x '$x' delta_x '$delta_x' y2 '$y2' y1 '$y1' a '$a'"
             set a [expr { $a + $delta_x * ( $y2 + $y1 ) / 2. } ]
             set delta_a [expr { $a - $a_prev } ]
+            ns_log Notice "acc_fin::pert_omp_to_normal_dc.100: i $i x '$x' delta_x '$delta_x' y2 '$y2' y1 '$y1' a '$a' delta_a '$delta_a'"
             lappend a_larr($ii) $a
             lappend da_larr($ii) $delta_a
             set y1 $y2
@@ -320,7 +594,11 @@ ad_proc -public acc_fin::pert_omp_to_normal_dc {
         # a is area under curve
         set a [expr { $a + $delta_x * ( $y1 + $y2 ) / 2. } ]
         set delta_a [expr { $a - $a_prev } ]
-        # Use two equations, one for left side, one for right side:
+        if { $delta_a == 0. } {
+            ns_log Notice "acc_fin::pert_omp_to_normal_dc.329 Warning delta_a is ${delta_a}. Curve data likely contains bad segment(s)."
+            set error_p 1
+        }
+       # Use two equations, one for left side, one for right side:
         # this y range is from median to high
         set f_x [expr { $most_likely + $y_range_arr(1) * 2. * $a } ]
  #       ns_log Notice "acc_fin::pert_omp_to_normal_dc.272: i $i x $x delta_x '$delta_x' y2 '$y2' y1 '$y1' a '$a' f_x $f_x "
@@ -343,6 +621,9 @@ ad_proc -public acc_fin::pert_omp_to_normal_dc {
     set points_count [expr { [llength $curve_lists] - 1 } ]
     if { $points_count != $n_points } {
         ns_log Warning "acc_fin::pert_omp_to_normal_dc.288: curve has $points_count points instead of requested $n_points points."
+    }
+    if { $error_p } {
+        ns_log Notice "acc_fin::pert_omp_to_normal_dc.329 len [llength $curve_lists] curve_lists $curve_lists"
     }
     return $curve_lists
 }

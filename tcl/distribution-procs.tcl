@@ -82,7 +82,7 @@ ad_proc -public qaf_y_of_x_dist_curve {
 }  {
     #ns_log Notice "qaf_y_of_x_dist_curve.82: *****************************************************************" 
     #ns_log Notice "qaf_y_of_x_dist_curve.83: p $p interpolate_p $interpolate_p "
-   set p [expr { $p + 0. } ]
+    set p [expr { $p + 0. } ]
     set first_row_list [lindex $y_x_lol 0]
     set x_idx [lsearch -exact $first_row_list "x"]
     set y_idx [lsearch -exact $first_row_list "y"]
@@ -111,23 +111,20 @@ ad_proc -public qaf_y_of_x_dist_curve {
     # determine y @ x
 
     set i 0
+    set p_idx $i
     set p_test 0.
-    while { $p_test <= $p_normalized && $i < $loop_limit } {
+    while { $p_test < $p_normalized && $i < $loop_limit } {
         set x [lindex $x_list $i]
-        ns_log Notice "qaf_y_of_x_dist_curve.117: i '$i' x '$x' p_test '$p_test'"
+    #    ns_log Notice "qaf_y_of_x_dist_curve.117: i '$i' x '$x' p_test '$p_test'"
         if { $x ne "" } {
             set p_test [expr { $p_test + $x } ]
             set p_idx $i
         }
         incr i
     }
-    # $i is the index point in x_list
+    # $p_idx is the index point in x_list where p is in the range of p_idx
     set y_x_i [expr { $data_row_1 + $p_idx } ]
     set row_list [lindex $y_x_lol $y_x_i]
-    if { $row_list eq "" } {
-        ns_log Notice "qaf_y_of_x_dist_curve.118: row_list is blank, setting to end case."
-        set row_list [lindex $y_x_lol end]
-    }
     #ns_log Notice "qaf_y_of_x_dist_curve.120: i $i p_test $p_test x '$x' row_list '$row_list' y_x_i '$y_x_i'"
     if { $interpolate_p && $p_test != $p_normalized } {
         # point(i) is p(x2,y2)

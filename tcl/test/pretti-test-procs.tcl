@@ -88,8 +88,8 @@ G,3,5,8,5.17\n
                         aa_log "testing acc_fin::pretti_geom_avg_of_curve"
                         set curv_geo_avg [acc_fin::pretti_geom_avg_of_curve $curve2_lol]
                         set curv_avg_fmt [qaf_round_to_decimals $curv_geo_avg $expected_decimals]
-                        set test5_p [expr { $curv_geo_avg > $expected_time } ]                        
-                        aa_true "Test5N for Te of ${activity}'s Normal Curve ${curv_avg_fmt} is greater than pre-calced Te ${expected_time}" $test5_p
+                        set test5_p [expr { $curv_geo_avg >= $expected_time } ]                        
+                        aa_true "Test5N for Te of ${activity}'s Normal Curve ${curv_avg_fmt} not less than pre-calced Te ${expected_time}" $test5_p
 
                         set curv_geo_avg2 [acc_fin::pretti_geom_avg_of_curve $curve3_lol]
                         set curv_avg_fmt2 [qaf_round_to_decimals $curv_geo_avg2 $expected_decimals]
