@@ -80,8 +80,8 @@ ad_proc -public qaf_y_of_x_dist_curve {
     to interpolate when p is between two discrete points that represent a continuous curve. if first row contains labels x and y as labels, 
     these positions will be used to extract data from remaining rows. a pair y,x is assumed
 }  {
-    ns_log Notice "qaf_y_of_x_dist_curve.82: *****************************************************************" 
-    ns_log Notice "qaf_y_of_x_dist_curve.83: p $p interpolate_p $interpolate_p y_x_lol $y_x_lol " 
+    #ns_log Notice "qaf_y_of_x_dist_curve.82: *****************************************************************" 
+    #ns_log Notice "qaf_y_of_x_dist_curve.83: p $p interpolate_p $interpolate_p "
    set p [expr { $p + 0. } ]
     set first_row_list [lindex $y_x_lol 0]
     set x_idx [lsearch -exact $first_row_list "x"]
@@ -99,25 +99,36 @@ ad_proc -public qaf_y_of_x_dist_curve {
     foreach y_x [lrange $y_x_lol $data_row_1 end] {
         lappend x_list [lindex $y_x $x_idx]
     }
+    #ns_log Notice "qaf_y_of_x_dist_curve.102: y_x_lol length [llength $y_x_lol] y_x_lol $y_x_lol " 
+    #ns_log Notice "qaf_y_of_x_dist_curve.103: x_list length [llength $x_list] x_list $x_list"
     set x_sum [f::sum $x_list]
+    set x_len [llength $x_list]
+    set loop_limit [expr { $x_len + 1 } ]
     # normalize p to range of x
     set p_normalized [expr { $p * $x_sum * 1. } ]
 
-    ns_log Notice "qaf_y_of_x_dist_curve.104: x_sum '$x_sum' p '$p' p_normalized '$p_normalized' y_idx '$y_idx' x_idx '$x_idx'"
+    #ns_log Notice "qaf_y_of_x_dist_curve.104: x_sum '$x_sum' p '$p' p_normalized '$p_normalized' y_idx '$y_idx' x_idx '$x_idx' data_row_1 '$data_row_1'"
     # determine y @ x
 
     set i 0
     set p_test 0.
-    foreach x $x_list {
-        if { $p_test < $p_normalized } {
+    while { $p_test <= $p_normalized && $i < $loop_limit } {
+        set x [lindex $x_list $i]
+        ns_log Notice "qaf_y_of_x_dist_curve.117: i '$i' x '$x' p_test '$p_test'"
+        if { $x ne "" } {
             set p_test [expr { $p_test + $x } ]
-            incr i
+            set p_idx $i
         }
+        incr i
     }
     # $i is the index point in x_list
-    set y_x_i [expr { $data_row_1 + $i } ]
+    set y_x_i [expr { $data_row_1 + $p_idx } ]
     set row_list [lindex $y_x_lol $y_x_i]
-    ns_log Notice "qaf_y_of_x_dist_curve.120: i $i p_test $p_test x '$x' row_list '$row_list' y_x_i '$y_x_i'"
+    if { $row_list eq "" } {
+        ns_log Notice "qaf_y_of_x_dist_curve.118: row_list is blank, setting to end case."
+        set row_list [lindex $y_x_lol end]
+    }
+    #ns_log Notice "qaf_y_of_x_dist_curve.120: i $i p_test $p_test x '$x' row_list '$row_list' y_x_i '$y_x_i'"
     if { $interpolate_p && $p_test != $p_normalized } {
         # point(i) is p(x2,y2)
         set x2 [lindex $row_list $x_idx]
@@ -130,12 +141,13 @@ ad_proc -public qaf_y_of_x_dist_curve {
         set y [qal_interpolatep1p2_at_x $x1 $y1 $x2 $y2 $p_normalized 1]
 
     } else {
-        set y [expr { [lindex $row_list $y_idx] + 0. } ]
+        set y [lindex $row_list $y_idx]
+        if { $y ne "" } {
+            set y [expr { $y + 0. } ]
+        }
     }
 
-
-    }
-    ns_log Notice "qaf_y_of_x_dist_curve.141: y $y"
+    #ns_log Notice "qaf_y_of_x_dist_curve.141: y $y"
     return $y
 }
 
