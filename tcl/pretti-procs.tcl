@@ -348,8 +348,9 @@ set precision2(1) 1.
 
 ad_proc -public acc_fin::pretti_geom_avg_of_curve {
     curve_lol
+    {correction "0"}
 } {
-    Given a curve with x and y columns, finds the geometric average determined by: (y1*x1 + y2*x2 .. yN*xN ) / sum(x1..xN)
+    Given a curve with x and y columns, finds the geometric average determined by: (y1*x1 + y2*x2 .. yN*xN ) / sum(x1..xN). Correction is a value, usually -1, or +1 applied to a formula to adjust bias in a sample population as in N/(N - 1) or N/(N + 1).  n - 1 is sometimes referred to a Bessel's correction. Default is no correction.
 } {
     # This is a generalization of the PERT Time-expected function
     set constants_list [list y x]
@@ -371,12 +372,20 @@ ad_proc -public acc_fin::pretti_geom_avg_of_curve {
         if { $x_sum != 0. } {
             set numerator [f::sum $numerator_list ]
             set geometric_avg [expr { $numerator / $x_sum } ]
+            set n [expr { [llength $x_list] * 1. } ]
+            set n_corr [expr { $n + $correction } ]
+            if { $correction ne "0" && $n_corr != 0. } {
+                ns_log Notice "acc_fin::pretti_geom_avg_of_curve.383: geometric_avg $geometric_avg"
+                set geometric_avg [expr { $geometric_avg * $n / $n_corr } ]
+                ns_log Notice "acc_fin::pretti_geom_avg_of_curve.385: new geometric_avg $geometric_avg"
+            }
         } else {
             ns_log Notice "acc_fin::pretti_geom_avg_of_curve.170: divide by zero caught for x_sum. numerator $numerator"
         }
     } else {
         ns_log Notice "acc_fin::pretti_geom_avg_of_curve.178: y_idx $y_idx x_idx $x_idx"
     }
+
     return $geometric_avg
 }
 
