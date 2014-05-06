@@ -993,7 +993,7 @@ ad_proc -private acc_fin::p_load_tid {
     return 1
 }
 
-ad_proc -public acc_fin::list_index_filter {
+ad_proc -private acc_fin::list_index_filter {
     user_input_list
 } {
     filters alphanumeric input as a list to meet basic word or reference requirements
