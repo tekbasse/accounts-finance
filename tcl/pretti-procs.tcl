@@ -47,6 +47,7 @@ ad_proc -public acc_fin::pert_omp_to_normal_dc {
     a PERT expected time function (Te), where 
     Te = ( o + 4 * m + p ) / 6 and o = optimistic time, m = most likely time, and p = pessimistic time.
     The normal distribution curve has lower limit (o), upper limit (p) and median (m). 
+    Regression tests at accounts-finance/tcl/test/pretti-test-procs.tcl suggests 24 points minimum for a practical representation of a curve.
 } {
     ns_log Notice "acc_fin::pert_omp_to_normal_dc.23: starting"
     ns_log Notice "acc_fin::pert_omp_to_normal_dc.24: optimistic $optimistic most_likely $most_likely pessimistic $pessimistic n_points $n_points"
@@ -54,7 +55,7 @@ ad_proc -public acc_fin::pert_omp_to_normal_dc {
     # set median $most_likely
     # set minimum $optimistic
     # set maximum $pessimistic
-    set n_points [f::max [expr { int( $n_points ) } ] 3]
+    set n_points [f::max [expr { int( $n_points ) } ] 5]
     set n_areas  [expr { int( $n_points - 1 ) } ]
 
     #set pi 3.14159265358979
@@ -350,7 +351,7 @@ ad_proc -public acc_fin::pretti_geom_avg_of_curve {
     curve_lol
     {correction "0"}
 } {
-    Given a curve with x and y columns, finds the geometric average determined by: (y1*x1 + y2*x2 .. yN*xN ) / sum(x1..xN). Correction is a value, usually -1, or +1 applied to a formula to adjust bias in a sample population as in N/(N - 1) or N/(N + 1).  n - 1 is sometimes referred to a Bessel's correction. Default is no correction.
+    Given a curve with x and y columns, finds the geometric average determined by: (y1*x1 + y2*x2 .. yN*xN ) / sum(x1..xN). Correction is a value, usually -1, or +1 applied to a formula to adjust bias in a sample population as in N/(N - 1) or N/(N + 1).  n - 1 is sometimes referred to a Bessel's correction. Default is no correction. More about Bessel's correction at: http://en.wikipedia.org/wiki/Bessel%27s_correction
 } {
     # This is a generalization of the PERT Time-expected function
     set constants_list [list y x]

@@ -59,9 +59,9 @@ G,3,5,8,5.17\n
                     set geo_avg [expr { ( $optimistic + 4. * $median + $pessimistic ) / 6. } ] 
                     set geo_avg_fmt [qaf_round_to_decimals $geo_avg $expected_decimals]
                     aa_equals "Test1 for ${activity}: calced Te vs. pre-calced Te" $geo_avg_fmt $expected_time
-                    set n_points_list [list 24]
-                    #set tolerance_list [list .01 .02 .05 .1 .2]
-                    set tolerance_list [list .01]
+                    set n_points_list [list 5 9 16 18 24]
+                    set tolerance_list [list .01 .02 .05 .1 .2]
+                    #set tolerance_list [list .01]
                     foreach n_points $n_points_list {
                         aa_log "testing OMP values to curve using acc_fin::pert_omp_to_normal_dc"
                         # confirm curve's representation at critical original parameters o,m,p:
