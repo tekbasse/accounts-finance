@@ -59,7 +59,8 @@ G,3,5,8,5.17\n
                     set geo_avg [expr { ( $optimistic + 4. * $median + $pessimistic ) / 6. } ] 
                     set geo_avg_fmt [qaf_round_to_decimals $geo_avg $expected_decimals]
                     aa_equals "Test1 for ${activity}: calced Te vs. pre-calced Te" $geo_avg_fmt $expected_time
-                    set n_points_list [list 5 9 16 18 24]
+                    #set n_points_list [list 5 9 16 18 24]
+                    set n_points_list [list 24 51 127]
                     set tolerance_list [list .01 .02 .05 .1 .2]
                     #set tolerance_list [list .01]
                     foreach n_points $n_points_list {
@@ -118,10 +119,27 @@ aa_register_case list_index_filter {
     aa_run_with_teardown \
         -rollback \
         -test_code {
-
-            #set date [dt_ansi_to_julian_single_arg "2003-01-01 01:01:01"]
-            #aa_equals "Returns correct julian date" $date "2452641"
-
+            set unfiltered_name_list [list ]
+            for { set i 1} { $i < 20} { incr i } {
+                set name [ad_generate_random_string]
+                lappend unfiltered_name_list $name
+            }
+            set filtered_name_list [acc_fin::list_index_filter $unfiltered_name_list]
+            set success_p 1
+            set violations ""
+            set violations_list [list ]
+            foreach name $filtered_name_list {
+                
+                if { [regexp -nocase -- {[^0-9a-z,]} name violations] } {
+                    set success_p 0
+                    lappend violations_list $violations
+                }
+            }
+            if { $success_p } {
+                aa_true "Test9 filtering gremlin characters in names." $success_p
+            } else {
+                aa_true "Test9 filtering gremlin characters in names. Fail for '${violations_list}'" $success_p
+            }
         }
 }
 
