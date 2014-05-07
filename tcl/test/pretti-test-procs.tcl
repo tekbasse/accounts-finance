@@ -11,7 +11,12 @@ aa_register_case pert_OMP_curve_conversions {
     aa_run_with_teardown \
         -rollback \
         -test_code {
-            
+ns_log Notice "aa_register_case.14: Begin test 
+
+
+
+"
+
             # Use examples from 
             # http://en.wikipedia.org/wiki/Program_Evaluation_and_Review_Technique
             # Te = time_expected
@@ -59,10 +64,10 @@ G,3,5,8,5.17\n
                     set geo_avg [expr { ( $optimistic + 4. * $median + $pessimistic ) / 6. } ] 
                     set geo_avg_fmt [qaf_round_to_decimals $geo_avg $expected_decimals]
                     aa_equals "Test1 for ${activity}: calced Te vs. pre-calced Te" $geo_avg_fmt $expected_time
-                    #set n_points_list [list 5 9 16 18 24]
-                    set n_points_list [list 24 51 127]
-                    set tolerance_list [list .01 .02 .05 .1 .2]
-                    #set tolerance_list [list .01]
+                    #set n_points_list [list 3 5 9 16 18 24 51 127]
+                    set n_points_list [list 24 51 ]
+#                    set tolerance_list [list .01 .02 .05 .1 .2]
+                    set tolerance_list [list .01]
                     foreach n_points $n_points_list {
                         aa_log "testing OMP values to curve using acc_fin::pert_omp_to_normal_dc"
                         # confirm curve's representation at critical original parameters o,m,p:
