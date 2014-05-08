@@ -170,8 +170,8 @@ ad_proc -public acc_fin::pert_omp_to_normal_dc {
         set y1 [expr { $precision($ii) * exp( -0.5 * $precision2($ii) * pow( $x1 , 2. ) ) / $sqrt_2pi } ] 
 
         # estimate delta_x and a:
-        set block_count [lindex [qaf_triangular_numbers [expr { $p_count($ii) - 0 } ]] end]
-        set numerator 0.
+        set block_count [lindex [qaf_triangular_numbers [expr { $p_count($ii) - 1 } ]] end]
+        set numerator 0
 
         ns_log Notice "acc_fin::pert_omp_to_normal_dc.90: ii $ii p_count($ii) $p_count($ii) block_count $block_count numerator $numerator std_dev($ii) $std_dev($ii)" 
         #set 4sigma [expr { 4. * $std_dev($ii) } ]
@@ -184,43 +184,13 @@ ad_proc -public acc_fin::pert_omp_to_normal_dc {
         lappend x_larr($ii) $x1
 
         # Calculations are from x = 0 to x = std_dev
+        # Therefore, left tail needs flipped afterward
 
-        # both start points are an area.. The left, end point (ie curve start point) that does not define an area.
-        if { $ii } {
-            # point on right is part of an area. manually calculate, because it's not included in the main loop
-
-            set x2 [expr { $std_dev($ii) * $step_021 } ]
-            set delta_x [expr { $x2 - $x1 } ]
-#            set y2 [expr { exp( -0.5 * pow( $x2 , 2. ) ) / $sqrt_2pi } ] 
-#            set y2 [expr { exp( -0.5 * pow( $x2 , 2. ) / $variance($ii) ) / ( $std_dev($ii) * $sqrt_2pi ) } ] 
-#            set y2 [expr { exp( -0.5 * pow( $x2 , 2. ) / $variance($ii) ) / $sqrt_2pi } ] 
-            set y2 [expr { $precision($ii) * exp( -0.5 * $precision2($ii) * pow( $x2 , 2. ) ) / $sqrt_2pi } ] 
-            set a [expr { $a + $delta_x * ( $y2 + $y1 ) / 2. } ]
-            set delta_a [expr { $a - $a_prev } ]
-#            set f_x [expr { $most_likely + $y_range_arr(1) * 2. * $a } ]
-            set f_x [expr { $most_likely + $y_range_arr(1) * $step_021 } ]
-
-
-
-            lappend a_larr($ii) $a
-            lappend da_larr($ii) $delta_a
-            lappend fx_larr($ii) $f_x
-            set y1 $y2
-            set x1 $x2
-            set a_prev $a
-            set numerator [expr { $numerator + 1. } ]
-            set start_idx 0
-        } else {
-            # first point of left tail. Skip to next point..
-            set start_idx 1
-        }
-            
         # At the end of the loop, calculate the last point manually.
         ns_log Notice "acc_fin::pert_omp_to_normal_dc.99: i '' x1 '$x1' delta_x '' y2 '' y1 '$y1' f_x '' numerator $numerator step_021 $step_021"
-        for {set i $start_idx } { $i < $p_count($ii) } { incr i } {
-            
-            set step_021 [expr { $numerator / $block_count + $step_021 } ]
-            set x2 [expr { $std_dev($ii) * $numerator / $block_count } ]
+        for {set i 0 } { $i < $p_count($ii) } { incr i } {
+            set step_021 [expr { $numerator / $block_count + $step_021 } ]            
+            set x2 [expr { $std_dev($ii) * $step_021 } ]
             set delta_x [expr { $x2 - $x1 } ]
             # Calculate y2 = f(x) = using the normal probability density function
 #            set y2 [expr { exp( -0.5 * pow( $x2 , 2. ) ) / $sqrt_2pi } ] 
@@ -239,7 +209,8 @@ ad_proc -public acc_fin::pert_omp_to_normal_dc {
             } else {
                 # Left tail
 #                set f_x [expr { $optimistic + $y_range_arr(0) * 2. * $a } ]
-                set f_x [expr { $optimistic + $y_range_arr(0) * $step_021 } ]
+#                set f_x [expr { $optimistic + $y_range_arr(0) * $step_021 } ]
+                set f_x [expr { $most_likely - $y_range_arr(0) * $step_021 } ]
             }
             ns_log Notice "acc_fin::pert_omp_to_normal_dc.100: i $i x2 '$x2' delta_x '$delta_x' y2 '$y2' y1 '$y1' f_x '$f_x' numerator $numerator step_021 $step_021"
             lappend x_larr($ii) $x2
@@ -258,7 +229,7 @@ ad_proc -public acc_fin::pert_omp_to_normal_dc {
         # total area must be 1
         set a [f::sum $da_larr($ii)]
 
-        set bias_median [expr { $std_dev($ii) * .025 } ]
+#        set bias_median [expr { $std_dev($ii) * .025 } ]
         set bias_median 0.
         if { $ii } {
             # right tail 
@@ -270,11 +241,10 @@ ad_proc -public acc_fin::pert_omp_to_normal_dc {
 
         # and x2 equals 2* std_dev($ii) @ tail end
         set x2 $std_dev($ii) 
-        # given x1,y1,x2 and $a, 
-        set y2 [expr { 2. * $delta_a / ( ( ( $p_count($ii) - 1. ) * ( $x2 - $x1 ) ) - $y1 ) } ]
-
-
         set delta_x [expr { $x2 - $x1 } ]
+        # given x1,y1,x2 and $a, 
+        set y2 [expr { 2. * $delta_a / ( ( ( $p_count($ii) - 1. ) * $delta_x ) - $y1 ) } ]
+
 
         ns_log Notice "acc_fin::pert_omp_to_normal_dc.105: i $i x2 '$x2' delta_x '$delta_x' y2 '$y2' y1 '$y1' f_x '$f_x' numerator $numerator step_021 '1'*"
         # * = implied from last case calcs.
@@ -292,23 +262,29 @@ ad_proc -public acc_fin::pert_omp_to_normal_dc {
         ns_log Notice "acc_fin::pert_omp_to_normal_dc.118: a_arr(0) of $a_arr(0) != a_arr(1) $a_arr(1)"
     }
 
-    # build final left tail  0
+    # build final curve
+
+    # column titles
     set curve_lists [list ]
     lappend curve_lists [list y x]
-    # reverse order of left tail
 
-
-    set i_count [expr { $p_count(0) - 1 } ]
-    set a 0
+    # left tail, reverse order
+    # ref 0
+    ns_log Notice "acc_fin::pert_omp_to_normal_dc.200: left tail"
+    # first point, use limit
+ #   set a 0
     #set f_x [lindex $fx_larr(0) 0]
-    set f_x $fx_limit(0)
-    set delta_a [lindex $da_larr(0) $i_count]
-    set a [expr { $a + $delta_a } ]
-    ns_log Notice "acc_fin::pert_omp_to_normal_dc.236: i '' delta_a '$delta_a' a '$a' f_x '$f_x'"
-    set point_list [list $f_x $delta_a]
-    lappend curve_lists $point_list
-    incr i_count -1
-    for {set i 1} { $i < $i_count } {incr i} {
+#    set f_x $fx_limit(0)
+#    set delta_a [lindex $da_larr(0) $i_count]
+#    set a [expr { $a + $delta_a } ]
+#    ns_log Notice "acc_fin::pert_omp_to_normal_dc.232: i '$p_co' delta_a '$delta_a' a '$a' f_x '$f_x'"
+#    set point_list [list $f_x $delta_a]
+#    lappend curve_lists $point_list
+
+    # reverse order remaining left tail points
+    # p_count() is point length. minus 1 for above point, minus 1 to count from 0 to one less than p_count
+#    set i_count [expr { $p_count(0) - 1 } ]
+    for {set i $p_count(0)} { $i > -1 } {incr i -1} {
         set f_x [lindex $fx_larr(0) $i]
         set delta_a [lindex $da_larr(0) $i]
         set a [expr { $a + $delta_a } ]
@@ -317,27 +293,32 @@ ad_proc -public acc_fin::pert_omp_to_normal_dc {
         lappend curve_lists $point_list
     }
     # last item this tail
-    
-    #set f_x [lindex $fx_larr(0) $i]
-    set f_x $most_likely
-    set delta_a [lindex $da_larr(0) $i_count]
-    set a [expr { $a + $delta_a } ]
-    ns_log Notice "acc_fin::pert_omp_to_normal_dc.236: i '$i_count' delta_a '$delta_a' a '$a' f_x '$f_x'"
-    set point_list [list $f_x $delta_a]
-    lappend curve_lists $point_list
-    
-    # build final right tail 1
-    set i 0
-    set f_x [lindex $fx_larr(1) $i]
-    #set f_x $most_likely
-    set delta_a [lindex $da_larr(1) $i]
-    set a [expr { $a + $delta_a } ]
-    ns_log Notice "acc_fin::pert_omp_to_normal_dc.240: i '$i' delta_a '$delta_a' a '$a' f_x '$f_x'"
-    set point_list [list $f_x $delta_a]
-    lappend curve_lists $point_list
-    set i_count $p_count(1)
+    # mark index of this last point, because we will be modifying it 
+    set median_range_idx [llength $curve_lists]
+    incr median_range_idx -1
 
-    for {set i 1} { $i < $i_count } {incr i } {
+    #set f_x [lindex $fx_larr(0) $i]
+#    set f_x $most_likely
+#    set delta_a [lindex $da_larr(0) $i_count]
+#    set a [expr { $a + $delta_a } ]
+#    ns_log Notice "acc_fin::pert_omp_to_normal_dc.236: i '$i_count' delta_a '$delta_a' a '$a' f_x '$f_x'"
+#    set point_list [list $f_x $delta_a]
+#    lappend curve_lists $point_list
+    
+    # right tail, append
+    # ref 1
+
+#    set i 0
+#    set f_x [lindex $fx_larr(1) $i]
+    #set f_x $most_likely
+#    set delta_a [lindex $da_larr(1) $i]
+#    set a [expr { $a + $delta_a } ]
+#    ns_log Notice "acc_fin::pert_omp_to_normal_dc.240: i '$i' delta_a '$delta_a' a '$a' f_x '$f_x'"
+#    set point_list [list $f_x $delta_a]
+#    lappend curve_lists $point_list
+
+#    set i_count [expr { $p_count(1) - 1 } ]
+    for {set i 0} { $i < $p_count(1) } {incr i } {
         set f_x [lindex $fx_larr(1) $i]
         set delta_a [lindex $da_larr(1) $i]
         set a [expr { $a + $delta_a } ]
@@ -346,13 +327,14 @@ ad_proc -public acc_fin::pert_omp_to_normal_dc {
         lappend curve_lists $point_list
     }
     
+# 
     #set f_x [lindex $fx_larr(1) $i]
-    set f_x $pessimistic
-    set delta_a [lindex $da_larr(1) $i_count]
-    set a [expr { $a + $delta_a } ]
-    ns_log Notice "acc_fin::pert_omp_to_normal_dc.246: i '$i' delta_a '$delta_a' a '$a' f_x '$f_x'"
-    set point_list [list $f_x $delta_a]
-    lappend curve_lists $point_list
+#    set f_x $pessimistic
+#    set delta_a [lindex $da_larr(1) $i_count]
+#    set a [expr { $a + $delta_a } ]
+#    ns_log Notice "acc_fin::pert_omp_to_normal_dc.246: i '$i' delta_a '$delta_a' a '$a' f_x '$f_x'"
+#    set point_list [list $f_x $delta_a]
+#    lappend curve_lists $point_list
 
     # remove header for point count
     # but add a point because each item is an area, and there are area_count + 1 points
