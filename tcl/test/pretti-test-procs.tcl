@@ -64,10 +64,11 @@ G,3,5,8,5.17\n
                     set geo_avg [expr { ( $optimistic + 4. * $median + $pessimistic ) / 6. } ] 
                     set geo_avg_fmt [qaf_round_to_decimals $geo_avg $expected_decimals]
                     aa_equals "Test1 for ${activity}: calced Te vs. pre-calced Te" $geo_avg_fmt $expected_time
-                    #set n_points_list [list 3 5 9 16 18 24 51 127]
-                    set n_points_list [list 24 51 ]
-#                    set tolerance_list [list .01 .02 .05 .1 .2]
-                    set tolerance_list [list .01]
+#                    set n_points_list [list 3 5 9 16 18 24 51 127]
+                    set n_points_list [list 18 24 51 127]
+#                    set n_points_list [list 24 51 60]
+                    set tolerance_list [list .01 .02 .05 .1 .2]
+ #                   set tolerance_list [list .01]
                     foreach n_points $n_points_list {
                         aa_log "testing OMP values to curve using acc_fin::pert_omp_to_normal_dc"
                         # confirm curve's representation at critical original parameters o,m,p:
@@ -95,7 +96,7 @@ G,3,5,8,5.17\n
                         set curv_geo_avg [acc_fin::pretti_geom_avg_of_curve $curve2_lol -1]
                         set curv_avg_fmt [qaf_round_to_decimals $curv_geo_avg $expected_decimals]
                         set test5_p [expr { $curv_geo_avg >= $expected_time } ]                        
-                        aa_true "Test5N for Te of ${activity}'s Normal Curve ${curv_avg_fmt} not less than pre-calced Te ${expected_time}" $test5_p
+                        aa_true "Test5N for Te of ${activity} w/ ${n_points}-point normal curve ${curv_avg_fmt} not less than pre-calced Te ${expected_time}" $test5_p
 
                         set curv_geo_avg2 [acc_fin::pretti_geom_avg_of_curve $curve3_lol]
                         set curv_avg_fmt2 [qaf_round_to_decimals $curv_geo_avg2 $expected_decimals]
