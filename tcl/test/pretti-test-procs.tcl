@@ -20,16 +20,7 @@ ns_log Notice "aa_register_case.14: Begin test
             # Use examples from 
             # http://en.wikipedia.org/wiki/Program_Evaluation_and_Review_Technique
             # Te = time_expected
-            set table_text "\
-activity_ref,time_est_short,time_est_med,time_est_long,time_ext\n
-A,2,4,6,4.0\n
-B,3,5,9,5.33\n
-C,4,5,7,5.17\n
-D,4,6,10,6.33\n
-E,4,5,7,5.17\n
-F,3,4,8,4.5\n
-G,3,5,8,5.17\n
-"
+            set table_text [lindex [acc_fin::example_tables p20a] 2]
             set line_break "\n
 "
             set delimiter ","
