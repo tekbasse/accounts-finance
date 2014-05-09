@@ -1,9 +1,11 @@
+set title "PRETTI Tables"
+set context [list $title]
 
 set type_list [list p1 p2 p3 p4 p5 dc]
-set table_attribute_list [list style "border: 1px solid #999999; padding: 5px;"]
+set table_attribute_list [list style "border: 1px;"]
 foreach type $type_list {
-    set all_list [lsort [acc_fin::pretti_columns_list $type]]
-    set req_list [lsort [acc_fin::pretti_columns_list $type 1]]
+    set all_list [acc_fin::pretti_columns_list $type]
+    set req_list [acc_fin::pretti_columns_list $type 1]
     set var ${type}_html
     set var2 ${type}b_html
     set table_lists [list ]

@@ -86,7 +86,7 @@
 <msg key="rows">Rows</msg>
 <msg key="scenario">Scenario</msg>
 <msg key="scenario_p1">Scenario (p1)</msg>
-<msg key="scenario_p1_def">A table of named variables and their values (name, value pairs) that specify a scenario.</msg>
+<msg key="scenario_p1_def">A table of named variables and their values (name, value pairs) that specify a scenario. Rows and columns may be in any order.</msg>
 <msg key="select">Select</msg>
 <msg key="significant_q">Relatively Significant?</msg>
 <msg key="significant_q_def">Answers question about a Track of Activities. 1 is yes, 0 is no.</msg>
@@ -94,11 +94,11 @@
 <msg key="tables">Tables</msg>
 <msg key="task">Task</msg>
 <msg key="task_network_p2">Task Network (p2)</msg>
-<msg key="task_network_p2_def">A table defining tasks and their dependencies.</msg>
+<msg key="task_network_p2_def">A table defining tasks and their dependencies. Columns may be in any order.</msg>
 <msg key="task_types_name">Task Types Name</msg>
 <msg key="task_types_name_def">A Task Types (p3) Table referenced by Name</msg>
 <msg key="task_types_p3">Task Types (p3)</msg>
-<msg key="task_types_p3_def">A table defining task types.</msg>
+<msg key="task_types_p3_def">A table defining task types. Columns may be in any order.</msg>
 <msg key="task_types_tid">Task Types Table ID</msg>
 <msg key="task_types_tid_def">A Task Types (p3) Table referenced by Table ID</msg>
 <msg key="time_dist_curve_name">Time Distribution Curve Name</msg>
@@ -126,6 +126,7 @@
 <msg key="value_def">Specifies a column containing variable values.</msg>
 <msg key="value_def">Specifies a column containing variable values.</msg>
 <msg key="view">View</msg>
+<msg key="unrecognized_refs">Unrecognized references are ignored.</msg>
 <msg key="waypoint_cost">Waypoint Cost</msg>
 <msg key="waypoint_cost_def">Subtotal of an activity's cost and it's dependencies at specified Cost Probability Moment</msg>
 <msg key="waypoint_duration">Waypoint Duration</msg>
