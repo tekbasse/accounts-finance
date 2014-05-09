@@ -45,14 +45,29 @@ ad_proc -public acc_fin::example_table {
             set ret_list [list activity_table_tid ]
         }
         p20a {
-            set ret_list [list "Wikipedia PERT" "This is an example from PERT entry of Wikipedia. See entry for details: http://en.wikipedia.org/wiki/Program_Evaluation_and_Review_Technique" "activity_ref,time_est_short,time_est_med,time_est_long,time_ext\n
+            set ret_list [list "Wikipedia PERT" "This is an example from PERT entry of Wikipedia. See entry for details: http://en.wikipedia.org/wiki/Program_Evaluation_and_Review_Technique" "activity_ref,time_est_short,time_est_med,time_est_long,time_ext,dependent_tasks\n
 A,2,4,6,4.0\n
 B,3,5,9,5.33\n
 C,4,5,7,5.17\n
 D,4,6,10,6.33\n
 E,4,5,7,5.17\n
 F,3,4,8,4.5\n
-G,3,5,8,5.17\n"
+G,3,5,8,5.17\n" ]
+        }
+        p20b {
+            set ret_list [list "Wikipedia PERT chart" "This is an example rendered from a chart image in the PERT entry of Wikipedia. See image for details: http://en.wikipedia.org/wiki/File:Pert_chart_colored.svg" "activity_ref,time_est_med,dependent_tasks,color\n
+10,0,,grey\n
+A,3,10,green\n
+B,4,10,green\n
+20,0,B,grey\n
+30,0,A,grey\n
+D,1,30,blue\n
+40,0,D,grey\n
+F,3,40,brown\n
+C,3,20,brown\n
+50,0,F E C,grey\n"
+
+        }
             # p2 Task Network
             #      activity_ref           reference for an activity, a unique task id, using "activity" to differentiate between table_id's tid 
             #                             An activity reference is essential a function as in f() with no attributes,
