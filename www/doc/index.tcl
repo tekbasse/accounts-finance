@@ -1,2 +1,2 @@
-set title "Accounts Finance"
+set title "Documentation"
 set context [list $title]

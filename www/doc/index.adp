@@ -39,6 +39,16 @@ A local copy is available at accounts-finance/www/doc/<a href="LICENSE.html">LIC
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 </pre>
+
+<h3>contents</h3>
+<ul><li>
+<a href="LICENSE.html">GPL 3+ License</a>
+</li><li>
+<a href="pretti">PRETTI Table definitions</a>
+</li><li>
+<a href="pretti-example-1">PRETTI Example 1</a> Using example from PERT Wikipedia entry retrieved from <a href="http://en.wikipedia.org/wiki/Program_Evaluation_and_Review_Technique">http://en.wikipedia.org/wiki/Program_Evaluation_and_Review_Technique</a> on 8 May 2014.
+</li></ul>
+
 <h3>
 features
 </h3>

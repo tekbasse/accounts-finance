@@ -1,5 +1,5 @@
-set title "PRETTI Tables"
-set context [list $title]
+set title "PRETTI Table definitions"
+set context [list [list index "Documentation"] $title]
 
 set type_list [list p1 p2 p3 p4 p5 dc]
 set table_attribute_list [list style "border: 1px;"]
