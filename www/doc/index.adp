@@ -46,6 +46,8 @@ A local copy is available at accounts-finance/www/doc/<a href="LICENSE.html">LIC
 <ul><li>
 <a href="LICENSE.html">GPL 3+ License</a>
 </li><li>
+<a href="pretti-specs">PRETTI Specifications</a>
+</li><li>
 <a href="pretti">PRETTI Table definitions</a>
 </li><li>
 <a href="pretti-example-1">PRETTI Example 1</a> Using example from PERT Wikipedia entry retrieved from <a href="http://en.wikipedia.org/wiki/Program_Evaluation_and_Review_Technique">http://en.wikipedia.org/wiki/Program_Evaluation_and_Review_Technique</a> on 8 May 2014.
@@ -54,6 +56,8 @@ A local copy is available at accounts-finance/www/doc/<a href="LICENSE.html">LIC
 <h3>
 features
 </h3>
+<p>Project Reporting Evaluation and Track Task Interpretation (PRETTI) is an effective way to communicate complex ideas of timing, sequence and dependencies to project stakeholders. Each report consists of a table of fast-tracked paths highlighting the critical path (CP) as well as paths and activities that risk merging or otherwise affecting the CP. PRETTI avoids processing intensity of Monte Carlo analysis by calculating only the points requested along a distribution curve, such as the extremes and median. PRETTI provides a painless way to create a probability distribution curve for each activity based on historical records and subsequently produce a project performance distribution curve for time and value. The complexity of GERT decision paths are deferred to the activity level and probability distributions.
+</p>
 <p>
 To be listed. 
 </p><p>

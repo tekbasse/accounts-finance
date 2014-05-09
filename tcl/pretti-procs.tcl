@@ -1233,8 +1233,8 @@ ad_proc -public acc_fin::scenario_prettify {
     # index 0 is default
     
     # import task_types_list
-    #### Use [lsearch -regexp {[a-z][0-9]} -all -inline $x_list] to screen alt debit/credit/"cost/revenue" columns and create list for custom summary feature.
-    #### Use [lsearch -regexp {[a-z][0-9]s} -all -inline $x_list] to screen alt time columns and create list for a scheduling feature
+    #### Use [lsearch -regexp {[a-z][0-9]+} -all -inline $x_list] to screen alt debit/credit/"cost/revenue" columns and create list for custom summary feature.
+    #### Use [lsearch -regexp {[a-z][0-9]+s} -all -inline $x_list] to screen alt time columns and create list for a scheduling feature
     #### with parameters defined in scenario or as a separate compilation of pretti output
     
     if { $p1_arr(task_types_tid) ne "" } {
