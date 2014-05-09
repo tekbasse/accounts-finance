@@ -2,6 +2,8 @@
 <property name="title">@title;noquote@</property>
 <property name="context">@context;noquote@</property>
 
+<h2>Finance Package @title@</h2>
+
 <p>Finance Package provides some tools for forecasting and reporting</p>
 
 <p>The lastest version of the code is available at the development site:

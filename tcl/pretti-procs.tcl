@@ -5,6 +5,12 @@ ad_library {
     Project Activity Network Evaluation By Reporting Low Float Paths In Fast Tracks
     @creation-date 11 Feb 2014
     @cvs-id $Id:
+    @Copyright (c) 2014 Benjamin Brink
+    @license GNU General Public License 3, see project home or http://www.gnu.org/licenses/gpl-3.0.en.html
+    @project home: http://github.com/tekbasse/accounts-finance
+    @address: po box 20, Marylhurst, OR 97036-0020 usa
+    @email: kappa@dekka.com
+
     Temporary comment about git commit comments: http://xkcd.com/1296/
 }
 
