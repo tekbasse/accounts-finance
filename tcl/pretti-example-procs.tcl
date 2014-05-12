@@ -22,27 +22,13 @@ ad_proc -public acc_fin::example_table {
 } {
     set ret_list ""
     switch -exact $table_ref {
-        p10 {
-            # p1 PRETTI Scenario
-            # consists of a "name" and "value" column, with names of:
-            #      activity_table_tid
-            #      activity_table_name      name of table containing task network
-            #      period_unit          measure of time used in task duration etc.
-            #      time_dist_curve_name      a default distribution curve name when a task type doesn't reference one.
-            #      time_dist_curve_tid      a default distribution curve table_id, dist_curve_name overrides dist_curve_dtid
-            #      cost_dist_curve_name      a default distribution curve name when a task type doesn't reference one.
-            #      cost_dist_curve_tid      a default distribution curve table_id, dist_curve_name overrides dist_curve_dtid
-            #      with_factors_p  defaults to 1 (true). Set to 0 (false) if any factors in p3 are to be ignored.
-            #                           This option is useful to intercede in auto factor expansion to add additional
-            #                           variation in repeating task detail. (deprecated by auto expansion of nonexisting coefficients).
-            #      time_probability_moment A percentage (0..1) along the (cumulative) distribution curve. defaults to 0.5
-            #      cost_probability_moment A percentage (0..1) along the (cumulative) distribution curve
-            #set ret_list \[list name value\]
-            set ret_list [list activity_table_tid activity_table_name task_types_tid task_types_name time_dist_curve_name time_dist_curve_tid cost_dist_curve_name cost_dist_curve_tid time_est_short time_est_median time_est_long time_probability_moment cost_est_low cost_est_median cost_est_high cost_probability_moment]
+        p10a {
+            # goes with p20a
+            set ret_list [list [list name value] [activity_table_name "WikipediaPERT"] [list time_est_short 5 ] [list time_est_median 8] [list time_est_long 12] [time_probability_moment 0.5]]
         }
-        p11 {
-            #set ret_list \[list name value\]
-            set ret_list [list activity_table_tid ]
+        p11b {
+            # goes with p20b
+            set ret_list [list [list name value] [activity_table_name "WikipediaPERTchart"]]
         }
         p20a {
             set ret_list [list "Wikipedia PERT" "This is an example from PERT entry of Wikipedia. See entry for details: http://en.wikipedia.org/wiki/Program_Evaluation_and_Review_Technique" "activity_ref,time_est_short,time_est_med,time_est_long,time_ext,dependent_tasks\n
