@@ -9,13 +9,13 @@ ad_library {
     @address: po box 20, Marylhurst, OR 97036-0020 usa
     @email: kappa@dekka.com
     
-Finance Package is 
+    PRETTI examples and test data generator procs.
 
 }
 
 namespace eval acc_fin {}
 
-ad_proc -public acc_fin::example_table {
+ad_proc -private acc_fin::example_table {
     {table_ref ""}
 } {
     Returns a list of 3 items. index 0 is table title; index 1 is table description, index 2 is table in data entry format, commas between columns, spaces between multiple items in same row and column;  
@@ -166,4 +166,55 @@ C,3,20,brown\n
         }
     }
     return $ret_list
+}
+
+ad_proc -private acc_fin::pretti_example_maker {
+    {name_value_list ""}
+} {
+    Creates a randomized scenario with accompanying required tables, mainly used for testing. Pass a list of optional arguments as a list of name-value pairs; See code for options.
+} {
+    # scenario_prettify requires:
+    # p1 scenario table
+    # p2 activity table
+    # optional:
+    # p3 activity_type table
+    # dc distribution curves
+    
+    # p1 data refers to p2 table. Create p2 table before p1.
+    # p2 data refers to dc or p3 tables. Create dc or p3 tables before p2.
+
+    # acts = accounts count
+    # cols = columns count
+    # types = types count
+    # dots = points count
+    set param_arr(p2_acts_max) 100
+    set param_arr(p2_acts_min) 20
+    set param_arr(p2_cols_min) [llength [acc_fin::pretti_columns_list p2 1]]
+    set param_arr(p2_cols_max) [llength [acc_fin::pretti_columns_list p2 0]]
+    set param_arr(dc_dots_min) 0
+    set param_arr(dc_dots_max) 10
+
+    set param_arr(p3_types_min) 0
+    set param_arr(p3_types_max) 120
+    # blank means column inclusion is randomized. Otherwise list specific columns to try/use
+    # acc_fin::pretti_columns_list is a handy column name reference
+    set param_arr(p1_req_cols) ""
+    set param_arr(p2_req_cols) ""
+    set param_arr(p3_req_cols) ""
+    # Use an existing case to test..??? not implemented.
+
+    # acc_fin::pretti_columns_list type required_only_p
+
+
+
+    # set any generative parameters
+    foreach {name value} $name_value_list {
+        if { [info exists param_arr($name) ] } {
+            set param_arr($name) $value
+        }
+    }
+
+
+
+    return 1
 }

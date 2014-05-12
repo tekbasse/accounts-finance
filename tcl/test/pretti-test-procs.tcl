@@ -140,13 +140,24 @@ aa_register_case list_index_filter {
         }
 }
 
-aa_register_case p2_factors_expand {
-    Test acc_fin::p2_factors_expand proc
+aa_register_case scenario_prettify_test1 {
+    Test acc_fin::scenario_prettify proc
 } {
 
     aa_run_with_teardown \
         -rollback \
         -test_code {
+            # scenario_prettify requires:
+            # p1 scenario table
+            # p2 activity table
+            # optional:
+            # p3 activity_type table
+            # dc distribution curves
+
+            # p1 data refers to p2 table. Create p2 table before p1.
+            # p2 data refers to dc or p3 tables. Create dc or p3 tables before p2.
+
+            
 
             #set date [dt_ansi_to_julian_single_arg "2003-01-01 01:01:01"]
             #aa_equals "Returns correct julian date" $date "2452641"
