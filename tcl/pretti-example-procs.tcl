@@ -245,7 +245,6 @@ ad_proc -private acc_fin::pretti_example_maker {
     }
     
     # dc
-
     for {set i 0} { $i < $param_arr(dc_count) } { incr i } {
         set dc_larr($i) [list ]
         set param_arr(dc_cols) [expr { int( rand() * ( $param_arr(dc_cols_max) - $param_arr(dc_cols_min) + .99 ) ) + $param_arr(dc_cols_min) } ]
@@ -254,8 +253,77 @@ ad_proc -private acc_fin::pretti_example_maker {
         if { $cols_diff > 0 } {
             lappend title_list [lindex $dc0_list [expr { $dc0_len - $dc1_len - 1 } ] ]
         }
+        lappend dc_larr($i) $title_list
+        set param_arr(dc_dots) [expr { int( rand() * ( $param_arr(dc_dots_max) - $param_arr(dc_dots_min) + .99 ) ) + $param_arr(dc_dots_min) } ]
+        for { set i 0} {$i < $param_arr(dc_dots)} {incr i} {
+            # dist curve point
+            foreach title $title_list {
+                set row_list [list ]
+                switch -exact $title {
+                    x { 
+                        # a random amount, assume hours for a task for example
+                        set dot(x) [expr { int( rand() * 256. + 5. ) / 6. } ]
+                    }
+                    y {
+                        # these could be usd or btc for example
+                        set dot(y) [expr { int( rand() * 30000. + 90. ) / 100. } ]
+                    }
+                    label {
+                        set dot(label) [ad_generate_random_string]
+                    }
+                }
+                lappend row_list $dot($title)
+            }
+            # add row
+            lappend dc_larr($i) $row_list
+        }
+        # save dc curve
+        #####
     }
+
+
     # p3
+    set p3_larr($i) [list ]
+    set param_arr(p3_cols) [expr { int( rand() * ( $param_arr(p3_cols_max) - $param_arr(p3_cols_min) + .99 ) ) + $param_arr(p3_cols_min) } ]
+    # required: type`
+    set title_list $p31_list
+    set cols_diff [expr { $param_arr(p3_cols) -  [llength $title_list] } ]
+    if { $cols_diff > 0 } {
+        # Try to make some sane choices by choosing groups of titles with consistency
+        # sane groupings of titles:
+        # ungrouped:
+        #dependent_tasks dependent_types name description max_concurrent max_overlap_pct activity_table_tid activity_table_name task_types_tid task_types_name time_dist_curve_name time_dist_curve_tid cost_dist_curve_name cost_dist_curve_tid time_est_short time_est_median time_est_long time_probability_moment cost_est_low cost_est_median cost_est_high cost_probability_moment db_format
+        if { $cols_diff
+         }
+    }
+        lappend p3_larr($i) $title_list
+        set param_arr(p3_dots) [expr { int( rand() * ( $param_arr(p3_dots_max) - $param_arr(p3_dots_min) + .99 ) ) + $param_arr(p3_dots_min) } ]
+        for { set i 0} {$i < $param_arr(p3_dots)} {incr i} {
+            # dist curve point
+            foreach title $title_list {
+                set row_list [list ]
+                switch -exact $title {
+                    x { 
+                        # a random amount, assume hours for a task for example
+                        set dot(x) [expr { int( rand() * 256. + 5. ) / 6. } ]
+                    }
+                    y {
+                        # these could be usd or btc for example
+                        set dot(y) [expr { int( rand() * 30000. + 90. ) / 100. } ]
+                    }
+                    label {
+                        set dot(label) [ad_generate_random_string]
+                    }
+                }
+                lappend row_list $dot($title)
+            }
+            # add row
+            lappend p3_larr($i) $row_list
+        }
+        # save p3 curve
+        #####
+        
+    }
 
     # p2
 
