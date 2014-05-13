@@ -187,15 +187,48 @@ ad_proc -private acc_fin::pretti_example_maker {
     # cols = columns count
     # types = types count
     # dots = points count
-    set param_arr(p2_acts_max) 100
-    set param_arr(p2_acts_min) 20
-    set param_arr(p2_cols_min) [llength [acc_fin::pretti_columns_list p2 1]]
-    set param_arr(p2_cols_max) [llength [acc_fin::pretti_columns_list p2 0]]
+    set dc1_list [acc_fin::pretti_columns_list dc 1]
+    set dc1_len [llength $dc1_list]
+    set dc0_list [acc_fin::pretti_columns_list dc 0]
+    set dc0_len [llength $dc0_list]
+    set p11_list [acc_fin::pretti_columns_list p1 1]
+    set p11_len [llength $p11_list]
+    set p10_list [acc_fin::pretti_columns_list p1 0]
+    set p10_len [llength $p10_list]
+    set p21_list [acc_fin::pretti_columns_list p2 1]
+    set p21_len [llength $p21_list]
+    set p20_list [acc_fin::pretti_columns_list p2 0]
+    set p20_len [llength $p20_list]
+    set p31_list [acc_fin::pretti_columns_list p3 1]
+    set p31_len [llength $p31_list]
+    set p30_list [acc_fin::pretti_columns_list p3 0]
+    set p30_len [llength $p30_list]
+
+    set param_arr(dc_count_min) 0
+    set param_arr(dc_count_max) 5
+    set param_arr(dc_count) [expr { int( rand() * ( $param_arr(dc_count_max) - $param_arr(dc_count_min) + .99 ) ) + $param_arr(dc_count_min) } ]
     set param_arr(dc_dots_min) 0
     set param_arr(dc_dots_max) 10
+    set param_arr(dc_cols_min) $dc1_len
+    set param_arr(dc_cols_max) $dc0_len
 
+    
     set param_arr(p3_types_min) 0
     set param_arr(p3_types_max) 120
+    set param_arr(p3_cols_min) $p31_len
+    set param_arr(p3_cols_max) $p30_len
+    set param_arr(p3_cols) [expr { int( rand() * ( $param_arr(p3_cols_max) - $param_arr(p3_cols_min) + .99 ) ) + $param_arr(p3_cols_min) } ]
+
+    set param_arr(p2_acts_max) 100
+    set param_arr(p2_acts_min) 20
+    set param_arr(p2_cols_min) $p21_len
+    set param_arr(p2_cols_max) $p20_len
+    set param_arr(p2_cols) [expr { int( rand() * ( $param_arr(p2_cols_max) - $param_arr(p2_cols_min) + .99 ) ) + $param_arr(p2_cols_min) } ]
+
+    set param_arr(p1_vals_min) $p11_len
+    set param_arr(p1_vals_max) $p10_len
+    set param_arr(p1_cols) [expr { int( rand() * ( $param_arr(p1_cols_max) - $param_arr(p1_cols_min) + .99 ) ) + $param_arr(p1_cols_min) } ]
+
     # blank means column inclusion is randomized. Otherwise list specific columns to try/use
     # acc_fin::pretti_columns_list is a handy column name reference
     set param_arr(p1_req_cols) ""
@@ -203,16 +236,33 @@ ad_proc -private acc_fin::pretti_example_maker {
     set param_arr(p3_req_cols) ""
     # Use an existing case to test..??? not implemented.
 
-    # acc_fin::pretti_columns_list type required_only_p
-
-
-
-    # set any generative parameters
+    # Add optional arguments
+    # ie generative parameters
     foreach {name value} $name_value_list {
         if { [info exists param_arr($name) ] } {
             set param_arr($name) $value
         }
     }
+    
+    # dc
+
+    for {set i 0} { $i < $param_arr(dc_count) } { incr i } {
+        set dc_larr($i) [list ]
+        set param_arr(dc_cols) [expr { int( rand() * ( $param_arr(dc_cols_max) - $param_arr(dc_cols_min) + .99 ) ) + $param_arr(dc_cols_min) } ]
+        set title_list $dc1_list
+        set cols_diff [expr { $param_arr(dc_cols) -  [llength $title_list] } ]
+        if { $cols_diff > 0 } {
+            lappend title_list [lindex $dc0_list [expr { $dc0_len - $dc1_len - 1 } ] ]
+        }
+    }
+    # p3
+
+    # p2
+
+    # p1
+
+
+
 
 
 
