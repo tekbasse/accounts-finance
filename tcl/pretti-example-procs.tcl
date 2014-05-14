@@ -296,38 +296,79 @@ ad_proc -private acc_fin::pretti_example_maker {
     if { $cols_diff > 0 } {
         # Try to make some sane choices by choosing groups of titles with consistency
         # sane groupings of titles:
-        # ungrouped:
-        #  name description
+        if { $cols_diff > 3 } {
+            # time_est_short time_est_median time_est_long
+            lappend title_list time_est_short time_est_median time_est_long
+            incr cols_diff -3
+        }
+        if { $cols_diff > 3 } {
+            # cost_est_low cost_est_median cost_est_high 
+            lappend cost_est_low cost_est_median cost_est_high 
+            incr cols_diff -3
+        }
+        # ungrouped ones can include partial groupings:
         # max_concurrent max_overlap_pct
-        # activity_table_tid activity_table_name
-        # task_types_tid task_types_name
         # time_dist_curve_name time_dist_curve_tid 
+        # name description
         # cost_dist_curve_name cost_dist_curve_tid 
-        # time_est_short time_est_median time_est_long time_probability_moment
-        # cost_est_low cost_est_median cost_est_high cost_probability_moment
-        # dependent_tasks 
-        # db_format (1 or 0) saves p5 report table if db_format ne ""
+        # time_est_short time_est_median time_est_long
+        # cost_est_low cost_est_median cost_est_high 
+
+        # dependent_tasks
         # dependent_types --not implemented
-        if { $cols_diff
-         }
+
+        set ungrouped_list $p30_list
+        foreach title $title_list {
+            # remove existing title from ungrouped_list
+            set title_idx [lsearch -exact $ungrouped_list $title]
+            if { $title_idx > 0 } {
+                set ungrouped_list [lreplace $ungrouped_list $title_idx $title_idx]
+            } else {
+                ns_log Notice "acc_fin::pretti_example_maker.327: title '$title' not found in p30 title list '${ungrouped_list}'"
+            }
+        }
+        set ungrouped_len [llength $ungrouped_list]
+        # set cols_diff expr $param_arr(p3_cols) - llength $title_list
+        while { $cols_diff > 0 && $ungrouped_len > 0}
+        # Select a random column to add to title_list
+        set rand_idx [expr { int( rand() * $ungrouped_len ) } ]
+        lappend title_list [lindex $ungrouped_list $rand_idx]
+        set ungrouped_list [lreplace $ungrouped_list $rand_idx $rand_idx]
+        set ungrouped_len [llength $ungrouped_list]
+        incr cols_diff -1
     }
         lappend p3_larr($i) $title_list
-        set param_arr(p3_dots) [expr { int( rand() * ( $param_arr(p3_dots_max) - $param_arr(p3_dots_min) + .99 ) ) + $param_arr(p3_dots_min) } ]
-        for { set i 0} {$i < $param_arr(p3_dots)} {incr i} {
+        set param_arr(p3_types) [expr { int( rand() * ( $param_arr(p3_types_max) - $param_arr(p3_types_min) + .99 ) ) + $param_arr(p3_types_min) } ]
+        for { set i 0} {$i < $param_arr(p3_types)} {incr i} {
             # dist curve point
             foreach title $title_list {
                 set row_list [list ]
                 switch -exact $title {
-                    x { 
+                    time_est_short  -
+                    time_est_median -
+                    time_est_long   { 
                         # a random amount, assume hours for a task for example
-                        set dot(x) [expr { int( rand() * 256. + 5. ) / 6. } ]
+                        set row_arr($title) [expr { int( rand() * 256. + 5. ) / 6. } ]
                     }
-                    y {
+                    cost_est_low    -
+                    cost_est_median - 
+                    cost_est_high   {
                         # these could be usd or btc for example
-                        set dot(y) [expr { int( rand() * 30000. + 90. ) / 100. } ]
+                        set row_arr($title) [expr { int( rand() * 30000. + 90. ) / 100. } ]
                     }
-                    label {
-                        set dot(label) [ad_generate_random_string]
+                    max_concurrent {
+                        set row_arr($title) [expr { int( rand() * 12 ) + 1 } ]
+                    }
+                    max_overlap_pct {
+                        set row_arr($title) [expr { int( rand() * 1000. ) / 1000. } ]
+        # time_dist_curve_name time_dist_curve_tid 
+        # cost_dist_curve_name cost_dist_curve_tid 
+
+
+
+                    name        -
+                    description {
+                        set row_arr($title) [ad_generate_random_string]
                     }
                 }
                 lappend row_list $dot($title)
@@ -348,7 +389,7 @@ ad_proc -private acc_fin::pretti_example_maker {
 
     # p1
 
-
+        # db_format (1 or 0) saves p5 report table if db_format ne ""
 
 
 
