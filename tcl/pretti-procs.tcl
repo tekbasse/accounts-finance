@@ -486,7 +486,7 @@ ad_proc -private acc_fin::pretti_columns_list {
             #      time_probability_moment A percentage (0..1) along the (cumulative) distribution curve. defaults to 0.5
             #      cost_probability_moment A percentage (0..1) along the (cumulative) distribution curve
             #set ret_list \[list name value\]
-            set ret_list [list activity_table_tid activity_table_name task_types_tid task_types_name time_dist_curve_name time_dist_curve_tid cost_dist_curve_name cost_dist_curve_tid time_est_short time_est_median time_est_long time_probability_moment cost_est_low cost_est_median cost_est_high cost_probability_moment]
+            set ret_list [list activity_table_tid activity_table_name task_types_tid task_types_name time_dist_curve_name time_dist_curve_tid cost_dist_curve_name cost_dist_curve_tid time_est_short time_est_median time_est_long time_probability_moment cost_est_low cost_est_median cost_est_high cost_probability_moment db_format]
         }
         p11 {
             #set ret_list \[list name value\]
@@ -546,7 +546,7 @@ ad_proc -private acc_fin::pretti_columns_list {
             #      RESERVED columns:
             #      _tCurveRef             integer reference to time curve in time_clarr and   time duration estimate at time_probability_moment in t_est_arr
             #      _cCurveRef             integer reference to cost curve in cost_clarr and   cost duration estimate at cost_probability_moment in c_est_arr
-            set ret_list [list type dependent_tasks dependent_types name description max_concurrent max_overlap_pct activity_table_tid activity_table_name task_types_tid task_types_name time_dist_curve_name time_dist_curve_tid cost_dist_curve_name cost_dist_curve_tid time_est_short time_est_median time_est_long time_probability_moment cost_est_low cost_est_median cost_est_high cost_probability_moment db_format]            
+            set ret_list [list type dependent_tasks dependent_types name description max_concurrent max_overlap_pct time_dist_curve_name time_dist_curve_tid cost_dist_curve_name cost_dist_curve_tid time_est_short time_est_median time_est_long cost_est_low cost_est_median cost_est_high ]
         }
         p31 {
             set ret_list [list type]
