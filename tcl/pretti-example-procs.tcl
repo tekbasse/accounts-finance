@@ -278,6 +278,11 @@ ad_proc -private acc_fin::pretti_example_maker {
             lappend dc_larr($i) $row_list
         }
         # save dc curve
+        set dc_comments_arr($i) "This is a test table representing a distribution curve (dc)"
+        set dc_name_arr($i) "dc-[ad_generate_random_string] [ad_generate_random_string]"
+        set dc_title_arr($i) [string title $dc_name_arr($i)]
+
+        set dc_table_id_arr($i) [qss_table_create $dc_larr($i) $dc_name_arr($i) $dc_title_arr($i) $dc_comments_arr($i) "" dc $package_id $user_id]
         #####
     }
 
@@ -285,14 +290,24 @@ ad_proc -private acc_fin::pretti_example_maker {
     # p3
     set p3_larr($i) [list ]
     set param_arr(p3_cols) [expr { int( rand() * ( $param_arr(p3_cols_max) - $param_arr(p3_cols_min) + .99 ) ) + $param_arr(p3_cols_min) } ]
-    # required: type`
+    # required: type
     set title_list $p31_list
     set cols_diff [expr { $param_arr(p3_cols) -  [llength $title_list] } ]
     if { $cols_diff > 0 } {
         # Try to make some sane choices by choosing groups of titles with consistency
         # sane groupings of titles:
         # ungrouped:
-        #dependent_tasks dependent_types name description max_concurrent max_overlap_pct activity_table_tid activity_table_name task_types_tid task_types_name time_dist_curve_name time_dist_curve_tid cost_dist_curve_name cost_dist_curve_tid time_est_short time_est_median time_est_long time_probability_moment cost_est_low cost_est_median cost_est_high cost_probability_moment db_format
+        #  name description
+        # max_concurrent max_overlap_pct
+        # activity_table_tid activity_table_name
+        # task_types_tid task_types_name
+        # time_dist_curve_name time_dist_curve_tid 
+        # cost_dist_curve_name cost_dist_curve_tid 
+        # time_est_short time_est_median time_est_long time_probability_moment
+        # cost_est_low cost_est_median cost_est_high cost_probability_moment
+        # dependent_tasks 
+        # db_format (1 or 0) saves p5 report table if db_format ne ""
+        # dependent_types --not implemented
         if { $cols_diff
          }
     }
@@ -321,7 +336,11 @@ ad_proc -private acc_fin::pretti_example_maker {
             lappend p3_larr($i) $row_list
         }
         # save p3 curve
-        #####
+    set p3_comments "This is a test table of PRETTI activity types (p3)"
+    set p3_name "p3-[ad_generate_random_string] [ad_generate_random_string]"
+    set p3_title [string title ${p3_name}]
+    set p3_table_id [qss_table_create $p3_larr($i) ${p3_name} ${p3_title} $p3_comments "" p3 $package_id $user_id ]
+       #####
         
     }
 
