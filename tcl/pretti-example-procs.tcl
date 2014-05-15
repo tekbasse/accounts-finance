@@ -498,8 +498,9 @@ ad_proc -private acc_fin::pretti_example_maker {
                     set row_arr($title) [lindex $p2_types_list $x]
                 }
                 dependent_tasks {
+                    # directly dependent
                     set row_arr($title) ""
-                    set count [expr { int( rand() * $i / 4. ) } ]
+                    set count [expr { int( pow( rand() * 2. , rand() * 3. ) ) } ]
                     set ii 1
                     while { $ii < $count } {
                         set x [expr { int( rand() * $i ) } ]
@@ -514,15 +515,22 @@ ad_proc -private acc_fin::pretti_example_maker {
         lappend p2_larr($i) $row_list
     }
     # save p2 curve
-    set p2_comments "This is a test table of PRETTI activity types (p2)"
+    set p2_comments "This is a test table of PRETTI activity table (p2)"
     set p2_name "p2-[ad_generate_random_string] [ad_generate_random_string]"
     set p2_title [string title ${p2_name}]
     set p2_table_id [qss_table_create $p2_larr($i) ${p2_name} ${p2_title} $p2_comments "" p2 $package_id $user_id ]
 
-
     # p1
-
-        # db_format (1 or 0) saves p5 report table if db_format ne ""
+    # activity_table_tid 
+    # activity_table_name task_types_tid 
+    # task_types_name 
+    # time_dist_curve_name time_dist_curve_tid 
+    # cost_dist_curve_name cost_dist_curve_tid 
+    # time_est_short time_est_median time_est_long 
+    # time_probability_moment 
+    # cost_est_low cost_est_median cost_est_high 
+    # cost_probability_moment 
+    # db_format (1 or 0) saves p5 report table if db_format ne ""
 
 
 
