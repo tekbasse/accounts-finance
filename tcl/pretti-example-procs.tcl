@@ -337,6 +337,7 @@ ad_proc -private acc_fin::pretti_example_maker {
         incr cols_diff -1
     }
     lappend p3_larr($i) $title_list
+    set p2_types_list [list ]
     set param_arr(p3_types) [expr { int( rand() * ( $param_arr(p3_types_max) - $param_arr(p3_types_min) + .99 ) ) + $param_arr(p3_types_min) } ]
     for { set i 0} {$i < $param_arr(p3_types)} {incr i} {
         # dist curve point
@@ -375,6 +376,13 @@ ad_proc -private acc_fin::pretti_example_maker {
                 description {
                     set row_arr($title) [ad_generate_random_string]
                 }
+                type {
+                    set row_arr($title) [ad_generate_random_string]
+                    # add to a list for referencing in p2 form for later
+                    lappend p2_types_list $row_arr($title)
+
+                }
+
             }
             lappend row_list $dot($title)
         }
@@ -439,7 +447,10 @@ ad_proc -private acc_fin::pretti_example_maker {
         incr cols_diff -1
     }
     lappend p2_larr($i) $title_list
+    set p2_types_len [llength $p2_types_list]
     set param_arr(p2_types) [expr { int( rand() * ( $param_arr(p2_types_max) - $param_arr(p2_types_min) + .99 ) ) + $param_arr(p2_types_min) } ]
+    set p3_to_p2_count_ratio [expr { $param_arr(p2_types) / $p2_types_len } ]
+    set p2_act_list [list ]
     for { set i 0} {$i < $param_arr(p2_types)} {incr i} {
         # dist curve point
         foreach title $title_list {
@@ -473,9 +484,28 @@ ad_proc -private acc_fin::pretti_example_maker {
                     set x [expr { int( rand() * $param_arr(dc_count) ) } ]
                     set row_arr($title) $dc_table_id_arr($x)
                 }
+                activity_ref {
+                    set row_arr($title) [ad_generate_random_string]
+                    lappend p2_act_list $row_arr($title)
+                }
                 name        -
                 description {
                     set row_arr($title) [ad_generate_random_string]
+                }
+                aid_type {
+                    # choose some blank types
+                    set x [expr { int( rand() * $p2_types_len * 2. ) } ]
+                    set row_arr($title) [lindex $p2_types_list $x]
+                }
+                dependent_tasks {
+                    set row_arr($title) ""
+                    set count [expr { int( rand() * $i / 4. ) } ]
+                    set ii 1
+                    while { $ii < $count } {
+                        set x [expr { int( rand() * $i ) } ]
+                        append row_arr($title) " "
+                        append row_arr($title) [lindex $p2_act_list $x]
+                    }
                 }
             }
             lappend row_list $dot($title)
