@@ -486,7 +486,8 @@ ad_proc -private acc_fin::pretti_columns_list {
             #      time_probability_moment A percentage (0..1) along the (cumulative) distribution curve. defaults to 0.5
             #      cost_probability_moment A percentage (0..1) along the (cumulative) distribution curve
             #set ret_list \[list name value\]
-            set ret_list [list activity_table_tid activity_table_name task_types_tid task_types_name time_dist_curve_name time_dist_curve_tid cost_dist_curve_name cost_dist_curve_tid time_est_short time_est_median time_est_long time_probability_moment cost_est_low cost_est_median cost_est_high cost_probability_moment db_format]
+            ### adding max_concurrent and max_overlap_pct but not sure if these have been coded for use yet..
+            set ret_list [list activity_table_tid activity_table_name task_types_tid task_types_name time_dist_curve_name time_dist_curve_tid cost_dist_curve_name cost_dist_curve_tid time_est_short time_est_median time_est_long time_probability_moment cost_est_low cost_est_median cost_est_high cost_probability_moment db_format ]
         }
         p11 {
             #set ret_list \[list name value\]
