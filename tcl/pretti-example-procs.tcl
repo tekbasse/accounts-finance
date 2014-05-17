@@ -282,7 +282,7 @@ ad_proc -private acc_fin::pretti_example_maker {
         set dc_name_arr($i) "dc-[ad_generate_random_string] [ad_generate_random_string]"
         set dc_title_arr($i) [string title $dc_name_arr($i)]
         set dc_table_id_arr($i) [qss_table_create $dc_larr($i) $dc_name_arr($i) $dc_title_arr($i) $dc_comments_arr($i) "" dc $package_id $user_id]
-        #####
+        
     }
     
 
@@ -396,7 +396,6 @@ ad_proc -private acc_fin::pretti_example_maker {
     set p3_table_id [qss_table_create $p3_larr($i) ${p3_name} ${p3_title} $p3_comments "" p3 $package_id $user_id ]
 
     # p2
-    ###### copied p3 to p2, need to fit specifically to p2..
     set p2_larr($i) [list ]
     set param_arr(p2_cols) [expr { int( rand() * ( $param_arr(p2_cols_max) - $param_arr(p2_cols_min) + .99 ) ) + $param_arr(p2_cols_min) } ]
     # required: type
@@ -531,6 +530,129 @@ ad_proc -private acc_fin::pretti_example_maker {
     # cost_est_low cost_est_median cost_est_high 
     # cost_probability_moment 
     # db_format (1 or 0) saves p5 report table if db_format ne ""
+   ###### copied p2 to p1, need to fit specifically to p1..
+    set p1_larr($i) [list ]
+    set param_arr(p1_cols) [expr { int( rand() * ( $param_arr(p1_cols_max) - $param_arr(p1_cols_min) + .99 ) ) + $param_arr(p1_cols_min) } ]
+    # required: type
+    set title_list $p11_list
+    set cols_diff [expr { $param_arr(p1_cols) -  [llength $title_list] } ]
+    if { $cols_diff > 0 } {
+        # Try to make some sane choices by choosing groups of titles with consistency
+        # sane groupings of titles:
+        if { $cols_diff > 3 } {
+            # time_est_short time_est_median time_est_long
+            lappend title_list time_est_short time_est_median time_est_long
+            incr cols_diff -3
+        }
+        if { $cols_diff > 3 } {
+            # cost_est_low cost_est_median cost_est_high 
+            lappend cost_est_low cost_est_median cost_est_high 
+            incr cols_diff -3
+        }
+        # ungrouped ones can include partial groupings:
+        # max_concurrent max_overlap_pct
+        # time_dist_curve_name time_dist_curve_tid 
+        # name description
+        # cost_dist_curve_name cost_dist_curve_tid 
+        # time_est_short time_est_median time_est_long
+        # cost_est_low cost_est_median cost_est_high 
+
+        # dependent_tasks
+        # dependent_types --not implemented
+
+        set ungrouped_list $p10_list
+        foreach title $title_list {
+            # remove existing title from ungrouped_list
+            set title_idx [lsearch -exact $ungrouped_list $title]
+            if { $title_idx > 0 } {
+                set ungrouped_list [lreplace $ungrouped_list $title_idx $title_idx]
+            } else {
+                ns_log Notice "acc_fin::pretti_example_maker.327: title '$title' not found in p10 title list '${ungrouped_list}'"
+            }
+        }
+        set ungrouped_len [llength $ungrouped_list]
+        # set cols_diff expr $param_arr(p1_cols) - llength $title_list
+        while { $cols_diff > 0 && $ungrouped_len > 0}
+        # Select a random column to add to title_list
+        set rand_idx [expr { int( rand() * $ungrouped_len ) } ]
+        lappend title_list [lindex $ungrouped_list $rand_idx]
+        set ungrouped_list [lreplace $ungrouped_list $rand_idx $rand_idx]
+        set ungrouped_len [llength $ungrouped_list]
+        incr cols_diff -1
+    }
+    lappend p1_larr($i) $title_list
+    set p1_types_len [llength $p1_types_list]
+    set param_arr(p1_types) [expr { int( rand() * ( $param_arr(p1_types_max) - $param_arr(p1_types_min) + .99 ) ) + $param_arr(p1_types_min) } ]
+    set p3_to_p1_count_ratio [expr { $param_arr(p1_types) / $p1_types_len } ]
+    set p1_act_list [list ]
+    for { set i 0} {$i < $param_arr(p1_types)} {incr i} {
+        # dist curve point
+        foreach title $title_list {
+            set row_list [list ]
+            switch -exact $title {
+                time_est_short  -
+                time_est_median -
+                time_est_long   { 
+                    # a random amount, assume hours for a task for example
+                    set row_arr($title) [expr { int( rand() * 256. + 5. ) / 6. } ]
+                }
+                cost_est_low    -
+                cost_est_median - 
+                cost_est_high   {
+                    # these could be usd or btc for example
+                    set row_arr($title) [expr { int( rand() * 30000. + 90. ) / 100. } ]
+                }
+                max_concurrent {
+                    set row_arr($title) [expr { int( rand() * 12 ) + 1 } ]
+                }
+                max_overlap_pct {
+                    set row_arr($title) [expr { int( rand() * 1000. ) / 1000. } ]
+                }
+                cost_dist_curve_name -
+                time_dist_curve_name {
+                    set x [expr { int( rand() * $param_arr(dc_count) ) } ]
+                    set row_arr($title) $dc_name_arr($x)
+                }
+                cost_dist_curve_tid -
+                time_dist_curve_tid {
+                    set x [expr { int( rand() * $param_arr(dc_count) ) } ]
+                    set row_arr($title) $dc_table_id_arr($x)
+                }
+                activity_ref {
+                    set row_arr($title) [ad_generate_random_string]
+                    lappend p1_act_list $row_arr($title)
+                }
+                name        -
+                description {
+                    set row_arr($title) [ad_generate_random_string]
+                }
+                aid_type {
+                    # choose some blank types
+                    set x [expr { int( rand() * $p1_types_len * 2. ) } ]
+                    set row_arr($title) [lindex $p1_types_list $x]
+                }
+                dependent_tasks {
+                    # directly dependent
+                    set row_arr($title) ""
+                    set count [expr { int( pow( rand() * 2. , rand() * 3. ) ) } ]
+                    set ii 1
+                    while { $ii < $count } {
+                        set x [expr { int( rand() * $i ) } ]
+                        append row_arr($title) " "
+                        append row_arr($title) [lindex $p1_act_list $x]
+                    }
+                }
+            }
+            lappend row_list $dot($title)
+        }
+        # add row
+        lappend p1_larr($i) $row_list
+    }
+    # save p1 curve
+    set p1_comments "This is a test table of PRETTI activity table (p1)"
+    set p1_name "p1-[ad_generate_random_string] [ad_generate_random_string]"
+    set p1_title [string title ${p1_name}]
+    set p1_table_id [qss_table_create $p1_larr($i) ${p1_name} ${p1_title} $p1_comments "" p1 $package_id $user_id ]
 
 
 
