@@ -227,11 +227,11 @@ ad_proc -private acc_fin::pretti_example_maker {
 
     set param_arr(p1_vals_min) $p11_len
     set param_arr(p1_vals_max) $p10_len
-    set param_arr(p1_cols) [expr { int( rand() * ( $param_arr(p1_cols_max) - $param_arr(p1_cols_min) + .99 ) ) + $param_arr(p1_cols_min) } ]
+    set param_arr(p1_vals) [expr { int( rand() * ( $param_arr(p1_vals_max) - $param_arr(p1_vals_min) + .99 ) ) + $param_arr(p1_vals_min) } ]
 
     # blank means column inclusion is randomized. Otherwise list specific columns to try/use
     # acc_fin::pretti_columns_list is a handy column name reference
-    set param_arr(p1_req_cols) ""
+    set param_arr(p1_req_vals) ""
     set param_arr(p2_req_cols) ""
     set param_arr(p3_req_cols) ""
     # Use an existing case to test..??? not implemented.
@@ -532,22 +532,25 @@ ad_proc -private acc_fin::pretti_example_maker {
     # db_format (1 or 0) saves p5 report table if db_format ne ""
    ###### copied p2 to p1, need to fit specifically to p1..
     set p1_larr($i) [list ]
-    set param_arr(p1_cols) [expr { int( rand() * ( $param_arr(p1_cols_max) - $param_arr(p1_cols_min) + .99 ) ) + $param_arr(p1_cols_min) } ]
+    set param_arr(p1_vals) [expr { int( rand() * ( $param_arr(p1_vals_max) - $param_arr(p1_vals_min) + .99 ) ) + $param_arr(p1_vals_min) } ]
     # required: type
-    set title_list $p11_list
-    set cols_diff [expr { $param_arr(p1_cols) -  [llength $title_list] } ]
-    if { $cols_diff > 0 } {
-        # Try to make some sane choices by choosing groups of titles with consistency
-        # sane groupings of titles:
-        if { $cols_diff > 3 } {
+    set title_list [name value]
+    
+    set vals_diff [expr { $param_arr(p1_vals) -  [llength $p11_list] } ]
+    if { $vals_diff > 0 } {
+        # Try to make some sane choices by choosing groups of names with consistency
+        # p1: activity_table_tid 
+        # activity_table_name task_types_tid task_types_name time_dist_curve_name time_dist_curve_tid cost_dist_curve_name cost_dist_curve_tid time_est_short time_est_median time_est_long time_probability_moment cost_est_low cost_est_median cost_est_high cost_probability_moment db_format
+        # sane groupings of names:
+        if { $vals_diff > 3 } {
             # time_est_short time_est_median time_est_long
             lappend title_list time_est_short time_est_median time_est_long
-            incr cols_diff -3
+            incr vals_diff -3
         }
-        if { $cols_diff > 3 } {
+        if { $vals_diff > 3 } {
             # cost_est_low cost_est_median cost_est_high 
             lappend cost_est_low cost_est_median cost_est_high 
-            incr cols_diff -3
+            incr vals_diff -3
         }
         # ungrouped ones can include partial groupings:
         # max_concurrent max_overlap_pct
@@ -571,14 +574,14 @@ ad_proc -private acc_fin::pretti_example_maker {
             }
         }
         set ungrouped_len [llength $ungrouped_list]
-        # set cols_diff expr $param_arr(p1_cols) - llength $title_list
-        while { $cols_diff > 0 && $ungrouped_len > 0}
+        # set vals_diff expr $param_arr(p1_vals) - llength $title_list
+        while { $vals_diff > 0 && $ungrouped_len > 0}
         # Select a random column to add to title_list
         set rand_idx [expr { int( rand() * $ungrouped_len ) } ]
         lappend title_list [lindex $ungrouped_list $rand_idx]
         set ungrouped_list [lreplace $ungrouped_list $rand_idx $rand_idx]
         set ungrouped_len [llength $ungrouped_list]
-        incr cols_diff -1
+        incr vals_diff -1
     }
     lappend p1_larr($i) $title_list
     set p1_types_len [llength $p1_types_list]
