@@ -365,11 +365,11 @@ ad_proc -public acc_fin::pretti_geom_avg_of_curve {
 
 
 ad_proc -public acc_fin::pretti_type_flag {
-    table_lists_name
+    table_lists
 } {
     Guesses which type of pretti table
 } {
-    upvar $table_lists_name table_lists
+    #upvar $table_lists_name table_lists
     # page flags as pretti_types:
     #  p in positon 1 = PRETTI app specific
     #  p1  scenario
