@@ -621,6 +621,12 @@ ad_proc -private acc_fin::pretti_example_maker {
                 task_types_name {
                     set row_arr($title) $p3_name
                 }
+                activity_table_tid {
+                    set row_arr($title) $p2_table_id
+                }
+                activity_table_name {
+                    set row_arr($title) $p2_name
+                }
                 db_format   -
                 name        -
                 description {
@@ -642,13 +648,17 @@ ad_proc -private acc_fin::pretti_example_maker {
         # add row
         lappend p1_larr($i) $row_list
     }
-    # save p1 curve
-    set p1_comments "This is a test table of PRETTI activity table (p1)"
+    # save p1 table
+    set p1_comments "This is a test table of PRETTI scenario table (p1)"
     set p1_name "p1-[ad_generate_random_string] [ad_generate_random_string]"
     set p1_title [string title ${p1_name}]
-    set p1_table_id [qss_table_create $p1_larr($i) ${p1_name} ${p1_title} $p1_comments "" _p1 $package_id $user_id ]
-
-
+    set p1_table_id [qss_table_create $p1_larr($i) ${p1_name} ${p1_title} $p1_comments "" p1 $package_id $user_id ]
+    # create a most simple test case using same data
+    set p1b_lists [list [list name value] [list activity_table_id ${p2_table_id}] ]
+    set p1b_comments "This is a minimum test of PRETTI scenario table (p1)"
+    set p1b_name "p1-minimum [ad_generate_random_string]"
+    set p1b_title [string title ${p1b_name}]
+    set p1b_table_id [qss_table_create $p1b_lists ${p1b_name} ${p1b_title} $p1b_comments "" p1 $package_id $user_id ]
 
 
     return 1
