@@ -281,7 +281,11 @@ ad_proc -private acc_fin::pretti_example_maker {
         set dc_comments_arr($i) "This is a test table representing a distribution curve (dc)"
         set dc_name_arr($i) "dc-[ad_generate_random_string] [ad_generate_random_string]"
         set dc_title_arr($i) [string title $dc_name_arr($i)]
-        set dc_table_id_arr($i) [qss_table_create $dc_larr($i) $dc_name_arr($i) $dc_title_arr($i) $dc_comments_arr($i) "" dc $package_id $user_id]
+        set type_guess [acc_fin::pretti_type_flag $dc_larr($i) ]
+        if { $type_guess ne "dc" } {
+            ns_log Notice "acc_fin::pretti_example_maker type should be 'dc'. Instead type_guess '$type_guess'"
+        }
+        set dc_table_id_arr($i) [qss_table_create $dc_larr($i) $dc_name_arr($i) $dc_title_arr($i) $dc_comments_arr($i) "" $type_guess $package_id $user_id]
         
     }
     
@@ -394,7 +398,12 @@ ad_proc -private acc_fin::pretti_example_maker {
     set p3_comments "This is a test table of PRETTI activity types (p3)"
     set p3_name "p3-[ad_generate_random_string] [ad_generate_random_string]"
     set p3_title [string title ${p3_name}]
-    set p3_table_id [qss_table_create $p3_larr($i) ${p3_name} ${p3_title} $p3_comments "" p3 $package_id $user_id ]
+    set type_guess [acc_fin::pretti_type_flag $p3_larr($i) ]
+    if { $type_guess ne "p3" } {
+        ns_log Notice "acc_fin::pretti_example_maker type should be 'p3'. Instead type_guess '$type_guess'"
+    }
+
+    set p3_table_id [qss_table_create $p3_larr($i) ${p3_name} ${p3_title} $p3_comments "" $type_guess $package_id $user_id ]
 
     # p2
     set p2_larr($i) [list ]
@@ -519,7 +528,12 @@ ad_proc -private acc_fin::pretti_example_maker {
     set p2_comments "This is a test table of PRETTI activity table (p2)"
     set p2_name "p2-[ad_generate_random_string] [ad_generate_random_string]"
     set p2_title [string title ${p2_name}]
-    set p2_table_id [qss_table_create $p2_larr($i) ${p2_name} ${p2_title} $p2_comments "" p2 $package_id $user_id ]
+    set type_guess [acc_fin::pretti_type_flag $p2_larr($i) ]
+    if { $type_guess ne "p2" } {
+        ns_log Notice "acc_fin::pretti_example_maker type should be 'p2'. Instead type_guess '$type_guess'"
+    }
+
+    set p2_table_id [qss_table_create $p2_larr($i) ${p2_name} ${p2_title} $p2_comments "" $type_guess $package_id $user_id ]
 
     # p1
     # activity_table_tid 
@@ -652,14 +666,34 @@ ad_proc -private acc_fin::pretti_example_maker {
     set p1_comments "This is a test table of PRETTI scenario table (p1)"
     set p1_name "p1-[ad_generate_random_string] [ad_generate_random_string]"
     set p1_title [string title ${p1_name}]
-    set p1_table_id [qss_table_create $p1_larr($i) ${p1_name} ${p1_title} $p1_comments "" p1 $package_id $user_id ]
+    set type_guess [acc_fin::pretti_type_flag $p1_larr($i) ]
+    if { $type_guess ne "p1" } {
+        ns_log Notice "acc_fin::pretti_example_maker.671 type should be 'p1'. Instead type_guess '$type_guess'"
+    }
+
+    set p1_table_id [qss_table_create $p1_larr($i) ${p1_name} ${p1_title} $p1_comments "" $type_guess $package_id $user_id ]
     # create a most simple test case using same data
     set p1b_lists [list [list name value] [list activity_table_id ${p2_table_id}] ]
     set p1b_comments "This is a minimum test of PRETTI scenario table (p1)"
     set p1b_name "p1-minimum [ad_generate_random_string]"
     set p1b_title [string title ${p1b_name}]
-    set p1b_table_id [qss_table_create $p1b_lists ${p1b_name} ${p1b_title} $p1b_comments "" p1 $package_id $user_id ]
 
-
-    return 1
+    set type_guess [acc_fin::pretti_type_flag $p1b_lists ]
+    if { $type_guess ne "p1" } {
+        ns_log Notice "acc_fin::pretti_example_maker.683 type should be 'p1'. Instead type_guess '$type_guess'"
+    }
+    set p1b_table_id [qss_table_create $p1b_lists ${p1b_name} ${p1b_title} $p1b_comments "" $type_guess $package_id $user_id ]
+    # check that tables saved without error.
+    set status 1
+    foreach {name dc_table_id} [array get dc_table_id_arr] {
+        if { $dc_table_id eq 0 } {
+            set status 0
+            ns_log Notice "acc_fin::pretti_example_maker.690 dc_table_id for $name is '${dc_table_id}' instead of > 0."
+        }
+    }
+    if { $p1b_table_id eq 0 || $p1_table_id eq 0 || $p2_table_id eq 0 || $p3_table_id eq 0 } {
+        set status 0
+        ns_log Notice "acc_fin::pretti_example_maker.695 all s/b > 0: p1b_table_id '$p1b_table_id' p1_table_id '$p1_table_id' p2_table_id '$p2_table_id' p3_table_id '$p3_table_id'"
+    }
+    return $status
 }
