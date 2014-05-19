@@ -189,7 +189,7 @@ if { $form_posted } {
                 ns_log Notice "pert.tcl.189: : create/write table" 
                 ns_log Notice "pert.tcl.190: : llength table_lists [llength $table_lists]"
                 # detect table type for flags
-                set table_flags [acc_fin::pretti_type_flag table_lists]
+                set table_flags [acc_fin::pretti_type_flag $table_lists]
                 ns_log Notice "pert.tcl.193: table_flags $table_flags"
                 if { [qf_is_natural_number $table_tid] } {
                     set table_stats [qss_table_stats $table_tid]
