@@ -408,10 +408,10 @@ ad_proc -public acc_fin::pretti_type_flag {
         foreach type $type_list {
             set p($type) 1
             set check_list [acc_fin::pretti_columns_list $type 1]
-            ns_log Notice "acc_fin::pretti_type_flag (58): type $type check_list $check_list"
+ #           ns_log Notice "acc_fin::pretti_type_flag.58: type $type check_list $check_list"
             foreach check $check_list {
                 set p($type) [expr { $p($type) && ( [lsearch -exact $title_list $check] > -1 ) } ]
-                ns_log Notice "acc_fin::pretti_type_flag (60): check $check p($type) $p($type)"
+#                ns_log Notice "acc_fin::pretti_type_flag.60: check $check p($type) $p($type)"
             }
         }
         
@@ -422,7 +422,7 @@ ad_proc -public acc_fin::pretti_type_flag {
                 lappend type1_p_list $type
             }
         }
-        ns_log Notice "acc_fin::pretti_type_flag (69): type1_p_list '${type1_p_list}'"
+#        ns_log Notice "acc_fin::pretti_type_flag.69: type1_p_list '${type1_p_list}'"
         set type_count [llength $type1_p_list]
         if { $type_count > 1 } {
             # choose one
@@ -450,6 +450,8 @@ ad_proc -public acc_fin::pretti_type_flag {
                     } 
                 }
                 set type3_list [lsort -real -index 1 -decreasing $type3_list]
+                ns_log Notice "acc_fin::pretti_type_flag.450: type1_p_list '${type1_p_list}'"
+                ns_log Notice "acc_fin::pretti_type_flag.453: type3_list '$type3_list'"
                 set type_return [lindex [lindex $type3_list 0] 0]
             }
         } else {
