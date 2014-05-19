@@ -385,26 +385,36 @@ ad_proc -public acc_fin::pretti_type_flag {
     set type_return ""
     # check for type p1 separate from the other cases, because the table is specified differently from other cases.
     set p(p1) 0
-    set name_idx [lsearch -exact $title_list name]
-    set value_idx [lsearch -exact $title_list value]
+    set name_idx [lsearch -exact $title_list "name" ]
+    set value_idx [lsearch -exact $title_list "value" ]
+    ns_log Notice "acc_fin::pretti_columns_list.390 name_idx $name_idx value_idx $value_idx title_list '$title_list'"
     if { $name_idx > -1 && $value_idx > -1 } {
         # get name column
         set name_list [list ]
+        ns_log Notice "acc_fin::pretti_columns_list.400 table_list '$table_list'"
         foreach row $table_lists {
             lappend name_list [lindex $row $name_idx]
         }
-        # check name_list against p1 required names:
+        ns_log Notice "acc_fin::pretti_columns_list.401 name_list '$name_list'"
+        # check name_list against p1 required names. 
+        # All required names need to be in list, but not all list names are required.
         set p(p1) 1
+        # required names in check_list
         set check_list [acc_fin::pretti_columns_list "p1" 1 ]
+        ns_log Notice "acc_fin::pretti_columns_list.402 check_list $check_list"
         foreach check $check_list {
             set p(p1) [expr { $p(p1) && ( [lsearch -exact $name_list $check] > -1 ) } ]
+            ns_log Notice "acc_fin::pretti_columns_list.404 check $check p(p1) $p(p1)"
         }
+
     }
     if { $p(p1) } {
         set type_return "p1"
+        ns_log Notice "acc_fin::pretti_columns_list.410 type = p1"
     } else {
         # filter other p table types by required minimums first
         set type_list [list "p2" "p3" "p4" "p5" "dc"]
+        ns_log Notice "acc_fin::pretti_columns_list.414 type not p1. check for $type_list"
         foreach type $type_list {
             set p($type) 1
             set check_list [acc_fin::pretti_columns_list $type 1]

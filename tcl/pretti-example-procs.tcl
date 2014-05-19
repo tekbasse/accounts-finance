@@ -245,6 +245,7 @@ ad_proc -private acc_fin::pretti_example_maker {
     }
     
     # dc
+    ns_log Notice "acc_fin::pretti_example_maker.248 dc start"
     for {set i 0} { $i < $param_arr(dc_count) } { incr i } {
         set dc_larr($i) [list ]
         set param_arr(dc_cols) [expr { int( rand() * ( $param_arr(dc_cols_max) - $param_arr(dc_cols_min) + .99 ) ) + $param_arr(dc_cols_min) } ]
@@ -257,8 +258,8 @@ ad_proc -private acc_fin::pretti_example_maker {
         set param_arr(dc_dots) [expr { int( rand() * ( $param_arr(dc_dots_max) - $param_arr(dc_dots_min) + .99 ) ) + $param_arr(dc_dots_min) } ]
         for { set ii 0} {$ii < $param_arr(dc_dots)} {incr ii} {
             # dist curve point
+            set row_list [list ]
             foreach title $title_list {
-                set row_list [list ]
                 switch -exact $title {
                     x { 
                         # a random amount, assume hours for a task for example
@@ -285,12 +286,14 @@ ad_proc -private acc_fin::pretti_example_maker {
         if { $type_guess ne "dc" } {
             ns_log Notice "acc_fin::pretti_example_maker type should be 'dc'. Instead type_guess '$type_guess'"
         }
+        ns_log Notice "acc_fin::pretti_example_maker.289 dc saving dc_larr($i): $dc_larr($i)"
         set dc_table_id_arr($i) [qss_table_create $dc_larr($i) $dc_name_arr($i) $dc_title_arr($i) $dc_comments_arr($i) "" $type_guess $package_id $user_id]
         
     }
     
 
     # p3
+    ns_log Notice "acc_fin::pretti_example_maker.294 p3 start"
     set p3_larr [list ]
     set param_arr(p3_cols) [expr { int( rand() * ( $param_arr(p3_cols_max) - $param_arr(p3_cols_min) + .99 ) ) + $param_arr(p3_cols_min) } ]
     # required: type
@@ -345,9 +348,9 @@ ad_proc -private acc_fin::pretti_example_maker {
     set p2_cols_list [list ]
     set param_arr(p3_types) [expr { int( rand() * ( $param_arr(p3_types_max) - $param_arr(p3_types_min) + .99 ) ) + $param_arr(p3_types_min) } ]
     for { set i 0} {$i < $param_arr(p3_types)} {incr i} {
-        # dist curve point
+        # new row
+        set row_list [list ]
         foreach title $title_list {
-            set row_list [list ]
             switch -exact $title {
                 time_est_short  -
                 time_est_median -
@@ -369,13 +372,21 @@ ad_proc -private acc_fin::pretti_example_maker {
                 }
                 cost_dist_curve_name -
                 time_dist_curve_name {
-                    set x [expr { int( rand() * $param_arr(dc_count) ) } ]
-                    set row_arr($title) $dc_name_arr($x)
+                    if { $param_arr(dc_count) > 0 } {
+                        set x [expr { int( rand() * $param_arr(dc_count) ) } ]
+                        set row_arr($title) $dc_name_arr($x)
+                    } else {
+                        set row_arr($title) ""
+                    }
                 }
                 cost_dist_curve_tid -
                 time_dist_curve_tid {
-                    set x [expr { int( rand() * $param_arr(dc_count) ) } ]
-                    set row_arr($title) $dc_table_id_arr($x)
+                    if { $param_arr(dc_count) > 0 } {
+                        set x [expr { int( rand() * $param_arr(dc_count) ) } ]
+                        set row_arr($title) $dc_table_id_arr($x)
+                    } else {
+                        set row_arr($title) ""
+                    }
                 }
                 name        -
                 description {
@@ -414,11 +425,13 @@ ad_proc -private acc_fin::pretti_example_maker {
     set p3_table_id [qss_table_create $p3_larr ${p3_name} ${p3_title} $p3_comments "" $type_guess $package_id $user_id ]
 
     # p2
+    ns_log Notice "acc_fin::pretti_example_maker.419 p2 start"
     set p2_larr [list ]
     set param_arr(p2_cols) [expr { int( rand() * ( $param_arr(p2_cols_max) - $param_arr(p2_cols_min) + .99 ) ) + $param_arr(p2_cols_min) } ]
     # required: type
     set title_list $p21_list
     set cols_diff [expr { $param_arr(p2_cols) -  [llength $title_list] } ]
+    ns_log Notice "acc_fin::pretti_example_maker.434 cols_diff $cols_diff param_arr(p2_cols) '$param_arr(p2_cols)' title_list $title_list"
     if { $cols_diff > 0 } {
         # Try to make some sane choices by choosing groups of titles with consistency
         # sane groupings of titles:
@@ -432,6 +445,7 @@ ad_proc -private acc_fin::pretti_example_maker {
             lappend title_list cost_est_low cost_est_median cost_est_high 
             incr cols_diff -3
         }
+        ns_log Notice "acc_fin::pretti_example_maker.448 cols_diff $cols_diff title_list $title_list"
         # ungrouped ones can include partial groupings:
         # max_concurrent max_overlap_pct
         # time_dist_curve_name time_dist_curve_tid 
@@ -444,24 +458,28 @@ ad_proc -private acc_fin::pretti_example_maker {
         # dependent_types --not implemented
 
         set ungrouped_list $p20_list
+        ns_log Notice "acc_fin::pretti_example_maker.430: ungrouped_list $ungrouped_list"
         foreach title $title_list {
             # remove existing title from ungrouped_list
             set title_idx [lsearch -exact $ungrouped_list $title]
             if { $title_idx > -1 } {
                 set ungrouped_list [lreplace $ungrouped_list $title_idx $title_idx]
+                ns_log Notice "acc_fin::pretti_example_maker.432: title_idx $title_idx"
             } else {
                 ns_log Notice "acc_fin::pretti_example_maker.435: title '$title' not found in p20 title list '${ungrouped_list}'"
             }
         }
         set ungrouped_len [llength $ungrouped_list]
         # set cols_diff expr $param_arr(p2_cols) - llength $title_list
-        while { $cols_diff > 0 && $ungrouped_len > 0} {
+            ns_log Notice "acc_fin::pretti_example_maker.480: ungrouped_len $ungrouped_len cols_diff $cols_diff"
+        while { $cols_diff > 0 && $ungrouped_len > 0 } {
             # Select a random column to add to title_list
             set rand_idx [expr { int( rand() * $ungrouped_len ) } ]
             lappend title_list [lindex $ungrouped_list $rand_idx]
             set ungrouped_list [lreplace $ungrouped_list $rand_idx $rand_idx]
             set ungrouped_len [llength $ungrouped_list]
             incr cols_diff -1
+            ns_log Notice "acc_fin::pretti_example_maker.481: ungrouped_len $ungrouped_len rand_idx $rand_idx cols_diff $cols_diff"
         }
     }
     lappend p2_larr $title_list
@@ -470,9 +488,9 @@ ad_proc -private acc_fin::pretti_example_maker {
     set p3_to_p2_count_ratio [expr { $param_arr(p2_cols) / $p2_cols_len } ]
     set p2_act_list [list ]
     for { set i 0} {$i < $param_arr(p2_cols)} {incr i} {
-        # dist curve point
+        # new row
+        set row_list [list ]
         foreach title $title_list {
-            set row_list [list ]
             switch -exact $title {
                 time_est_short  -
                 time_est_median -
@@ -494,13 +512,21 @@ ad_proc -private acc_fin::pretti_example_maker {
                 }
                 cost_dist_curve_name -
                 time_dist_curve_name {
-                    set x [expr { int( rand() * $param_arr(dc_count) ) } ]
-                    set row_arr($title) $dc_name_arr($x)
+                    if { $param_arr(dc_count) > 0 } {
+                        set x [expr { int( rand() * $param_arr(dc_count) ) } ]
+                        set row_arr($title) $dc_name_arr($x)
+                    } else {
+                        set row_arr($title) ""
+                    }
                 }
                 cost_dist_curve_tid -
                 time_dist_curve_tid {
-                    set x [expr { int( rand() * $param_arr(dc_count) ) } ]
-                    set row_arr($title) $dc_table_id_arr($x)
+                    if { $param_arr(dc_count) > 0 } {
+                        set x [expr { int( rand() * $param_arr(dc_count) ) } ]
+                        set row_arr($title) $dc_table_id_arr($x)
+                    } else {
+                        set row_arr($title) ""
+                    }
                 }
                 activity_ref {
                     set row_arr($title) [ad_generate_random_string]
@@ -554,6 +580,7 @@ ad_proc -private acc_fin::pretti_example_maker {
     set p2_table_id [qss_table_create $p2_larr ${p2_name} ${p2_title} $p2_comments "" $type_guess $package_id $user_id ]
 
     # p1
+    ns_log Notice "acc_fin::pretti_example_maker.560 p1 start"
     # activity_table_tid 
     # activity_table_name task_types_tid 
     # task_types_name 
@@ -564,11 +591,11 @@ ad_proc -private acc_fin::pretti_example_maker {
     # cost_est_low cost_est_median cost_est_high 
     # cost_probability_moment 
     # db_format (1 or 0) saves p5 report table if db_format ne ""
-   ###### copied p2 to p1, need to fit specifically to p1..
+   
     set p1_larr [list ]
     set param_arr(p1_vals) [expr { int( rand() * ( $param_arr(p1_vals_max) - $param_arr(p1_vals_min) + .99 ) ) + $param_arr(p1_vals_min) } ]
     # required: name value
-    set title_list [name value]
+    set title_list [list name value]
         # p1: activity_table_tid 
         # activity_table_name task_types_tid task_types_name time_dist_curve_name time_dist_curve_tid cost_dist_curve_name cost_dist_curve_tid time_est_short time_est_median time_est_long time_probability_moment cost_est_low cost_est_median cost_est_high cost_probability_moment db_format
     set vals_list $p11_list
@@ -609,12 +636,13 @@ ad_proc -private acc_fin::pretti_example_maker {
         }
         set ungrouped_len [llength $ungrouped_list]
         # set vals_diff expr $param_arr(p1_vals) - llength $title_list
-        while { $vals_diff > 0 && $ungrouped_len > 0} {
+        while { $vals_diff > 0 && $ungrouped_len > 0 } {
             # Select a random column to add to title_list
             set rand_idx [expr { int( rand() * $ungrouped_len ) } ]
             lappend vals_list [lindex $ungrouped_list $rand_idx]
             set ungrouped_list [lreplace $ungrouped_list $rand_idx $rand_idx]
             set ungrouped_len [llength $ungrouped_list]
+            ns_log Notice "acc_fin::pretti_example_maker.618: ungrouped_len $ungrouped_len rand_idx $rand_idx vals_diff $vals_diff"
             incr vals_diff -1
         }
     }
@@ -639,13 +667,21 @@ ad_proc -private acc_fin::pretti_example_maker {
                 }
                 cost_dist_curve_name -
                 time_dist_curve_name {
-                    set x [expr { int( rand() * $param_arr(dc_count) ) } ]
-                    set row_arr($title) $dc_name_arr($x)
+                    if { $param_arr(dc_count) > - } {
+                        set x [expr { int( rand() * $param_arr(dc_count) ) } ]
+                        set row_arr($title) $dc_name_arr($x)
+                    } else {
+                        set row_arr($title) ""
+                    }
                 }
                 cost_dist_curve_tid -
                 time_dist_curve_tid {
-                    set x [expr { int( rand() * $param_arr(dc_count) ) } ]
-                    set row_arr($title) $dc_table_id_arr($x)
+                    if { $param_arr(dc_count) > 0 } {
+                        set x [expr { int( rand() * $param_arr(dc_count) ) } ]
+                        set row_arr($title) $dc_table_id_arr($x)
+                    } else {
+                        set row_arr($title) ""
+                    }
                 }
                 task_types_tid {
                     set row_arr($title) $p3_table_id
