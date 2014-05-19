@@ -156,6 +156,9 @@ aa_register_case scenario_prettify_test1 {
 
             # p1 data refers to p2 table. Create p2 table before p1.
             # p2 data refers to dc or p3 tables. Create dc or p3 tables before p2.
+            # all above is handled in acc_fin::pretti_example_maker
+            set scenario_tid [acc_fin::pretti_example_maker ]
+            acc_fin::scenario_prettify $scenario_tid
 
             
 

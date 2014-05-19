@@ -51,9 +51,8 @@ D,1,30,blue\n
 40,0,D,grey\n
 F,3,40,brown\n
 C,3,20,brown\n
-50,0,F E C,grey\n"
+50,0,F E C,grey\n"]
 
-        }
             # p2 Task Network
             #      activity_ref           reference for an activity, a unique task id, using "activity" to differentiate between table_id's tid 
             #                             An activity reference is essential a function as in f() with no attributes,
@@ -87,7 +86,7 @@ C,3,20,brown\n
             #      _tCurveRef             integer reference to time curve in time_clarr and   time duration estimate at time_probability_moment in t_est_arr
             #      _cCurveRef             integer reference to cost curve in cost_clarr and   cost duration estimate at cost_probability_moment in c_est_arr
             set ret_list [list activity_ref aid_type dependent_tasks name description max_concurrent max_overlap_pct time_est_short time_est_median time_est_long time_dist_curve_tid time_dist_curve_name time_probability_moment cost_est_low cost_est_median cost_est_high cost_dist_curve_tid cost_dist_curve_name cost_probability_moment]
-
+            
         }
         p21 {
             set ret_list [list activity_ref dependent_tasks]
@@ -170,6 +169,8 @@ C,3,20,brown\n
 
 ad_proc -private acc_fin::pretti_example_maker {
     {name_value_list ""}
+    {package_id ""}
+    {user_id ""}
 } {
     Creates a randomized scenario with accompanying required tables, mainly used for testing. Pass a list of optional arguments as a list of name-value pairs; See code for options.
 } {
@@ -255,7 +256,7 @@ ad_proc -private acc_fin::pretti_example_maker {
         }
         lappend dc_larr($i) $title_list
         set param_arr(dc_dots) [expr { int( rand() * ( $param_arr(dc_dots_max) - $param_arr(dc_dots_min) + .99 ) ) + $param_arr(dc_dots_min) } ]
-        for { set i 0} {$i < $param_arr(dc_dots)} {incr i} {
+        for { set ii 0} {$ii < $param_arr(dc_dots)} {incr ii} {
             # dist curve point
             foreach title $title_list {
                 set row_list [list ]
@@ -280,7 +281,7 @@ ad_proc -private acc_fin::pretti_example_maker {
         # save dc curve
         set dc_comments_arr($i) "This is a test table representing a distribution curve (dc)"
         set dc_name_arr($i) "dc-[ad_generate_random_string] [ad_generate_random_string]"
-        set dc_title_arr($i) [string title $dc_name_arr($i)]
+        set dc_title_arr($i) [string totitle $dc_name_arr($i)]
         set type_guess [acc_fin::pretti_type_flag $dc_larr($i) ]
         if { $type_guess ne "dc" } {
             ns_log Notice "acc_fin::pretti_example_maker type should be 'dc'. Instead type_guess '$type_guess'"
@@ -397,7 +398,7 @@ ad_proc -private acc_fin::pretti_example_maker {
     # save p3 curve
     set p3_comments "This is a test table of PRETTI activity types (p3)"
     set p3_name "p3-[ad_generate_random_string] [ad_generate_random_string]"
-    set p3_title [string title ${p3_name}]
+    set p3_title [string totitle ${p3_name}]
     set type_guess [acc_fin::pretti_type_flag $p3_larr($i) ]
     if { $type_guess ne "p3" } {
         ns_log Notice "acc_fin::pretti_example_maker type should be 'p3'. Instead type_guess '$type_guess'"
@@ -527,7 +528,7 @@ ad_proc -private acc_fin::pretti_example_maker {
     # save p2 curve
     set p2_comments "This is a test table of PRETTI activity table (p2)"
     set p2_name "p2-[ad_generate_random_string] [ad_generate_random_string]"
-    set p2_title [string title ${p2_name}]
+    set p2_title [string totitle ${p2_name}]
     set type_guess [acc_fin::pretti_type_flag $p2_larr($i) ]
     if { $type_guess ne "p2" } {
         ns_log Notice "acc_fin::pretti_example_maker type should be 'p2'. Instead type_guess '$type_guess'"
@@ -665,7 +666,7 @@ ad_proc -private acc_fin::pretti_example_maker {
     # save p1 table
     set p1_comments "This is a test table of PRETTI scenario table (p1)"
     set p1_name "p1-[ad_generate_random_string] [ad_generate_random_string]"
-    set p1_title [string title ${p1_name}]
+    set p1_title [string totitle ${p1_name}]
     set type_guess [acc_fin::pretti_type_flag $p1_larr($i) ]
     if { $type_guess ne "p1" } {
         ns_log Notice "acc_fin::pretti_example_maker.671 type should be 'p1'. Instead type_guess '$type_guess'"
@@ -676,7 +677,7 @@ ad_proc -private acc_fin::pretti_example_maker {
     set p1b_lists [list [list name value] [list activity_table_id ${p2_table_id}] ]
     set p1b_comments "This is a minimum test of PRETTI scenario table (p1)"
     set p1b_name "p1-minimum [ad_generate_random_string]"
-    set p1b_title [string title ${p1b_name}]
+    set p1b_title [string totitle ${p1b_name}]
 
     set type_guess [acc_fin::pretti_type_flag $p1b_lists ]
     if { $type_guess ne "p1" } {
@@ -694,6 +695,9 @@ ad_proc -private acc_fin::pretti_example_maker {
     if { $p1b_table_id eq 0 || $p1_table_id eq 0 || $p2_table_id eq 0 || $p3_table_id eq 0 } {
         set status 0
         ns_log Notice "acc_fin::pretti_example_maker.695 all s/b > 0: p1b_table_id '$p1b_table_id' p1_table_id '$p1_table_id' p2_table_id '$p2_table_id' p3_table_id '$p3_table_id'"
+    }
+    if { $status } {
+        set status $p1_table_id
     }
     return $status
 }
