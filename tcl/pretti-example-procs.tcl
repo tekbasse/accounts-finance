@@ -173,6 +173,11 @@ ad_proc -private acc_fin::pretti_example_maker {
 } {
     Creates a randomized scenario with accompanying required tables, mainly used for testing. Pass a list of optional arguments as a list of name-value pairs; See code for options.
 } {
+    set randomseed [expr { wide( [clock seconds] / 360 ) }] 
+    #set random [expr { wide( fmod( $random * 38629 , 279470273 ) * 71 ) } ]
+     set random [expr { srand($randomseed) } ]
+
+
     # scenario_prettify requires:
     # p1 scenario table
     # p2 activity table
@@ -481,14 +486,18 @@ ad_proc -private acc_fin::pretti_example_maker {
             incr cols_diff -1
             ns_log Notice "acc_fin::pretti_example_maker.481: ungrouped_len $ungrouped_len rand_idx $rand_idx cols_diff $cols_diff"
         }
+        ns_log Notice "acc_fin::pretti_example_maker.489"
     }
+    ns_log Notice "acc_fin::pretti_example_maker.490"
     lappend p2_larr $title_list
     set p2_cols_len [llength $p2_cols_list]
     set param_arr(p2_cols) [expr { int( rand() * ( $param_arr(p2_cols_max) - $param_arr(p2_cols_min) + .99 ) ) + $param_arr(p2_cols_min) } ]
     set p3_to_p2_count_ratio [expr { $param_arr(p2_cols) / $p2_cols_len } ]
     set p2_act_list [list ]
+    ns_log Notice "acc_fin::pretti_example_maker.495: p2_cols_len $p2_cols_len p3_to_p2_count_ratio $p3_to_p2_count_ratio param_arr(p2_cols) title_list '$title_list'"
     for { set i 0} {$i < $param_arr(p2_cols)} {incr i} {
         # new row
+        ns_log Notice "acc_fin::pretti_example_maker.497: i $i"
         set row_list [list ]
         foreach title $title_list {
             switch -exact $title {
@@ -550,6 +559,7 @@ ad_proc -private acc_fin::pretti_example_maker {
                         set x [expr { int( rand() * $i ) } ]
                         append row_arr($title) " "
                         append row_arr($title) [lindex $p2_act_list $x]
+                        incr ii
                     }
                 }
                 cost_probability_moment -
@@ -732,7 +742,7 @@ ad_proc -private acc_fin::pretti_example_maker {
 
     set p1_table_id [qss_table_create $p1_larr ${p1_name} ${p1_title} $p1_comments "" $type_guess $package_id $user_id ]
     # create a most simple test case using same data
-    set p1b_lists [list [list name value] [list activity_table_id ${p2_table_id}] ]
+    set p1b_lists [list [list name value] [list activity_table_tid ${p2_table_id}] ]
     set p1b_comments "This is a minimum test of PRETTI scenario table (p1)"
     set p1b_name "p1-minimum [ad_generate_random_string]"
     set p1b_title [string totitle ${p1b_name}]

@@ -391,8 +391,8 @@ ad_proc -public acc_fin::pretti_type_flag {
     if { $name_idx > -1 && $value_idx > -1 } {
         # get name column
         set name_list [list ]
-        ns_log Notice "acc_fin::pretti_columns_list.400 table_list '$table_list'"
-        foreach row $table_lists {
+        ns_log Notice "acc_fin::pretti_columns_list.400 table_lists '$table_lists'"
+        foreach row [lrange $table_lists 1 end] {
             lappend name_list [lindex $row $name_idx]
         }
         ns_log Notice "acc_fin::pretti_columns_list.401 name_list '$name_list'"
