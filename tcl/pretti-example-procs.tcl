@@ -211,7 +211,7 @@ ad_proc -private acc_fin::pretti_example_maker {
 
     set param_arr(dc_count_min) 0
     set param_arr(dc_count_max) 5
-    set param_arr(dc_count) [expr { int( rand() * ( $param_arr(dc_count_max) - $param_arr(dc_count_min) + .99 ) ) + $param_arr(dc_count_min) } ]
+    set param_arr(dc_count) [expr { int( rand() * ( $param_arr(dc_count_max) - $param_arr(dc_count_min) ) + .99 ) + $param_arr(dc_count_min) } ]
     set param_arr(dc_dots_min) 0
     set param_arr(dc_dots_max) 10
     set param_arr(dc_cols_min) $dc1_len
@@ -257,7 +257,7 @@ ad_proc -private acc_fin::pretti_example_maker {
         set title_list $dc1_list
         set cols_diff [expr { $param_arr(dc_cols) -  [llength $title_list] } ]
         if { $cols_diff > 0 } {
-            lappend title_list [lindex $dc0_list [expr { $dc0_len - $dc1_len - 1 } ] ]
+            lappend title_list [lindex $dc0_list end]
         }
         lappend dc_larr($i) $title_list
         set param_arr(dc_dots) [expr { int( rand() * ( $param_arr(dc_dots_max) - $param_arr(dc_dots_min) + .99 ) ) + $param_arr(dc_dots_min) } ]
@@ -356,7 +356,6 @@ ad_proc -private acc_fin::pretti_example_maker {
         # new row
         set row_list [list ]
         foreach title $title_list {
-            unset row_arr($title)
             switch -exact $title {
                 time_est_short  -
                 time_est_median -
@@ -412,6 +411,7 @@ ad_proc -private acc_fin::pretti_example_maker {
             }
             if { [info exists row_arr($title) ] } {
                 lappend row_list $row_arr($title)
+                unset row_arr($title)
             } else {
                 ns_log Notice "acc_fin::pretti_example_maker.396: no switch option for '$title'"
                 lappend row_list ""
@@ -502,7 +502,6 @@ ad_proc -private acc_fin::pretti_example_maker {
         ns_log Notice "acc_fin::pretti_example_maker.497: i $i"
         set row_list [list ]
         foreach title $title_list {
-            unset row_arr($title)
             switch -exact $title {
                 time_est_short  -
                 time_est_median -
@@ -573,6 +572,7 @@ ad_proc -private acc_fin::pretti_example_maker {
             }
             if { [info exists row_arr($title) ] } {
                 lappend row_list $row_arr($title)
+                unset row_arr($title)
             } else {
                 ns_log Notice "acc_fin::pretti_example_maker.530: no switch option for '$title'"
                 lappend row_list ""
@@ -666,7 +666,6 @@ ad_proc -private acc_fin::pretti_example_maker {
     ns_log Notice "acc_fin::pretti_example_maker.662: vals_list '$vals_list'"
     
     foreach name $vals_list {
-        unset row_arr($title)
         set row_list [list ]
         switch -exact $name {
             time_est_short  -
@@ -728,6 +727,7 @@ ad_proc -private acc_fin::pretti_example_maker {
         }
         if { [info exists row_arr($title) ] } {
             lappend row_list $name $row_arr($title)
+            unset row_arr($title)
             # add row to p1 table
             lappend p1_larr $row_list
         } else {
