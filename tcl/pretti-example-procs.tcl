@@ -356,6 +356,7 @@ ad_proc -private acc_fin::pretti_example_maker {
         # new row
         set row_list [list ]
         foreach title $title_list {
+            unset row_arr($title)
             switch -exact $title {
                 time_est_short  -
                 time_est_median -
@@ -413,6 +414,7 @@ ad_proc -private acc_fin::pretti_example_maker {
                 lappend row_list $row_arr($title)
             } else {
                 ns_log Notice "acc_fin::pretti_example_maker.396: no switch option for '$title'"
+                lappend row_list ""
             }
         }
         # add row
@@ -500,6 +502,7 @@ ad_proc -private acc_fin::pretti_example_maker {
         ns_log Notice "acc_fin::pretti_example_maker.497: i $i"
         set row_list [list ]
         foreach title $title_list {
+            unset row_arr($title)
             switch -exact $title {
                 time_est_short  -
                 time_est_median -
@@ -572,6 +575,7 @@ ad_proc -private acc_fin::pretti_example_maker {
                 lappend row_list $row_arr($title)
             } else {
                 ns_log Notice "acc_fin::pretti_example_maker.530: no switch option for '$title'"
+                lappend row_list ""
             }
 
         }
