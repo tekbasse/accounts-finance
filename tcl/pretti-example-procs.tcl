@@ -606,6 +606,7 @@ ad_proc -private acc_fin::pretti_example_maker {
     set param_arr(p1_vals) [expr { int( rand() * ( $param_arr(p1_vals_max) - $param_arr(p1_vals_min) + .99 ) ) + $param_arr(p1_vals_min) } ]
     # required: name value
     set title_list [list name value]
+    lappend p1_larr $title_list
         # p1: activity_table_tid 
         # activity_table_name task_types_tid task_types_name time_dist_curve_name time_dist_curve_tid cost_dist_curve_name cost_dist_curve_tid time_est_short time_est_median time_est_long time_probability_moment cost_est_low cost_est_median cost_est_high cost_probability_moment db_format
     set vals_list $p11_list
@@ -656,80 +657,78 @@ ad_proc -private acc_fin::pretti_example_maker {
             incr vals_diff -1
         }
     }
-    lappend p1_larr $vals_list
-    set p1_types_len [llength $vals_list]
-    set param_arr(p1_vals) [expr { int( rand() * ( $param_arr(p1_vals_max) - $param_arr(p1_vals_min) + .99 ) ) + $param_arr(p1_vals_min) } ]
-    for { set i 0} {$i < $param_arr(p1_vals)} {incr i} {
-        foreach name $vals_list {
-            set row_list [list ]
-            switch -exact $name {
-                time_est_short  -
-                time_est_median -
-                time_est_long   { 
-                    # a random amount, assume hours for a task for example
-                    set row_arr($title) [expr { int( rand() * 256. + 5. ) / 6. } ]
-                }
-                cost_est_low    -
-                cost_est_median - 
-                cost_est_high   {
-                    # these could be usd or btc for example
-                    set row_arr($title) [expr { int( rand() * 30000. + 90. ) / 100. } ]
-                }
-                cost_dist_curve_name -
-                time_dist_curve_name {
-                    if { $param_arr(dc_count) > - } {
-                        set x [expr { int( rand() * $param_arr(dc_count) ) } ]
-                        set row_arr($title) $dc_name_arr($x)
-                    } else {
-                        set row_arr($title) ""
-                    }
-                }
-                cost_dist_curve_tid -
-                time_dist_curve_tid {
-                    if { $param_arr(dc_count) > 0 } {
-                        set x [expr { int( rand() * $param_arr(dc_count) ) } ]
-                        set row_arr($title) $dc_table_id_arr($x)
-                    } else {
-                        set row_arr($title) ""
-                    }
-                }
-                task_types_tid {
-                    set row_arr($title) $p3_table_id
-                }
-                task_types_name {
-                    set row_arr($title) $p3_name
-                }
-                activity_table_tid {
-                    set row_arr($title) $p2_table_id
-                }
-                activity_table_name {
-                    set row_arr($title) $p2_name
-                }
-                db_format   -
-                name        -
-                description {
-                    set row_arr($title) [ad_generate_random_string]
-                }
-                max_concurrent {
-                    set row_arr($title) [expr { int( rand() * 12 ) } ]
-                }
-                max_overlap_pct         -
-                cost_probability_moment -
-                time_probability_moment {
-                    # round off to nearest percent ( 0.01 )
-                    set row_arr($title) [expr { int( rand() * 100. ) / 100. } ]
-                }
-            }
-            lappend row_list $name
-            if { [info exists row_arr($title) ] } {
-                lappend row_list $row_arr($title)
-            } else {
-                ns_log Notice "acc_fin::pretti_example_maker.673: no switch option for '$title'"
-            }
 
+    set p1_types_len [llength $vals_list]
+    ns_log Notice "acc_fin::pretti_example_maker.662: vals_list '$vals_list'"
+    
+    foreach name $vals_list {
+        unset row_arr($title)
+        set row_list [list ]
+        switch -exact $name {
+            time_est_short  -
+            time_est_median -
+            time_est_long   { 
+                # a random amount, assume hours for a task for example
+                set row_arr($title) [expr { int( rand() * 256. + 5. ) / 6. } ]
+            }
+            cost_est_low    -
+            cost_est_median - 
+            cost_est_high   {
+                # these could be usd or btc for example
+                set row_arr($title) [expr { int( rand() * 30000. + 90. ) / 100. } ]
+            }
+            cost_dist_curve_name -
+            time_dist_curve_name {
+                if { $param_arr(dc_count) > -1 } {
+                    set x [expr { int( rand() * $param_arr(dc_count) ) } ]
+                    set row_arr($title) $dc_name_arr($x)
+                } else {
+                    set row_arr($title) ""
+                }
+            }
+            cost_dist_curve_tid -
+            time_dist_curve_tid {
+                if { $param_arr(dc_count) > 0 } {
+                    set x [expr { int( rand() * $param_arr(dc_count) ) } ]
+                    set row_arr($title) $dc_table_id_arr($x)
+                } else {
+                    set row_arr($title) ""
+                }
+            }
+            task_types_tid {
+                set row_arr($title) $p3_table_id
+            }
+            task_types_name {
+                set row_arr($title) $p3_name
+            }
+            activity_table_tid {
+                set row_arr($title) $p2_table_id
+            }
+            activity_table_name {
+                set row_arr($title) $p2_name
+            }
+            db_format   -
+            name        -
+            description {
+                set row_arr($title) [ad_generate_random_string]
+            }
+            max_concurrent {
+                set row_arr($title) [expr { int( rand() * 12 ) } ]
+            }
+            max_overlap_pct         -
+            cost_probability_moment -
+            time_probability_moment {
+                # round off to nearest percent ( 0.01 )
+                set row_arr($title) [expr { int( rand() * 100. ) / 100. } ]
+            }
         }
-        # add row
-        lappend p1_larr $row_list
+        if { [info exists row_arr($title) ] } {
+            lappend row_list $name $row_arr($title)
+            # add row to p1 table
+            lappend p1_larr $row_list
+        } else {
+            ns_log Notice "acc_fin::pretti_example_maker.673: no switch option for '$title'"
+        }
     }
     # save p1 table
     set p1_comments "This is a test table of PRETTI scenario table (p1)"
