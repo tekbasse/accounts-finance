@@ -387,38 +387,38 @@ ad_proc -public acc_fin::pretti_type_flag {
     set p(p1) 0
     set name_idx [lsearch -exact $title_list "name" ]
     set value_idx [lsearch -exact $title_list "value" ]
-    ns_log Notice "acc_fin::pretti_columns_list.390 name_idx $name_idx value_idx $value_idx title_list '$title_list'"
+#    ns_log Notice "acc_fin::pretti_columns_list.390 name_idx $name_idx value_idx $value_idx title_list '$title_list'"
     if { $name_idx > -1 && $value_idx > -1 } {
         # get name column
         set name_list [list ]
-        ns_log Notice "acc_fin::pretti_columns_list.400 table_lists '$table_lists'"
+#        ns_log Notice "acc_fin::pretti_columns_list.400 table_lists '$table_lists'"
         foreach row [lrange $table_lists 1 end] {
             lappend name_list [lindex $row $name_idx]
         }
-        ns_log Notice "acc_fin::pretti_columns_list.401 name_list '$name_list'"
+#        ns_log Notice "acc_fin::pretti_columns_list.401 name_list '$name_list'"
         # check name_list against p1 required names. 
         # All required names need to be in list, but not all list names are required.
         set p(p1) 1
         # required names in check_list
         set check_list [acc_fin::pretti_columns_list "p1" 1 ]
-        ns_log Notice "acc_fin::pretti_columns_list.402 check_list $check_list"
+#        ns_log Notice "acc_fin::pretti_columns_list.402 check_list $check_list"
         foreach check $check_list {
             set p(p1) [expr { $p(p1) && ( [lsearch -exact $name_list $check] > -1 ) } ]
-            ns_log Notice "acc_fin::pretti_columns_list.404 check $check p(p1) $p(p1)"
+#            ns_log Notice "acc_fin::pretti_columns_list.404 check $check p(p1) $p(p1)"
         }
 
     }
     if { $p(p1) } {
         set type_return "p1"
-        ns_log Notice "acc_fin::pretti_columns_list.410 type = p1"
+#        ns_log Notice "acc_fin::pretti_columns_list.410 type = p1"
     } else {
         # filter other p table types by required minimums first
         set type_list [list "p2" "p3" "p4" "p5" "dc"]
-        ns_log Notice "acc_fin::pretti_columns_list.414 type not p1. check for $type_list"
+#        ns_log Notice "acc_fin::pretti_columns_list.414 type not p1. check for $type_list"
         foreach type $type_list {
             set p($type) 1
             set check_list [acc_fin::pretti_columns_list $type 1]
- #           ns_log Notice "acc_fin::pretti_type_flag.58: type $type check_list $check_list"
+#            ns_log Notice "acc_fin::pretti_type_flag.58: type $type check_list $check_list"
             foreach check $check_list {
                 set p($type) [expr { $p($type) && ( [lsearch -exact $title_list $check] > -1 ) } ]
 #                ns_log Notice "acc_fin::pretti_type_flag.60: check $check p($type) $p($type)"
@@ -460,8 +460,8 @@ ad_proc -public acc_fin::pretti_type_flag {
                     } 
                 }
                 set type3_list [lsort -real -index 1 -decreasing $type3_list]
-                ns_log Notice "acc_fin::pretti_type_flag.450: type1_p_list '${type1_p_list}'"
-                ns_log Notice "acc_fin::pretti_type_flag.453: type3_list '$type3_list'"
+#                ns_log Notice "acc_fin::pretti_type_flag.450: type1_p_list '${type1_p_list}'"
+#                ns_log Notice "acc_fin::pretti_type_flag.453: type3_list '$type3_list'"
                 set type_return [lindex [lindex $type3_list 0] 0]
             }
         } else {

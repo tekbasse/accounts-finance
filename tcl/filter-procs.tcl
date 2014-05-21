@@ -31,3 +31,19 @@ ad_proc -public acc_fin::smoothing_filter {
     return filtered_data_list
 }
  
+ad_proc -public acc_fin::shuffle_list {
+    a_list
+} {
+    Shuffles a list.
+} {
+#     Algorithm/Code extracted from wiki.tcl.tk/941 version shuffle10a on 20 May 2014.
+    randomInit [clock clicks]
+    set len [llength $a_list]
+    while { $len > 0 } {
+        set n_idx [expr { int( $len * [random] ) } ]
+        set tmp [lindex $a_list $n_idx]
+        lset a_list $n_idx [lindex $a_list [incr len -1]]
+        lset a_list $len $tmp
+    }
+    return $a_list
+}

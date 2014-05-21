@@ -211,7 +211,7 @@ ad_proc -private acc_fin::pretti_example_maker {
 
     set param_arr(dc_count_min) 0
     set param_arr(dc_count_max) 5
-    set param_arr(dc_count) [expr { int( rand() * ( $param_arr(dc_count_max) - $param_arr(dc_count_min) ) + .99 ) + $param_arr(dc_count_min) } ]
+    set param_arr(dc_count) [expr { int( [random] * ( $param_arr(dc_count_max) - $param_arr(dc_count_min) ) + .99 ) + $param_arr(dc_count_min) } ]
     set param_arr(dc_dots_min) 0
     set param_arr(dc_dots_max) 10
     set param_arr(dc_cols_min) $dc1_len
@@ -222,17 +222,17 @@ ad_proc -private acc_fin::pretti_example_maker {
     set param_arr(p3_types_max) 120
     set param_arr(p3_cols_min) $p31_len
     set param_arr(p3_cols_max) $p30_len
-#    set param_arr(p3_cols) [expr { int( rand() * ( $param_arr(p3_cols_max) - $param_arr(p3_cols_min) + .99 ) ) + $param_arr(p3_cols_min) } ]
+#    set param_arr(p3_cols) [expr { int( [random] * ( $param_arr(p3_cols_max) - $param_arr(p3_cols_min) + .99 ) ) + $param_arr(p3_cols_min) } ]
 
     set param_arr(p2_acts_max) 100
     set param_arr(p2_acts_min) 20
     set param_arr(p2_cols_min) $p21_len
     set param_arr(p2_cols_max) $p20_len
-#    set param_arr(p2_cols) [expr { int( rand() * ( $param_arr(p2_cols_max) - $param_arr(p2_cols_min) + .99 ) ) + $param_arr(p2_cols_min) } ]
+#    set param_arr(p2_cols) [expr { int( [random] * ( $param_arr(p2_cols_max) - $param_arr(p2_cols_min) + .99 ) ) + $param_arr(p2_cols_min) } ]
 
     set param_arr(p1_vals_min) $p11_len
     set param_arr(p1_vals_max) $p10_len
-#    set param_arr(p1_vals) [expr { int( rand() * ( $param_arr(p1_vals_max) - $param_arr(p1_vals_min) + .99 ) ) + $param_arr(p1_vals_min) } ]
+#    set param_arr(p1_vals) [expr { int( [random] * ( $param_arr(p1_vals_max) - $param_arr(p1_vals_min) + .99 ) ) + $param_arr(p1_vals_min) } ]
 
     # blank means column inclusion is randomized. Otherwise list specific columns to try/use
     # acc_fin::pretti_columns_list is a handy column name reference
@@ -253,14 +253,14 @@ ad_proc -private acc_fin::pretti_example_maker {
     ns_log Notice "acc_fin::pretti_example_maker.248 dc start"
     for {set i 0} { $i < $param_arr(dc_count) } { incr i } {
         set dc_larr($i) [list ]
-        set param_arr(dc_cols) [expr { int( rand() * ( $param_arr(dc_cols_max) - $param_arr(dc_cols_min) + .99 ) ) + $param_arr(dc_cols_min) } ]
+        set param_arr(dc_cols) [expr { int( [random] * ( $param_arr(dc_cols_max) - $param_arr(dc_cols_min) + .99 ) ) + $param_arr(dc_cols_min) } ]
         set title_list $dc1_list
         set cols_diff [expr { $param_arr(dc_cols) -  [llength $title_list] } ]
         if { $cols_diff > 0 } {
             lappend title_list [lindex $dc0_list end]
         }
-        lappend dc_larr($i) $title_list
-        set param_arr(dc_dots) [expr { int( rand() * ( $param_arr(dc_dots_max) - $param_arr(dc_dots_min) + .99 ) ) + $param_arr(dc_dots_min) } ]
+        lappend dc_larr($i) [acc_fin::shuffle_list $title_list]
+        set param_arr(dc_dots) [expr { int( [random] * ( $param_arr(dc_dots_max) - $param_arr(dc_dots_min) + .99 ) ) + $param_arr(dc_dots_min) } ]
         for { set ii 0} {$ii < $param_arr(dc_dots)} {incr ii} {
             # dist curve point
             set row_list [list ]
@@ -268,11 +268,11 @@ ad_proc -private acc_fin::pretti_example_maker {
                 switch -exact $title {
                     x { 
                         # a random amount, assume hours for a task for example
-                        set dot(x) [expr { int( rand() * 256. + 5. ) / 6. } ]
+                        set dot(x) [expr { int( [random] * 256. + 5. ) / 6. } ]
                     }
                     y {
                         # these could be usd or btc for example
-                        set dot(y) [expr { int( rand() * 30000. + 90. ) / 100. } ]
+                        set dot(y) [expr { int( [random] * 30000. + 90. ) / 100. } ]
                     }
                     label {
                         set dot(label) [ad_generate_random_string]
@@ -300,7 +300,7 @@ ad_proc -private acc_fin::pretti_example_maker {
     # p3
     ns_log Notice "acc_fin::pretti_example_maker.294 p3 start"
     set p3_larr [list ]
-    set param_arr(p3_cols) [expr { int( rand() * ( $param_arr(p3_cols_max) - $param_arr(p3_cols_min) + .99 ) ) + $param_arr(p3_cols_min) } ]
+    set param_arr(p3_cols) [expr { int( [random] * ( $param_arr(p3_cols_max) - $param_arr(p3_cols_min) + .99 ) ) + $param_arr(p3_cols_min) } ]
     # required: type
     set title_list $p31_list
     set cols_diff [expr { $param_arr(p3_cols) -  [llength $title_list] } ]
@@ -342,43 +342,51 @@ ad_proc -private acc_fin::pretti_example_maker {
         # set cols_diff expr $param_arr(p3_cols) - llength $title_list
         while { $cols_diff > 0 && $ungrouped_len > 0} {
             # Select a random column to add to title_list
-            set rand_idx [expr { int( rand() * $ungrouped_len ) } ]
+            set rand_idx [expr { int( [random] * $ungrouped_len ) } ]
             lappend title_list [lindex $ungrouped_list $rand_idx]
             set ungrouped_list [lreplace $ungrouped_list $rand_idx $rand_idx]
             set ungrouped_len [llength $ungrouped_list]
             incr cols_diff -1
         }
     }
-    lappend p3_larr $title_list
+    lappend p3_larr [acc_fin::shuffle_list $title_list]
     set p2_cols_list [list ]
-    set param_arr(p3_types) [expr { int( rand() * ( $param_arr(p3_types_max) - $param_arr(p3_types_min) + .99 ) ) + $param_arr(p3_types_min) } ]
+    set param_arr(p3_types) [expr { int( [random] * ( $param_arr(p3_types_max) - $param_arr(p3_types_min) + .99 ) ) + $param_arr(p3_types_min) } ]
     for { set i 0} {$i < $param_arr(p3_types)} {incr i} {
         # new row
         set row_list [list ]
         foreach title $title_list {
             switch -exact $title {
-                time_est_short  -
-                time_est_median -
+                time_est_short  {
+                    set row_arr($title) [expr { int( [random] * 256. + 5. ) / 24. } ]
+                }
+                time_est_median {
+                    set row_arr($title) [expr { int( [random] * 256. + 10. ) / 12. } ]
+                }
                 time_est_long   { 
                     # a random amount, assume hours for a task for example
-                    set row_arr($title) [expr { int( rand() * 256. + 5. ) / 6. } ]
+                    set row_arr($title) [expr { int( [random] * 256. + 20. ) / 6. } ]
                 }
-                cost_est_low    -
-                cost_est_median - 
+                cost_est_low    {
+                    set row_arr($title) [expr { int( [random] * 100. + 90. ) / 100. } ]
+                }
+                cost_est_median {
+                    set row_arr($title) [expr { int( [random] * 200. + 180. ) / 100. } ]
+                }
                 cost_est_high   {
                     # these could be usd or btc for example
-                    set row_arr($title) [expr { int( rand() * 30000. + 90. ) / 100. } ]
+                    set row_arr($title) [expr { int( [random] * 400. + 360. ) / 100. } ]
                 }
                 max_concurrent {
-                    set row_arr($title) [expr { int( rand() * 12 ) + 1 } ]
+                    set row_arr($title) [expr { int( [random] * 12 ) + 1 } ]
                 }
                 max_overlap_pct {
-                    set row_arr($title) [expr { int( rand() * 1000. ) / 1000. } ]
+                    set row_arr($title) [expr { int( [random] * 1000. ) / 1000. } ]
                 }
                 cost_dist_curve_name -
                 time_dist_curve_name {
                     if { $param_arr(dc_count) > 0 } {
-                        set x [expr { int( rand() * $param_arr(dc_count) ) } ]
+                        set x [expr { int( [random] * $param_arr(dc_count) ) } ]
                         set row_arr($title) $dc_name_arr($x)
                     } else {
                         set row_arr($title) ""
@@ -387,7 +395,7 @@ ad_proc -private acc_fin::pretti_example_maker {
                 cost_dist_curve_tid -
                 time_dist_curve_tid {
                     if { $param_arr(dc_count) > 0 } {
-                        set x [expr { int( rand() * $param_arr(dc_count) ) } ]
+                        set x [expr { int( [random] * $param_arr(dc_count) ) } ]
                         set row_arr($title) $dc_table_id_arr($x)
                     } else {
                         set row_arr($title) ""
@@ -434,7 +442,7 @@ ad_proc -private acc_fin::pretti_example_maker {
     # p2
     ns_log Notice "acc_fin::pretti_example_maker.419 p2 start"
     set p2_larr [list ]
-    set param_arr(p2_cols) [expr { int( rand() * ( $param_arr(p2_cols_max) - $param_arr(p2_cols_min) + .99 ) ) + $param_arr(p2_cols_min) } ]
+    set param_arr(p2_cols) [expr { int( [random] * ( $param_arr(p2_cols_max) - $param_arr(p2_cols_min) + .99 ) ) + $param_arr(p2_cols_min) } ]
     # required: type
     set title_list $p21_list
     set cols_diff [expr { $param_arr(p2_cols) -  [llength $title_list] } ]
@@ -481,7 +489,7 @@ ad_proc -private acc_fin::pretti_example_maker {
             ns_log Notice "acc_fin::pretti_example_maker.480: ungrouped_len $ungrouped_len cols_diff $cols_diff"
         while { $cols_diff > 0 && $ungrouped_len > 0 } {
             # Select a random column to add to title_list
-            set rand_idx [expr { int( rand() * $ungrouped_len ) } ]
+            set rand_idx [expr { int( [random] * $ungrouped_len ) } ]
             lappend title_list [lindex $ungrouped_list $rand_idx]
             set ungrouped_list [lreplace $ungrouped_list $rand_idx $rand_idx]
             set ungrouped_len [llength $ungrouped_list]
@@ -491,9 +499,9 @@ ad_proc -private acc_fin::pretti_example_maker {
         ns_log Notice "acc_fin::pretti_example_maker.489"
     }
     ns_log Notice "acc_fin::pretti_example_maker.490"
-    lappend p2_larr $title_list
+    lappend p2_larr [acc_fin::shuffle_list $title_list]
     set p2_cols_len [llength $p2_cols_list]
-    set param_arr(p2_cols) [expr { int( rand() * ( $param_arr(p2_cols_max) - $param_arr(p2_cols_min) + .99 ) ) + $param_arr(p2_cols_min) } ]
+    set param_arr(p2_cols) [expr { int( [random] * ( $param_arr(p2_cols_max) - $param_arr(p2_cols_min) + .99 ) ) + $param_arr(p2_cols_min) } ]
     set p3_to_p2_count_ratio [expr { $param_arr(p2_cols) / $p2_cols_len } ]
     set p2_act_list [list ]
     ns_log Notice "acc_fin::pretti_example_maker.495: p2_cols_len $p2_cols_len p3_to_p2_count_ratio $p3_to_p2_count_ratio param_arr(p2_cols) title_list '$title_list'"
@@ -503,28 +511,36 @@ ad_proc -private acc_fin::pretti_example_maker {
         set row_list [list ]
         foreach title $title_list {
             switch -exact $title {
-                time_est_short  -
-                time_est_median -
+                time_est_short  {
+                    set row_arr($title) [expr { int( [random] * 256. + 5. ) / 24. } ]
+                }
+                time_est_median {
+                    set row_arr($title) [expr { int( [random] * 256. + 10. ) / 12. } ]
+                }
                 time_est_long   { 
                     # a random amount, assume hours for a task for example
-                    set row_arr($title) [expr { int( rand() * 256. + 5. ) / 6. } ]
+                    set row_arr($title) [expr { int( [random] * 256. + 20. ) / 6. } ]
                 }
-                cost_est_low    -
-                cost_est_median - 
+                cost_est_low    {
+                    set row_arr($title) [expr { int( [random] * 100. + 90. ) / 100. } ]
+                }
+                cost_est_median {
+                    set row_arr($title) [expr { int( [random] * 200. + 180. ) / 100. } ]
+                }
                 cost_est_high   {
                     # these could be usd or btc for example
-                    set row_arr($title) [expr { int( rand() * 30000. + 90. ) / 100. } ]
+                    set row_arr($title) [expr { int( [random] * 400. + 360. ) / 100. } ]
                 }
                 max_concurrent {
-                    set row_arr($title) [expr { int( rand() * 12 ) + 1 } ]
+                    set row_arr($title) [expr { int( [random] * 12 ) + 1 } ]
                 }
                 max_overlap_pct {
-                    set row_arr($title) [expr { int( rand() * 1000. ) / 1000. } ]
+                    set row_arr($title) [expr { int( [random] * 1000. ) / 1000. } ]
                 }
                 cost_dist_curve_name -
                 time_dist_curve_name {
                     if { $param_arr(dc_count) > 0 } {
-                        set x [expr { int( rand() * $param_arr(dc_count) ) } ]
+                        set x [expr { int( [random] * $param_arr(dc_count) ) } ]
                         set row_arr($title) $dc_name_arr($x)
                     } else {
                         set row_arr($title) ""
@@ -533,7 +549,7 @@ ad_proc -private acc_fin::pretti_example_maker {
                 cost_dist_curve_tid -
                 time_dist_curve_tid {
                     if { $param_arr(dc_count) > 0 } {
-                        set x [expr { int( rand() * $param_arr(dc_count) ) } ]
+                        set x [expr { int( [random] * $param_arr(dc_count) ) } ]
                         set row_arr($title) $dc_table_id_arr($x)
                     } else {
                         set row_arr($title) ""
@@ -549,19 +565,21 @@ ad_proc -private acc_fin::pretti_example_maker {
                 }
                 aid_type {
                     # choose some blank types
-                    set x [expr { int( rand() * $p2_cols_len * 2. ) } ]
+                    set x [expr { int( [random] * $p2_cols_len * 2. ) } ]
                     set row_arr($title) [lindex $p2_cols_list $x]
                 }
                 dependent_tasks {
                     # directly dependent
                     set row_arr($title) ""
-                    set count [expr { int( pow( rand() * 2. , rand() * 3. ) ) } ]
+                    set count [expr { int( pow( [random] * 2. , [random] * 3. ) ) } ]
                     set ii 1
+                    set delim ""
                     while { $ii < $count } {
-                        set x [expr { int( rand() * $i ) } ]
-                        append row_arr($title) " "
+                        set x [expr { int( [random] * $i ) } ]
+                        append row_arr($title) $delim
                         append row_arr($title) [lindex $p2_act_list $x]
                         incr ii
+                        set delim " "
                     }
                 }
                 cost_probability_moment -
@@ -607,7 +625,7 @@ ad_proc -private acc_fin::pretti_example_maker {
     # db_format (1 or 0) saves p5 report table if db_format ne ""
    
     set p1_larr [list ]
-    set param_arr(p1_vals) [expr { int( rand() * ( $param_arr(p1_vals_max) - $param_arr(p1_vals_min) + .99 ) ) + $param_arr(p1_vals_min) } ]
+    set param_arr(p1_vals) [expr { int( [random] * ( $param_arr(p1_vals_max) - $param_arr(p1_vals_min) + .99 ) ) + $param_arr(p1_vals_min) } ]
     # required: name value
     set title_list [list name value]
     lappend p1_larr $title_list
@@ -653,7 +671,7 @@ ad_proc -private acc_fin::pretti_example_maker {
         # set vals_diff expr $param_arr(p1_vals) - llength $title_list
         while { $vals_diff > 0 && $ungrouped_len > 0 } {
             # Select a random column to add to title_list
-            set rand_idx [expr { int( rand() * $ungrouped_len ) } ]
+            set rand_idx [expr { int( [random] * $ungrouped_len ) } ]
             lappend vals_list [lindex $ungrouped_list $rand_idx]
             set ungrouped_list [lreplace $ungrouped_list $rand_idx $rand_idx]
             set ungrouped_len [llength $ungrouped_list]
@@ -661,29 +679,37 @@ ad_proc -private acc_fin::pretti_example_maker {
             incr vals_diff -1
         }
     }
-
+    set vals_list [acc_fin::shuffle_list $vals_list]
     set p1_types_len [llength $vals_list]
     ns_log Notice "acc_fin::pretti_example_maker.662: vals_list '$vals_list'"
     
     foreach name $vals_list {
         set row_list [list ]
         switch -exact $name {
-            time_est_short  -
-            time_est_median -
+            time_est_short  {
+                set row_arr($title) [expr { int( [random] * 256. + 5. ) / 24. } ]
+            }
+            time_est_median {
+                set row_arr($title) [expr { int( [random] * 256. + 10. ) / 12. } ]
+            }
             time_est_long   { 
                 # a random amount, assume hours for a task for example
-                set row_arr($title) [expr { int( rand() * 256. + 5. ) / 6. } ]
+                set row_arr($title) [expr { int( [random] * 256. + 20. ) / 6. } ]
             }
-            cost_est_low    -
-            cost_est_median - 
+            cost_est_low    {
+                set row_arr($title) [expr { int( [random] * 100. + 90. ) / 100. } ]
+            }
+            cost_est_median {
+                set row_arr($title) [expr { int( [random] * 200. + 180. ) / 100. } ]
+            }
             cost_est_high   {
                 # these could be usd or btc for example
-                set row_arr($title) [expr { int( rand() * 30000. + 90. ) / 100. } ]
+                set row_arr($title) [expr { int( [random] * 400. + 360. ) / 100. } ]
             }
             cost_dist_curve_name -
             time_dist_curve_name {
                 if { $param_arr(dc_count) > -1 } {
-                    set x [expr { int( rand() * $param_arr(dc_count) ) } ]
+                    set x [expr { int( [random] * $param_arr(dc_count) ) } ]
                     set row_arr($title) $dc_name_arr($x)
                 } else {
                     set row_arr($title) ""
@@ -692,7 +718,7 @@ ad_proc -private acc_fin::pretti_example_maker {
             cost_dist_curve_tid -
             time_dist_curve_tid {
                 if { $param_arr(dc_count) > 0 } {
-                    set x [expr { int( rand() * $param_arr(dc_count) ) } ]
+                    set x [expr { int( [random] * $param_arr(dc_count) ) } ]
                     set row_arr($title) $dc_table_id_arr($x)
                 } else {
                     set row_arr($title) ""
@@ -716,13 +742,13 @@ ad_proc -private acc_fin::pretti_example_maker {
                 set row_arr($title) [ad_generate_random_string]
             }
             max_concurrent {
-                set row_arr($title) [expr { int( rand() * 12 ) } ]
+                set row_arr($title) [expr { int( [random] * 12 ) } ]
             }
             max_overlap_pct         -
             cost_probability_moment -
             time_probability_moment {
                 # round off to nearest percent ( 0.01 )
-                set row_arr($title) [expr { int( rand() * 100. ) / 100. } ]
+                set row_arr($title) [expr { int( [random] * 100. ) / 100. } ]
             }
         }
         if { [info exists row_arr($title) ] } {
