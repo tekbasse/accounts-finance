@@ -56,6 +56,7 @@ if { $read_p } {
         set stats_list [lrange $stats_orig_list 0 5]
         set table_id [lindex $stats_list 0]
         set name [lindex $stats_list 1]
+        set title [lindex $stats_list 2]
         set table_template_id [lindex $stats_orig_list 6]
         set table_flags [lindex $stats_orig_list 7]
         set trashed_p [lindex $stats_orig_list 8]
@@ -71,6 +72,15 @@ if { $read_p } {
             set col_length [expr { [lindex $stats_list 4] / ( [lindex $stats_list 5] * 1. ) } ]
         } else {
             set col_length 0.
+        }
+        if { [qss_tid_from_name $name $instance_id $user_id] eq $table_id } {
+            # create a link out of name
+            set name_link "<a href=\"${name}\">${name}</a>"
+            set stats_list [lreplace $stats_list 1 1 $name_link]
+        } else {
+            set tid_link "<a href=\"${table_id}\">${table_id}</a>"
+            set stats_list [lreplace $stats_list 0 0 $tid_link]
+            # make a link out of table_id
         }
         lappend stats_list $col_length
         
