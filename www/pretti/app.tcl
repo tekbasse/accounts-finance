@@ -1,11 +1,11 @@
 # generic header for static .adp pages
 
 
-set package_id [ad_conn package_id]
+set instance_id [ad_conn package_id]
 set user_id [ad_conn user_id]
-set write_p [permission::permission_p -party_id $user_id -object_id $package_id -privilege write]
-set admin_p [permission::permission_p -party_id $user_id -object_id $package_id -privilege admin]
-set delete_p [permission::permission_p -party_id $user_id -object_id $package_id -privilege delete]
+set write_p [permission::permission_p -party_id $user_id -object_id $instance_id -privilege write]
+set admin_p [permission::permission_p -party_id $user_id -object_id $instance_id -privilege admin]
+set delete_p [permission::permission_p -party_id $user_id -object_id $instance_id -privilege delete]
 # randmize rand with seed from clock
 expr { srand([clock clicks]) }
 
@@ -209,12 +209,12 @@ if { $form_posted } {
                     if { $table_name eq $name_old && $table_title eq $title_old && $table_comments eq $comments_old && $table_lists eq $table_old_lists } {
                         # Don't create a new table. The new one is exactly like the old one..
                     } else {
-                        qss_table_create $table_lists $table_name $table_title $table_comments $table_template_id $table_flags $package_id $user_id
+                        qss_table_create $table_lists $table_name $table_title $table_comments $table_template_id $table_flags $instance_id $user_id
                     }
 
                 } else {
                     ns_log Notice "app.tcl.210: qss_table_create new table"
-                    qss_table_create $table_lists $table_name $table_title $table_comments "" $table_flags $package_id $user_id
+                    qss_table_create $table_lists $table_name $table_title $table_comments "" $table_flags $instance_id $user_id
                 }
 
             }
@@ -401,7 +401,7 @@ switch -exact -- $mode {
         # show tables
         # sort by template_id, columns, and table_type (flags)
 
-        set table_ids_list [qss_tables $package_id]
+        set table_ids_list [qss_tables $instance_id]
         set table_stats_lists [list ]
         set table_trashed_lists [list ]
         set cell_formating_list [list ]

@@ -21,9 +21,13 @@
 
 </if>
 
-<if @table_html@ not nil>
-@table_html;noquote@
-</if>
+<if @mode@ eq "v">
+  <include src="/packages/accounts-finance/lib/pretti-one-view" instance_id="@instance_id@" table_tid="@table_tid@">
+</if><else>
+ <if @table_html@ not nil>
+  @table_html;noquote@
+ </if>
+</else>
 
 <if @compute_message_html@ not nil>
 <ul>
@@ -34,7 +38,11 @@
 <if @computation_report_html@ not nil>
 @computation_report_html;noquote@
 </if>
+<if @mode@ eq "p">
+  <include src="/packages/accounts-finance/lib/pretti-view" instance_id="@instance_id@" form_action_attr="app">
+</if><else>
+ <if @table_stats_html@ not nil>
+  @table_stats_html;noquote@
+ </if>
+</else>
 
-<if @table_stats_html@ not nil>
-@table_stats_html;noquote@
-</if>
