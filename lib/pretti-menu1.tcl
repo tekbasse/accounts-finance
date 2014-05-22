@@ -4,9 +4,13 @@
 #           table_tid table_flags 
 
 # generic header for static .adp pages
-if { ![info exists $instance_id] } {
+if { ![info exists instance_id] } {
     set instance_id [ad_conn package_id]
 }
+if { ![info exists table_tid] } {
+    set table_tid ""
+}
+
 set user_id [ad_conn user_id]
 set read_p [permission::permission_p -party_id $user_id -object_id $instance_id -privilege read]
 if { $read_p } {
@@ -52,13 +56,13 @@ if { $read_p } {
             #  view table(s) (standard, html page document/report)
             ns_log Notice "accounts-finance/lib/pretti-menu1.tcl.358:  mode = $mode ie. view table"
             set mode_name "#accounts-finance.view#"
-            if { [qf_is_natural_number $table_tid] && $write_p } {
+            if { $table_tid ne "" && [qf_is_natural_number $table_tid] && $write_p } {
                 lappend menu_list [list edit "table_tid=${table_tid}&mode=e"]
                 set menu_e_p 1
             } else {
                 set menu_e_p 0
             }
-            if { !$menu_e_p && $write_p } {
+            if { $table_tid ne "" && !$menu_e_p && $write_p } {
                 
                 lappend menu_list [list edit "table_tid=${table_tid}&mode=e"]
             }
