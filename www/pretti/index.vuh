@@ -3,8 +3,14 @@ ad_page_contract {
     @return a single view, if reference exists, otherwise a list.
 
 } {
-    
+
 } 
+
+# requires read_p
+set instance_id [ad_conn package_id]
+set user_id [ad_conn user_id]
+#set read_p [permission::permission_p -party_id $user_id -object_id $instance_id -privilege write]
+permission::require_permission -party_id $user_id -object_id $instance_id -privilege read
 
 #  set is_url  [ad_conn url]
 #  set e_url   [ad_conn extra_url]
@@ -19,41 +25,60 @@ set path_info  [ad_conn path_info]
 
 # get reference. If exists, pass parameter to a /packages/accounts-finance/www/pretti/view
 # where view.adp references a /lib/view-one and /lib/view-all which is also referenced in app.adp for consistent view output
+set reserved_pages_list [list "app" "index" "pretti/app" "pretti/index"]
+set reserved_page_idx [lsearch -exact $reserved_pages_list $path_info]
+if { reserved_page_idx > -1 } {
+    set http_status "500"
+    ns_log Warning "accounts-finance/www/index.vuh should not identify an existing reserved page. reserved_page_idx $reserved_page_idx"
+    ad_return_exception_page $http_status "Internal Error" "A page misconfiguration has created an error. Please contact site administrators."
+    ad_script_abort 
+} 
 
-# following code is example from ecommerce package.. 
-if { $jump_to_reserved_page > 0 } {
-    switch -exact -- $jump_to_reserved_page {
-        10 { rp_internal_redirect /packages/ecommerce/www/category-browse 
-             ns_log Notice "ecommerce/www/index.vuh: special case 10 category-browse"
-            }
-        30 { rp_internal_redirect /packages/ecommerce/www/index 
-             ns_log Notice "ecommerce/www/index.vuh: special case 30 index"
-            }
-        31 -
-        32 { rp_internal_redirect /packages/ecommerce/www/mailing-list-add 
-            ns_log Notice "ecommerce/www/index.vuh: special case 32 mailing-list-add" 
+set table_tid ""
+if { [qf_is_natural_number $path_info] } {
+    set table_tid $path_info
+    # is path_info a table_tid?
+    set table_stats_list [qss_table_stats $table_tid]
+    # name, title, comments, cell_count, row_count, template_id, flags, trashed, popularity, time last_modified, time created, user_id
+    if { [llength $table_stats_list > 1 ] } {
+        set http_status 200
+        set table_name [lindex $table_stats_list 0]
+        # set table_title [lindex $table_stats_list 1]
+        # set table_comments [lindex $table_stats_list 2]
+        set table_flags [lindex $table_stats_list 6]
+        set table_tid_from_name [qss_tid_from_name $table_name $instance_id $user_id]
+        if { $table_tid_from_name eq $table_tid } {
+            # table tid is the same as the table referenced by table name. redirect to keep 1 url per table:
+            set http_status 304
+            ad_return_redirect $table_name
+            ad_script_abort
         }
-        42 { rp_internal_redirect /packages/ecommerce/www/product
-            ns_log Notice "ecommerce/www/index.vuh: special case 42 product" 
-        }
-        44 -
-        45 -
-        46 { rp_internal_redirect /packages/ecommerce/www/review-submit
-            ns_log Notice "ecommerce/www/index.vuh: special case 46 review-submit"
-        }
-        default { 
-            # note product_id is never 1, since it is a subset of acs object_id. product_id needs to be positive to pass positive integer input verification
-            rp_form_put product_id 1
-            rp_internal_redirect /packages/ecommerce/www/product
-            ns_log Notice "ecommerce/www/index.vuh: special default case for misc ${path_info} reserved index list nbr ${jump_to_reserved_page} Returning product 404 page"
-        }
+        rp_form_put mode v table_id $table_id
+        rp_internal_redirect /packages/accounts-finance/www/pretti/index
+        ad_script_abort
+    } else {
+        # table_tid does not exist. provide a 404 error
+        set http_status 404
+        doc_return 404 text/html "
+      [ad_header "Product Not Found"]
+      <p>Please contact <a href=\"mailto:[ec_system_owner]\">[ec_system_owner]</a> if you think this is an error.</p>"
+        ns_log Notice "accounts-finance/www/pretti/index.vuh: table_tid $table_tid not found for user_id $user_id instance_id $instance_id"
+        ad_script_abort
     }
-} else {
+} 
 
-    ns_log Notice "packages/www/ecommerce/index.vuh: path requested and not found: jump to list index nbr ${jump_to_reserved_page} path_info: $path_info Returning product 404"
-    # note product_id is never 1, since it is a subset of acs object_id. product_id needs to be positive to pass positive integer input verification
-    set product_id 1
- #   rp_form_put product_id 1
-    rp_internal_redirect /packages/ecommerce/www/product
+# is path_info a table name?
+set table_tid [qss_tid_from_name $path_info $instance_id $user_id]
+
+if { $table_tid ne "" } {
+    set http_status 200
+    set table_name [lindex $table_stats_list 0]
+    # set table_title [lindex $table_stats_list 1]
+    # set table_comments [lindex $table_stats_list 2]
+    set table_flags [lindex $table_stats_list 6]
+    set table_tid_from_name [qss_tid_from_name $table_name $instance_id $user_id]
+    rp_form_put mode v table_id $table_id
+    rp_internal_redirect /packages/accounts-finance/www/pretti/index
     ad_script_abort
 }
+

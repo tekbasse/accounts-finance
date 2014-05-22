@@ -59,7 +59,7 @@ if { $form_posted } {
     # determine input completeness
     # form has modal inputs, so validation is a matter of cleansing data and verifying references
     set validated 0
-
+   
     switch -exact -- $mode {
         default {
             ns_log Notice "app.tcl.116:  validated for v"
@@ -73,14 +73,15 @@ if { $form_posted } {
         }
         
     }
-    # end switch
-
+    # end switch  
+ 
     if { $validated } {
-        # execute validated input
+        # This is a read-only page. no actions expected here.
         
-    # end validated input if
-
+        # execute validated input
+        # end validated input if
     }
+}
 
 switch -exact -- $mode {
     v {
@@ -93,7 +94,7 @@ switch -exact -- $mode {
         # set table_title [lindex $table_stats_list 1]
         # set table_comments [lindex $table_stats_list 2]
         set table_flags [lindex $table_stats_list 6]
-
+        
         # see lib/pretti-view-one and lib/pretti-menu1
     }
     default {
