@@ -130,5 +130,6 @@ if { $read_p } {
         set table_trashed_html [qss_list_of_lists_to_html_table $table_trashed_sorted_lists $table_tag_atts_list $cell_formating_list]
         #    append table_stats_html $table_trashed_html
     }
+
     
 }

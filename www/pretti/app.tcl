@@ -10,6 +10,7 @@ set delete_p [permission::permission_p -party_id $user_id -object_id $instance_i
 expr { srand([clock clicks]) }
 
 set table_default ""
+
 set mode_name "#accounts-finance.tables#"
 # tid = table_id
 array set input_array [list \
@@ -46,7 +47,7 @@ if { $form_posted } {
         unset input_array(y)
     }
 
-    # following is part of dynamic menu processing using form tags instead of url/GET..
+    # following is part of dynamic menu processing using form tags instead of url/GET.. and lib/pretti-menu1
     set input_array_idx_list [array names input_array]
     set modes_idx [lsearch -regexp $input_array_idx_list {z[vprnwctde][vc]?}]
     if { $modes_idx > -1 && $mode eq "p" } {
@@ -257,13 +258,6 @@ if { $form_posted } {
 
 }
 
-
-set menu_list [list [list App ""]]
-
-if { $write_p } {
-    lappend menu_list [list new mode=n]
-}
-
 switch -exact -- $mode {
     e {
         #  edit...... edit/form mode of current context
@@ -363,184 +357,23 @@ switch -exact -- $mode {
         #  view table(s) (standard, html page document/report)
         ns_log Notice "app.tcl.358:  mode = $mode ie. view table"
         set mode_name "#accounts-finance.view#"
-        if { [qf_is_natural_number $table_tid] && $write_p } {
-            lappend menu_list [list edit "table_tid=${table_tid}&mode=e"]
-            set menu_e_p 1
-        } else {
-            set menu_e_p 0
-        }
-        if { [qf_is_natural_number $table_tid] } {
-            set table_stats_list [qss_table_stats $table_tid]
-            # name, title, comments, cell_count, row_count, template_id, flags, trashed, popularity, time last_modified, time created, user_id
-            set table_name [lindex $table_stats_list 0]
-            set table_title [lindex $table_stats_list 1]
-            set table_comments [lindex $table_stats_list 2]
-            set table_flags [lindex $table_stats_list 6]
-            set table_html "<h3>${table_title} (${table_name})</h3>\n"
-            set table_lists [qss_table_read $table_tid]
-            set table_text [qss_lists_to_text $table_lists]
-            set table_tag_atts_list [list border 1 cellpadding 3 cellspacing 0]
-            append table_html [qss_list_of_lists_to_html_table $table_lists $table_tag_atts_list]
-            append table_html "<p>${table_comments}</p>"
-            if { !$menu_e_p && $write_p } {
+        set table_stats_list [qss_table_stats $table_tid]
+        # name, title, comments, cell_count, row_count, template_id, flags, trashed, popularity, time last_modified, time created, user_id
+        # set table_name [lindex $table_stats_list 0]
+        # set table_title [lindex $table_stats_list 1]
+        # set table_comments [lindex $table_stats_list 2]
+        set table_flags [lindex $table_stats_list 6]
 
-                lappend menu_list [list edit "table_tid=${table_tid}&mode=e"]
-            }
-        }
-        # if table is a scenario (meets minimum process requirements), add a process button to menu:
-        if { [qf_is_natural_number $table_tid] && $table_flags eq "p1" } {
-            lappend menu_list [list process "table_tid=${table_tid}&mode=c"]
-        }
+        # see lib/pretti-view-one and lib/pretti-menu1
     }
     default {
         # default includes v,p
         #  present...... presents a list of contexts/tables to choose from
         ns_log Notice "app.tcl.392:  mode = $mode ie. default"
-
-
-        # show tables
-        # sort by template_id, columns, and table_type (flags)
-
-        set table_ids_list [qss_tables $instance_id]
-        set table_stats_lists [list ]
-        set table_trashed_lists [list ]
-        set cell_formating_list [list ]
-        set tables_stats_lists [list ]
-        # we get the entire list, to sort it before processing
-        foreach table_id $table_ids_list {
-
-            set stats_mod_list [list $table_id]
-            set stats_orig_list [qss_table_stats $table_id]
-            foreach stat $stats_orig_list {
-                lappend stats_mod_list $stat
-            }
-            # table_id, name, title, comments, cell_count, row_count, template_id, flags, trashed, popularity, time last_modified, time created, user_id
-            lappend tables_stats_lists $stats_mod_list
-        }
-        set tables_stats_lists [lsort -index 6 -real $tables_stats_lists]
-        set select_label "#accounts-finance.select#"
-        set untrash_label "#accounts-finance.untrash#"
-        set trash_label "#accounts-finance.trash#"
-        set delete_label "#accounts-finance.delete#"
-        set table_titles_list [list "#accounts-finance.ID#" "#accounts-finance.Name#" "#accounts-finance.title#" "#accounts-finance.actions#" "#accounts-finance.comments#" "#accounts-finance.cells#" "#accounts-finance.rows#" "#accounts-finance.columns#" "#accounts-finance.type#" "#accounts-finance.last_modified#"]
-        array set table_types_list [list "p1" "#accounts-finance.scenario#" \
-                                        "p2" "#accounts-finance.activity#" \
-                                        "p3" "#accounts-finance.task#" \
-                                        "p4" "#accounts-finance.PRETTI_rows#" \
-                                        "p5" "#accounts-finance.PRETTI_cells#" ]
-        # table_id, name, title, comments, cell_count, row_count, template_id, flags, trashed, popularity, time last_modified, time created, user_id
-        foreach stats_orig_list $tables_stats_lists {
-            set stats_list [lrange $stats_orig_list 0 5]
-            set table_id [lindex $stats_list 0]
-            set name [lindex $stats_list 1]
-            set table_template_id [lindex $stats_orig_list 6]
-            set table_flags [lindex $stats_orig_list 7]
-            set trashed_p [lindex $stats_orig_list 8]
-            set last_modified [lindex $stats_orig_list 10]
-            if { $last_modified ne "" } {
-                set last_modified [lc_time_fmt $last_modified "%x %X"]
-                set last_modified [lc_time_system_to_conn $last_modified ]
-            }
-            set table_user_id [lindex $stats_orig_list 12]
-            # adding average col. length
-            set denominator [expr { [lindex $stats_list 5] } ]
-            if { $denominator > 0 } {
-                set col_length [expr { [lindex $stats_list 4] / ( [lindex $stats_list 5] * 1. ) } ]
-            } else {
-                set col_length 0.
-            }
-            lappend stats_list $col_length
-
-            # convert table row for use with html
-            # change name to an active link
-            # set table_ref_name table_tid
-            
-            # each $active_link becomes a separate form..
-
-            ## app can be setup to use name_link with a dedicated index.vuh
-            # set name_link "<a\ href=\"${name}\">${name}</a>"
-            set random [clock clicks]
-            set random "[clock clicks][string range [expr { rand() } ] 2 end]"
-            set form_id [qf_form action app method post id 20140420-$random hash_check 1]
-
-            ## if using name_link, comment out this next line:
-            qf_input type submit value $select_label name "zv" class btn
-
-            qf_input type hidden value $table_id name table_tid
-            if { ( $admin_p || $table_user_id == $user_id ) && $trashed_p == 1 } {
-                #append active_link " \[<a href=\"app?${table_ref_name}=${table_id}&mode=t\">${untrash_label}</a>\]"
-                qf_input type submit value $untrash_label name "zt" class btn
-            } elseif { $table_user_id == $user_id || $admin_p } {
-                #append active_link " \[<a href=\"app?${table_ref_name}=${table_id}&mode=t\">${trash_label}</a>\]"
-                qf_input type submit value $trash_label name "zt" class btn
-            } 
-            if { $delete_p && $trashed_p == 1 } {
-                #append active_link " \[<a href=\"app?${table_ref_name}=${table_id}&mode=d\">${delete_label}</a>\]"
-                qf_input type submit value $delete_label name "zd" class btn
-            } 
-            qf_close form_id $form_id
-            set active_link [qf_read form_id $form_id]
-            #set stats_list [lreplace $stats_list 1 1 $name_link]
-            set stats_list [linsert $stats_list 3 $active_link]
-            lappend stats_list $table_flags $last_modified
-            if { $trashed_p == 1 } {
-                lappend table_trashed_lists $stats_list
-            } else {
-                lappend table_stats_lists $stats_list
-            }
-
-        }
-        # sort for now. Later, just get table_tables with same template_id
-        set table_stats_sorted_lists $table_stats_lists
-        set table_stats_sorted_lists [linsert $table_stats_sorted_lists 0 $table_titles_list ]
-        set table_tag_atts_list [list border 1 cellspacing 0 cellpadding 3]
-        set table_stats_html [qss_list_of_lists_to_html_table $table_stats_sorted_lists $table_tag_atts_list $cell_formating_list]
-        # trashed
-        if { [llength $table_trashed_lists] > 0 && $write_p } {
-            set table_trashed_sorted_lists $table_trashed_lists
-            set table_trashed_sorted_lists [linsert $table_trashed_sorted_lists 0 $table_titles_list ]
-            set table_tag_atts_list [list border 1 cellspacing 0 cellpadding 3]
-
-            set table_trashed_html "<h3>#accounts-finance.trashed# #accounts-finance.tables#</h3>\n"
-            append table_trashed_html [qss_list_of_lists_to_html_table $table_trashed_sorted_lists $table_tag_atts_list $cell_formating_list]
-            append table_stats_html $table_trashed_html
-        }
+        # see lib/pretti-view and lib/pretti-menu1
     }
 }
 # end of switches
-
-set menu_html ""
-array unset form_input_arr
-set form_id [qf_form action app method post id 20140417 hash_check 1]
-foreach item_list $menu_list {
-    set label [lindex $item_list 0]
-    set url [lindex $item_list 1]
-    set url_list [split $url "&="]
-    set name1 ""
-    set name2 ""
-    foreach {val1 val2} $url_list {
-        # buttons reverse the use of name and value for mode and next_mode
-        if { $val1 eq "mode" } {
-            set value "#accounts-finance.${label}#"
-            set name1 $val2
-        } elseif { $val1 eq "next_mode" } {
-            set value "#accounts-finance.${label}#"
-            set name2 $val2
-        } else {
-            set form_input_arr($val1) $val2
-        }
-    }
-    if { $name1 ne "" } {
-        set name "z${name1}${name2}"
-        qf_input form_id $form_id type submit value $value name $name class btn
-    }
-#    append menu_html "<a href=\"app?${url}\">${label}</a>&nbsp;"
-}
-foreach {name value} [array get form_input_arr] {
-    qf_input form_id $form_id type hidden value $value name $name label ""
-}
-qf_close form_id $form_id
-set menu_html [qf_read form_id $form_id]
 
 set user_message_html ""
 foreach user_message $user_message_list {
