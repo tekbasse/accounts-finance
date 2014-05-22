@@ -2,8 +2,18 @@
     <property name="title">@title;noquote@</property>
   <property name="context">@context;noquote@</property>
 <h1>@title@</h1>
-<if @menu_html@ not nil>
-@menu_html;noquote@
+
+<if @table_tid@ not nil>
+  <include src="/packages/accounts-finance/lib/pretti-menu1" mode="@mode@" form_action_url="app" instance_id="@instance_id@" app_name="@app_name" table_tid="@table_tid@" table_flags="@table_flags">
+</if><else>
+  <include src="/packages/accounts-finance/lib/pretti-menu1" mode="@mode@" form_action_url="app" instance_id="@instance_id@" app_name="@app_name">
+</else>
+
+<if 1 nil>
+<p>this option turned off for now.</p>
+  <if @menu_html@ not nil>
+    @menu_html;noquote@
+  </if>
 </if>
 
 <if @user_message_html@ not nil>

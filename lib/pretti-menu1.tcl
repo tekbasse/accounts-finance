@@ -8,15 +8,15 @@ if { ![info exists $instance_id] } {
     set instance_id [ad_conn package_id]
 }
 set user_id [ad_conn user_id]
-set read_p [permission::permission_p -party_id $user_id -object_id $package_id -privilege read]
+set read_p [permission::permission_p -party_id $user_id -object_id $instance_id -privilege read]
 if { $read_p } {
-    set write_p [permission::permission_p -party_id $user_id -object_id $package_id -privilege write]
+    set write_p [permission::permission_p -party_id $user_id -object_id $instance_id -privilege write]
     
     set menu_list [list [list $app_name ""]]
     
     if { $write_p } {
-        set admin_p [permission::permission_p -party_id $user_id -object_id $package_id -privilege admin]
-        set delete_p [permission::permission_p -party_id $user_id -object_id $package_id -privilege delete]
+        set admin_p [permission::permission_p -party_id $user_id -object_id $instance_id -privilege admin]
+        set delete_p [permission::permission_p -party_id $user_id -object_id $instance_id -privilege delete]
         if { ![info exists form_action_url] } {
             set form_action_url app
         }
