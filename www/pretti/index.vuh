@@ -1,0 +1,59 @@
+ad_page_contract {
+    
+    @return a single view, if reference exists, otherwise a list.
+
+} {
+    
+} 
+
+#  set is_url  [ad_conn url]
+#  set e_url   [ad_conn extra_url]
+#  set f       [ad_conn file]
+set path_info  [ad_conn path_info]
+# path_info doesn not contain the stuff after a ? in a url, at least in some cases
+#ns_log Notice "path_info $path_info"
+# if path_info contains no /, lookup f(path_info) as ecds_product_id_site_url_map.site_url
+#if { [string match "*.html" $path_info] } {
+#    set product_id [ecds_product_id_from_path $path_info]
+#}
+
+# get reference. If exists, pass parameter to a /packages/accounts-finance/www/pretti/view
+# where view.adp references a /lib/view-one and /lib/view-all which is also referenced in app.adp for consistent view output
+
+# following code is example from ecommerce package.. 
+if { $jump_to_reserved_page > 0 } {
+    switch -exact -- $jump_to_reserved_page {
+        10 { rp_internal_redirect /packages/ecommerce/www/category-browse 
+             ns_log Notice "ecommerce/www/index.vuh: special case 10 category-browse"
+            }
+        30 { rp_internal_redirect /packages/ecommerce/www/index 
+             ns_log Notice "ecommerce/www/index.vuh: special case 30 index"
+            }
+        31 -
+        32 { rp_internal_redirect /packages/ecommerce/www/mailing-list-add 
+            ns_log Notice "ecommerce/www/index.vuh: special case 32 mailing-list-add" 
+        }
+        42 { rp_internal_redirect /packages/ecommerce/www/product
+            ns_log Notice "ecommerce/www/index.vuh: special case 42 product" 
+        }
+        44 -
+        45 -
+        46 { rp_internal_redirect /packages/ecommerce/www/review-submit
+            ns_log Notice "ecommerce/www/index.vuh: special case 46 review-submit"
+        }
+        default { 
+            # note product_id is never 1, since it is a subset of acs object_id. product_id needs to be positive to pass positive integer input verification
+            rp_form_put product_id 1
+            rp_internal_redirect /packages/ecommerce/www/product
+            ns_log Notice "ecommerce/www/index.vuh: special default case for misc ${path_info} reserved index list nbr ${jump_to_reserved_page} Returning product 404 page"
+        }
+    }
+} else {
+
+    ns_log Notice "packages/www/ecommerce/index.vuh: path requested and not found: jump to list index nbr ${jump_to_reserved_page} path_info: $path_info Returning product 404"
+    # note product_id is never 1, since it is a subset of acs object_id. product_id needs to be positive to pass positive integer input verification
+    set product_id 1
+ #   rp_form_put product_id 1
+    rp_internal_redirect /packages/ecommerce/www/product
+    ad_script_abort
+}
