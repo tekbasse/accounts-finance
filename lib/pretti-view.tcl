@@ -1,17 +1,29 @@
+# accounts-finance/lib/pretti-view.tcl
+# requires: instance_id form_action_attr
 
-#  present...... presents a list of contexts/tables to choose from
+if { [info exists app_url] } {
+    set form_action_attr "app"
+}
+
+set user_id [ad_conn user_id]
+set read_p [permission::permission_p -party_id $user_id -object_id $instance_id -privilege read]
+set write_p [permission::permission_p -party_id $user_id -object_id $instance_id -privilege write]
+set admin_p [permission::permission_p -party_id $user_id -object_id $instance_id -privilege admin]
+set delete_p [permission::permission_p -party_id $user_id -object_id $instance_id -privilege delete]
+
+#  presents a list of contexts/tables to choose from
 
 # show tables
 # sort by template_id, columns, and table_type (flags)
 
-set table_ids_list [qss_tables $package_id]
+set table_ids_list [qss_tables $instance_id]
 set table_stats_lists [list ]
 set table_trashed_lists [list ]
 set cell_formating_list [list ]
 set tables_stats_lists [list ]
-# we get the entire list, to sort it before processing
+
+# get the entire list, to sort it before processing
 foreach table_id $table_ids_list {
-    
     set stats_mod_list [list $table_id]
     set stats_orig_list [qss_table_stats $table_id]
     foreach stat $stats_orig_list {
@@ -20,6 +32,7 @@ foreach table_id $table_ids_list {
     # table_id, name, title, comments, cell_count, row_count, template_id, flags, trashed, popularity, time last_modified, time created, user_id
     lappend tables_stats_lists $stats_mod_list
 }
+
 set tables_stats_lists [lsort -index 6 -real $tables_stats_lists]
 set select_label "#accounts-finance.select#"
 set untrash_label "#accounts-finance.untrash#"
@@ -32,6 +45,7 @@ array set table_types_list [list "p1" "#accounts-finance.scenario#" \
                                 "p4" "#accounts-finance.PRETTI_rows#" \
                                 "p5" "#accounts-finance.PRETTI_cells#" ]
 # table_id, name, title, comments, cell_count, row_count, template_id, flags, trashed, popularity, time last_modified, time created, user_id
+
 foreach stats_orig_list $tables_stats_lists {
     set stats_list [lrange $stats_orig_list 0 5]
     set table_id [lindex $stats_list 0]
@@ -60,7 +74,7 @@ foreach stats_orig_list $tables_stats_lists {
     
     # each $active_link becomes a separate form..
     
-    set form_id [qf_form action app method post id 20140420-[random] hash_check 1]
+    set form_id [qf_form action $form_action_attr method post id 20140420-[random] hash_check 1]
     
     ## if using name_link, comment out this next line:
     qf_input type submit value $select_label name "zv" class btn
@@ -89,18 +103,21 @@ foreach stats_orig_list $tables_stats_lists {
     }
     
 }
+
 # sort for now. Later, just get table_tables with same template_id
 set table_stats_sorted_lists $table_stats_lists
 set table_stats_sorted_lists [linsert $table_stats_sorted_lists 0 $table_titles_list ]
 set table_tag_atts_list [list border 1 cellspacing 0 cellpadding 3]
 set table_stats_html [qss_list_of_lists_to_html_table $table_stats_sorted_lists $table_tag_atts_list $cell_formating_list]
+
+
 # trashed
 if { [llength $table_trashed_lists] > 0 && $write_p } {
     set table_trashed_sorted_lists $table_trashed_lists
     set table_trashed_sorted_lists [linsert $table_trashed_sorted_lists 0 $table_titles_list ]
     set table_tag_atts_list [list border 1 cellspacing 0 cellpadding 3]
     
-    set table_trashed_html "<h3>#accounts-finance.trashed# #accounts-finance.tables#</h3>\n"
-    append table_trashed_html [qss_list_of_lists_to_html_table $table_trashed_sorted_lists $table_tag_atts_list $cell_formating_list]
-    append table_stats_html $table_trashed_html
+    #set table_trashed_html "<h3>#accounts-finance.trashed# #accounts-finance.tables#</h3>\n"
+    set table_trashed_html [qss_list_of_lists_to_html_table $table_trashed_sorted_lists $table_tag_atts_list $cell_formating_list]
+    #    append table_stats_html $table_trashed_html
 }
