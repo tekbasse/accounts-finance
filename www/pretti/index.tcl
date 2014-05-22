@@ -31,7 +31,7 @@ set user_message_list [list ]
 
 
 # get previous form inputs if they exist
-set form_posted [qf_get_inputs_as_array input_array hash_check 1]
+set form_posted [qf_get_inputs_as_array input_array]
 set mode $input_array(mode)
 set next_mode $input_array(next_mode)
 
