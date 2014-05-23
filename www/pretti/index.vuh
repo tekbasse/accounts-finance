@@ -49,8 +49,9 @@ if { [qf_is_natural_number $path_info] } {
         set table_tid_from_name [qss_tid_from_name $table_name $instance_id $user_id]
         if { $table_tid_from_name eq $table_tid } {
             # table tid is the same as the table referenced by table name. redirect to keep 1 url per table:
-            set http_status 304
-            ad_return_redirect $table_name
+            set http_status 307
+            # 307 moved temporarily 
+            ad_returnredirect $table_name
             ad_script_abort
         }
         rp_form_put mode v 
