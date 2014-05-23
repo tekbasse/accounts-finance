@@ -1,13 +1,7 @@
 <master>
-    <property name="title">@title;noquote@</property>
+  <property name="title">@title;noquote@</property>
   <property name="context">@context;noquote@</property>
 <h1>@title@</h1>
-
-<if @table_tid@ not nil>
-  <include src="/packages/accounts-finance/lib/pretti-menu1" mode="@mode@" form_action_url="app" instance_id="@instance_id@" app_name="@app_name" table_tid="@table_tid@" table_flags="@table_flags@">
-</if><else>
-  <include src="/packages/accounts-finance/lib/pretti-menu1" mode="@mode@" form_action_url="app" instance_id="@instance_id@" app_name="@app_name">
-</else>
 
 <if @user_message_html@ not nil>
 <ul>
@@ -15,12 +9,19 @@
 </ul>
 </if>
 
+<if @table_tid@ not nil>
+  <include src="/packages/accounts-finance/lib/pretti-menu2" mode="@mode@" form_action_url="app" instance_id="@instance_id@" app_name="@app_name" table_tid="@table_tid@" table_flags="@table_flags@" trashed_p="@trashed_p@" read_p="@read_p@" write_p="@write_p@" delete_p="@delete_p@" admin_p="@admin_p@">
+ </if><else>
+  <include src="/packages/accounts-finance/lib/pretti-menu2" mode="@mode@" form_action_url="app" instance_id="@instance_id@" app_name="@app_name" read_p="@read_p@" write_p="@write_p@" delete_p="@delete_p@" admin_p="@admin_p@">
+ </else>
+
+ <if @mode@ eq "p">
+  <include src="/packages/accounts-finance/lib/pretti-view2" instance_id="@instance_id@" form_action_attr="app">
+ </if>
+
+</form> <!-- from pretti-menu2 -->
+
 <if @mode@ eq "v">
   <include src="/packages/accounts-finance/lib/pretti-one-view" instance_id="@instance_id@" table_tid="@table_tid@" table_flags="@table_flags@">
 </if>
-
-<if @mode@ eq "p">
-  <include src="/packages/accounts-finance/lib/pretti-view" instance_id="@instance_id@" form_action_attr="app">
-</if>
-
 

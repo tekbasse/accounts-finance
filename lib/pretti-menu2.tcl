@@ -1,3 +1,4 @@
+# based on
 # accounts-finance/lib/pretti-menu1.tcl
 # requires: mode form_action_url
 # optional: instance_id app_name 
@@ -9,31 +10,56 @@ if { ![info exists instance_id] } {
 }
 if { ![info exists table_tid] } {
     set table_tid ""
+    set trashed_p 0
 }
 
-set user_id [ad_conn user_id]
-set read_p [permission::permission_p -party_id $user_id -object_id $instance_id -privilege read]
-if { $read_p } {
-    set write_p [permission::permission_p -party_id $user_id -object_id $instance_id -privilege write]
-    
-    set menu_list [list [list $app_name ""]]
-    
-    if { $write_p } {
-        set admin_p [permission::permission_p -party_id $user_id -object_id $instance_id -privilege admin]
-        set delete_p [permission::permission_p -party_id $user_id -object_id $instance_id -privilege delete]
-        if { ![info exists form_action_url] } {
-            set form_action_url app
-        }
+if { ![info exists user_created_p] } {
+    set user_created_p 0
+}
 
-        lappend menu_list [list new mode=n]
+if { ![info exists app_name] } {
+    set app_name "App"
+}
+
+if { ![info exists read_p] || ![info exists write_p] || ![info exists admin_p] || ![info exists delete_p] } {
+    set user_id [ad_conn user_id]
+    set read_p [permission::permission_p -party_id $user_id -object_id $instance_id -privilege read]
+    if { $read_p } {
+        # Due to auto revisioning, writing is creating.
+        set write_p [permission::permission_p -party_id $user_id -object_id $instance_id -privilege write]
+         if { $write_p } {
+            set delete_p [permission::permission_p -party_id $user_id -object_id $instance_id -privilege delete]
+            if { $delete_p } {
+                set admin_p [permission::permission_p -party_id $user_id -object_id $instance_id -privilege admin]
+            } else {
+                set admin_p 0
+            }
+        } else {
+            set admin_p 0
+            set delete_p 0
+        }
     } else {
+        set write_p 0
         set admin_p 0
         set delete_p 0
-        if { ![info exists app_name] } {
-            set app_name "App"
-        }
     }
-    
+}
+
+set menu_html ""
+set menu_list [list [list $app_name ""]]
+
+if { $write_p || $user_created_p } {
+    #set select_label "#accounts-finance.select#"
+    set untrash_label "#accounts-finance.untrash#"
+    set trash_label "#accounts-finance.trash#"
+    set delete_label "#accounts-finance.delete#"
+
+    if { ![info exists form_action_url] } {
+        set form_action_url app
+    }
+    if { $write_p } {
+        lappend menu_list [list new mode=n]
+    }
     switch -exact -- $mode {
         e {
             set mode_name "#accounts-finance.edit#"
@@ -56,20 +82,30 @@ if { $read_p } {
             #  view table(s) (standard, html page document/report)
             ns_log Notice "accounts-finance/lib/pretti-menu1.tcl.358:  mode = $mode ie. view table"
             set mode_name "#accounts-finance.view#"
-            if { $table_tid ne "" && [qf_is_natural_number $table_tid] && $write_p } {
-                lappend menu_list [list edit "table_tid=${table_tid}&mode=e"]
-                set menu_e_p 1
-            } else {
-                set menu_e_p 0
-            }
-            if { $table_tid ne "" && !$menu_e_p && $write_p } {
-                
+            set tid_is_num_p [qf_is_natural_number $table_tid]
+            if { $table_tid ne "" && $tid_is_num_p && ( $write_p || $user_created_p ) } {
                 lappend menu_list [list edit "table_tid=${table_tid}&mode=e"]
             }
             # if table is a scenario (meets minimum process requirements), add a process button to menu:
-            if { [qf_is_natural_number $table_tid] && [info exists table_flags] && $table_flags eq "p1" } {
+            if { $tid_is_num_p && [info exists table_flags] && $table_flags eq "p1" && $write_p } {
                 lappend menu_list [list process "table_tid=${table_tid}&mode=c"]
             }
+
+            if { ( $write_p || $user_created_p )  } {
+                if { $trashed_p } {
+                    #append active_link " \[<a href=\"app?${table_ref_name}=${table_id}&mode=t\">${untrash_label}</a>\]"
+                    #qf_input type submit value $untrash_label name "zt" class btn
+                    lappend menu_list [list untrash "table_tid=${table_tid}&mode=zt"]
+                    if { $admin_p } {
+                        lappend menu_list [list delete "table_tid=${table_tid}&mode=zd"]
+                    }
+               } else {
+                    #append active_link " \[<a href=\"app?${table_ref_name}=${table_id}&mode=t\">${trash_label}</a>\]"
+                    #qf_input type submit value $trash_label name "zt" class btn
+                    lappend menu_list [list trash "table_tid=${table_tid}&mode=zt"]
+                }
+            } 
+
         }
         default {
             # default includes v,p
@@ -79,8 +115,7 @@ if { $read_p } {
     }
     # end of switches
     
-    set menu_html ""
-
+    
     set form_id [qf_form action $form_action_url method post id 20140417 hash_check 1]
     foreach item_list $menu_list {
         set label [lindex $item_list 0]
@@ -109,6 +144,7 @@ if { $read_p } {
     foreach {name value} [array get form_input_arr] {
         qf_input form_id $form_id type hidden value $value name $name label ""
     }
-    qf_close form_id $form_id
+
+#    qf_close form_id $form_id
     set menu_html [qf_read form_id $form_id]
 }

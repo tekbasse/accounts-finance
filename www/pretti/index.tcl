@@ -3,7 +3,25 @@
 
 set instance_id [ad_conn package_id]
 set user_id [ad_conn user_id]
-set read_p [permission::permission_p -party_id $user_id -object_id $instance_id -privilege write]
+set read_p [permission::permission_p -party_id $user_id -object_id $instance_id -privilege read]
+if { $read_p } {
+    set write_p [permission::permission_p -party_id $user_id -object_id $instance_id -privilege write]
+    if { $write_p } {
+        set delete_p [permission::permission_p -party_id $user_id -object_id $instance_id -privilege delete]
+        if { $delete_p } {
+            set admin_p [permission::permission_p -party_id $user_id -object_id $instance_id -privilege admin]
+        } else {
+            set admin_p 0
+        }
+    } else {
+        set admin_p 0
+        set delete_p 0
+    }
+} else {
+    set write_p 0
+    set admin_p 0
+    set delete_p 0
+}
 
 set table_default ""
 
@@ -94,7 +112,7 @@ switch -exact -- $mode {
         # set table_title [lindex $table_stats_list 1]
         # set table_comments [lindex $table_stats_list 2]
         set table_flags [lindex $table_stats_list 6]
-        
+        set trashed_p [lindex $table_stats_list 7]
         # see lib/pretti-view-one and lib/pretti-menu1
     }
     default {
