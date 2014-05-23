@@ -8,8 +8,9 @@
 if { ![info exists instance_id] } {
     set instance_id [ad_conn package_id]
 }
-if { ![info exists table_tid] } {
+if { ![info exists table_flags] } {
     set table_tid ""
+    set table_flags ""
     set trashed_p 0
 }
 
@@ -95,14 +96,14 @@ if { $write_p || $user_created_p } {
                 if { $trashed_p } {
                     #append active_link " \[<a href=\"app?${table_ref_name}=${table_id}&mode=t\">${untrash_label}</a>\]"
                     #qf_input type submit value $untrash_label name "zt" class btn
-                    lappend menu_list [list untrash "table_tid=${table_tid}&mode=zt"]
+                    lappend menu_list [list untrash "table_tid=${table_tid}&mode=t"]
                     if { $admin_p } {
-                        lappend menu_list [list delete "table_tid=${table_tid}&mode=zd"]
+                        lappend menu_list [list delete "table_tid=${table_tid}&mode=d"]
                     }
                } else {
                     #append active_link " \[<a href=\"app?${table_ref_name}=${table_id}&mode=t\">${trash_label}</a>\]"
                     #qf_input type submit value $trash_label name "zt" class btn
-                    lappend menu_list [list trash "table_tid=${table_tid}&mode=zt"]
+                    lappend menu_list [list trash "table_tid=${table_tid}&mode=t"]
                 }
             } 
 

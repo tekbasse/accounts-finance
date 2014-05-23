@@ -4,10 +4,10 @@
 <h1>@title@</h1>
 
 <if @table_tid@ not nil>
-  <include src="/packages/accounts-finance/lib/pretti-menu1" mode="@mode@" form_action_url="app" instance_id="@instance_id@" app_name="@app_name" table_tid="@table_tid@" table_flags="@table_flags@">
-</if><else>
-  <include src="/packages/accounts-finance/lib/pretti-menu1" mode="@mode@" form_action_url="app" instance_id="@instance_id@" app_name="@app_name">
-</else>
+  <include src="/packages/accounts-finance/lib/pretti-menu2" mode="@mode@" form_action_url="app" instance_id="@instance_id@" app_name="@app_name" table_tid="@table_tid@" table_flags="@table_flags@" trashed_p="@trashed_p@" read_p="@read_p@" write_p="@write_p@" delete_p="@delete_p@" admin_p="@admin_p@">
+ </if><else>
+  <include src="/packages/accounts-finance/lib/pretti-menu2" mode="@mode@" form_action_url="app" instance_id="@instance_id@" app_name="@app_name" read_p="@read_p@" write_p="@write_p@" delete_p="@delete_p@" admin_p="@admin_p@">
+ </else>
 
 <if 1 nil>
 <p>this option turned off for now.</p>
@@ -49,7 +49,7 @@
 @computation_report_html;noquote@
 </if>
 <if @mode@ eq "p">
-  <include src="/packages/accounts-finance/lib/pretti-view" instance_id="@instance_id@" form_action_attr="app">
+  <include src="/packages/accounts-finance/lib/pretti-view2" instance_id="@instance_id@" form_action_attr="app">
 </if><else>
  <if @table_stats_html@ not nil>
   @table_stats_html;noquote@

@@ -3,9 +3,26 @@
 
 set instance_id [ad_conn package_id]
 set user_id [ad_conn user_id]
-set write_p [permission::permission_p -party_id $user_id -object_id $instance_id -privilege write]
-set admin_p [permission::permission_p -party_id $user_id -object_id $instance_id -privilege admin]
-set delete_p [permission::permission_p -party_id $user_id -object_id $instance_id -privilege delete]
+set read_p [permission::permission_p -party_id $user_id -object_id $instance_id -privilege read]
+if { $read_p } {
+    # Due to auto revisioning, writing is creating.
+    set write_p [permission::permission_p -party_id $user_id -object_id $instance_id -privilege write]
+    if { $write_p } {
+        set delete_p [permission::permission_p -party_id $user_id -object_id $instance_id -privilege delete]
+        if { $delete_p } {
+            set admin_p [permission::permission_p -party_id $user_id -object_id $instance_id -privilege admin]
+        } else {
+            set admin_p 0
+        }
+    } else {
+        set admin_p 0
+        set delete_p 0
+    }
+} else {
+    set write_p 0
+    set admin_p 0
+    set delete_p 0
+}
 # randmize rand with seed from clock
 expr { srand([clock clicks]) }
 
@@ -219,8 +236,8 @@ if { $form_posted } {
                 }
 
             }
-
-
+            # since table_tid is deleted, remove it from any remaining mode activity
+            unset table_tid
             set mode $next_mode
             set next_mode ""
         }
@@ -232,6 +249,7 @@ if { $form_posted } {
             if { [qf_is_natural_number $table_tid] } {
                 qss_table_delete $table_tid
             }
+            unset table_tid
             set mode $next_mode
             set next_mode ""
         }
@@ -249,6 +267,7 @@ if { $form_posted } {
                 }
                 qss_table_trash $trash $table_tid
             }
+            unset table_tid
             set mode "p"
             set next_mode ""
         }
