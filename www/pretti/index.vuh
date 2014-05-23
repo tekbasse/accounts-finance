@@ -27,10 +27,10 @@ set path_info  [ad_conn path_info]
 # where view.adp references a /lib/view-one and /lib/view-all which is also referenced in app.adp for consistent view output
 set reserved_pages_list [list "app" "index" "pretti/app" "pretti/index"]
 set reserved_page_idx [lsearch -exact $reserved_pages_list $path_info]
-if { reserved_page_idx > -1 } {
+if { $reserved_page_idx > -1 } {
     set http_status "500"
-    ns_log Warning "accounts-finance/www/index.vuh should not identify an existing reserved page. reserved_page_idx $reserved_page_idx"
-    ad_return_exception_page $http_status "Internal Error" "A page misconfiguration has created an error. Please contact site administrators."
+    ns_log Warning "accounts-finance/www/index.vuh.32 should not identify an existing reserved page. reserved_page_idx $reserved_page_idx"
+    ad_return_exception_page $http_status "Internal Error" "A page misconfiguration has created a system error. Please contact site administrators."
     ad_script_abort 
 } 
 
@@ -40,7 +40,7 @@ if { [qf_is_natural_number $path_info] } {
     # is path_info a table_tid?
     set table_stats_list [qss_table_stats $table_tid]
     # name, title, comments, cell_count, row_count, template_id, flags, trashed, popularity, time last_modified, time created, user_id
-    if { [llength $table_stats_list > 1 ] } {
+    if { [llength $table_stats_list ] > 1 } {
         set http_status 200
         set table_name [lindex $table_stats_list 0]
         # set table_title [lindex $table_stats_list 1]
@@ -53,32 +53,45 @@ if { [qf_is_natural_number $path_info] } {
             ad_return_redirect $table_name
             ad_script_abort
         }
-        rp_form_put mode v table_id $table_id
+        rp_form_put mode v 
+        rp_form_put table_tid $table_tid
         rp_internal_redirect /packages/accounts-finance/www/pretti/index
         ad_script_abort
     } else {
         # table_tid does not exist. provide a 404 error
         set http_status 404
-        doc_return 404 text/html "
-      [ad_header "Product Not Found"]
-      <p>Please contact <a href=\"mailto:[ec_system_owner]\">[ec_system_owner]</a> if you think this is an error.</p>"
-        ns_log Notice "accounts-finance/www/pretti/index.vuh: table_tid $table_tid not found for user_id $user_id instance_id $instance_id"
-        ad_script_abort
     }
 } 
 
 # is path_info a table name?
 set table_tid [qss_tid_from_name $path_info $instance_id $user_id]
+ns_log Notice "accounts-finance/www/index.vuh.73 path_info '$path_info' table_tid $table_tid"
 
 if { $table_tid ne "" } {
     set http_status 200
-    set table_name [lindex $table_stats_list 0]
-    # set table_title [lindex $table_stats_list 1]
-    # set table_comments [lindex $table_stats_list 2]
-    set table_flags [lindex $table_stats_list 6]
-    set table_tid_from_name [qss_tid_from_name $table_name $instance_id $user_id]
-    rp_form_put mode v table_id $table_id
-    rp_internal_redirect /packages/accounts-finance/www/pretti/index
-    ad_script_abort
+    set table_stats_list [qss_table_stats $table_tid]
+    if { [llength $table_stats_list ] > 1 } {
+        set table_name [lindex $table_stats_list 0]
+        # set table_title [lindex $table_stats_list 1]
+        # set table_comments [lindex $table_stats_list 2]
+        set table_flags [lindex $table_stats_list 6]
+        set table_tid_from_name [qss_tid_from_name $table_name $instance_id $user_id]
+        rp_form_put mode v
+        rp_form_put table_tid $table_tid
+        rp_internal_redirect /packages/accounts-finance/www/pretti/index
+        ad_script_abort
+    } else {
+        set http_status 404
+    }
+} else {
+    # table_tid does not exist. provide a 404 error
+    set http_status 404
 }
 
+if { $http_status eq "404" } {
+    doc_return 404 text/html "
+      [ad_header "Page Not Found"]
+      <h3>404 Page not found</h3><p>Please contact system administrator at <a href=\"mailto:[ad_system_owner]\">[ad_system_owner]</a> if you think this is a system error.</p>"
+    ns_log Notice "accounts-finance/www/pretti/index.vuh.66: table_tid '$table_tid' not found for user_id $user_id instance_id $instance_id"
+    ad_script_abort
+}
