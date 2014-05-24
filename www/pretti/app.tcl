@@ -66,6 +66,7 @@ if { $form_posted } {
         unset input_array(y)
     }
 
+
     # following is part of dynamic menu processing using form tags instead of url/GET.. and lib/pretti-menu1
     set input_array_idx_list [array names input_array]
     set modes_idx [lsearch -regexp $input_array_idx_list {z[vprnwctde][vc]?}]
@@ -94,20 +95,41 @@ if { $form_posted } {
             } 
         }
         d {
-            set validated 1
-            if { ( ![qf_is_natural_number $table_tid] ) || !$delete_p } {
+            set validated 0
+            # Form has to handle multiple table_tid's from checkboxes.
+            set tid_name_list [array names input_array -regexp {tid_[0-9]+} ]
+            set tid_list [list ]
+            foreach tid $tid_list {
+                if { [qf_is_natural_number $input_array($tid)] } {
+                    lappend tid_list $input_array($tid)
+                }
+            }
+            if { ( [qf_is_natural_number $table_tid] || [llength $tid_list] > 0 ) && $delete_p } {
+                set validated 1
+            } else {
                 ns_log Notice "accounts-finance/www/pretti/app.tcl table_tid '${table_tid}' or delete_p $delete_p is not valid for mode d"
                 set mode "p"
                 set next_mode ""
-            } 
+            }
         }
         t {
-            set validated 1
-            if { ![qf_is_natural_number $table_tid] } {
+            set validated 0
+            # Form has to handle multiple table_tid's from checkboxes.
+            set tid_name_list [array names input_array -regexp {tid_[0-9]+} ]
+            set tid_list [list ]
+            foreach tid $tid_list {
+                if { [qf_is_natural_number $input_array($tid)] } {
+                    lappend tid_list $input_array($tid)
+                }
+            }
+            # can only check for minimum permission at this point. ie $create_p for trashable self-created content
+            if { ( [qf_is_natural_number $table_tid] || [llength $tid_list] > 0 ) && $create_p ) } {
+                set validated 1
+            } else {
                 ns_log Notice "accounts-finance/www/pretti/app.tcl.86: table_tid '${table_tid}' is not valid for mode t"
                 set mode "p"
                 set next_mode ""
-            } 
+            }
         }
         c {
             set validated 1
@@ -250,8 +272,13 @@ if { $form_posted } {
             #requires table_tid
             # delete table_tid 
             if { [qf_is_natural_number $table_tid] } {
+                lappend $tid_list $table_tid
+            }
+            foreach tid $tid_list {
+                # permissions checked for each table_tid in qss_table_delete
                 qss_table_delete $table_tid
             }
+            # unset to not trigger wrong state in adp include logic
             unset table_tid
             set mode $next_mode
             set next_mode ""
@@ -260,8 +287,12 @@ if { $form_posted } {
             #  trash
             ns_log Notice "accounts-finance/www/pretti/app.tcl.233:  mode = trash"
             #requires table_tid
-            # delete table_tid 
-            if { [qf_is_natural_number $table_tid] && $write_p } {
+            # trash table_tid 
+            if { [qf_is_natural_number $table_tid] } {
+                lappend $tid_list $table_tid
+            }
+            foreach tid $tid_list {
+                # permissions checked for each table_tid in qss_table_trash
                 set trashed_p [lindex [qss_table_stats $table_tid] 7]
                 if { $trashed_p == 1 } {
                     set trash 0
@@ -270,11 +301,11 @@ if { $form_posted } {
                 }
                 qss_table_trash $trash $table_tid
             }
+            # unset to not trigger wrong state in adp include logic
             unset table_tid
             set mode "p"
             set next_mode ""
         }
-        
     }
     # end validated input if
 
