@@ -1,8 +1,11 @@
 # accounts-finance/lib/pretti-view.tcl
 # requires: instance_id form_action_attr
 
-if { [info exists app_url] } {
+if { ![info exists app_url] } {
     set form_action_attr "app"
+}
+if { ![info exists trash_folder_p] } {
+    set trash_folder_p 0
 }
 
 set user_id [ad_conn user_id]
@@ -11,6 +14,7 @@ set read_p [permission::permission_p -party_id $user_id -object_id $instance_id 
 #  presents a list of contexts/tables to choose from
 
 if { $read_p } {
+    set create_p [permission::permission_p -party_id $user_id -object_id $instance_id -privilege create]
     set write_p [permission::permission_p -party_id $user_id -object_id $instance_id -privilege write]
     if { $write_p } {
         set admin_p [permission::permission_p -party_id $user_id -object_id $instance_id -privilege admin]
@@ -89,7 +93,7 @@ if { $read_p } {
         # set table_ref_name table_tid
         
         # each $active_link becomes a separate form..
-        if { $write_p || $table_user_id == $user_id } {
+        if { $write_p || ( $table_user_id == $user_id && $create_p ) } {
             # by using accounts-finance/lib/pretti-menu2 to create form, each row doesn't need a separate form.
             # Instead, the buttons are added to pretti-menu2
 
@@ -130,15 +134,16 @@ if { $read_p } {
         
     }
     
-    # sort for now. Later, just get table_tables with same template_id
-    set table_stats_sorted_lists $table_stats_lists
-    set table_stats_sorted_lists [linsert $table_stats_sorted_lists 0 $table_titles_list ]
-    set table_tag_atts_list [list border 1 cellspacing 0 cellpadding 3]
-    set table_stats_html [qss_list_of_lists_to_html_table $table_stats_sorted_lists $table_tag_atts_list $cell_formating_list]
-    
+    if { !$trash_folder_p } {
+        # sort for now. Later, just get table_tables with same template_id?
+        set table_stats_sorted_lists $table_stats_lists
+        set table_stats_sorted_lists [linsert $table_stats_sorted_lists 0 $table_titles_list ]
+        set table_tag_atts_list [list border 1 cellspacing 0 cellpadding 3]
+        set table_stats_html [qss_list_of_lists_to_html_table $table_stats_sorted_lists $table_tag_atts_list $cell_formating_list]
+    }
     
     # trashed
-    if { [llength $table_trashed_lists] > 0 && $write_p } {
+    if { $trash_folder_p && [llength $table_trashed_lists] > 0 && ( $create_p || $write_p ) } {
         set table_trashed_sorted_lists $table_trashed_lists
         set table_trashed_sorted_lists [linsert $table_trashed_sorted_lists 0 $table_titles_list ]
         set table_tag_atts_list [list border 1 cellspacing 0 cellpadding 3]

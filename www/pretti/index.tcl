@@ -37,6 +37,7 @@ array set input_array [list \
     table_title ""\
     table_comments ""\
     table_text ""\
+    trash_folder_p "0"\
     submit "" \
     reset "" \
     mode "p" \
@@ -52,6 +53,7 @@ set user_message_list [list ]
 
 
 # get previous form inputs if they exist
+set trash_folder_p $input_array(trash_folder_p)
 set form_posted [qf_get_inputs_as_array input_array hash_check 1]
 set mode $input_array(mode)
 set next_mode $input_array(next_mode)
@@ -73,7 +75,8 @@ if { $form_posted } {
         set mode [string range $modes 1 1]
         set next_mode [string range $modes 2 2]
     }
-
+    # trash_folder_p = 0 to view untrashed content, or = 1 to view trashed content
+    set trash_folder_p $input_array(trash_folder_p)
     set table_tid $input_array(table_tid)
     # validate input
     # cleanse, validate mode
@@ -83,7 +86,7 @@ if { $form_posted } {
 
     switch -exact -- $mode {
         e {
-            ns_log Notice "app.tcl.68:  validated for e"
+            ns_log Notice "accounts-finance/www/pretti/index.tcl.68:  validated for e"
             set validated 1
             if { ![qf_is_natural_number $table_tid] } {
                 set mode "n"
@@ -93,7 +96,7 @@ if { $form_posted } {
         d {
             set validated 1
             if { ( ![qf_is_natural_number $table_tid] ) || !$delete_p } {
-                ns_log Notice "app.tcl table_tid '${table_tid}' or delete_p $delete_p is not valid for mode d"
+                ns_log Notice "accounts-finance/www/pretti/index.tcl table_tid '${table_tid}' or delete_p $delete_p is not valid for mode d"
                 set mode "p"
                 set next_mode ""
             } 
@@ -101,7 +104,7 @@ if { $form_posted } {
         t {
             set validated 1
             if { ![qf_is_natural_number $table_tid] } {
-                ns_log Notice "app.tcl.86: table_tid '${table_tid}' is not valid for mode t"
+                ns_log Notice "accounts-finance/www/pretti/index.tcl.86: table_tid '${table_tid}' is not valid for mode t"
                 set mode "p"
                 set next_mode ""
             } 
@@ -109,7 +112,7 @@ if { $form_posted } {
         c {
             set validated 1
             if { ![qf_is_natural_number $table_tid] } {
-                ns_log Notice "app.tcl.94: table_tid '${table_tid}' is not valid for mode c"
+                ns_log Notice "accounts-finance/www/pretti/index.tcl.94: table_tid '${table_tid}' is not valid for mode c"
                 lappend user_message_list "Table has not been specified."
                 set validated 0
                 set mode "p"
@@ -120,18 +123,18 @@ if { $form_posted } {
         w {
             set table_text $input_array(table_text)
             set validated 1
-            ns_log Notice "app.tcl.105:  validated for w"
+            ns_log Notice "accounts-finance/www/pretti/index.tcl.105:  validated for w"
         }
         n {
             set validated 1
-            ns_log Notice "app.tcl.109:  validated for n"
+            ns_log Notice "accounts-finance/www/pretti/index.tcl.109:  validated for n"
         }
         r {
             set validated 1
-            ns_log Notice "app.tcl.113:  validated for r"
+            ns_log Notice "accounts-finance/www/pretti/index.tcl.113:  validated for r"
         }
         default {
-            ns_log Notice "app.tcl.116:  validated for v"
+            ns_log Notice "accounts-finance/www/pretti/index.tcl.116:  validated for v"
             if { [qf_is_natural_number $table_tid] } {
                 set validated 1
                 set mode "v"
@@ -172,7 +175,7 @@ if { $form_posted } {
                 } else {
                     set table_title $input_array(table_title)
                 }
-                ns_log Notice "app.tcl.157:  table_name '${table_name}' [string length $table_name]"
+                ns_log Notice "accounts-finance/www/pretti/index.tcl.157:  table_name '${table_name}' [string length $table_name]"
                 # table_comments Comments
                 set table_comments $input_array(table_comments)
                 # table_text
@@ -182,13 +185,13 @@ if { $form_posted } {
                 set delimiter ","
                 # linebreak_char delimiter rows_count columns_count 
                 set table_text_stats [qss_txt_table_stats $table_text]
-                ns_log Notice "app.tcl.167: table_text_stats $table_text_stats"
+                ns_log Notice "accounts-finance/www/pretti/index.tcl.167: table_text_stats $table_text_stats"
                 set line_break [lindex $table_text_stats 0]
                 set delimiter [lindex $table_text_stats 1]
 
-                ns_log Notice "app.tcl.171: table_text ${table_text}"
+                ns_log Notice "accounts-finance/www/pretti/index.tcl.171: table_text ${table_text}"
                 set table_lists [qss_txt_to_tcl_list_of_lists $table_text $line_break $delimiter]
-                ns_log Notice "app.tcl.173: set table_lists ${table_lists}"
+                ns_log Notice "accounts-finance/www/pretti/index.tcl.173: set table_lists ${table_lists}"
                 # cleanup input
                 set table_lists_new [list ]
                 foreach condition_list $table_lists {
@@ -197,18 +200,18 @@ if { $form_posted } {
                         set cell_new [string trim $cell]
                         regsub -all -- {[ ][ ]*} $cell_new { } cell_new
                         lappend row_new $cell_new
-                        #ns_log Notice "app.tcl.182:  new cell '$cell_new'"
+                        #ns_log Notice "accounts-finance/www/pretti/index.tcl.182:  new cell '$cell_new'"
                     }
                     if { [llength $row_new] > 0 } {
                         lappend table_lists_new $row_new
                     }
                 }
                 set table_lists $table_lists_new
-                ns_log Notice "app.tcl.189: : create/write table" 
-                ns_log Notice "app.tcl.190: : llength table_lists [llength $table_lists]"
+                ns_log Notice "accounts-finance/www/pretti/index.tcl.189: : create/write table" 
+                ns_log Notice "accounts-finance/www/pretti/index.tcl.190: : llength table_lists [llength $table_lists]"
                 # detect table type for flags
                 set table_flags [acc_fin::pretti_type_flag $table_lists]
-                ns_log Notice "app.tcl.193: table_flags $table_flags"
+                ns_log Notice "accounts-finance/www/pretti/index.tcl.193: table_flags $table_flags"
                 if { [qf_is_natural_number $table_tid] } {
                     set table_stats [qss_table_stats $table_tid]
                     # name, title, comments, cell_count, row_count, template_id, flags, trashed, popularity, time last_modified, time created, user_id.
@@ -231,7 +234,7 @@ if { $form_posted } {
                     }
 
                 } else {
-                    ns_log Notice "app.tcl.210: qss_table_create new table"
+                    ns_log Notice "accounts-finance/www/pretti/index.tcl.210: qss_table_create new table"
                     qss_table_create $table_lists $table_name $table_title $table_comments "" $table_flags $instance_id $user_id
                 }
 
@@ -243,7 +246,7 @@ if { $form_posted } {
         }
         if { $mode eq "d" } {
             #  delete.... removes context     
-            ns_log Notice "app.tcl.222:  mode = delete"
+            ns_log Notice "accounts-finance/www/pretti/index.tcl.222:  mode = delete"
             #requires table_tid
             # delete table_tid 
             if { [qf_is_natural_number $table_tid] } {
@@ -255,7 +258,7 @@ if { $form_posted } {
         }
         if { $mode eq "t" } {
             #  trash
-            ns_log Notice "app.tcl.233:  mode = trash"
+            ns_log Notice "accounts-finance/www/pretti/index.tcl.233:  mode = trash"
             #requires table_tid
             # delete table_tid 
             if { [qf_is_natural_number $table_tid] && $write_p } {
@@ -280,14 +283,14 @@ if { $form_posted } {
 switch -exact -- $mode {
     e {
         #  edit...... edit/form mode of current context
-        ns_log Notice "app.tcl.264:  mode = edit"
+        ns_log Notice "accounts-finance/www/pretti/index.tcl.264:  mode = edit"
         set mode_name "#accounts-finance.edit#"
         #requires table_tid
         # make a form to edit 
         # get table from ID
 
 
-        set form_id [qf_form action app method post id 20120531 hash_check 1]
+        set form_id [qf_form action index method post id 20120531 hash_check 1]
         
         qf_input type hidden value w name mode label ""
         
@@ -325,19 +328,19 @@ switch -exact -- $mode {
     w {
         #  save.....  (write) table_tid 
         # should already have been handled above
-        ns_log Notice "app.tcl.309:  mode = save THIS SHOULD NOT BE CALLED."
+        ns_log Notice "accounts-finance/www/pretti/index.tcl.309:  mode = save THIS SHOULD NOT BE CALLED."
         # it's called in validation section.
     }
     n {
         #  new....... creates new, blank context (form)    
-        ns_log Notice "app.tcl.314:  mode = new"
+        ns_log Notice "accounts-finance/www/pretti/index.tcl.314:  mode = new"
         set mode_name "#accounts-finance.new#"
         #requires no table_tid
         set table_text ""
 
         # make a form with no existing table_tid 
 
-        set form_id [qf_form action app method post id 20140415 hash_check 1]
+        set form_id [qf_form action index method post id 20140415 hash_check 1]
 
         qf_input type hidden value w name mode label ""
         qf_append html "<h3>Table</h3>"
@@ -358,7 +361,7 @@ switch -exact -- $mode {
     }
     c {
         #  process... compute/process and write output as a new table, present post_calc results
-        ns_log Notice "app.tcl.342:  mode = process"
+        ns_log Notice "accounts-finance/www/pretti/index.tcl.342:  mode = process"
         set mode_name "#accounts-finance.process#"
         #requires table_tid
         # given table_tid 
@@ -367,14 +370,14 @@ switch -exact -- $mode {
     }
     r {
         #  review.... show processd output 
-        ns_log Notice "app.tcl.351:  mode = review"
+        ns_log Notice "accounts-finance/www/pretti/index.tcl.351:  mode = review"
         #requires table_tid
 
         # option not used for this app. Calcs are saved as a table. use mode v
     }
     v {
         #  view table(s) (standard, html page document/report)
-        ns_log Notice "app.tcl.358:  mode = $mode ie. view table"
+        ns_log Notice "accounts-finance/www/pretti/index.tcl.358:  mode = $mode ie. view table"
         set mode_name "#accounts-finance.view#"
         set table_stats_list [qss_table_stats $table_tid]
         # name, title, comments, cell_count, row_count, template_id, flags, trashed, popularity, time last_modified, time created, user_id
@@ -388,7 +391,7 @@ switch -exact -- $mode {
     default {
         # default includes v,p
         #  present...... presents a list of contexts/tables to choose from
-        ns_log Notice "app.tcl.392:  mode = $mode ie. default"
+        ns_log Notice "accounts-finance/www/pretti/index.tcl.392:  mode = $mode ie. default"
         # see lib/pretti-view and lib/pretti-menu1
     }
 }
@@ -400,4 +403,4 @@ foreach user_message $user_message_list {
 }
 set app_name "PRETTI"
 set title "${app_name} ${mode_name}"
-set context [list [list app $title] $mode_name]
+set context [list [list index $title] $mode_name]

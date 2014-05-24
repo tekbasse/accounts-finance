@@ -24,8 +24,8 @@ set path_info  [ad_conn path_info]
 #}
 
 # get reference. If exists, pass parameter to a /packages/accounts-finance/www/pretti/view
-# where view.adp references a /lib/view-one and /lib/view-all which is also referenced in app.adp for consistent view output
-set reserved_pages_list [list "app" "index" "pretti/app" "pretti/index"]
+# where view.adp references a /lib/view-one and /lib/view-all which is also referenced in app.adp (now index.adp) for consistent view output
+set reserved_pages_list [list "index" "pretti/index"]
 set reserved_page_idx [lsearch -exact $reserved_pages_list $path_info]
 if { $reserved_page_idx > -1 } {
     set http_status "500"
