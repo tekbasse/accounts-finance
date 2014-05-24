@@ -34,6 +34,7 @@ array set input_array [list \
     table_title ""\
     table_comments ""\
     table_text ""\
+    trash_folder_p "0"\
     submit "" \
     reset "" \
     mode "p" \
@@ -49,6 +50,7 @@ set user_message_list [list ]
 
 
 # get previous form inputs if they exist
+set trash_folder_p $input_array(trash_folder_p)
 set form_posted [qf_get_inputs_as_array input_array]
 set mode $input_array(mode)
 set next_mode $input_array(next_mode)
@@ -72,6 +74,7 @@ if { $form_posted } {
     }
 
     set table_tid $input_array(table_tid)
+    set trash_folder_p $input_array(trash_folder_p)
     # validate input
     # cleanse, validate mode
     # determine input completeness
@@ -80,7 +83,7 @@ if { $form_posted } {
    
     switch -exact -- $mode {
         default {
-            ns_log Notice "app.tcl.116:  validated for v"
+            ns_log Notice "accounts-finance/www/pretti/index.tcl.116:  validated for v"
             if { [qf_is_natural_number $table_tid] } {
                 set validated 1
                 set mode "v"
@@ -104,7 +107,7 @@ if { $form_posted } {
 switch -exact -- $mode {
     v {
         #  view table(s) (standard, html page document/report)
-        ns_log Notice "app.tcl.358:  mode = $mode ie. view table"
+        ns_log Notice "accounts-finance/www/pretti/index.tcl.358:  mode = $mode ie. view table"
         set mode_name "#accounts-finance.view#"
         set table_stats_list [qss_table_stats $table_tid]
         # name, title, comments, cell_count, row_count, template_id, flags, trashed, popularity, time last_modified, time created, user_id
@@ -118,7 +121,7 @@ switch -exact -- $mode {
     default {
         # default includes v,p
         #  present...... presents a list of contexts/tables to choose from
-        ns_log Notice "app.tcl.392:  mode = $mode ie. default"
+        ns_log Notice "accounts-finance/www/pretti/index.tcl.392:  mode = $mode ie. default"
         # see lib/pretti-view and lib/pretti-menu1
     }
 }
