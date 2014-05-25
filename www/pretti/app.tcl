@@ -5,7 +5,7 @@ set instance_id [ad_conn package_id]
 set user_id [ad_conn user_id]
 set read_p [permission::permission_p -party_id $user_id -object_id $instance_id -privilege read]
 if { $read_p } {
-    # Due to auto revisioning, writing is creating.
+    set create_p [permission::permission_p -party_id $user_id -object_id $instance_id -privilege create]
     set write_p [permission::permission_p -party_id $user_id -object_id $instance_id -privilege write]
     if { $write_p } {
         set delete_p [permission::permission_p -party_id $user_id -object_id $instance_id -privilege delete]
@@ -19,6 +19,7 @@ if { $read_p } {
         set delete_p 0
     }
 } else {
+    set create_p 0
     set write_p 0
     set admin_p 0
     set delete_p 0
@@ -99,15 +100,16 @@ if { $form_posted } {
             # Form has to handle multiple table_tid's from checkboxes.
             set tid_name_list [array names input_array -regexp {tid_[0-9]+} ]
             set tid_list [list ]
-            foreach tid $tid_list {
+            foreach tid $tid_name_list {
                 if { [qf_is_natural_number $input_array($tid)] } {
+                    ns_log Notice "accounts-finance/www/pretti/app.tcl.70: tid '$tid' input_array($tid) '$input_array($tid)'"
                     lappend tid_list $input_array($tid)
                 }
             }
             if { ( [qf_is_natural_number $table_tid] || [llength $tid_list] > 0 ) && $delete_p } {
                 set validated 1
             } else {
-                ns_log Notice "accounts-finance/www/pretti/app.tcl table_tid '${table_tid}' or delete_p $delete_p is not valid for mode d"
+                ns_log Notice "accounts-finance/www/pretti/app.tcl.76 table_tid '${table_tid}' or delete_p $delete_p is not valid for mode d"
                 set mode "p"
                 set next_mode ""
             }
@@ -117,16 +119,17 @@ if { $form_posted } {
             # Form has to handle multiple table_tid's from checkboxes.
             set tid_name_list [array names input_array -regexp {tid_[0-9]+} ]
             set tid_list [list ]
-            foreach tid $tid_list {
+            foreach tid $tid_name_list {
+                #ns_log Notice "accounts-finance/www/pretti/app.tcl.80: tid '$tid' input_array($tid) '$input_array($tid)'"
                 if { [qf_is_natural_number $input_array($tid)] } {
                     lappend tid_list $input_array($tid)
                 }
             }
             # can only check for minimum permission at this point. ie $create_p for trashable self-created content
-            if { ( [qf_is_natural_number $table_tid] || [llength $tid_list] > 0 ) && $create_p ) } {
+            if { ( [qf_is_natural_number $table_tid] || [llength $tid_list] > 0 ) && $create_p } {
                 set validated 1
             } else {
-                ns_log Notice "accounts-finance/www/pretti/app.tcl.86: table_tid '${table_tid}' is not valid for mode t"
+                ns_log Notice "accounts-finance/www/pretti/app.tcl.86: table_tid '${table_tid}' or llength tid_list [llength $tid_list] is not valid for mode t"
                 set mode "p"
                 set next_mode ""
             }
@@ -274,9 +277,9 @@ if { $form_posted } {
             if { [qf_is_natural_number $table_tid] } {
                 lappend $tid_list $table_tid
             }
-            foreach tid $tid_list {
+            foreach table_tid $tid_list {
                 # permissions checked for each table_tid in qss_table_delete
-                qss_table_delete $table_tid
+                qss_table_delete $table_tid $instance_id $user_id
             }
             # unset to not trigger wrong state in adp include logic
             unset table_tid
@@ -291,7 +294,7 @@ if { $form_posted } {
             if { [qf_is_natural_number $table_tid] } {
                 lappend $tid_list $table_tid
             }
-            foreach tid $tid_list {
+            foreach table_tid $tid_list {
                 # permissions checked for each table_tid in qss_table_trash
                 set trashed_p [lindex [qss_table_stats $table_tid] 7]
                 if { $trashed_p == 1 } {
@@ -299,7 +302,7 @@ if { $form_posted } {
                 } else {
                     set trash 1
                 }
-                qss_table_trash $trash $table_tid
+                qss_table_trash $trash $table_tid $instance_id $user_id
             }
             # unset to not trigger wrong state in adp include logic
             unset table_tid
