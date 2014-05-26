@@ -88,9 +88,15 @@ if { $write_p || ( $user_created_p && $create_p ) } {
             if { $tid_is_num_p && ( $write_p || $user_created_p ) } {
                 lappend menu_list [list edit "table_tid=${table_tid}&mode=e"]
             }
-            # if table is a scenario and not trashed (meets minimum process requirements), add a process button to menu:
-            if { $tid_is_num_p && !$trashed_p && [info exists table_flags] && $table_flags eq "p1" && $write_p } {
-                lappend menu_list [list process "table_tid=${table_tid}&mode=c"]
+            # no actions against a trashed item
+            if { !$trashed_p } {
+                # if table is a scenario (meets minimum process requirements), add a process button to menu:
+                if { $tid_is_num_p && [info exists table_flags] && $table_flags eq "p1" && $write_p } {
+                    lappend menu_list [list process "table_tid=${table_tid}&mode=c"]
+                }
+                if { $tid_is_num_p && [info exists table_flags] && ( $table_flags eq "p2" || $table_flags eq "p3" ) && ( $write_p || $user_created_p ) } {
+                    lappend menu_list [list process "table_tid=${table_tid}&mode=s"]
+                }
             }
 
             if { ( $write_p || $user_created_p )  } {

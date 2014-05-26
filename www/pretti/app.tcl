@@ -39,6 +39,7 @@ array set input_array [list \
     table_comments ""\
     table_text ""\
     trash_folder_p "0"\
+    column_name "" \
     submit "" \
     reset "" \
     mode "p" \
@@ -54,10 +55,12 @@ set user_message_list [list ]
 
 
 # get previous form inputs if they exist
-set trash_folder_p $input_array(trash_folder_p)
+
 set form_posted [qf_get_inputs_as_array input_array hash_check 1]
 set mode $input_array(mode)
 set next_mode $input_array(next_mode)
+set trash_folder_p $input_array(trash_folder_p)
+set column_name $input_array(column_name)
 
 if { $form_posted } {
     if { [info exists input_array(x) ] } {
@@ -70,7 +73,7 @@ if { $form_posted } {
 
     # following is part of dynamic menu processing using form tags instead of url/GET.. and lib/pretti-menu1
     set input_array_idx_list [array names input_array]
-    set modes_idx [lsearch -regexp $input_array_idx_list {z[vprnwctde][vc]?}]
+    set modes_idx [lsearch -regexp $input_array_idx_list {z[vprnwctdes][vc]?}]
     if { $modes_idx > -1 && $mode eq "p" } {
         set modes [lindex $input_array_idx_list $modes_idx]
         # modes 0 0 is z
@@ -80,6 +83,8 @@ if { $form_posted } {
     # trash_folder_p = 0 to view untrashed content, or = 1 to view trashed content
     set trash_folder_p $input_array(trash_folder_p)
     set table_tid $input_array(table_tid)
+    set column_name $input_array(column_name)
+
     # validate input
     # cleanse, validate mode
     # determine input completeness
@@ -157,6 +162,17 @@ if { $form_posted } {
         r {
             set validated 1
             ns_log Notice "accounts-finance/www/pretti/app.tcl.113:  validated for r"
+        }
+        s {
+            set validated 1
+            ns_log Notice "accounts-finance/www/pretti/app.tcl.123:  validated for s"
+            if { ![qf_is_natural_number $table_tid] } {
+                ns_log Notice "accounts-finance/www/pretti/app.tcl.129: table_tid '${table_tid}' is not valid for mode s"
+                lappend user_message_list "Table has not been specified."
+                set validated 0
+                set mode "p"
+                set next_mode ""
+            } 
         }
         default {
             ns_log Notice "accounts-finance/www/pretti/app.tcl.116:  validated for v"
@@ -275,7 +291,7 @@ if { $form_posted } {
             #requires table_tid
             # delete table_tid 
             if { [qf_is_natural_number $table_tid] } {
-                lappend $tid_list $table_tid
+                lappend tid_list $table_tid
             }
             foreach table_tid $tid_list {
                 # permissions checked for each table_tid in qss_table_delete
@@ -292,7 +308,7 @@ if { $form_posted } {
             #requires table_tid
             # trash table_tid 
             if { [qf_is_natural_number $table_tid] } {
-                lappend $tid_list $table_tid
+                lappend tid_list $table_tid
             }
             foreach table_tid $tid_list {
                 # permissions checked for each table_tid in qss_table_trash
@@ -302,6 +318,7 @@ if { $form_posted } {
                 } else {
                     set trash 1
                 }
+#                ns_log Notice "accounts-finance/www/pretti/app.tcl.238: qss_table_trash $trash $table_tid $instance_id $user_id"
                 qss_table_trash $trash $table_tid $instance_id $user_id
             }
             # unset to not trigger wrong state in adp include logic
@@ -311,7 +328,21 @@ if { $form_posted } {
         }
     }
     # end validated input if
-
+    if { $mode eq "s" } {
+        if { [qf_is_natural_number $table_tid] && $column_name ne "" } {
+            lappend tid_list $table_tid
+        }
+        foreach table_tid $tid_list {
+            set table_stats_list [qss_table_stats $table_tid]
+            # name, title, comments, cell_count, row_count, template_id, flags, trashed, popularity, time last_modified, time created, user_id.
+            set trashed_p [lindex $table_stats_list 7]
+            set table_flags [lindex $table_stats_list 6]
+            set tid_user_id [lindex $table_stats_list 11]
+            if { ( $table_flags eq "p2" || $table_flags eq "p3" ) && ( ( $create_p && $tid_user_id == $user_id ) || $write_p ) } {
+                qss_table_split $table_tid $column_name
+            }
+        }
+    }
 }
 
 switch -exact -- $mode {
@@ -419,7 +450,7 @@ switch -exact -- $mode {
         # set table_title [lindex $table_stats_list 1]
         # set table_comments [lindex $table_stats_list 2]
         set table_flags [lindex $table_stats_list 6]
-
+        set trash_folder_p [lindex $table_stats_list 7]
         # see lib/pretti-view-one and lib/pretti-menu1
     }
     default {
