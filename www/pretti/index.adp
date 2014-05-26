@@ -10,7 +10,7 @@
 </if>
 
 <if @table_tid@ not nil>
-  <include src="/packages/accounts-finance/lib/pretti-menu2" mode="@mode@" form_action_url="app" instance_id="@instance_id@" app_name="@app_name" table_tid="@table_tid@" table_flags="@table_flags@" trashed_p="@trashed_p@" read_p="@read_p@" write_p="@write_p@" delete_p="@delete_p@" admin_p="@admin_p@">
+  <include src="/packages/accounts-finance/lib/pretti-menu2" mode="@mode@" form_action_url="app" instance_id="@instance_id@" app_name="@app_name" table_tid="@table_tid@" table_flags="@table_flags@" trashed_p="@trashed_p@" read_p="@read_p@" write_p="@write_p@" delete_p="@delete_p@" admin_p="@admin_p@" trash_folder_p="@trashed_p@">
  </if><else>
   <include src="/packages/accounts-finance/lib/pretti-menu2" mode="@mode@" form_action_url="app" instance_id="@instance_id@" app_name="@app_name" read_p="@read_p@" write_p="@write_p@" delete_p="@delete_p@" admin_p="@admin_p@" trash_folder_p="@trash_folder_p@">
  </else>

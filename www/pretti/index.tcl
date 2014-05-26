@@ -119,6 +119,7 @@ switch -exact -- $mode {
         # set table_comments [lindex $table_stats_list 2]
         set table_flags [lindex $table_stats_list 6]
         set trashed_p [lindex $table_stats_list 7]
+        set trash_folder_p $trashed_p
         # see lib/pretti-view-one and lib/pretti-menu1
     }
     default {

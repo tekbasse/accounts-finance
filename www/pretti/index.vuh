@@ -16,6 +16,7 @@ permission::require_permission -party_id $user_id -object_id $instance_id -privi
 #  set e_url   [ad_conn extra_url]
 #  set f       [ad_conn file]
 set path_info  [ad_conn path_info]
+set trash_folder_p 0
 # path_info doesn not contain the stuff after a ? in a url, at least in some cases
 #ns_log Notice "path_info $path_info"
 # if path_info contains no /, lookup f(path_info) as ecds_product_id_site_url_map.site_url
@@ -46,6 +47,7 @@ if { [qf_is_natural_number $path_info] } {
         # set table_title [lindex $table_stats_list 1]
         # set table_comments [lindex $table_stats_list 2]
         set table_flags [lindex $table_stats_list 6]
+        set trash_folder_p [lindex $table_stats_list 7]
         set table_tid_from_name [qss_tid_from_name $table_name $instance_id $user_id]
         if { $table_tid_from_name eq $table_tid } {
             # table tid is the same as the table referenced by table name. redirect to keep 1 url per table:
@@ -56,6 +58,7 @@ if { [qf_is_natural_number $path_info] } {
         }
         rp_form_put mode v 
         rp_form_put table_tid $table_tid
+        rp_form_put trash_folder_p $trash_folder_p
         rp_internal_redirect /packages/accounts-finance/www/pretti/index
         ad_script_abort
     } else {
@@ -76,9 +79,11 @@ if { $table_tid ne "" } {
         # set table_title [lindex $table_stats_list 1]
         # set table_comments [lindex $table_stats_list 2]
         set table_flags [lindex $table_stats_list 6]
+        set trash_folder_p [lindex $table_stats_list 7]
         set table_tid_from_name [qss_tid_from_name $table_name $instance_id $user_id]
         rp_form_put mode v
         rp_form_put table_tid $table_tid
+        rp_form_put trash_folder_p $trash_folder_p
         rp_internal_redirect /packages/accounts-finance/www/pretti/index
         ad_script_abort
     } else {
