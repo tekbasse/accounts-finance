@@ -88,8 +88,8 @@ if { $write_p || ( $user_created_p && $create_p ) } {
             if { $tid_is_num_p && ( $write_p || $user_created_p ) } {
                 lappend menu_list [list edit "table_tid=${table_tid}&mode=e"]
             }
-            # if table is a scenario (meets minimum process requirements), add a process button to menu:
-            if { $tid_is_num_p && [info exists table_flags] && $table_flags eq "p1" && $write_p } {
+            # if table is a scenario and not trashed (meets minimum process requirements), add a process button to menu:
+            if { $tid_is_num_p && !$trashed_p && [info exists table_flags] && $table_flags eq "p1" && $write_p } {
                 lappend menu_list [list process "table_tid=${table_tid}&mode=c"]
             }
 
@@ -154,10 +154,10 @@ if { $write_p || ( $user_created_p && $create_p ) } {
         }
         #    append menu_html "<a href=\"app?${url}\">${label}</a>&nbsp;"
     }
-    foreach {name value} [array get form_input_arr] {
-        qf_input form_id $form_id type hidden value $value name $name label ""
-    }
-
+#    foreach {name value} [array get form_input_arr] {
+#        qf_input form_id $form_id type hidden value $value name $name label ""
+#    }
+        qf_input form_id $form_id type hidden value $trash_folder_p name trash_folder_p label ""
 #    qf_close form_id $form_id
     set menu_html [qf_read form_id $form_id]
 }
