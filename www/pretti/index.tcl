@@ -1,6 +1,5 @@
 # generic header for static .adp pages
 
-
 set instance_id [ad_conn package_id]
 set user_id [ad_conn user_id]
 set read_p [permission::permission_p -party_id $user_id -object_id $instance_id -privilege read]
@@ -50,10 +49,11 @@ set user_message_list [list ]
 
 
 # get previous form inputs if they exist
-set trash_folder_p $input_array(trash_folder_p)
+
 set form_posted [qf_get_inputs_as_array input_array]
 set mode $input_array(mode)
 set next_mode $input_array(next_mode)
+set trash_folder_p $input_array(trash_folder_p)
 
 if { $form_posted } {
     if { [info exists input_array(x) ] } {
@@ -75,6 +75,9 @@ if { $form_posted } {
 
     set table_tid $input_array(table_tid)
     set trash_folder_p $input_array(trash_folder_p)
+    if { $trash_folder_p } {
+        set mode "p"
+    }
     # validate input
     # cleanse, validate mode
     # determine input completeness

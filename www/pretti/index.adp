@@ -16,7 +16,7 @@
  </else>
 
  <if @mode@ eq "p">
-  <include src="/packages/accounts-finance/lib/pretti-view2" instance_id="@instance_id@" form_action_attr="app">
+  <include src="/packages/accounts-finance/lib/pretti-view2" instance_id="@instance_id@" form_action_attr="app" trash_folder_p="@trash_folder_p@">
  </if>
 
 </form> <!-- from pretti-menu2 -->
