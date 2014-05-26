@@ -133,17 +133,26 @@ if { $read_p } {
         }
         
     }
-    
+
+    set table_trashed_len [llength $table_trashed_lists]
+
     if { !$trash_folder_p } {
         # sort for now. Later, just get table_tables with same template_id?
         set table_stats_sorted_lists $table_stats_lists
         set table_stats_sorted_lists [linsert $table_stats_sorted_lists 0 $table_titles_list ]
+
+        if { $table_trashed_len > 0 && ( $create_p || $write_p ) } {
+            #add the trash folder link
+            set trash_row [list "" "<a href=\"trash\">${trash_label}</a>" "" "" "" "" "" "" "" [lc_time_system_to_conn [clock format [clock seconds] -format "%Y-%m-%d %r"]]]
+            lappend table_stats_sorted_lists $trash_row
+        }
+
         set table_tag_atts_list [list border 1 cellspacing 0 cellpadding 3]
         set table_stats_html [qss_list_of_lists_to_html_table $table_stats_sorted_lists $table_tag_atts_list $cell_formating_list]
     }
     
     # trashed
-    if { $trash_folder_p && [llength $table_trashed_lists] > 0 && ( $create_p || $write_p ) } {
+    if { $trash_folder_p && $table_trashed_len && ( $create_p || $write_p ) } {
         set table_trashed_sorted_lists $table_trashed_lists
         set table_trashed_sorted_lists [linsert $table_trashed_sorted_lists 0 $table_titles_list ]
         set table_tag_atts_list [list border 1 cellspacing 0 cellpadding 3]
