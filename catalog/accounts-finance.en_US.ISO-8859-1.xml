@@ -91,6 +91,7 @@
 <msg key="significant_q">Relatively Significant?</msg>
 <msg key="significant_q_def">Answers question about a Track of Activities. 1 is yes, 0 is no.</msg>
 <msg key="sort_by_Y_ascending">Sort by Y ascending</msg>
+<msg key="split">Split</msg>
 <msg key="tables">Tables</msg>
 <msg key="task">Task</msg>
 <msg key="task_network_p2">Task Network (p2)</msg>

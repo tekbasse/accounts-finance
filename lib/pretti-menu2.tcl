@@ -85,17 +85,22 @@ if { $write_p || ( $user_created_p && $create_p ) } {
             ns_log Notice "accounts-finance/lib/pretti-menu2.tcl.358:  mode = $mode ie. view table"
             set mode_name "#accounts-finance.view#"
             set tid_is_num_p [qf_is_natural_number $table_tid]
-            if { $tid_is_num_p && ( $write_p || $user_created_p ) } {
-                lappend menu_list [list edit "table_tid=${table_tid}&mode=e"]
-            }
             # no actions against a trashed item
             if { !$trashed_p } {
+ 
+                # edit button
+                if { $tid_is_num_p && ( $write_p || $user_created_p ) } {
+                    lappend menu_list [list "edit" "table_tid=${table_tid}&mode=e"]
+                }
                 # if table is a scenario (meets minimum process requirements), add a process button to menu:
                 if { $tid_is_num_p && [info exists table_flags] && $table_flags eq "p1" && $write_p } {
-                    lappend menu_list [list process "table_tid=${table_tid}&mode=c"]
+                    lappend menu_list [list "process" "table_tid=${table_tid}&mode=c"]
                 }
+                # split button
                 if { $tid_is_num_p && [info exists table_flags] && ( $table_flags eq "p2" || $table_flags eq "p3" ) && ( $write_p || $user_created_p ) } {
-                    lappend menu_list [list process "table_tid=${table_tid}&mode=s"]
+                    # add a multiselect button with choice of table column_names
+                    # delay creating the multi-select until the button is made
+                    lappend menu_list [list "split" "table_tid=${table_tid}&mode=s"]
                 }
             }
 
@@ -103,14 +108,14 @@ if { $write_p || ( $user_created_p && $create_p ) } {
                 if { $trashed_p } {
                     #append active_link " \[<a href=\"app?${table_ref_name}=${table_id}&mode=t\">${untrash_label}</a>\]"
                     #qf_input type submit value $untrash_label name "zt" class btn
-                    lappend menu_list [list untrash "mode=t"]
+                    lappend menu_list [list "untrash" "mode=t"]
                     if { $admin_p } {
-                        lappend menu_list [list delete "mode=d"]
+                        lappend menu_list [list "delete" "mode=d"]
                     }
                } else {
                     #append active_link " \[<a href=\"app?${table_ref_name}=${table_id}&mode=t\">${trash_label}</a>\]"
                     #qf_input type submit value $trash_label name "zt" class btn
-                    lappend menu_list [list trash "table_tid=${table_tid}&mode=t"]
+                    lappend menu_list [list "trash" "table_tid=${table_tid}&mode=t"]
                 }
             } 
         }
@@ -122,12 +127,12 @@ if { $write_p || ( $user_created_p && $create_p ) } {
                 if { $trashed_p } {
                     #append active_link " \[<a href=\"app?${table_ref_name}=${table_id}&mode=t\">${untrash_label}</a>\]"
                     #qf_input type submit value $untrash_label name "zt" class btn
-                    lappend menu_list [list untrash "mode=t"]
+                    lappend menu_list [list "untrash" "mode=t"]
                     if { $delete_p || $admin_p } {
-                        lappend menu_list [list delete "mode=d"]
+                        lappend menu_list [list "delete" "mode=d"]
                     }
                 } else {
-                    lappend menu_list [list trash "mode=t"]
+                    lappend menu_list [list "trash" "mode=t"]
                 }
             } 
         }
@@ -156,7 +161,34 @@ if { $write_p || ( $user_created_p && $create_p ) } {
         }
         if { $name1 ne "" } {
             set name "z${name1}${name2}"
-            qf_input form_id $form_id type submit value $value name $name class btn
+
+            if { $name1 eq "s" } {
+                # add a multiselect per "split" menu item
+                set table_lol [qss_table_read $table_tid $instance_id]
+                set column_list [lindex $table_lol 0]
+                set req_name_list [acc_fin::pretti_columns_list $table_flags 1]
+                # remove required column_names, because each of those lines should be unique..
+                foreach req_name $req_name_list {
+                    set req_idx [lsearch -exact $column_list $req_name]
+                    if { $req_idx > -1 } {
+                        # remove name
+                        set column_list [lreplace $column_list $req_idx $req_idx]
+                    }
+                }
+                if { [llength $column_list] > 0 } {
+                    # create list for qf_choice
+                    set col_qf_list [list ]
+                    foreach col_name $column_list {
+                        lappend col_qf_list [list label $col_name value $col_name]
+                    }
+                    qf_append html " &nbsp; ("
+                    qf_input form_id $form_id type submit value $value name $name class btn
+                    qf_choice form_id $form_id type select name column_name value $col_qf_list
+                    qf_append html ") &nbsp; "
+                }
+            } else {
+                qf_input form_id $form_id type submit value $value name $name class btn 
+            }
         }
         #    append menu_html "<a href=\"app?${url}\">${label}</a>&nbsp;"
     }
