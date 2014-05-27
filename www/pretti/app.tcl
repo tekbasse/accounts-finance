@@ -94,11 +94,13 @@ if { $form_posted } {
     switch -exact -- $mode {
         e {
             ns_log Notice "accounts-finance/www/pretti/app.tcl.68:  validated for e"
-            set validated 1
-            if { ![qf_is_natural_number $table_tid] } {
+            if { [qf_is_natural_number $table_tid] } {
+                set validated 1
+            } else {
                 set mode "n"
                 set next_mode ""
-            } 
+                set validated 0
+            }
         }
         d {
             set validated 0
@@ -366,7 +368,8 @@ switch -exact -- $mode {
             set table_comments [lindex $table_stats_list 2]
             set table_flags [lindex $table_stats_list 6]
             set table_template_id [lindex $table_stats_list 5]
-
+            set trashed_p [lindex $table_stats_list 7]
+            set trash_folder_p $trashed_p
             set table_lists [qss_table_read $table_tid]
             set table_text [qss_lists_to_text $table_lists]
 

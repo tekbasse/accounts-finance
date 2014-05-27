@@ -11,6 +11,10 @@ if { ![info exists instance_id] } {
 if { ![info exists table_flags] } {
     set table_tid ""
     set table_flags ""
+
+}
+
+if { ![info exists trashed_p] } {
     set trashed_p 0
 }
 
@@ -185,6 +189,7 @@ if { $write_p || ( $user_created_p && $create_p ) } {
                     }
                     qf_append html " &nbsp; ("
                     qf_input form_id $form_id type submit value $value name $name class btn
+                    qf_append html " &Delta;"
                     qf_choice form_id $form_id type select name column_name value $col_qf_list
                     qf_append html ") &nbsp; "
                 }
@@ -194,10 +199,13 @@ if { $write_p || ( $user_created_p && $create_p ) } {
         }
         #    append menu_html "<a href=\"app?${url}\">${label}</a>&nbsp;"
     }
-#    foreach {name value} [array get form_input_arr] {
-#        qf_input form_id $form_id type hidden value $value name $name label ""
-#    }
+    foreach {name value} [array get form_input_arr] {
+        qf_input form_id $form_id type hidden value $value name $name label ""
+    }
+    if { [info exists trash_folder_p] } {
         qf_input form_id $form_id type hidden value $trash_folder_p name trash_folder_p label ""
-#    qf_close form_id $form_id
+    }
+    # don't close the form, because another template may add input tags.
+    #qf_close form_id $form_id
     set menu_html [qf_read form_id $form_id]
 }
