@@ -166,11 +166,13 @@ if { $write_p || ( $user_created_p && $create_p ) } {
                 # add a multiselect per "split" menu item
                 set table_lol [qss_table_read $table_tid $instance_id]
                 set column_list [lindex $table_lol 0]
-                set req_name_list [acc_fin::pretti_columns_list $table_flags 1]
+                set req_name_list [acc_fin::pretti_columns_list $table_flags 0]
                 # remove required column_names, because each of those lines should be unique..
+                set special_names_list [list name description label]
                 foreach req_name $req_name_list {
                     set req_idx [lsearch -exact $column_list $req_name]
-                    if { $req_idx > -1 } {
+                    set special_idx [lsearch -exact $special_names_list $req_name]
+                    if { $req_idx > -1 && $special_idx == -1 } {
                         # remove name
                         set column_list [lreplace $column_list $req_idx $req_idx]
                     }
