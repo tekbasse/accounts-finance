@@ -470,5 +470,5 @@ foreach user_message $user_message_list {
     append user_message_html "<li>${user_message}</li>"
 }
 set app_name "PRETTI"
-set title "${app_name} ${mode_name}"
+set title ${app_name}
 set context [list [list app $title] $mode_name]
