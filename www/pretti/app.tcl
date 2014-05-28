@@ -78,7 +78,10 @@ if { $form_posted } {
         set modes [lindex $input_array_idx_list $modes_idx]
         # modes 0 0 is z
         set mode [string range $modes 1 1]
-        set next_mode [string range $modes 2 2]
+        set mode2 [string range $modes 2 2]
+        if { [string length $mode2] == 1 } {
+            set next_mode $mode2
+        }
     }
     # trash_folder_p = 0 to view untrashed content, or = 1 to view trashed content
     set trash_folder_p $input_array(trash_folder_p)
@@ -158,6 +161,9 @@ if { $form_posted } {
             ns_log Notice "accounts-finance/www/pretti/app.tcl.105:  validated for w"
         }
         n {
+            if { [info exists table_tid] } {
+                unset table_tid
+            }
             set validated 1
             ns_log Notice "accounts-finance/www/pretti/app.tcl.109:  validated for n"
         }
@@ -359,9 +365,9 @@ switch -exact -- $mode {
         # get table from ID
 
 
-        set form_id [qf_form action app method post id 20120531 hash_check 1]
+#        set form_id [qf_form action app method post id 20120531 hash_check 1]
         
-        qf_input type hidden value w name mode label ""
+#        qf_input type hidden value w name mode label ""
         
         if { [qf_is_natural_number $table_tid] } {
             set table_stats_list [qss_table_stats $table_tid]
@@ -380,19 +386,21 @@ switch -exact -- $mode {
             qf_input type hidden value $table_template_id name table_template_id label ""
             qf_append html "<h3>Table</h3>"
             qf_append html "<div style=\"width: 70%; text-align: right;\">"
-            qf_input type text value $table_name name table_name label "Table name:" size 40 maxlength 40
+            qf_input type text value $table_name name table_name label "Name:" size 40 maxlength 40
             qf_append html "<br>"
             qf_input type text value $table_title name table_title label "Title:" size 40 maxlength 80
             qf_append html "<br>"
             qf_textarea value $table_comments cols 40 rows 3 name table_comments label "Comments:"
             qf_append html "<br>"
-            qf_textarea value $table_text cols 40 rows 6 name table_text label "Table data:"
+            qf_textarea value $table_text cols 40 rows 6 name table_text label "Contents:"
             qf_append html "</div>"
         }
 
-        qf_input type submit value "Save"
-        qf_close form_id $form_id
-        set form_html [qf_read form_id $form_id]
+        qf_input type submit value "Save" name "zw" class btn
+#        qf_close form_id $form_id
+        qf_append html "</form>"
+#        set form_html [qf_read form_id $form_id]
+        set form_html [qf_read ]
 
     }
     w {
@@ -410,24 +418,26 @@ switch -exact -- $mode {
 
         # make a form with no existing table_tid 
 
-        set form_id [qf_form action app method post id 20140415 hash_check 1]
+ #       set form_id [qf_form action app method post id 20140415 hash_check 1]
 
-        qf_input type hidden value w name mode label ""
+#        qf_input type hidden value w name mode label ""
         qf_append html "<h3>Table</h3>"
         qf_append html "<div style=\"width: 70%; text-align: right;\">"
-        qf_input type text value "" name table_name label "Table name:" size 40 maxlength 40
+        qf_input type text value "" name table_name label "Name:" size 40 maxlength 40
         qf_append html "<br>"
         qf_input type text value "" name table_title label "Title:" size 40 maxlength 80
         qf_append html "<br>"
         qf_textarea value "" cols 40 rows 3 name table_comments label "Comments:"
         qf_append html "<br>"
-        qf_textarea value $table_text cols 40 rows 6 name table_text label "Table data:"
+        qf_textarea value $table_text cols 40 rows 6 name table_text label "Contents:"
         qf_append html "</div>"
 
-        qf_input type submit value "Save" name test class btn
+        qf_input type submit value "Save" name "zw" class btn
 
-        qf_close form_id $form_id
-        set form_html [qf_read form_id $form_id]
+#        qf_close form_id $form_id
+        qf_append html "</form>"
+#        set form_html [qf_read form_id $form_id]
+        set form_html [qf_read ]
     }
     c {
         #  process... compute/process and write output as a new table, present post_calc results
