@@ -344,6 +344,8 @@ if { $form_posted } {
                 qss_table_split $table_tid $column_name
             }
         }
+        set mode "p"
+        set next_mode ""
     }
 }
 
