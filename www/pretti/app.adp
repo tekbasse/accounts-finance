@@ -24,7 +24,6 @@
 
 
 <if @form_html@ not nil>
-</div>
 <div style="width: 90%;">
 @form_html;noquote@
 </div>
