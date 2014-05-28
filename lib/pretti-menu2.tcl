@@ -112,9 +112,9 @@ if { $write_p || ( $user_created_p && $create_p ) } {
                 if { $trashed_p || ( [info exists trash_folder_p] && $trash_folder_p ) } {
                     #append active_link " \[<a href=\"app?${table_ref_name}=${table_id}&mode=t\">${untrash_label}</a>\]"
                     #qf_input type submit value $untrash_label name "zt" class btn
-                    lappend menu_list [list "untrash" "mode=t"]
+                    lappend menu_list [list "untrash" "table_tid=${table_tid}&mode=t"]
                     if { $admin_p } {
-                        lappend menu_list [list "delete" "mode=d"]
+                        lappend menu_list [list "delete" "table_tid=${table_tid}&mode=d"]
                     }
                } else {
                     #append active_link " \[<a href=\"app?${table_ref_name}=${table_id}&mode=t\">${trash_label}</a>\]"
@@ -131,12 +131,12 @@ if { $write_p || ( $user_created_p && $create_p ) } {
                 if { $trashed_p || ( [info exists trash_folder_p] && $trash_folder_p ) } {
                     #append active_link " \[<a href=\"app?${table_ref_name}=${table_id}&mode=t\">${untrash_label}</a>\]"
                     #qf_input type submit value $untrash_label name "zt" class btn
-                    lappend menu_list [list "untrash" "mode=t"]
+                    lappend menu_list [list "untrash" "table_tid=${table_tid}&mode=t"]
                     if { $delete_p || $admin_p } {
-                        lappend menu_list [list "delete" "mode=d"]
+                        lappend menu_list [list "delete" "table_tid=${table_tid}&mode=d"]
                     }
                 } else {
-                    lappend menu_list [list "trash" "mode=t"]
+                    lappend menu_list [list "trash" "table_tid=${table_tid}&mode=t"]
                 }
             } 
         }
