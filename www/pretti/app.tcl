@@ -484,8 +484,8 @@ switch -exact -- $mode {
 
             # see lib/pretti-view-one and lib/pretti-menu1
             # given table_tid 
-            set table_lists [qss_table_read $table_tid]
-            acc_fin::scenario_prettify $table_lists
+            #set table_lists [qss_table_read $table_tid]
+            acc_fin::scenario_prettify $table_tid $instance_id $user_id
         }
     }
     r {

@@ -910,17 +910,17 @@ ad_proc -private acc_fin::p_load_tid {
             set constants_list [acc_fin::pretti_columns_list dc]
             if { [info exists tc_cache_larr(x,$ctid) ] } {
                 # already loaded tid curve from earlier. 
-                foreach constant $constant_list {
+                foreach constant $constants_list {
                     set tc_larr($constant) $tc_cache_larr($constant,$ctid)
                 }
             } else {
-                foreach constant $constant_list {
+                foreach constant $constants_list {
                     set tc_larr($constant) ""
                 }
                 set constants_required_list [acc_fin::pretti_columns_list dc 1]
                 qss_tid_columns_to_array_of_lists $time_dist_curve_tid tc_larr $constants_list $constants_required_list $package_id $user_id
                 # add to input tid cache
-                foreach constant $constant_list {
+                foreach constant $constants_list {
                     set tc_cache_larr($constant,$ctid) $tc_larr($constant)
                 }
                 #tc_larr(x), tc_larr(y) and optionally tc_larr(label) where _larr refers to an array where each value is a list of column data by row 1..n
@@ -942,17 +942,17 @@ ad_proc -private acc_fin::p_load_tid {
             set constants_list [acc_fin::pretti_columns_list dc]
             if { [info exists cc_cache_larr(x,$ctid) ] } {
                 # already loaded tid curve from earlier. 
-                foreach constant $constant_list {
+                foreach constant $constants_list {
                     set cc_larr($constant) $cc_cache_larr($constant,$ctid)
                 }
             } else {
-                foreach constant $constant_list {
+                foreach constant $constants_list {
                     set cc_larr($constant) ""
                 }
                 set constants_required_list [acc_fin::pretti_columns_list dc 1]
                 qss_tid_columns_to_array_of_lists $cost_dist_curve_tid cc_larr $constants_list $constants_required_list $package_id $user_id
                 # add to input tid cache
-                foreach constant $constant_list {
+                foreach constant $constants_list {
                     set cc_cache_larr($constant,$ctid) $cc_larr($constant)
                 }
                 #cc_larr(x), cc_larr(y) and optionally cc_larr(label) where _larr refers to an array where each value is a list of column data by row 1..n
@@ -1123,15 +1123,20 @@ ad_proc -private acc_fin::curve_import {
 }
 
 ad_proc -public acc_fin::scenario_prettify {
-    scenario_list_of_lists
-    {with_factors_p 0}
+    scenario_tid
+    {instance_id ""}
+    {user_id ""}
 } {
     Processes PRETTI scenario. Returns resulting PRETTI table as a list of lists. 
-    If with_factors_p is 1, an intermediary step processes factor multiplicands 
-    in dependent_tasks list, appending table with a complete list of expanded, 
-    nonrepeating tasks.
 } {
     set setup_start [clock seconds]
+    if { $instance_id eq "" } {
+        set instance_id [ad_conn package_id]
+    }
+    if { $user_id eq "" } {
+        set user_id [ad_conn user_id]
+    }
+
     # load scenario values
     
     # load pretti2_lol table
@@ -1139,6 +1144,9 @@ ad_proc -public acc_fin::scenario_prettify {
     #if { $with_factors_p } {
     #    # append p2 file, call this proc referencing p2 with_factors_p 0 before continuing.
     #    set pretti2e_lol [acc_fin::p2_factors_expand $pretti2_lol]
+    #    If with_factors_p is 1, an intermediary step processes factor multiplicands 
+    #    in dependent_tasks list, appending table with a complete list of expanded, 
+    #    nonrepeating tasks.
     #}
     # vertical represents time. All tasks are rounded up to quantized time_unit.
     # Smallest task duration is the number of quantized time_units that result in 1 line of text.
@@ -1176,7 +1184,7 @@ ad_proc -public acc_fin::scenario_prettify {
         set p1_arr($constant) ""
     }
     set constants_required_list [acc_fin::pretti_columns_list p1 1]
-    qss_tid_scalars_to_array $scenario_tid p1_arr $constants_list $constants_required_list $package_id $user_id
+    qss_tid_scalars_to_array $scenario_tid p1_arr $constants_list $constants_required_list $instance_id $user_id
     if { $p1_arr(activity_table_name) ne "" } {
         # set activity_table_tid
         set p1_arr(activity_table_tid) [qss_tid_from_name $p1_arr(activity_table_name) ]
@@ -1217,13 +1225,14 @@ ad_proc -public acc_fin::scenario_prettify {
     if { $p1_arr(time_dist_curve_tid) ne "" } {
         # get time curve into array tc_larr
         set constants_list [acc_fin::pretti_columns_list dc]
-        foreach constant $constant_list {
+        foreach constant $constants_list {
             set tc_larr($constant) ""
         }
         set constants_required_list [acc_fin::pretti_columns_list dc 1]
-        qss_tid_columns_to_array_of_lists $time_dist_curve_tid tc_larr $constants_list $constants_required_list $package_id $user_id
+        qss_tid_columns_to_array_of_lists $time_dist_curve_tid tc_larr $constants_list $constants_required_list $instance_id $user_id
         #tc_larr(x), tc_larr(y) and optionally tc_larr(label) where _larr refers to an array where each value is a list of column data by row 1..n
     } 
+#### error on next: can't read "tc_larr(x)": no such variable
     set tc_lists [acc_fin::curve_import $tc_larr(x) $tc_larr(y) $tc_larr(label) [list ] $p1_arr(time_est_short) $p1_arr(time_est_median) $p1_arr(time_est_long) [list ] ]
     
     # Make cost_curve_data 
@@ -1233,7 +1242,7 @@ ad_proc -public acc_fin::scenario_prettify {
             set cc_larr($constant) ""
         }
         set constants_required_list [acc_fin::pretti_columns_list dc 1]
-        qss_tid_columns_to_array_of_lists $cost_dist_curve_tid cc_larr $constants_list $constants_required_list $package_id $user_id
+        qss_tid_columns_to_array_of_lists $cost_dist_curve_tid cc_larr $constants_list $constants_required_list $instance_id $user_id
         #cc_larr(x), cc_larr(y) and optionally cc_larr(label) where _larr refers to an array where each value is a list of column data by row 1..n
         
     } 
@@ -1771,7 +1780,7 @@ ad_proc -public acc_fin::scenario_prettify {
             if { $p1_larr(db_format) ne "" } {
                 # Add titles before saving as p5 table
                 set primary_sort_lists [lreplace $primary_sort_lists 0 0 $base_titles_list]
-                qss_table_create $primary_sort_lists "${scenario_name}.p5" "${scenario_title}.p5" $comments "" p5 $package_id $user_id
+                qss_table_create $primary_sort_lists "${scenario_name}.p5" "${scenario_title}.p5" $comments "" p5 $instance_id $user_id
             }
             
             # save as a new table of type PRETTI 
@@ -1826,7 +1835,7 @@ ad_proc -public acc_fin::scenario_prettify {
             for {set i 0} {$i < $act_max_count} {incr i} {
                 lappend pretti_lists $row_larr($i)
             }
-            qss_table_create $primary_sort_lists ${scenario_name} ${scenario_title} $comments "" p4 $package_id $user_id
+            qss_table_create $primary_sort_lists ${scenario_name} ${scenario_title} $comments "" p4 $instance_id $user_id
             # Comments data will be interpreted for determining standard deviation for determining cell highlighting
         }
         # next c_moment
