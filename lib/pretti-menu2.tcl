@@ -56,10 +56,11 @@ set menu_list [list [list $app_name ""]]
 
 if { $write_p || ( $user_created_p && $create_p ) } {
     #set select_label "#accounts-finance.select#"
-    set untrash_label "#accounts-finance.untrash#"
-    set trash_label "#accounts-finance.trash#"
-    set delete_label "#accounts-finance.delete#"
-
+    #set untrash_label "#accounts-finance.untrash#"
+    #set trash_label "#accounts-finance.trash#"
+    #set delete_label "#accounts-finance.delete#"
+    #set standardize_label "#accounts-finance.standardize#"
+    #set sort_by_Y_ascending_label "#accounts-finance.sort_by_Y_ascending#"
     if { ![info exists form_action_url] } {
         set form_action_url app
     }
@@ -106,6 +107,13 @@ if { $write_p || ( $user_created_p && $create_p ) } {
                     # delay creating the multi-select until the button is made
                     lappend menu_list [list "split" "table_tid=${table_tid}&mode=s"]
                 }
+                # standardize (sort y) button
+                if { $tid_is_num_p && [info exists table_flags] && $table_flags eq "dc" && ( $write_p || $user_created_p ) } {
+                    # sorts column y in ascending order
+                    # delay creating the multi-select until the button is made
+                    lappend menu_list [list "sort_by_Y_ascending" "table_tid=${table_tid}&mode=y"]
+                }
+
             }
 
             if { ( $write_p || $user_created_p )  } {

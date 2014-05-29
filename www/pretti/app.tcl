@@ -73,7 +73,7 @@ if { $form_posted } {
 
     # following is part of dynamic menu processing using form tags instead of url/GET.. and lib/pretti-menu1
     set input_array_idx_list [array names input_array]
-    set modes_idx [lsearch -regexp $input_array_idx_list {z[vprnwctdes][vc]?}]
+    set modes_idx [lsearch -regexp $input_array_idx_list {z[vyprnwctdes][vc]?}]
     if { $modes_idx > -1 && $mode eq "p" } {
         set modes [lindex $input_array_idx_list $modes_idx]
         # modes 0 0 is z
@@ -176,6 +176,17 @@ if { $form_posted } {
             ns_log Notice "accounts-finance/www/pretti/app.tcl.123:  validated for s"
             if { ![qf_is_natural_number $table_tid] } {
                 ns_log Notice "accounts-finance/www/pretti/app.tcl.129: table_tid '${table_tid}' is not valid for mode s"
+                lappend user_message_list "Table has not been specified."
+                set validated 0
+                set mode "p"
+                set next_mode ""
+            } 
+        }
+        y {
+            set validated 1
+            ns_log Notice "accounts-finance/www/pretti/app.tcl.133:  validated for y"
+            if { ![qf_is_natural_number $table_tid] } {
+                ns_log Notice "accounts-finance/www/pretti/app.tcl.139: table_tid '${table_tid}' is not valid for mode y"
                 lappend user_message_list "Table has not been specified."
                 set validated 0
                 set mode "p"
@@ -335,8 +346,8 @@ if { $form_posted } {
             set next_mode ""
         }
     }
-    # end validated input if
     if { $mode eq "s" } {
+        # Make this bulk ready, but don't activate bulk split at this time.
         if { [qf_is_natural_number $table_tid] && $column_name ne "" } {
             lappend tid_list $table_tid
         }
@@ -353,6 +364,41 @@ if { $form_posted } {
         set mode "p"
         set next_mode ""
     }
+    if { $mode eq "y" } {
+        # Make this bulk ready, but don't activate bulk sort at this time.
+        set tid_list [list ]
+        if { [qf_is_natural_number $table_tid] } {
+            lappend tid_list $table_tid
+        }
+        foreach table_tid $tid_list {
+            set table_stats_list [qss_table_stats $table_tid]
+            # name, title, comments, cell_count, row_count, template_id, flags, trashed, popularity, time last_modified, time created, user_id.
+            set trashed_p [lindex $table_stats_list 7]
+            set table_flags [lindex $table_stats_list 6]
+            set tid_user_id [lindex $table_stats_list 11]
+            if { $table_flags eq "dc" && ( $create_p || $write_p ) } {
+                set table_lists [qss_table_read $table_tid ]
+                set title_row [lindex $table_lists 0]
+                set y_idx [lsearch -exact $title_row "y"]
+                if { $y_idx > -1 } {
+                    set table_sorted_lists [lsort -index $y_idx -real [lrange $table_lists 1 end]]
+                    set table_sorted_lists [linsert $table_sorted_lists 0 $title_row]
+                    set table_stats [qss_table_stats $table_tid]
+                    # name, title, comments, cell_count, row_count, template_id, flags, trashed, popularity, time last_modified, time created, user_id.
+                    set table_name [lindex $table_stats 0]
+                    set table_title [lindex $table_stats 1]
+                    set table_comments [lindex $table_stats 2]
+                    append table_comments " Sorted by Y on [lc_time_system_to_conn [clock format [clock seconds] -format "%Y-%m-%d %r"]]"
+                    set table_template_id [lindex $table_stats 5]
+                    set table_flags [lindex $table_stats_list 6]
+                    qss_table_create $table_sorted_lists $table_name $table_title $table_comments $table_template_id $table_flags $instance_id $user_id
+                }
+            }
+        }
+        set mode "p"
+        set next_mode ""
+    }
+    # end validated input if
 }
 
 switch -exact -- $mode {
