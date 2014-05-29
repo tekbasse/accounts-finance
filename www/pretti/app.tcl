@@ -371,29 +371,7 @@ if { $form_posted } {
             lappend tid_list $table_tid
         }
         foreach table_tid $tid_list {
-            set table_stats_list [qss_table_stats $table_tid]
-            # name, title, comments, cell_count, row_count, template_id, flags, trashed, popularity, time last_modified, time created, user_id.
-            set trashed_p [lindex $table_stats_list 7]
-            set table_flags [lindex $table_stats_list 6]
-            set tid_user_id [lindex $table_stats_list 11]
-            if { $table_flags eq "dc" && ( $create_p || $write_p ) } {
-                set table_lists [qss_table_read $table_tid ]
-                set title_row [lindex $table_lists 0]
-                set y_idx [lsearch -exact $title_row "y"]
-                if { $y_idx > -1 } {
-                    set table_sorted_lists [lsort -index $y_idx -real [lrange $table_lists 1 end]]
-                    set table_sorted_lists [linsert $table_sorted_lists 0 $title_row]
-                    set table_stats [qss_table_stats $table_tid]
-                    # name, title, comments, cell_count, row_count, template_id, flags, trashed, popularity, time last_modified, time created, user_id.
-                    set table_name [lindex $table_stats 0]
-                    set table_title [lindex $table_stats 1]
-                    set table_comments [lindex $table_stats 2]
-                    append table_comments " Sorted by Y on [lc_time_system_to_conn [clock format [clock seconds] -format "%Y-%m-%d %r"]]"
-                    set table_template_id [lindex $table_stats 5]
-                    set table_flags [lindex $table_stats_list 6]
-                    qss_table_create $table_sorted_lists $table_name $table_title $table_comments $table_template_id $table_flags $instance_id $user_id
-                }
-            }
+            acc_fin::table_sort_y_asc $table_tid $instance_id $user_id
         }
         set mode "p"
         set next_mode ""
