@@ -890,13 +890,21 @@ ad_proc -private acc_fin::p_load_tid {
     }
     qss_tid_columns_to_array_of_lists $tid p_larr $constants_list $constants_required_list $instance_id $user_id
     # filter user input that is going to be used as references in arrays:
-    set p_larr(type) [acc_fin::list_index_filter $p_larr(type)]
-    set p_larr(dependent_tasks) [acc_fin::list_index_filter $p_larr(dependent_tasks)]
+    if { $task_type_column_exists_p } {
+        set p_larr(type) [acc_fin::list_index_filter $p_larr(type)]
+    }
+    if { [info exists p_larr(dependent_tasks) ] } {
+        set p_larr(dependent_tasks) [acc_fin::list_index_filter $p_larr(dependent_tasks)]
+    }
     set p_larr(_tCurveRef) [list ]
     set p_larr(_cCurveRef) [list ]
-    set i_max [llength $p_larr(type)]
+    if { $task_types_exist_p } {
+        set i_max [llength $p_larr(type)]
+    } else {
+        set i_max -1
+    }
     for {set i 0} {$i < $i_max} {incr i} {
-
+        
         if { $task_type_column_exists_p } {
             set type [lindex $p_larr(type) $i]
         }
@@ -910,7 +918,8 @@ ad_proc -private acc_fin::p_load_tid {
                 set type_ccurve_list [list ]
             }
         }
-
+        
+        
         # time curve
         if { $p_larr(time_dist_curve_name) ne "" } {
             set p_larr(time_dist_curve_tid) [qss_tid_from_name $p_larr(time_est_curve_name) ]
@@ -942,7 +951,7 @@ ad_proc -private acc_fin::p_load_tid {
             # use the default curve
             set tcurvenum 0
         }
-
+        
         # cost curve
         if { $p_larr(cost_dist_curve_name) ne "" } {
             set p_larr(cost_dist_curve_tid) [qss_tid_from_name $p_larr(cost_est_curve_name) ]
@@ -974,7 +983,7 @@ ad_proc -private acc_fin::p_load_tid {
             # use the default curve
             set ccurvenum 0
         }
-
+        
         # add curve references for both time and cost. 
         lappend p_larr(_tCurveRef) $tcurvenum
         lappend p_larr(_cCurveRef) $ccurvenum
@@ -986,6 +995,7 @@ ad_proc -private acc_fin::p_load_tid {
             }
         }
     }
+    # end for i, $i < $i_max
     return 1
 }
 
