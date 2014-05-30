@@ -376,6 +376,33 @@ if { $form_posted } {
         set mode "p"
         set next_mode ""
     }
+    if { $mode eq "c" } {
+        #  process... compute/process and write output as a new table, present post_calc results
+        ns_log Notice "accounts-finance/www/pretti/app.tcl.342:  mode = process"
+        set mode_name "#accounts-finance.process#"
+        #requires table_tid
+        set table_stats_list [qss_table_stats $table_tid]
+        # name, title, comments, cell_count, row_count, template_id, flags, trashed, popularity, time last_modified, time created, user_id
+        # set table_name [lindex $table_stats_list 0]
+        # set table_title [lindex $table_stats_list 1]
+        # set table_comments [lindex $table_stats_list 2]
+        set table_flags [lindex $table_stats_list 6]
+        if { $table_flags eq "p1" } {
+#            set table_name [lindex $table_stats_list 0]
+#            set table_title [lindex $table_stats_list 1]
+#            set table_comments [lindex $table_stats_list 2]
+#            set table_template_id [lindex $table_stats_list 5]
+            set trashed_p [lindex $table_stats_list 7]
+            set trash_folder_p $trashed_p
+
+            # see lib/pretti-view-one and lib/pretti-menu1
+            # given table_tid 
+            #set table_lists [qss_table_read $table_tid]
+            acc_fin::scenario_prettify $table_tid $instance_id $user_id
+        }
+        set mode "p"
+        set next_mode ""
+    }
     # end validated input if
 }
 
@@ -462,31 +489,6 @@ switch -exact -- $mode {
         qf_append html "</form>"
 #        set form_html [qf_read form_id $form_id]
         set form_html [qf_read ]
-    }
-    c {
-        #  process... compute/process and write output as a new table, present post_calc results
-        ns_log Notice "accounts-finance/www/pretti/app.tcl.342:  mode = process"
-        set mode_name "#accounts-finance.process#"
-        #requires table_tid
-        set table_stats_list [qss_table_stats $table_tid]
-        # name, title, comments, cell_count, row_count, template_id, flags, trashed, popularity, time last_modified, time created, user_id
-        # set table_name [lindex $table_stats_list 0]
-        # set table_title [lindex $table_stats_list 1]
-        # set table_comments [lindex $table_stats_list 2]
-        set table_flags [lindex $table_stats_list 6]
-        if { $table_flags eq "p1" } {
-#            set table_name [lindex $table_stats_list 0]
-#            set table_title [lindex $table_stats_list 1]
-#            set table_comments [lindex $table_stats_list 2]
-#            set table_template_id [lindex $table_stats_list 5]
-            set trashed_p [lindex $table_stats_list 7]
-            set trash_folder_p $trashed_p
-
-            # see lib/pretti-view-one and lib/pretti-menu1
-            # given table_tid 
-            #set table_lists [qss_table_read $table_tid]
-            acc_fin::scenario_prettify $table_tid $instance_id $user_id
-        }
     }
     r {
         #  review.... show processd output 

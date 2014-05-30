@@ -1243,17 +1243,17 @@ ad_proc -public acc_fin::scenario_prettify {
     #     local 3-point (min,median,max)
     #     general curve (normalized to local 1 point median ); local 1 point median is minimum time data requirement
     #     general 3-point (normalized to local median)    
-    set tc_larr(x) [list ]
-    set tc_larr(y) [list ]
-    set tc_larr(label) [list ]
+
+    # set blank defaults
+    set constants_list [acc_fin::pretti_columns_list dc]
+    foreach constant $constants_list {
+        set tc_larr($constant) [list ]
+    }
+    
     if { $p1_arr(time_dist_curve_tid) ne "" } {
         set table_stats_list [qss_table_stats $p1_arr(time_dist_curve_tid) $instance_id $user_id]
-        if { [llength $table_stats_list > 1 ] } {
+        if { [llength $table_stats_list] > 1 } {
             # get time curve into array tc_larr
-            set constants_list [acc_fin::pretti_columns_list dc]
-            foreach constant $constants_list {
-                set tc_larr($constant) ""
-            }
             set constants_required_list [acc_fin::pretti_columns_list dc 1]
             qss_tid_columns_to_array_of_lists $time_dist_curve_tid tc_larr $constants_list $constants_required_list $instance_id $user_id
             #tc_larr(x), tc_larr(y) and optionally tc_larr(label) where _larr refers to an array where each value is a list of column data by row 1..n
@@ -1262,16 +1262,14 @@ ad_proc -public acc_fin::scenario_prettify {
     set tc_lists [acc_fin::curve_import $tc_larr(x) $tc_larr(y) $tc_larr(label) [list ] $p1_arr(time_est_short) $p1_arr(time_est_median) $p1_arr(time_est_long) [list ] ]
     
     # Make cost_curve_data 
-    set cc_larr(x) [list ]
-    set cc_larr(y) [list ]
-    set cc_larr(label) [list ]
+    # set defaults
+    set constants_list [acc_fin::pretti_columns_list dc]
+    foreach constant $constants_list {
+        set cc_larr($constant) [list ]
+    }
     if { $p1_arr(cost_dist_curve_tid) ne "" } {
         set table_stats_list [qss_table_stats $p1_arr(cost_dist_curve_tid) $instance_id $user_id]
-        if { [llength $table_stats_list > 1 ] } {
-            set constants_list [acc_fin::pretti_columns_list dc]
-            foreach constant $constants_list {
-                set cc_larr($constant) ""
-            }
+        if { [llength $table_stats_list] > 1 } {
             set constants_required_list [acc_fin::pretti_columns_list dc 1]
             qss_tid_columns_to_array_of_lists $cost_dist_curve_tid cc_larr $constants_list $constants_required_list $instance_id $user_id
             #cc_larr(x), cc_larr(y) and optionally cc_larr(label) where _larr refers to an array where each value is a list of column data by row 1..n
@@ -1290,10 +1288,17 @@ ad_proc -public acc_fin::scenario_prettify {
     #### Use [lsearch -regexp {[a-z][0-9]+s} -all -inline $x_list] to screen alt time columns and create list for a scheduling feature
     #### with parameters defined in scenario or as a separate compilation of pretti output
     
+    # set defaults
+    set constants_list [acc_fin::pretti_columns_list p3]
+    foreach constant $constants_list {
+        set p3_larr($constant) [list ]
+    }
     if { $p1_arr(task_types_tid) ne "" } {
-        set constants_list [acc_fin::pretti_columns_list p3]
-        set constants_required_list [acc_fin::pretti_columns_list p3 1]
-        acc_fin::p_load_tid $constants_list $constants_required_list p3_larr $p1_arr(task_types_tid) "" $instance_id $user_id
+        set table_stats_list [qss_table_stats $p1_arr(task_types_tid) $instance_id $user_id]
+        if { [llength $table_stats_list] > 1 } {
+            set constants_required_list [acc_fin::pretti_columns_list p3 1]
+            acc_fin::p_load_tid $constants_list $constants_required_list p3_larr $p1_arr(task_types_tid) "" $instance_id $user_id
+        }
     }
     # The multi-level aspect of curve data storage needs a double-pointer to be efficient for projects with large memory footprints
     # act_curve_arr($act) => curve_ref
@@ -1304,19 +1309,27 @@ ad_proc -public acc_fin::scenario_prettify {
     # where curve_ref = 0 is default
     # so, add a p2_larr(curve_ref) column which references curves_lol
     #  add a p3_larr(curve_ref) column
-    
+        
     # import activity_list
     #### Use lsearch -glob or -regexp to screen alt columns and create list for custom summary feature. [a-z][0-9]
     #### ..connected to cost_probability_moment.. so columns represent curve IDs..
     #### Use [lsearch -regexp {[a-z][0-9]s} -all -inline $x_list] to screen alt time columns and create list for a scheduling feature.
+
+    # set defaults
+    set constants_list [acc_fin::pretti_columns_list p2]
+    foreach constant $constants_list {
+        set p2_larr($constant) [list ]
+    }
     if { $p1_arr(activity_table_tid) ne "" } {
-        # load activity table
-        set constants_list [acc_fin::pretti_columns_list p2]
-        set constants_required_list [acc_fin::pretti_columns_list p2 1]
-        acc_fin::p_load_tid $constants_list $constants_required_list p2_larr $p1_arr(activity_table_tid) "" $instance_id $user_id
-        # filter user input
-        set p2_larr(activity_ref) [acc_fin::list_index_filter $p2_larr(activity_ref)]
-        set p2_larr(dependent_tasks) [acc_fin::list_index_filter $p2_larr(dependent_tasks)]
+        set table_stats_list [qss_table_stats $p1_arr(activity_table_tid) $instance_id $user_id]
+        if { [llength $table_stats_list] > 1 } {
+            # load activity table
+            set constants_required_list [acc_fin::pretti_columns_list p2 1]
+            acc_fin::p_load_tid $constants_list $constants_required_list p2_larr $p1_arr(activity_table_tid) "" $instance_id $user_id
+            # filter user input
+            set p2_larr(activity_ref) [acc_fin::list_index_filter $p2_larr(activity_ref)]
+            set p2_larr(dependent_tasks) [acc_fin::list_index_filter $p2_larr(dependent_tasks)]
+        }
     }
     
     # Substitute task_type data (p3_larr) into activity data (p2_larr) when p2_larr data is less detailed or missing.
