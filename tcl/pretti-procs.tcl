@@ -846,6 +846,8 @@ ad_proc -private acc_fin::p_load_tid {
     p_larr_name
     tid
     {p3_larr_name ""}
+    {instance_id ""}
+    {user_id ""}
 } {
     loads array_name with p2 or p3 style table for use with internal code
 } {
@@ -854,6 +856,14 @@ ad_proc -private acc_fin::p_load_tid {
     upvar cost_clarr cost_clarr
     upvar type_t_curve_arr type_t_curve_arr
     upvar type_c_curve_arr type_c_curve_arr
+
+    if { $instance_id eq "" } {
+        set instance_id [ad_conn package_id]
+    }
+    if { $user_id eq "" } {
+        set user_id [ad_conn user_id]
+    }
+
     set task_type_column_exists_p 0
     set task_types_exist_p 0    
     set type_tcurve_list [list ]
@@ -878,7 +888,7 @@ ad_proc -private acc_fin::p_load_tid {
     foreach column $constants_list {
         set p_larr($column) [list ]
     }
-    qss_tid_columns_to_array_of_lists $tid p_larr $constants_list $constants_required_list $package_id $user_id
+    qss_tid_columns_to_array_of_lists $tid p_larr $constants_list $constants_required_list $instance_id $user_id
     # filter user input that is going to be used as references in arrays:
     set p_larr(type) [acc_fin::list_index_filter $p_larr(type)]
     set p_larr(dependent_tasks) [acc_fin::list_index_filter $p_larr(dependent_tasks)]
@@ -918,7 +928,7 @@ ad_proc -private acc_fin::p_load_tid {
                     set tc_larr($constant) ""
                 }
                 set constants_required_list [acc_fin::pretti_columns_list dc 1]
-                qss_tid_columns_to_array_of_lists $time_dist_curve_tid tc_larr $constants_list $constants_required_list $package_id $user_id
+                qss_tid_columns_to_array_of_lists $time_dist_curve_tid tc_larr $constants_list $constants_required_list $instance_id $user_id
                 # add to input tid cache
                 foreach constant $constants_list {
                     set tc_cache_larr($constant,$ctid) $tc_larr($constant)
@@ -950,7 +960,7 @@ ad_proc -private acc_fin::p_load_tid {
                     set cc_larr($constant) ""
                 }
                 set constants_required_list [acc_fin::pretti_columns_list dc 1]
-                qss_tid_columns_to_array_of_lists $cost_dist_curve_tid cc_larr $constants_list $constants_required_list $package_id $user_id
+                qss_tid_columns_to_array_of_lists $cost_dist_curve_tid cc_larr $constants_list $constants_required_list $instance_id $user_id
                 # add to input tid cache
                 foreach constant $constants_list {
                     set cc_cache_larr($constant,$ctid) $cc_larr($constant)
@@ -1111,11 +1121,13 @@ ad_proc -private acc_fin::curve_import {
     # 6. return a representation of a normalized curve as a list of lists similar to curve_lists 
     if { [llength $c_lists] == 0 } {
         # No time defaults.
+        # following is essentially the same as acc_fin::pert_omp_to_normal_dc
         # set duration to 1 for limited block feedback.
-
-        set tc_larr(x) [list $outliers $std_dev_parts $std_dev_parts $std_dev_parts $std_dev_parts $outliers]
+        #set tc_larr(y) [list $outliers $std_dev_parts $std_dev_parts $std_dev_parts $std_dev_parts $outliers]
+        set tc_larr(y) [list $minimum $median $median $median $median $maximum]
         # using approximate cumulative distribution y values for standard deviation of 1.
-        set tc_larr(y) [list 0.15 0.3 0.45 0.7 0.82 1.]
+        set portion [expr { 1. / 6. } ]
+        set tc_larr(x) [list $portion $portion $portion $portion $portion $portion ]
     }
 
     # Return an ordered list of lists representing a curve
@@ -1221,31 +1233,40 @@ ad_proc -public acc_fin::scenario_prettify {
     #     local 3-point (min,median,max)
     #     general curve (normalized to local 1 point median ); local 1 point median is minimum time data requirement
     #     general 3-point (normalized to local median)    
-    
+    set tc_larr(x) [list ]
+    set tc_larr(y) [list ]
+    set tc_larr(label) [list ]
     if { $p1_arr(time_dist_curve_tid) ne "" } {
-        # get time curve into array tc_larr
-        set constants_list [acc_fin::pretti_columns_list dc]
-        foreach constant $constants_list {
-            set tc_larr($constant) ""
+        set table_stats_list [qss_table_stats $p1_arr(time_dist_curve_tid) $instance_id $user_id]
+        if { [llength $table_stats_list > 1 ] } {
+            # get time curve into array tc_larr
+            set constants_list [acc_fin::pretti_columns_list dc]
+            foreach constant $constants_list {
+                set tc_larr($constant) ""
+            }
+            set constants_required_list [acc_fin::pretti_columns_list dc 1]
+            qss_tid_columns_to_array_of_lists $time_dist_curve_tid tc_larr $constants_list $constants_required_list $instance_id $user_id
+            #tc_larr(x), tc_larr(y) and optionally tc_larr(label) where _larr refers to an array where each value is a list of column data by row 1..n
         }
-        set constants_required_list [acc_fin::pretti_columns_list dc 1]
-        qss_tid_columns_to_array_of_lists $time_dist_curve_tid tc_larr $constants_list $constants_required_list $instance_id $user_id
-        #tc_larr(x), tc_larr(y) and optionally tc_larr(label) where _larr refers to an array where each value is a list of column data by row 1..n
     } 
-#### error on next: can't read "tc_larr(x)": no such variable
     set tc_lists [acc_fin::curve_import $tc_larr(x) $tc_larr(y) $tc_larr(label) [list ] $p1_arr(time_est_short) $p1_arr(time_est_median) $p1_arr(time_est_long) [list ] ]
     
     # Make cost_curve_data 
+    set cc_larr(x) [list ]
+    set cc_larr(y) [list ]
+    set cc_larr(label) [list ]
     if { $p1_arr(cost_dist_curve_tid) ne "" } {
-        set constants_list [acc_fin::pretti_columns_list dc]
-        foreach constant $constants_list {
-            set cc_larr($constant) ""
+        set table_stats_list [qss_table_stats $p1_arr(cost_dist_curve_tid) $instance_id $user_id]
+        if { [llength $table_stats_list > 1 ] } {
+            set constants_list [acc_fin::pretti_columns_list dc]
+            foreach constant $constants_list {
+                set cc_larr($constant) ""
+            }
+            set constants_required_list [acc_fin::pretti_columns_list dc 1]
+            qss_tid_columns_to_array_of_lists $cost_dist_curve_tid cc_larr $constants_list $constants_required_list $instance_id $user_id
+            #cc_larr(x), cc_larr(y) and optionally cc_larr(label) where _larr refers to an array where each value is a list of column data by row 1..n
         }
-        set constants_required_list [acc_fin::pretti_columns_list dc 1]
-        qss_tid_columns_to_array_of_lists $cost_dist_curve_tid cc_larr $constants_list $constants_required_list $instance_id $user_id
-        #cc_larr(x), cc_larr(y) and optionally cc_larr(label) where _larr refers to an array where each value is a list of column data by row 1..n
-        
-    } 
+    }
     set cc_lists [acc_fin::curve_import $cc_larr(x) $cc_larr(y) $cc_larr(label) [list ] $p1_arr(cost_est_low) $p1_arr(cost_est_median) $p1_arr(cost_est_high) [list ] ]
     
     # curves_larr has 2 versions: time as t_c_larr and cost as c_c_larr
@@ -1262,7 +1283,7 @@ ad_proc -public acc_fin::scenario_prettify {
     if { $p1_arr(task_types_tid) ne "" } {
         set constants_list [acc_fin::pretti_columns_list p3]
         set constants_required_list [acc_fin::pretti_columns_list p3 1]
-        acc_fin::p_load_tid $constants_list $constants_required_list p3_larr $p1_arr(task_types_tid)
+        acc_fin::p_load_tid $constants_list $constants_required_list p3_larr $p1_arr(task_types_tid) "" $instance_id $user_id
     }
     # The multi-level aspect of curve data storage needs a double-pointer to be efficient for projects with large memory footprints
     # act_curve_arr($act) => curve_ref
@@ -1282,7 +1303,7 @@ ad_proc -public acc_fin::scenario_prettify {
         # load activity table
         set constants_list [acc_fin::pretti_columns_list p2]
         set constants_required_list [acc_fin::pretti_columns_list p2 1]
-        acc_fin::p_load_tid $constants_list $constants_required_list p2_larr $p1_arr(activity_table_tid)
+        acc_fin::p_load_tid $constants_list $constants_required_list p2_larr $p1_arr(activity_table_tid) "" $instance_id $user_id
         # filter user input
         set p2_larr(activity_ref) [acc_fin::list_index_filter $p2_larr(activity_ref)]
         set p2_larr(dependent_tasks) [acc_fin::list_index_filter $p2_larr(dependent_tasks)]
