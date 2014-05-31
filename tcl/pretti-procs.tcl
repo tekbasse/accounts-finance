@@ -9,12 +9,48 @@ ad_library {
     @license GNU General Public License 3, see project home or http://www.gnu.org/licenses/gpl-3.0.en.html
     @project home: http://github.com/tekbasse/accounts-finance
     @address: po box 20, Marylhurst, OR 97036-0020 usa
-    @email: kappa@dekka.com
+    @email: tekbasse@yahoo.com
 
     Temporary comment about git commit comments: http://xkcd.com/1296/
 }
 
 namespace eval acc_fin {}
+
+ad_proc -public acc_fin::pretti_log_entry {
+    table_id
+    entry_text
+    {user_id ""}
+    {instance_id ""}
+} {
+    Log an entry for a pretti process. Append entry if it already exists.
+} {
+    # TABLE qaf_process_log (
+    #     id integer not null primary key,
+    #     instance_id integer,
+    #     user_id integer,
+    #     trashed_p varchar(1) default '0',
+    #     name varchar(40),
+    #     title varchar(80),
+    #     created timestamptz default now(),
+    #     last_modified timestamptz,
+    #     log_entry text
+    #     );
+
+    return 1
+}
+
+ad_proc -public acc_fin::pretti_log_entry {
+    table_tid
+    {user_id ""}
+    {instance_id ""}
+} {
+    Get log entry. Blank if empty or doesn't exist.
+} {
+    
+
+}
+
+
 
 ad_proc -public acc_fin::pert_omp_to_strict_dc {
     optimistic
