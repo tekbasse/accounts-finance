@@ -16,45 +16,81 @@ ad_library {
 
 namespace eval acc_fin {}
 
-ad_proc -public acc_fin::pretti_log_entry {
+ad_proc -private acc_fin::pretti_log_create {
     table_id
+    action_code
+    action_title
     entry_text
     {user_id ""}
     {instance_id ""}
 } {
-    Log an entry for a pretti process. Append entry if it already exists.
+    Log an entry for a pretti process. 
 } {
-    # TABLE qaf_process_log (
-    #     id integer not null primary key,
-    #     instance_id integer,
-    #     user_id integer,
-    #     trashed_p varchar(1) default '0',
-    #     name varchar(40),
-    #     title varchar(80),
-    #     created timestamptz default now(),
-    #     last_modified timestamptz,
-    #     log_entry text
-    #     );
-
-    # TABLE qaf_process_log_viewed (
-    #     id integer not null,
-    #     instance_id integer,
-    #     user_id integer,
-    #     last_viewed timestamptz
-    #     );
-
-    return 1
+    set status [qaf_is_natural_number $table_id]
+    if { $status } {
+        if { $entry_text ne "" } {
+            if { $instance_id eq "" } {
+                set instance_id [ad_conn package_id]
+            }
+            if { $user_id eq "" } {
+                set user_id [ad_conn user_id]
+            }
+            set id [db_nextval qaf_id_seq]
+            set trashed_p 0
+            set nowts [dt_systime -gmt 1]
+            set action_code [qf_abbreviate $action_code 38]
+            set action_title [qf_abbreviate $action_title 78]
+            db_dml qaf_process_log_create { insert into qaf_process_log
+                (id,instance_id,user_id,trashed_p,name,title,created,last_modified,log_entry)
+                values (:id,:instance_id,:user_id,:trashed_p,:action_code,:action_title,:nowts,:nowts,:entry_text) }
+        } 
+    }
+    return $status
 }
 
-ad_proc -public acc_fin::pretti_log_entry {
+ad_proc -public acc_fin::pretti_log_read {
     table_tid
+    {new_only_p "1"}
     {user_id ""}
     {instance_id ""}
 } {
-    Get log entry. Blank if empty or doesn't exist.
+    Returns log entries as a list. Returns blank if empty or doesn't exist.
 } {
-    
-
+    set status [qaf_is_natural_number $table_id]
+    if { $status } {
+        if { $instance_id eq "" } {
+            set instance_id [ad_conn package_id]
+        }
+        if { $user_id eq "" } {
+            set user_id [ad_conn user_id]
+        }
+        set return_lol [list ]
+        if { $new_only_p } {
+            db_list_of_lists qaf_process_log_read_new
+        } else {
+            db_list_of_lists qaf_process_log_read_all
+        }
+    # TABLE qaf_process_log (
+            #     id integer not null primary key,
+            #     instance_id integer,
+            #     user_id integer,
+            #     trashed_p varchar(1) default '0',
+            #     name varchar(40),
+            #     title varchar(80),
+            #     created timestamptz default now(),
+            #     last_modified timestamptz,
+            #     log_entry text
+            #     );
+            
+            # TABLE qaf_process_log_viewed (
+            #     id integer not null,
+            #     instance_id integer,
+            #     user_id integer,
+            #     last_viewed timestamptz
+            #     );
+        
+    }
+    return 
 }
 
 
