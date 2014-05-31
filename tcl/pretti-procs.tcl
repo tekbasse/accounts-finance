@@ -36,6 +36,13 @@ ad_proc -public acc_fin::pretti_log_entry {
     #     log_entry text
     #     );
 
+    # TABLE qaf_process_log_viewed (
+    #     id integer not null,
+    #     instance_id integer,
+    #     user_id integer,
+    #     last_viewed timestamptz
+    #     );
+
     return 1
 }
 

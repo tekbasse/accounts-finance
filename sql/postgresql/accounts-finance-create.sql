@@ -25,6 +25,16 @@ create index qaf_process_log_instance_id_idx on qaf_process_log (instance_id);
 create index qaf_process_log_user_id_idx on qaf_process_log (user_id);
 create index qaf_process_log_trashed_idx on qaf_process_log (trashed);
 
+CREATE TABLE qaf_process_log_viewed (
+       id integer not null,
+       instance_id integer,
+       user_id integer,
+       last_viewed timestamptz
+);
+
+create index qaf_process_log_viewed_id_idx on qaf_process_log_viewed (id);
+create index qaf_process_log_viewed_instance_id_idx on qaf_process_log_viewed (instance_id);
+create index qaf_process_log_viewed_user_id_idx on qaf_process_log_viewed (user_id);
 
 -- model output is separate from case, even though it is one-to-one
 -- for easier abstractions of output without associating case for 
