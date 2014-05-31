@@ -7,6 +7,25 @@
 CREATE SEQUENCE qaf_id_seq start 10000;
 SELECT nextval ('qaf_id_seq');
 
+-- For general qaf app delayed process logs
+CREATE TABLE qaf_process_log (
+    id integer not null primary key,
+    instance_id integer,
+    user_id integer,
+    trashed_p varchar(1) default '0',
+    name varchar(40),
+    title varchar(80),
+    created timestamptz default now(),
+    last_modified timestamptz,
+    log_entry text
+);
+
+create index qaf_process_log_id_idx on qaf_process_log (id);
+create index qaf_process_log_instance_id_idx on qaf_process_log (instance_id);
+create index qaf_process_log_user_id_idx on qaf_process_log (user_id);
+create index qaf_process_log_trashed_idx on qaf_process_log (trashed);
+
+
 -- model output is separate from case, even though it is one-to-one
 -- for easier abstractions of output without associating case for 
 -- multple case processing, such as double blind study simulations, using outputs for 
