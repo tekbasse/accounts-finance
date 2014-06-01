@@ -44,6 +44,7 @@ ad_proc -private acc_fin::pretti_log_create {
             db_dml qaf_process_log_create { insert into qaf_process_log
                 (id,instance_id,user_id,trashed_p,name,title,created,last_modified,log_entry)
                 values (:id,:instance_id,:user_id,:trashed_p,:action_code,:action_title,:nowts,:nowts,:entry_text) }
+            ns_log Notice "acc_fin::pretti_log_create.46: posting to qaf_process_log: action_code ${action_code} action_title ${action_title} '$entry_text'"
         } else {
             ns_log Warning "acc_fin::pretti_log_create.48: attempt to post an empty log message has been ignored."
         }
@@ -1516,6 +1517,7 @@ ad_proc -public acc_fin::scenario_prettify {
                             if { [ad_var_type_check_number_p $max_overlap_pct ] && $max_overlap_pct < 2 && $max_overlap_pct > -1 } {
                                 # validated
                             } else {
+                                acc_fin::pretti_log_create $scenario_tid "max_overlap_pct" "value" "max_overlap_pct '$max_overlap_pct' is out of range. Set to 1 (100%). (ref1520)" $user_id $instance_id
                                 set max_overlap_pct 1.
                             }
                             # coef_p1 * max_concurrent + coef_p2 = $coefficient
@@ -1571,13 +1573,14 @@ ad_proc -public acc_fin::scenario_prettify {
                     } else {
                         # No activity defined for this factor (term with coefficient), flag an error --missing dependency.
                         lappend compute_message_list "Dependency '${term}' is undefined, referenced in: '${activity}'."
+                        acc_fin::pretti_log_create $scenario_tid "${term}" "value" "Dependency '${term}' referenced in '${activity}' is undefined.(ref1576)" $user_id $instance_id
                         set error_fail 1
                     }
                 } else {
                     # No activity defined for this factor (term with coefficient), flag an error --missing dependency.
-                    lappend compute_message_list "Dependency '${activity}' is undefined as an activity."
+                    lappend compute_message_list "Dependency '${activity}' is an undefined activity."
+                    acc_fin::pretti_log_create $scenario_tid "${activity}" "value" "Dependency '${activity}' is an undefined activity. (ref1582)" $user_id $instance_id
                     set error_fail 1
-                    
                 }
             }
             # else, an activity for the dependency exists. Do nothing.
