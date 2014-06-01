@@ -51,17 +51,18 @@ ad_proc -private acc_fin::pretti_log_create {
 
 ad_proc -public acc_fin::pretti_log_read {
     table_tid
-    {new_only_p "1"}
+    {max_old "1"}
     {user_id ""}
     {instance_id ""}
 } {
-    If new_only_p is '1', returns new log entries as a list. 
-    If new_only_p is '0', returns most recent log entry.
+    Returns any new log entries as a list via util_user_message, otherwise returns most recent max_old number of log entries.
     Returns empty string if no entry exists.
 } {
     set return_lol [list ]
-    set status [qaf_is_natural_number $table_id]
-    if { $status } {
+    set nowts [dt_systime -gmt 1]
+    set valid1_p [qaf_is_natural_number $table_id] 
+    set valid2_p [qaf_is_natural_number $table_id]
+    if { $valid1_p && $valid2_p } {
         if { $instance_id eq "" } {
             set instance_id [ad_conn package_id]
         }
@@ -69,25 +70,39 @@ ad_proc -public acc_fin::pretti_log_read {
             set user_id [ad_conn user_id]
         }
         set return_lol [list ]
-        set last_modified ""
-        if { $new_only_p } {
-            db_0or1row qaf_process_log_viewed_last { select last_modified from qaf_process_log_viewed where instance_id = :instance_id and table_id = :table_id and user_id = :user_id }
-        }
-        if { $new_only_p && $last_modified ne "" } {
+        set last_viewed ""
+        set viewing_history_p [db_0or1row qaf_process_log_viewed_last { select last_viewed from qaf_process_log_viewed where instance_id = :instance_id and table_id = :table_id and user_id = :user_id } ]
+        
+        if { $last_viewed ne "" } {
             set entries_lol [db_list_of_lists qaf_process_log_read_new { 
                 select id, name, title, log_entry, last_modified from qaf_process_log 
-                where instance_id = :instance_id and table_tid =:table_tid and last_modified > :last_modified order by last_modified desc } ]
+                where instance_id = :instance_id and table_tid =:table_tid and last_modified > :last_viewed order by last_modified desc } ]
+            foreach row $entries_lol {
+                util_user_message -message "[lc_time_system_to_conn [lindex $entries_lol 4]] [lindex $entries_lol 3]"
+            }
+            set entries_lol [list ]
         } else {
             set entries_lol [db_list_of_lists qaf_process_log_read_one { 
                 select id, name, title, log_entry, last_modified from qaf_process_log 
-                where instance_id = :instance_id and table_tid =:table_tid order by last_modified desc limit '1' } ]
+                where instance_id = :instance_id and table_tid =:table_tid order by last_modified desc limit :max_old } ]
+            foreach row $entries_lol {
+                set row [lindex $entries_lol 2]
+                append row " ([lindex $entries_lol 1])"
+                append row " posted: [lc_time_system_to_conn [lindex $entries_lol 4]]\n "
+                append row [lindex $entries_lol 3]
+                lappend return_lol $row
+            }
         }
-        foreach row $entries_lol {
-            set row [lindex $entries_lol 2]
-            append row " ([lindex $entries_lol 1])"
-            append row " posted: [lindex $entries_lol 4]\n "
-            append row [lindex $entries_lol 3]
-            lappend return_lol $row
+        # set new view history time
+        if { $viewing_history_p } {
+            # last_modified ne "", so update
+            db_dml qaf_process_log_viewed_update { update qaf_process_log_viewed set last_viewed = :nowts where instance_id = :instance_id and table_id = :table_id and user_id = :user_id }
+        } else {
+            # create history
+            set id [db_nextval qaf_id_seq]
+            db_dml qaf_process_log_viewed_create { insert into qaf_process_log_viewed
+                  ( id, instance_id, user_id, table_tid, last_viewed )
+                values ( :id, :instance_id, :user_id, :table_tid, :nowts ) }
         }
     }
     return $return_lol
