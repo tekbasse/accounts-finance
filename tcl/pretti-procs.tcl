@@ -24,8 +24,9 @@ ad_proc -private acc_fin::pretti_log_create {
     {user_id ""}
     {instance_id ""}
 } {
-    Log an entry for a pretti process. 
+    Log an entry for a pretti process. Returns unique entry_id if successful, otherwise returns empty string.
 } {
+    set id ""
     set status [qaf_is_natural_number $table_id]
     if { $status } {
         if { $entry_text ne "" } {
@@ -45,7 +46,7 @@ ad_proc -private acc_fin::pretti_log_create {
                 values (:id,:instance_id,:user_id,:trashed_p,:action_code,:action_title,:nowts,:nowts,:entry_text) }
         } 
     }
-    return $status
+    return $id
 }
 
 ad_proc -public acc_fin::pretti_log_read {
@@ -58,6 +59,7 @@ ad_proc -public acc_fin::pretti_log_read {
     If new_only_p is '0', returns most recent log entry.
     Returns empty string if no entry exists.
 } {
+    set return_lol [list ]
     set status [qaf_is_natural_number $table_id]
     if { $status } {
         if { $instance_id eq "" } {
@@ -72,37 +74,24 @@ ad_proc -public acc_fin::pretti_log_read {
             db_0or1row qaf_process_log_viewed_last { select last_modified from qaf_process_log_viewed where instance_id = :instance_id and table_id = :table_id and user_id = :user_id }
         }
         if { $new_only_p && $last_modified ne "" } {
-            db_list_of_lists qaf_process_log_read_new { 
+            set entries_lol [db_list_of_lists qaf_process_log_read_new { 
                 select id, name, title, log_entry, last_modified from qaf_process_log 
-                where instance_id = :instance_id and table_tid =:table_tid and last_modified > :last_modified order by last_modified desc }
+                where instance_id = :instance_id and table_tid =:table_tid and last_modified > :last_modified order by last_modified desc } ]
         } else {
-            db_list_of_lists qaf_process_log_read_one { 
+            set entries_lol [db_list_of_lists qaf_process_log_read_one { 
                 select id, name, title, log_entry, last_modified from qaf_process_log 
-                where instance_id = :instance_id and table_tid =:table_tid order by last_modified desc limit '1' }
+                where instance_id = :instance_id and table_tid =:table_tid order by last_modified desc limit '1' } ]
         }
-    # TABLE qaf_process_log (
-            #     id integer not null primary key,
-            #     instance_id integer,
-            #     user_id integer,
-            #     trashed_p varchar(1) default '0',
-            #     name varchar(40),
-            #     title varchar(80),
-            #     created timestamptz default now(),
-            #     last_modified timestamptz,
-            #     log_entry text
-            #     );
-            
-            # TABLE qaf_process_log_viewed (
-            #     id integer not null,
-            #     instance_id integer,
-            #     user_id integer,
-            #     last_viewed timestamptz
-            #     );
-        
+        foreach row $entries_lol {
+            set row [lindex $entries_lol 2]
+            append row " ([lindex $entries_lol 1])"
+            append row " posted: [lindex $entries_lol 4]\n "
+            append row [lindex $entries_lol 3]
+            lappend return_lol $row
+        }
     }
-    return 
+    return $return_lol
 }
-
 
 
 ad_proc -public acc_fin::pert_omp_to_strict_dc {
