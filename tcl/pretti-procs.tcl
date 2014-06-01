@@ -17,7 +17,7 @@ ad_library {
 namespace eval acc_fin {}
 
 ad_proc -private acc_fin::pretti_log_create {
-    table_id
+    table_tid
     action_code
     action_title
     entry_text
@@ -27,7 +27,7 @@ ad_proc -private acc_fin::pretti_log_create {
     Log an entry for a pretti process. Returns unique entry_id if successful, otherwise returns empty string.
 } {
     set id ""
-    set status [qaf_is_natural_number $table_id]
+    set status [qaf_is_natural_number $table_tid]
     if { $status } {
         if { $entry_text ne "" } {
             if { $instance_id eq "" } {
@@ -60,8 +60,8 @@ ad_proc -public acc_fin::pretti_log_read {
 } {
     set return_lol [list ]
     set nowts [dt_systime -gmt 1]
-    set valid1_p [qaf_is_natural_number $table_id] 
-    set valid2_p [qaf_is_natural_number $table_id]
+    set valid1_p [qf_is_natural_number $table_tid] 
+    set valid2_p [qf_is_natural_number $table_tid]
     if { $valid1_p && $valid2_p } {
         if { $instance_id eq "" } {
             set instance_id [ad_conn package_id]
@@ -71,7 +71,7 @@ ad_proc -public acc_fin::pretti_log_read {
         }
         set return_lol [list ]
         set last_viewed ""
-        set viewing_history_p [db_0or1row qaf_process_log_viewed_last { select last_viewed from qaf_process_log_viewed where instance_id = :instance_id and table_id = :table_id and user_id = :user_id } ]
+        set viewing_history_p [db_0or1row qaf_process_log_viewed_last { select last_viewed from qaf_process_log_viewed where instance_id = :instance_id and table_tid = :table_tid and user_id = :user_id } ]
         
         if { $last_viewed ne "" } {
             set entries_lol [db_list_of_lists qaf_process_log_read_new { 
@@ -96,7 +96,7 @@ ad_proc -public acc_fin::pretti_log_read {
         # set new view history time
         if { $viewing_history_p } {
             # last_modified ne "", so update
-            db_dml qaf_process_log_viewed_update { update qaf_process_log_viewed set last_viewed = :nowts where instance_id = :instance_id and table_id = :table_id and user_id = :user_id }
+            db_dml qaf_process_log_viewed_update { update qaf_process_log_viewed set last_viewed = :nowts where instance_id = :instance_id and table_tid = :table_tid and user_id = :user_id }
         } else {
             # create history
             set id [db_nextval qaf_id_seq]
