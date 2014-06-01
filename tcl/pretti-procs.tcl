@@ -44,7 +44,11 @@ ad_proc -private acc_fin::pretti_log_create {
             db_dml qaf_process_log_create { insert into qaf_process_log
                 (id,instance_id,user_id,trashed_p,name,title,created,last_modified,log_entry)
                 values (:id,:instance_id,:user_id,:trashed_p,:action_code,:action_title,:nowts,:nowts,:entry_text) }
-        } 
+        } else {
+            ns_log Warning "acc_fin::pretti_log_create.48: attempt to post an empty log message has been ignored."
+        }
+    } else {
+        ns_log Warning "acc_fin::pretti_log_create.51: table_tid '$table_tid' is not a natural number reference. Log message '{$entry_text}' ignored."
     }
     return $id
 }
@@ -1303,18 +1307,31 @@ ad_proc -public acc_fin::scenario_prettify {
     if { $p1_arr(activity_table_name) ne "" } {
         # set activity_table_tid
         set p1_arr(activity_table_tid) [qss_tid_from_name $p1_arr(activity_table_name) ]
+        if { $p1_arr(activity_table_tid) eq "" } {
+            acc_fin::pretti_log_create $scenario_tid "activity_table_name" "value" "activity_table_name reference does not exist." $user_id $instance_id
+        }
     } 
     if { $p1_arr(task_types_name) ne "" } {
         # set task_types_tid
         set p1_arr(task_types_tid) [qss_tid_from_name $p1_arr(task_types_name) ]
+        if { $p1_arr(task_types_tid) eq "" } {
+            acc_fin::pretti_log_create $scenario_tid "task_types_name" "value" "task_types_name reference does not exist." $user_id $instance_id
+        }
     } 
     if { $p1_arr(time_dist_curve_name) ne "" } {
         # set dist_curve_tid
         set p1_arr(time_dist_curve_tid) [qss_tid_from_name $p1_arr(time_dist_curve_name) ]
+        if { $p1_arr(time_dist_curve_tid) eq "" } {
+            acc_fin::pretti_log_create $scenario_tid "time_dist_curve_name" "value" "time_dist_curve_name reference does not exist." $user_id $instance_id
+        }
+
     }
     if { $p1_arr(cost_dist_curve_name) ne "" } {
         # set dist_curve_tid
         set p1_arr(cost_dist_curve_tid) [qss_tid_from_name $p1_arr(cost_dist_curve_name) ]
+        if { $p1_arr(cost_dist_curve_tid) eq "" } {
+            acc_fin::pretti_log_create $scenario_tid "cost_dist_curve_name" "value" "cost_dist_curve_name reference does not exist." $user_id $instance_id
+        }
     }
     
     
@@ -1324,6 +1341,7 @@ ad_proc -public acc_fin::scenario_prettify {
         if { $p1_arr($constant) eq "" } {
             set constants_exist_p 0
             lappend compute_message_list "Initial condition constant '${constant}' is required but does not exist."
+            acc_fin::pretti_log_create $scenario_tid "${constant}" "value" "${constant} is required but does not exist." $user_id $instance_id
             set error_fail 1
         }
     }
@@ -1350,6 +1368,8 @@ ad_proc -public acc_fin::scenario_prettify {
             set constants_required_list [acc_fin::pretti_columns_list dc 1]
             qss_tid_columns_to_array_of_lists $time_dist_curve_tid tc_larr $constants_list $constants_required_list $instance_id $user_id
             #tc_larr(x), tc_larr(y) and optionally tc_larr(label) where _larr refers to an array where each value is a list of column data by row 1..n
+        } else {
+            acc_fin::pretti_log_create $scenario_tid "time_dist_curve_tid" "value" "time_dist_curve '$p1_larr(time_dist_curve_tid)' does not exist." $user_id $instance_id
         }
     } 
     set tc_lists [acc_fin::curve_import $tc_larr(x) $tc_larr(y) $tc_larr(label) [list ] $p1_arr(time_est_short) $p1_arr(time_est_median) $p1_arr(time_est_long) [list ] ]
@@ -1366,6 +1386,8 @@ ad_proc -public acc_fin::scenario_prettify {
             set constants_required_list [acc_fin::pretti_columns_list dc 1]
             qss_tid_columns_to_array_of_lists $cost_dist_curve_tid cc_larr $constants_list $constants_required_list $instance_id $user_id
             #cc_larr(x), cc_larr(y) and optionally cc_larr(label) where _larr refers to an array where each value is a list of column data by row 1..n
+        } else {
+            acc_fin::pretti_log_create $scenario_tid "cost_dist_curve_tid" "value" "cost_dist_curve '$p1_larr(cost_dist_curve_tid)' does not exist." $user_id $instance_id
         }
     }
     set cc_lists [acc_fin::curve_import $cc_larr(x) $cc_larr(y) $cc_larr(label) [list ] $p1_arr(cost_est_low) $p1_arr(cost_est_median) $p1_arr(cost_est_high) [list ] ]
@@ -1391,6 +1413,8 @@ ad_proc -public acc_fin::scenario_prettify {
         if { [llength $table_stats_list] > 1 } {
             set constants_required_list [acc_fin::pretti_columns_list p3 1]
             acc_fin::p_load_tid $constants_list $constants_required_list p3_larr $p1_arr(task_types_tid) "" $instance_id $user_id
+        } else {
+            acc_fin::pretti_log_create $scenario_tid "task_types_tid" "value" "task_types_tid '$p1_larr(task_types_tid)' does not exist." $user_id $instance_id
         }
     }
     # The multi-level aspect of curve data storage needs a double-pointer to be efficient for projects with large memory footprints
@@ -1422,7 +1446,11 @@ ad_proc -public acc_fin::scenario_prettify {
             # filter user input
             set p2_larr(activity_ref) [acc_fin::list_index_filter $p2_larr(activity_ref)]
             set p2_larr(dependent_tasks) [acc_fin::list_index_filter $p2_larr(dependent_tasks)]
+        } else {
+            acc_fin::pretti_log_create $scenario_tid "activity_table_tid" "value" "activity_table_tid '$p1_larr(activity_table_tid)' does not exist.(ref1450)" $user_id $instance_id
         }
+    } else {
+            acc_fin::pretti_log_create $scenario_tid "activity_table_tid" "value" "activity_table_tid '$p1_larr(activity_table_tid)' does not exist.(ref1453)" $user_id $instance_id
     }
     
     # Substitute task_type data (p3_larr) into activity data (p2_larr) when p2_larr data is less detailed or missing.
