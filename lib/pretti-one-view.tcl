@@ -1,5 +1,5 @@
 # requires instance_id table_tid
-
+# optional user_id
 
 #set package_id [ad_conn package_id]
 set user_id [ad_conn user_id]
@@ -18,4 +18,11 @@ if { [qf_is_natural_number $table_tid] } {
     set table_tag_atts_list [list border 1 cellpadding 3 cellspacing 0]
     set table_html [qss_list_of_lists_to_html_table $table_lists $table_tag_atts_list]
 #    append table_html "<p>${table_comments}</p>"
+    set table_log_messages_list [acc_fin::pretti_log_read $table_tid 3 $user_id $instance_id]
+    foreach message $table_log_messages_list {
+        append table_html "<br>"
+        append table_html "\n<pre>\n"
+        append table_html $message
+        append table_html "\n</pre>\n"
+    }
 }
