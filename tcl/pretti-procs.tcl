@@ -54,7 +54,9 @@ ad_proc -public acc_fin::pretti_log_read {
     {user_id ""}
     {instance_id ""}
 } {
-    Returns log entries as a list. Returns blank if empty or doesn't exist.
+    If new_only_p is '1', returns new log entries as a list. 
+    If new_only_p is '0', returns most recent log entry.
+    Returns empty string if no entry exists.
 } {
     set status [qaf_is_natural_number $table_id]
     if { $status } {
@@ -65,10 +67,18 @@ ad_proc -public acc_fin::pretti_log_read {
             set user_id [ad_conn user_id]
         }
         set return_lol [list ]
+        set last_modified ""
         if { $new_only_p } {
-            db_list_of_lists qaf_process_log_read_new
+            db_0or1row qaf_process_log_viewed_last { select last_modified from qaf_process_log_viewed where instance_id = :instance_id and table_id = :table_id and user_id = :user_id }
+        }
+        if { $new_only_p && $last_modified ne "" } {
+            db_list_of_lists qaf_process_log_read_new { 
+                select id, name, title, log_entry, last_modified from qaf_process_log 
+                where instance_id = :instance_id and table_tid =:table_tid and last_modified > :last_modified order by last_modified desc }
         } else {
-            db_list_of_lists qaf_process_log_read_all
+            db_list_of_lists qaf_process_log_read_one { 
+                select id, name, title, log_entry, last_modified from qaf_process_log 
+                where instance_id = :instance_id and table_tid =:table_tid order by last_modified desc limit '1' }
         }
     # TABLE qaf_process_log (
             #     id integer not null primary key,
