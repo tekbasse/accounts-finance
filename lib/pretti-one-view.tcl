@@ -19,10 +19,14 @@ if { [qf_is_natural_number $table_tid] } {
     set table_html [qss_list_of_lists_to_html_table $table_lists $table_tag_atts_list]
 #    append table_html "<p>${table_comments}</p>"
     set table_log_messages_list [acc_fin::pretti_log_read $table_tid 3 $user_id $instance_id]
-    foreach message $table_log_messages_list {
-        append table_html "<br>"
-        append table_html "\n<pre>\n"
-        append table_html $message
-        append table_html "\n</pre>\n"
+    if { [llength $table_log_messages_list] > 0 } {
+        set message_html "<h3>Most Recent Activity Log</h3><ul>"
+        foreach message $table_log_messages_list {
+            append message_html "<li>"
+            append message_html $message
+        append message_html "</li>"
+        }
+        append message_html "</ul>"
+        append table_comments $message_html
     }
 }

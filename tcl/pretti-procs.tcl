@@ -106,7 +106,7 @@ ad_proc -public acc_fin::pretti_log_read {
                 set message_txt [lindex $row 2]
                 append message_txt " ([lindex $row 1])"
                 append message_txt " posted: [lc_time_system_to_conn [lindex $row 4]]\n "
-                append messate_txt [lindex $row 3]
+                append message_txt [lindex $row 3]
                 ns_log Notice "acc_fin::pretti_log_read.100: message '${message_txt}'"
                 lappend return_lol $message_txt
             }
@@ -1466,10 +1466,10 @@ ad_proc -public acc_fin::scenario_prettify {
             set p2_larr(activity_ref) [acc_fin::list_index_filter $p2_larr(activity_ref)]
             set p2_larr(dependent_tasks) [acc_fin::list_index_filter $p2_larr(dependent_tasks)]
         } else {
-            acc_fin::pretti_log_create $scenario_tid "activity_table_tid" "value" "activity_table_tid reference does not exist.(ref1450)" $user_id $instance_id
+            acc_fin::pretti_log_create $scenario_tid "activity_table_tid" "value" "activity_table_tid reference does not exist, but is required.(ref1450)" $user_id $instance_id
         }
     } else {
-            acc_fin::pretti_log_create $scenario_tid "activity_table_tid" "value" "activity_table_tid reference does not exist.(ref1453)" $user_id $instance_id
+            acc_fin::pretti_log_create $scenario_tid "activity_table_tid" "value" "activity_table_tid reference does not exist, but is required.(ref1453)" $user_id $instance_id
     }
     
     # Substitute task_type data (p3_larr) into activity data (p2_larr) when p2_larr data is less detailed or missing.
