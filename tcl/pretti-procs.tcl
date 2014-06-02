@@ -1048,7 +1048,7 @@ ad_proc -private acc_fin::p_load_tid {
                     set tc_larr($constant) ""
                 }
                 set constants_required_list [acc_fin::pretti_columns_list dc 1]
-                qss_tid_columns_to_array_of_lists $time_dist_curve_tid tc_larr $constants_list $constants_required_list $instance_id $user_id
+                qss_tid_columns_to_array_of_lists $ctid tc_larr $constants_list $constants_required_list $instance_id $user_id
                 # add to input tid cache
                 foreach constant $constants_list {
                     set tc_cache_larr($constant,$ctid) $tc_larr($constant)
@@ -1080,7 +1080,7 @@ ad_proc -private acc_fin::p_load_tid {
                     set cc_larr($constant) ""
                 }
                 set constants_required_list [acc_fin::pretti_columns_list dc 1]
-                qss_tid_columns_to_array_of_lists $cost_dist_curve_tid cc_larr $constants_list $constants_required_list $instance_id $user_id
+                qss_tid_columns_to_array_of_lists $ctid cc_larr $constants_list $constants_required_list $instance_id $user_id
                 # add to input tid cache
                 foreach constant $constants_list {
                     set cc_cache_larr($constant,$ctid) $cc_larr($constant)
@@ -1303,14 +1303,18 @@ ad_proc -public acc_fin::scenario_prettify {
     # Create a projected completion curve by stepping through the range of all the performance curves N times instead of Monte Carlo simm.
     
     
-    ns_log Notice "acc_fin::scenario_prettify: start scenario '$scenario_tid'"
+
     #requires scenario_tid
     
     # given scenario_tid 
     # activity_table contains:
     # activity_ref predecessors time_est_short time_est_median time_est_long cost_est_low cost_est_median cost_est_high time_dist_curv_eq cost_dist_curv_eq
     set error_fail 0
-    
+
+
+    # # # load p1
+    ns_log Notice "acc_fin::scenario_prettify.1306: start. Load p1 table scenario '$scenario_tid'"
+
     # get scenario into array p1_arr
     set constants_list [acc_fin::pretti_columns_list p1]
     foreach constant $constants_list {
@@ -1359,7 +1363,11 @@ ad_proc -public acc_fin::scenario_prettify {
             set error_fail 1
         }
     }
-    
+
+
+    # # # set defaults specified in p1
+    ns_log Notice "acc_fin::scenario_prettify.1369: set defaults specified in p1 table."
+
     # Make time_curve_data This is the default unless more specific data is specified in a task list.
     # The most specific information is used for each activity.
     # Median (most likely) point is assumed along the (cumulative) distribution curve, unless
@@ -1369,7 +1377,10 @@ ad_proc -public acc_fin::scenario_prettify {
     #     general curve (normalized to local 1 point median ); local 1 point median is minimum time data requirement
     #     general 3-point (normalized to local median)    
 
-    # set blank defaults
+
+    # # # Make time_curve_data defaults
+    ns_log Notice "acc_fin::scenario_prettify.1382: make time_curve_data defaults from p1."
+
     set constants_list [acc_fin::pretti_columns_list dc]
     foreach constant $constants_list {
         set tc_larr($constant) [list ]
@@ -1388,9 +1399,12 @@ ad_proc -public acc_fin::scenario_prettify {
         }
     } 
     set tc_lists [acc_fin::curve_import $tc_larr(x) $tc_larr(y) $tc_larr(label) [list ] $p1_arr(time_est_short) $p1_arr(time_est_median) $p1_arr(time_est_long) [list ] ]
-    
-    # Make cost_curve_data 
-    # set defaults
+
+
+    # # # Make cost_curve_data defaults
+    ns_log Notice "acc_fin::scenario_prettify.1401: make cost_curve_data defaults from p1."
+
+
     set constants_list [acc_fin::pretti_columns_list dc]
     foreach constant $constants_list {
         set cc_larr($constant) [list ]
@@ -1408,13 +1422,16 @@ ad_proc -public acc_fin::scenario_prettify {
     }
     set cc_lists [acc_fin::curve_import $cc_larr(x) $cc_larr(y) $cc_larr(label) [list ] $p1_arr(cost_est_low) $p1_arr(cost_est_median) $p1_arr(cost_est_high) [list ] ]
     
-    # curves_larr has 2 versions: time as t_c_larr and cost as c_c_larr
+    # curves_larr ie *_c_larr has 2 versions: time as t_c_larr and cost as c_c_larr
+    # index 0 is default
     set time_clarr(0) $tc_lists
     set cost_clarr(0) $cc_lists
+
     
-    # index 0 is default
-    
-    # import task_types_list
+    # # # import task_types table p3
+    ns_log Notice "acc_fin::scenario_prettify.1432: import task_types table p3, if any."
+
+
     #### Use [lsearch -regexp {[a-z][0-9]+} -all -inline $x_list] to screen alt debit/credit/"cost/revenue" columns and create list for custom summary feature.
     #### Use [lsearch -regexp {[a-z][0-9]+s} -all -inline $x_list] to screen alt time columns and create list for a scheduling feature
     #### with parameters defined in scenario or as a separate compilation of pretti output
