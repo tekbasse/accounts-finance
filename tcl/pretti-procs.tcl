@@ -27,7 +27,7 @@ ad_proc -private acc_fin::pretti_log_create {
     Log an entry for a pretti process. Returns unique entry_id if successful, otherwise returns empty string.
 } {
     set id ""
-    set status [qaf_is_natural_number $table_tid]
+    set status [qf_is_natural_number $table_tid]
     if { $status } {
         if { $entry_text ne "" } {
             if { $instance_id eq "" } {
@@ -42,8 +42,8 @@ ad_proc -private acc_fin::pretti_log_create {
             set action_code [qf_abbreviate $action_code 38]
             set action_title [qf_abbreviate $action_title 78]
             db_dml qaf_process_log_create { insert into qaf_process_log
-                (id,instance_id,user_id,trashed_p,name,title,created,last_modified,log_entry)
-                values (:id,:instance_id,:user_id,:trashed_p,:action_code,:action_title,:nowts,:nowts,:entry_text) }
+                (id,table_tid,instance_id,user_id,trashed_p,name,title,created,last_modified,log_entry)
+                values (:id,:table_tid,:instance_id,:user_id,:trashed_p,:action_code,:action_title,:nowts,:nowts,:entry_text) }
             ns_log Notice "acc_fin::pretti_log_create.46: posting to qaf_process_log: action_code ${action_code} action_title ${action_title} '$entry_text'"
         } else {
             ns_log Warning "acc_fin::pretti_log_create.48: attempt to post an empty log message has been ignored."
@@ -64,6 +64,7 @@ ad_proc -public acc_fin::pretti_log_read {
     Returns empty string if no entry exists.
 } {
     set return_lol [list ]
+    set alert_p 0
     set nowts [dt_systime -gmt 1]
     set valid1_p [qf_is_natural_number $table_tid] 
     set valid2_p [qf_is_natural_number $table_tid]
@@ -79,23 +80,35 @@ ad_proc -public acc_fin::pretti_log_read {
         set viewing_history_p [db_0or1row qaf_process_log_viewed_last { select last_viewed from qaf_process_log_viewed where instance_id = :instance_id and table_tid = :table_tid and user_id = :user_id } ]
         
         if { $last_viewed ne "" } {
+
             set entries_lol [db_list_of_lists qaf_process_log_read_new { 
                 select id, name, title, log_entry, last_modified from qaf_process_log 
                 where instance_id = :instance_id and table_tid =:table_tid and last_modified > :last_viewed order by last_modified desc } ]
-            foreach row $entries_lol {
-                util_user_message -message "[lc_time_system_to_conn [lindex $entries_lol 4]] [lindex $entries_lol 3]"
-            }
-            set entries_lol [list ]
-        } else {
+            ns_log Notice "acc_fin::pretti_log_read.80: last_viewed ${last_viewed}  entries_lol $entries_lol"
+            if { [llength $entries_lol ] > 0 } {
+                set alert_p 1
+                foreach row $entries_lol {
+                    set message_txt "[lc_time_system_to_conn [lindex $row 4]] [lindex $row 3]"
+                    set last_modified [lindex $row 4]
+                    ns_log Notice "acc_fin::pretti_log_read.79: last_modified ${last_modified}"
+                    util_user_message -message $message_txt
+                    ns_log Notice "acc_fin::pretti_log_read.88: message '${message_txt}'"
+                }
+                set entries_lol [list ]
+            } 
+        }
+        
+        if { !$alert_p } {
             set entries_lol [db_list_of_lists qaf_process_log_read_one { 
                 select id, name, title, log_entry, last_modified from qaf_process_log 
                 where instance_id = :instance_id and table_tid =:table_tid order by last_modified desc limit :max_old } ]
             foreach row $entries_lol {
-                set row [lindex $entries_lol 2]
-                append row " ([lindex $entries_lol 1])"
-                append row " posted: [lc_time_system_to_conn [lindex $entries_lol 4]]\n "
-                append row [lindex $entries_lol 3]
-                lappend return_lol $row
+                set message_txt [lindex $row 2]
+                append message_txt " ([lindex $row 1])"
+                append message_txt " posted: [lc_time_system_to_conn [lindex $row 4]]\n "
+                append messate_txt [lindex $row 3]
+                ns_log Notice "acc_fin::pretti_log_read.100: message '${message_txt}'"
+                lappend return_lol $message_txt
             }
         }
         # set new view history time
@@ -1290,7 +1303,7 @@ ad_proc -public acc_fin::scenario_prettify {
     # Create a projected completion curve by stepping through the range of all the performance curves N times instead of Monte Carlo simm.
     
     
-    ns_log Notice "acc_fin::scenario_prettify: start"
+    ns_log Notice "acc_fin::scenario_prettify: start scenario '$scenario_tid'"
     #requires scenario_tid
     
     # given scenario_tid 
@@ -1364,13 +1377,14 @@ ad_proc -public acc_fin::scenario_prettify {
     
     if { $p1_arr(time_dist_curve_tid) ne "" } {
         set table_stats_list [qss_table_stats $p1_arr(time_dist_curve_tid) $instance_id $user_id]
-        if { [llength $table_stats_list] > 1 } {
+        set trashed_p [lindex $table_stats_list 7]
+        if { [llength $table_stats_list] > 1 && !$trashed_p } {
             # get time curve into array tc_larr
             set constants_required_list [acc_fin::pretti_columns_list dc 1]
             qss_tid_columns_to_array_of_lists $time_dist_curve_tid tc_larr $constants_list $constants_required_list $instance_id $user_id
             #tc_larr(x), tc_larr(y) and optionally tc_larr(label) where _larr refers to an array where each value is a list of column data by row 1..n
         } else {
-            acc_fin::pretti_log_create $scenario_tid "time_dist_curve_tid" "value" "time_dist_curve '$p1_larr(time_dist_curve_tid)' does not exist." $user_id $instance_id
+            acc_fin::pretti_log_create $scenario_tid "time_dist_curve_tid" "value" "time_dist_curve reference does not exist." $user_id $instance_id
         }
     } 
     set tc_lists [acc_fin::curve_import $tc_larr(x) $tc_larr(y) $tc_larr(label) [list ] $p1_arr(time_est_short) $p1_arr(time_est_median) $p1_arr(time_est_long) [list ] ]
@@ -1383,12 +1397,13 @@ ad_proc -public acc_fin::scenario_prettify {
     }
     if { $p1_arr(cost_dist_curve_tid) ne "" } {
         set table_stats_list [qss_table_stats $p1_arr(cost_dist_curve_tid) $instance_id $user_id]
-        if { [llength $table_stats_list] > 1 } {
+        set trashed_p [lindex $table_stats_list 7]
+        if { [llength $table_stats_list] > 1 && !$trashed_p } {
             set constants_required_list [acc_fin::pretti_columns_list dc 1]
             qss_tid_columns_to_array_of_lists $cost_dist_curve_tid cc_larr $constants_list $constants_required_list $instance_id $user_id
             #cc_larr(x), cc_larr(y) and optionally cc_larr(label) where _larr refers to an array where each value is a list of column data by row 1..n
         } else {
-            acc_fin::pretti_log_create $scenario_tid "cost_dist_curve_tid" "value" "cost_dist_curve '$p1_larr(cost_dist_curve_tid)' does not exist." $user_id $instance_id
+            acc_fin::pretti_log_create $scenario_tid "cost_dist_curve_tid" "value" "cost_dist_curve reference does not exist." $user_id $instance_id
         }
     }
     set cc_lists [acc_fin::curve_import $cc_larr(x) $cc_larr(y) $cc_larr(label) [list ] $p1_arr(cost_est_low) $p1_arr(cost_est_median) $p1_arr(cost_est_high) [list ] ]
@@ -1411,11 +1426,12 @@ ad_proc -public acc_fin::scenario_prettify {
     }
     if { $p1_arr(task_types_tid) ne "" } {
         set table_stats_list [qss_table_stats $p1_arr(task_types_tid) $instance_id $user_id]
-        if { [llength $table_stats_list] > 1 } {
+        set trashed_p [lindex $table_stats_list 7]
+        if { [llength $table_stats_list] > 1 && !$trashed_p } {
             set constants_required_list [acc_fin::pretti_columns_list p3 1]
             acc_fin::p_load_tid $constants_list $constants_required_list p3_larr $p1_arr(task_types_tid) "" $instance_id $user_id
         } else {
-            acc_fin::pretti_log_create $scenario_tid "task_types_tid" "value" "task_types_tid '$p1_larr(task_types_tid)' does not exist." $user_id $instance_id
+            acc_fin::pretti_log_create $scenario_tid "task_types_tid" "value" "task_types_tid reference does not exist." $user_id $instance_id
         }
     }
     # The multi-level aspect of curve data storage needs a double-pointer to be efficient for projects with large memory footprints
@@ -1440,7 +1456,9 @@ ad_proc -public acc_fin::scenario_prettify {
     }
     if { $p1_arr(activity_table_tid) ne "" } {
         set table_stats_list [qss_table_stats $p1_arr(activity_table_tid) $instance_id $user_id]
-        if { [llength $table_stats_list] > 1 } {
+        set trashed_p [lindex $table_stats_list 7]
+#        ns_log Notice "acc_fin::scenario_prettify.1443: llength table_stats_list [llength $table_stats_list] '$table_stats_list'"
+        if { [llength $table_stats_list] > 1 && !$trashed_p} {
             # load activity table
             set constants_required_list [acc_fin::pretti_columns_list p2 1]
             acc_fin::p_load_tid $constants_list $constants_required_list p2_larr $p1_arr(activity_table_tid) "" $instance_id $user_id
@@ -1448,10 +1466,10 @@ ad_proc -public acc_fin::scenario_prettify {
             set p2_larr(activity_ref) [acc_fin::list_index_filter $p2_larr(activity_ref)]
             set p2_larr(dependent_tasks) [acc_fin::list_index_filter $p2_larr(dependent_tasks)]
         } else {
-            acc_fin::pretti_log_create $scenario_tid "activity_table_tid" "value" "activity_table_tid '$p1_larr(activity_table_tid)' does not exist.(ref1450)" $user_id $instance_id
+            acc_fin::pretti_log_create $scenario_tid "activity_table_tid" "value" "activity_table_tid reference does not exist.(ref1450)" $user_id $instance_id
         }
     } else {
-            acc_fin::pretti_log_create $scenario_tid "activity_table_tid" "value" "activity_table_tid '$p1_larr(activity_table_tid)' does not exist.(ref1453)" $user_id $instance_id
+            acc_fin::pretti_log_create $scenario_tid "activity_table_tid" "value" "activity_table_tid reference does not exist.(ref1453)" $user_id $instance_id
     }
     
     # Substitute task_type data (p3_larr) into activity data (p2_larr) when p2_larr data is less detailed or missing.
@@ -2039,7 +2057,7 @@ ad_proc -public acc_fin::table_sort_y_asc {
             set trashed_p [lindex $table_stats_list 7]
             set table_flags [lindex $table_stats_list 6]
             set tid_user_id [lindex $table_stats_list 11]
-            if { $table_flags eq "dc" } {
+            if { $table_flags eq "dc" && !$trashed_p } {
                 set table_lists [qss_table_read $table_tid ]
                 set title_row [lindex $table_lists 0]
                 set y_idx [lsearch -exact $title_row "y"]
