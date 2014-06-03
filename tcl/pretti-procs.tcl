@@ -77,6 +77,7 @@ ad_proc -public acc_fin::pretti_log_read {
         }
         set return_lol [list ]
         set last_viewed ""
+        set alert_msg_count 0
         set viewing_history_p [db_0or1row qaf_process_log_viewed_last { select last_viewed from qaf_process_log_viewed where instance_id = :instance_id and table_tid = :table_tid and user_id = :user_id } ]
         
         if { $last_viewed ne "" } {
@@ -87,6 +88,7 @@ ad_proc -public acc_fin::pretti_log_read {
             ns_log Notice "acc_fin::pretti_log_read.80: last_viewed ${last_viewed}  entries_lol $entries_lol"
             if { [llength $entries_lol ] > 0 } {
                 set alert_p 1
+                set alert_msg_count [llength $entries_lol]
                 foreach row $entries_lol {
                     set message_txt "[lc_time_system_to_conn [lindex $row 4]] [lindex $row 3]"
                     set last_modified [lindex $row 4]
@@ -98,19 +100,19 @@ ad_proc -public acc_fin::pretti_log_read {
             } 
         }
         
-        if { !$alert_p } {
-            set entries_lol [db_list_of_lists qaf_process_log_read_one { 
-                select id, name, title, log_entry, last_modified from qaf_process_log 
-                where instance_id = :instance_id and table_tid =:table_tid order by last_modified desc limit :max_old } ]
-            foreach row $entries_lol {
-                set message_txt [lindex $row 2]
-                append message_txt " ([lindex $row 1])"
-                append message_txt " posted: [lc_time_system_to_conn [lindex $row 4]]\n "
-                append message_txt [lindex $row 3]
-                ns_log Notice "acc_fin::pretti_log_read.100: message '${message_txt}'"
-                lappend return_lol $message_txt
-            }
+        set max_old [expr { $max_old + $alert_msg_count } ]
+        set entries_lol [db_list_of_lists qaf_process_log_read_one { 
+            select id, name, title, log_entry, last_modified from qaf_process_log 
+            where instance_id = :instance_id and table_tid =:table_tid order by last_modified desc limit :max_old } ]
+        foreach row [lrange $entries_lol $alert_msg_count end] {
+            set message_txt [lindex $row 2]
+            append message_txt " ([lindex $row 1])"
+            append message_txt " posted: [lc_time_system_to_conn [lindex $row 4]]\n "
+            append message_txt [lindex $row 3]
+            ns_log Notice "acc_fin::pretti_log_read.100: message '${message_txt}'"
+            lappend return_lol $message_txt
         }
+
         # set new view history time
         if { $viewing_history_p } {
             # last_modified ne "", so update
@@ -1392,7 +1394,7 @@ ad_proc -public acc_fin::scenario_prettify {
         if { [llength $table_stats_list] > 1 && !$trashed_p } {
             # get time curve into array tc_larr
             set constants_required_list [acc_fin::pretti_columns_list dc 1]
-            qss_tid_columns_to_array_of_lists $time_dist_curve_tid tc_larr $constants_list $constants_required_list $instance_id $user_id
+            qss_tid_columns_to_array_of_lists $p1_arr(time_dist_curve_tid) tc_larr $constants_list $constants_required_list $instance_id $user_id
             #tc_larr(x), tc_larr(y) and optionally tc_larr(label) where _larr refers to an array where each value is a list of column data by row 1..n
         } else {
             acc_fin::pretti_log_create $scenario_tid "time_dist_curve_tid" "value" "time_dist_curve reference does not exist." $user_id $instance_id
@@ -1414,7 +1416,7 @@ ad_proc -public acc_fin::scenario_prettify {
         set trashed_p [lindex $table_stats_list 7]
         if { [llength $table_stats_list] > 1 && !$trashed_p } {
             set constants_required_list [acc_fin::pretti_columns_list dc 1]
-            qss_tid_columns_to_array_of_lists $cost_dist_curve_tid cc_larr $constants_list $constants_required_list $instance_id $user_id
+            qss_tid_columns_to_array_of_lists $p1_arr(cost_dist_curve_tid) cc_larr $constants_list $constants_required_list $instance_id $user_id
             #cc_larr(x), cc_larr(y) and optionally cc_larr(label) where _larr refers to an array where each value is a list of column data by row 1..n
         } else {
             acc_fin::pretti_log_create $scenario_tid "cost_dist_curve_tid" "value" "cost_dist_curve reference does not exist." $user_id $instance_id
