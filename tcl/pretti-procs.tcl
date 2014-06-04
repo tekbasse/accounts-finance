@@ -1411,8 +1411,7 @@ ad_proc -public acc_fin::scenario_prettify {
 
 
     # # # Make cost_curve_data defaults
-    ns_log Notice "acc_fin::scenario_prettify. 1401:scenario '$scenario_tid' make cost_curve_data defaults from p1."
-
+    ns_log Notice "acc_fin::scenario_prettify.1401 :scenario '$scenario_tid' make cost_curve_data defaults from p1."
 
     set constants_list [acc_fin::pretti_columns_list dc]
     foreach constant $constants_list {
@@ -1425,6 +1424,33 @@ ad_proc -public acc_fin::scenario_prettify {
             set constants_required_list [acc_fin::pretti_columns_list dc 1]
             qss_tid_columns_to_array_of_lists $p1_arr(cost_dist_curve_tid) cc_larr $constants_list $constants_required_list $instance_id $user_id
             #cc_larr(x), cc_larr(y) and optionally cc_larr(label) where _larr refers to an array where each value is a list of column data by row 1..n
+
+            # validate x and y values before importing
+            set type_errors_count 0
+            set type_errors_p 0
+            set column_ck_list [list x y]
+            foreach col $column_ck_list {
+                foreach val $cc_larr($col) {
+                    if { ![qf_is_decimal $val] } {
+                        incr type_errors_count
+                        ns_log Notice "acc_fin::scenario_prettify.1405: scenario '$scenario_tid' bad val '${val} in col ${col}."
+                    }
+                }
+                if { $type_errors_count > 0 } {
+                    acc_fin::pretti_log_create $scenario_tid "cost_curve_data" "value" "cost_curve of tid '$p1_arr(cost_dist_curve_tid)' includes ${type_errors_count} bad values for column '${col}'." $user_id $instance_id
+                    set type_errors_count 0
+                    set type_errors_p 1
+                }
+            }
+            if { $type_errors_p } {
+                # undo data expansion
+                set cc_larr(x) [list ]
+                set cc_larr(y) [list ]
+                if { [info exists cc_larr(label)] } {
+                    set cc_larr(label) [list ]
+                }
+            }
+
         } else {
             acc_fin::pretti_log_create $scenario_tid "cost_dist_curve_tid" "value" "cost_dist_curve reference does not exist." $user_id $instance_id
         }
@@ -1459,6 +1485,49 @@ ad_proc -public acc_fin::scenario_prettify {
             set constants_required_list [acc_fin::pretti_columns_list p3 1]
             ns_log Notice "acc_fin::scenario_prettify.1459: scenario '$scenario_tid' import task_types from '$p1_arr(task_types_tid)'."
             acc_fin::p_load_tid $constants_list $constants_required_list p3_larr $p1_arr(task_types_tid) "" $instance_id $user_id
+
+            # validate decimal values before importing
+            set type_errors_count 0
+            set type_errors_p 0
+            set column_maybe_ck_list [list max_concurrent max_overlap_pct time_dist_curve_tid cost_dist_curve_tid time_est_short time_est_median time_est_long cost_est_low cost_est_median cost_est_high]
+            set column_ck_list [list ]
+            set titles_list [array names p3_larr]
+            # collect titles that are in p3_larr that should be checked
+            foreach col $column_maybe_ck_list {
+                if { [lsearch -exact $titles_list $col] > -1 } {
+                    lappend column_ck_list $col
+                }
+            }
+            # check data for each column
+            foreach col $column_ck_list {
+                if { [string range $col end-3 end] eq "_tid" } {
+                    foreach val $p3_larr($col) {
+                        if { $val ne "" && ![qf_is_natural_number $val] } {
+                            incr type_errors_count
+                            ns_log Notice "acc_fin::scenario_prettify.1469: scenario '$scenario_tid' bad val '${val} in col ${col}."
+                        }
+                    }
+                } else {
+                    foreach val $p3_larr($col) {
+                        if { $val ne "" && ![qf_is_decimal $val] } {
+                            incr type_errors_count
+                            ns_log Notice "acc_fin::scenario_prettify.1475: scenario '$scenario_tid' bad val '${val} in col ${col}."
+                        }
+                    }
+                }
+                if { $type_errors_count > 0 } {
+                    acc_fin::pretti_log_create $scenario_tid "task_types_data" "value" "task_types of tid '$p1_arr(task_types_tid)' includes ${type_errors_count} bad values for column '${col}'." $user_id $instance_id
+                    set type_errors_count 0
+                    set type_errors_p 1
+                }
+            }
+            if { $type_errors_p } {
+                # undo data expansion
+                foreach title $titles_list {
+                set p3_larr($title) [list ]
+                }
+            }
+
         } else {
             acc_fin::pretti_log_create $scenario_tid "task_types_tid" "value" "task_types_tid reference does not exist." $user_id $instance_id
         }
