@@ -611,7 +611,7 @@ ad_proc -private acc_fin::pretti_columns_list {
             #                           This option is useful to intercede in auto factor expansion to add additional
             #                           variation in repeating task detail. (deprecated by auto expansion of nonexisting coefficients).
             #      time_probability_moment A percentage (0..1) along the (cumulative) distribution curve. defaults to 0.5
-            #      cost_probability_moment A percentage (0..1) along the (cumulative) distribution curve
+            #      cost_probability_moment A percentage (0..1) along the (cumulative) distribution curve. defaults to "", which defaults to same as time_probability_moment
             #set ret_list \[list name value\]
             ### adding max_concurrent and max_overlap_pct but not sure if these have been coded for use yet..
             set ret_list [list activity_table_tid activity_table_name task_types_tid task_types_name time_dist_curve_name time_dist_curve_tid cost_dist_curve_name cost_dist_curve_tid time_est_short time_est_median time_est_long time_probability_moment cost_est_low cost_est_median cost_est_high cost_probability_moment db_format ]
@@ -1317,13 +1317,18 @@ ad_proc -public acc_fin::scenario_prettify {
 
 
     # # # load p1
-    ns_log Notice "acc_fin::scenario_prettify.1306: start. Load p1 table scenario '$scenario_tid'"
+    ns_log Notice "acc_fin::scenario_prettify.1306: scenario '$scenario_tid' start. Load p1 table"
 
     # get scenario into array p1_arr
     set constants_list [acc_fin::pretti_columns_list p1]
     foreach constant $constants_list {
         set p1_arr($constant) ""
     }
+    # preload p1 defaults
+    set p1_arr(time_probability_moment) "0.5"
+    # set p1_arr(max_overlap_pct) "" is 1
+    # set p1_arr(max_concurrent) "" is 1
+
     set constants_required_list [acc_fin::pretti_columns_list p1 1]
     qss_tid_scalars_to_array $scenario_tid p1_arr $constants_list $constants_required_list $instance_id $user_id
     if { $p1_arr(activity_table_name) ne "" } {
@@ -1370,7 +1375,7 @@ ad_proc -public acc_fin::scenario_prettify {
 
 
     # # # set defaults specified in p1
-    ns_log Notice "acc_fin::scenario_prettify.1369: set defaults specified in p1 table."
+    ns_log Notice "acc_fin::scenario_prettify.1369: scenario '$scenario_tid' set defaults specified in p1 table."
 
     # Make time_curve_data This is the default unless more specific data is specified in a task list.
     # The most specific information is used for each activity.
@@ -1383,7 +1388,7 @@ ad_proc -public acc_fin::scenario_prettify {
 
 
     # # # Make time_curve_data defaults
-    ns_log Notice "acc_fin::scenario_prettify.1382: make time_curve_data defaults from p1."
+    ns_log Notice "acc_fin::scenario_prettify.1382: scenario '$scenario_tid' make time_curve_data defaults from p1."
 
     set constants_list [acc_fin::pretti_columns_list dc]
     foreach constant $constants_list {
@@ -1406,7 +1411,7 @@ ad_proc -public acc_fin::scenario_prettify {
 
 
     # # # Make cost_curve_data defaults
-    ns_log Notice "acc_fin::scenario_prettify.1401: make cost_curve_data defaults from p1."
+    ns_log Notice "acc_fin::scenario_prettify.1401:scenario '$scenario_tid' make cost_curve_data defaults from p1."
 
 
     set constants_list [acc_fin::pretti_columns_list dc]
@@ -1433,7 +1438,7 @@ ad_proc -public acc_fin::scenario_prettify {
 
     
     # # # import task_types table p3
-    ns_log Notice "acc_fin::scenario_prettify.1432: import task_types table p3, if any."
+    ns_log Notice "acc_fin::scenario_prettify.1432: scenario '$scenario_tid' import task_types table p3, if any."
 
 
     #### Use [lsearch -regexp {[a-z][0-9]+} -all -inline $x_list] to screen alt debit/credit/"cost/revenue" columns and create list for custom summary feature.
@@ -1466,7 +1471,7 @@ ad_proc -public acc_fin::scenario_prettify {
     #  similarly, add a p3_larr(_cCurveRef) and p3_larr(_tCurveRef) column
         
     # # # import activity table p2
-    ns_log Notice "acc_fin::scenario_prettify.1465: import activity table p2 (required)."
+    ns_log Notice "acc_fin::scenario_prettify.1465: scenario '$scenario_tid' import activity table p2 (required)."
 
 
     #### Use lsearch -glob or -regexp to screen alt columns and create list for custom summary feature. [a-z][0-9]
@@ -1528,7 +1533,7 @@ ad_proc -public acc_fin::scenario_prettify {
     }
     
     # # # Confirm that dependent activities exist as activities.
-    ns_log Notice "acc_fin::scenario_prettify.1527: Confirm p2 dependents exist as activities, expand dependents with coefficients."
+    ns_log Notice "acc_fin::scenario_prettify.1527: scenario '$scenario_tid' Confirm p2 dependents exist as activities, expand dependents with coefficients."
 
     #  Expand p2_larr to include dependent activities with coefficients.
     #  by appending new definitions of tasks that don't yet have defined coefficients.
@@ -1635,9 +1640,16 @@ ad_proc -public acc_fin::scenario_prettify {
     }
 
     # # # Multiple probability_moments allowed
-    ns_log Notice "acc_fin::scenario_prettify.1633: prepare p1 time and cost probability_moment loops."
     set t_moment_list [split $p1_arr(time_probability_moment)]
-    set c_moment_list [split $p1_arr(cost_probability_moment)]
+    if { $p1_arr(cost_probability_moment) ne "" } {
+        set c_moment_list [split $p1_arr(cost_probability_moment)]
+        set c_moment_blank_p 0
+        ns_log Notice "acc_fin::scenario_prettify.1633: scenario '$scenario_tid' prepare p1 time '${t_moment_list}'and cost '${c_moment_list}' probability_moment loops."
+    } else {
+        set c_moment_blank_p 1
+    }
+    ns_log Notice "acc_fin::scenario_prettify.1650: scenario '$scenario_tid' prepare p1 time '${t_moment_list}'and c_moment_blank_p ${c_moment_blank_p}."
+
 
     # Be sure any new values are nullified between each loop
     set setup_end [clock seconds]
@@ -1649,7 +1661,10 @@ ad_proc -public acc_fin::scenario_prettify {
         foreach tCurve [array names time_clarr] {
             set t_est_arr($tCurve) [qaf_y_of_x_dist_curve $t_moment $time_clarr($tCurve) ]
         }
-        
+        if { $c_moment_blank_p } {
+            # if cost_probability_moment is blank, loop 1:1 using time_probability_moment values
+            set c_moment_list [list $t_moment]
+        }
         foreach c_moment $c_moment_list {
             # Calculate base costs for cost_probability_moment. These work for activities and task types.
             array unset c_est_arr
@@ -1687,7 +1702,7 @@ ad_proc -public acc_fin::scenario_prettify {
 
 
             # Build activity dependent map
-            ns_log Notice "acc_fin::scenario_prettify.1683: build activity dependents map and sequences for t_moment '${t_moment}' c_moment '${c_moment}'"
+            ns_log Notice "acc_fin::scenario_prettify.1683: scenario '$scenario_tid' build activity dependents map and sequences for t_moment '${t_moment}' c_moment '${c_moment}'"
             #  activity map table:  depnc_larr($activity_ref) dependent_tasks_list
             #  array of activity_ref sequence_num: act_seq_num_arr($activity_ref) sequence_number
 
@@ -1738,7 +1753,7 @@ ad_proc -public acc_fin::scenario_prettify {
             # sum the duration for each list. The longest duration is the strict defintion of critical path.
             
             # create dependency check equations
-            ns_log Notice "acc_fin::scenario_prettify.1737: create equations for checking if dependencies are met."
+            ns_log Notice "acc_fin::scenario_prettify.1737: scenario '$scenario_tid' create equations for checking if dependencies are met."
 
             # depnc_eq_arr() is equation that answers question: Are dependencies met for $act?
             foreach act $p2_larr(activity_ref) {
@@ -1758,7 +1773,7 @@ ad_proc -public acc_fin::scenario_prettify {
 
 
             # # # main process looping
-            ns_log Notice "acc_fin::scenario_prettify.1755: begin main process"
+            ns_log Notice "acc_fin::scenario_prettify.1755: scenario '$scenario_tid' begin main process"
 
 
             array unset act_seq_list_arr
@@ -1860,7 +1875,7 @@ ad_proc -public acc_fin::scenario_prettify {
         
 
             # # # Curve calculations complete for t_moment and c_moment.
-            ns_log Notice "acc_fin::scenario_prettify.1859: Curve calculations completed for t_moment and c_moment. path_seg_dur_list $path_seg_dur_list"
+            ns_log Notice "acc_fin::scenario_prettify.1859: scenario '$scenario_tid' Curve calculations completed for t_moment and c_moment. path_seg_dur_list $path_seg_dur_list"
 
 
             set dep_met_p 1
@@ -1869,7 +1884,7 @@ ad_proc -public acc_fin::scenario_prettify {
                 # ns_log Notice "acc_fin::scenario_prettify: act $act act_seq_num_arr '$act_seq_num_arr($act)'"
                 # ns_log Notice "acc_fin::scenario_prettify: act_seq_list_arr '$act_seq_list_arr($act_seq_num_arr($act))' $act_count_of_seq_arr($act_seq_num_arr($act))"
             }
-            ns_log Notice "acc_fin::scenario_prettify.1868: All dependencies met? 1 = yes. dep_met_p $dep_met_p"
+            ns_log Notice "acc_fin::scenario_prettify.1868: scenario '$scenario_tid' All dependencies met? 1 = yes. dep_met_p $dep_met_p"
             
             # remove incomplete tracks from path_seg_dur_list by placing only complete tracks in track_dur_list
             set track_dur_list [list ]
@@ -1881,7 +1896,7 @@ ad_proc -public acc_fin::scenario_prettify {
             }
             
             # # # sort and compile results for report
-            ns_log Notice "acc_fin::scenario_prettify.1880: Sort and compile results for report."
+            ns_log Notice "acc_fin::scenario_prettify.1880: scenario '$scenario_tid' Sort and compile results for report."
 
             # sort by path duration
             # critical path is the longest path. Float is the difference between CP and next longest CP.
@@ -1924,7 +1939,7 @@ ad_proc -public acc_fin::scenario_prettify {
             set act_median_count [lindex [lindex $act_sig_sorted_list $act_sig_median_pos] 1]
             
             # # # build base table
-            ns_log Notice "acc_fin::scenario_prettify.1923: Build base report table."
+            ns_log Notice "acc_fin::scenario_prettify.1923: scenario '$scenario_tid' Build base report table."
 
 
             # Cells need this info for presentation: 
@@ -1958,7 +1973,7 @@ ad_proc -public acc_fin::scenario_prettify {
             }
 
             # # # PRETTI sorts
-            ns_log Notice "acc_fin::scenario_prettify.1956: PRETTI sorts. base_lists $base_lists"
+            ns_log Notice "acc_fin::scenario_prettify.1956: scenario '$scenario_tid' PRETTI sorts. base_lists $base_lists"
             
             # sort by: act_seq_num_arr descending
             set fourth_sort_lists [lsort -decreasing -real -index 1 $base_lists]
@@ -1970,7 +1985,7 @@ ad_proc -public acc_fin::scenario_prettify {
             # critical path is the longest expected duration of dependent activities, so final sort:
             # sort by path duration descending
             set primary_sort_lists [lsort -increasing -integer -index 6 $second_sort_lists]
-            ns_log Notice "acc_fin::scenario_prettify.1969: primary_sort_lists $primary_sort_lists"
+            ns_log Notice "acc_fin::scenario_prettify.1969: scenario '$scenario_tid' primary_sort_lists $primary_sort_lists"
             
             # *_at_pm means at probability moment
             set cp_duration_at_pm [lindex [lindex $primary_sort_lists 0] 1]
@@ -2080,7 +2095,7 @@ ad_proc -public acc_fin::scenario_prettify {
     }
     # next t_moment
 
-    ns_log Notice "acc_fin::scenario_prettify.2078: done."
+    ns_log Notice "acc_fin::scenario_prettify.2078: scenario '$scenario_tid' done."
     return 1
 }
 
