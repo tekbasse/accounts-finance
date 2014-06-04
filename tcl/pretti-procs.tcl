@@ -1411,7 +1411,7 @@ ad_proc -public acc_fin::scenario_prettify {
 
 
     # # # Make cost_curve_data defaults
-    ns_log Notice "acc_fin::scenario_prettify.1401:scenario '$scenario_tid' make cost_curve_data defaults from p1."
+    ns_log Notice "acc_fin::scenario_prettify. 1401:scenario '$scenario_tid' make cost_curve_data defaults from p1."
 
 
     set constants_list [acc_fin::pretti_columns_list dc]
@@ -1429,13 +1429,15 @@ ad_proc -public acc_fin::scenario_prettify {
             acc_fin::pretti_log_create $scenario_tid "cost_dist_curve_tid" "value" "cost_dist_curve reference does not exist." $user_id $instance_id
         }
     }
+    ns_log Notice "acc_fin::scenario_prettify.1422: scenario '$scenario_tid' cc_larr(x) '$cc_larr(x)' cc_larr(y) '$cc_larr(y)'"
     set cc_lists [acc_fin::curve_import $cc_larr(x) $cc_larr(y) $cc_larr(label) [list ] $p1_arr(cost_est_low) $p1_arr(cost_est_median) $p1_arr(cost_est_high) [list ] ]
     
     # curves_larr ie *_c_larr has 2 versions: time as t_c_larr and cost as c_c_larr
     # index 0 is default
     set time_clarr(0) $tc_lists
     set cost_clarr(0) $cc_lists
-
+    ns_log Notice "acc_fin::scenario_prettify.1426: scenario '$scenario_tid' default t curve: time_clarr(0) '$time_clarr(0)'"
+    ns_log Notice "acc_fin::scenario_prettify.1427: scenario '$scenario_tid' default c curve: cost_clarr(0) '$cost_clarr(0)'"
     
     # # # import task_types table p3
     ns_log Notice "acc_fin::scenario_prettify.1432: scenario '$scenario_tid' import task_types table p3, if any."
@@ -1455,6 +1457,7 @@ ad_proc -public acc_fin::scenario_prettify {
         set trashed_p [lindex $table_stats_list 7]
         if { [llength $table_stats_list] > 1 && !$trashed_p } {
             set constants_required_list [acc_fin::pretti_columns_list p3 1]
+            ns_log Notice "acc_fin::scenario_prettify.1459: scenario '$scenario_tid' import task_types from '$p1_arr(task_types_tid)'."
             acc_fin::p_load_tid $constants_list $constants_required_list p3_larr $p1_arr(task_types_tid) "" $instance_id $user_id
         } else {
             acc_fin::pretti_log_create $scenario_tid "task_types_tid" "value" "task_types_tid reference does not exist." $user_id $instance_id
@@ -1490,6 +1493,7 @@ ad_proc -public acc_fin::scenario_prettify {
         if { [llength $table_stats_list] > 1 && !$trashed_p} {
             # load activity table
             set constants_required_list [acc_fin::pretti_columns_list p2 1]
+            ns_log Notice "acc_fin::scenario_prettify.1495: scenario '$scenario_tid' import activity_table_tid from '$p1_arr(activity_table_tid)'."
             acc_fin::p_load_tid $constants_list $constants_required_list p2_larr $p1_arr(activity_table_tid) "" $instance_id $user_id
             # filter user input
             set p2_larr(activity_ref) [acc_fin::list_index_filter $p2_larr(activity_ref)]

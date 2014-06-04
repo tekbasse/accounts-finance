@@ -81,7 +81,7 @@ ad_proc -public qaf_y_of_x_dist_curve {
     these positions will be used to extract data from remaining rows. a pair y,x is assumed
 }  {
     #ns_log Notice "qaf_y_of_x_dist_curve.82: *****************************************************************" 
-    #ns_log Notice "qaf_y_of_x_dist_curve.83: p $p interpolate_p $interpolate_p "
+    ns_log Notice "qaf_y_of_x_dist_curve.83: p $p interpolate_p $interpolate_p "
     set p [expr { $p + 0. } ]
     set first_row_list [lindex $y_x_lol 0]
     set x_idx [lsearch -exact $first_row_list "x"]
@@ -100,7 +100,7 @@ ad_proc -public qaf_y_of_x_dist_curve {
         lappend x_list [lindex $y_x $x_idx]
     }
     #ns_log Notice "qaf_y_of_x_dist_curve.102: y_x_lol length [llength $y_x_lol] y_x_lol $y_x_lol " 
-    #ns_log Notice "qaf_y_of_x_dist_curve.103: x_list length [llength $x_list] x_list $x_list"
+    ns_log Notice "qaf_y_of_x_dist_curve.103: x_list length [llength $x_list] x_list $x_list"
     set x_sum [f::sum $x_list]
     set x_len [llength $x_list]
     set loop_limit [expr { $x_len + 1 } ]
