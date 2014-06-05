@@ -1018,6 +1018,7 @@ ad_proc -private acc_fin::p_load_tid {
     } else {
         set i_max -1
     }
+    ns_log Notice "acc_fin::p_load_tid.1021: for ${p_larr_name} i_max ${i_max}"
     for {set i 0} {$i < $i_max} {incr i} {
         
         if { $task_type_column_exists_p } {
@@ -1102,6 +1103,7 @@ ad_proc -private acc_fin::p_load_tid {
         # add curve references for both time and cost. 
         lappend p_larr(_tCurveRef) $tcurvenum
         lappend p_larr(_cCurveRef) $ccurvenum
+        ns_log Notice "acc_fin::p_load_tid.1106: for ${p_larr_name} adding: p_larr(_tCurveRef) $tcurvenum p_larr(_cCurveRef) $ccurvenum"
         # If this is a p3_larr, create pointer arrays for use with p2_larr
         if { $task_type_column_exists_p && !$task_types_exist_p } {
             if { $type ne "" } {
@@ -1753,12 +1755,14 @@ ad_proc -public acc_fin::scenario_prettify {
                 set c_est_arr($cCurve) [qaf_y_of_x_dist_curve $c_moment $cost_clarr($cCurve) ]
             }
             # Create activity time estimate and cost estimate arrays for repeated use in main loop
+            # These arrays vary in values by t_moment and c_moment
             set i 0
             array unset time_expected_arr
             array unset path_dur_arr
             array unset cost_expected_arr
             array unset path_cost_arr
             array unset depnc_eq_arr
+
             foreach act $p2_larr(activity_ref) {
                 # first paths are single activities, so following line of code doesn't seem significant.
                 # It's just here so that internal representation is consistent.
@@ -1770,7 +1774,7 @@ ad_proc -public acc_fin::scenario_prettify {
                     set time_expected_arr($act) $time_expected
                     set path_dur_arr($act_list) $time_expected
                 } else {
-                    ns_log Warning "acc_fin::scenario_prettify.1763: scenario '$scenario_tid' tref '${tref}' p2_larr(_tCurveRef) '$p2_larr(_tCurveRef)'"
+                    ns_log Warning "acc_fin::scenario_prettify.1763: scenario '$scenario_tid' act '$act' tref '${tref}' p2_larr(_tCurveRef) '$p2_larr(_tCurveRef)'"
                 }
                 # the first paths are single activities, subsequently cost expected and path segment costs are same values
                 set cref [lindex $p2_larr(_cCurveRef) $i]
@@ -1779,7 +1783,7 @@ ad_proc -public acc_fin::scenario_prettify {
                     set cost_expected_arr($act) $cost_expected
                     set path_cost_arr($act_list) $cost_expected
                 } else {
-                    ns_log Warning "acc_fin::scenario_prettify.1773: scenario '$scenario_tid' cref '${cref}' p2_larr(_cCurveRef) '$p2_larr(_cCurveRef)'"
+                    ns_log Warning "acc_fin::scenario_prettify.1773: scenario '$scenario_tid' act '$act' cref '${cref}' p2_larr(_cCurveRef) '$p2_larr(_cCurveRef)'"
                 }
                 incr i
             }
