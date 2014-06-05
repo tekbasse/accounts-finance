@@ -1616,17 +1616,21 @@ ad_proc -public acc_fin::scenario_prettify {
         foreach activity $dependencies_list {
             if { [lsearch -exact $activities_list $activity] == -1 } {
                 # A dependent activity doesn't exist..
-                
+                ns_log Notice "acc_fin::scenario_prettify.1619: scenario '$scenario_tid' activity '$activity' doesn't exist on direct search."
                 set term ""
                 set coefficient ""
                 # Is $activity an existing activity, but referenced with a coeffient?
+                set scratch ""
+                set coefficient ""
+                set term ""
                 if { [regexp {^([0-9]+)[\*]([^\*]+)} $activity scratch coefficient term] } {
-                    
+                    ns_log Notice "acc_fin::scenario_prettify.1624: scenario '$scenario_tid' activity '$activity' is part coefficient '$coefficient' and part term '$term'"
                     # If $term is a defined activity, get index
                     set term_idx [lsearch -exact $activities_list $term]
                     if { $term_idx > -1 } {
                         # Requirements met: There is a coefficient and an existing activity.
-                        # Generate a new activity with coeffient for this run.                        
+                        ns_log Notice "acc_fin::scenario_prettify.1632: scenario '$scenario_tid' term '$term' exists as an activity, so creating new activity with coefficient."
+                        # Generate a new activity with coeffient for this run.
                         foreach constant $constants_list {
                             lappend p2_larr($constant) [lindex $p2_larr($constant) $term_idx]
                         }
@@ -1658,18 +1662,20 @@ ad_proc -public acc_fin::scenario_prettify {
                             set k5 [f::max [list $k3 $k4] ]
                             set curve_lol [list ]
                             foreach point $time_clarr($tcurvenum) {
-                                # point: y x label
-                                set y [lindex $point 0]
-                                set x [lindex $point 1]
+                                # point: x y label
+                                set x [lindex $point 0]
+                                set y [lindex $point 1]
                                 set label [lindex $point 2]
                                 set y_new [expr { $y * $k5 } ]
                                 set point_new [list $y_new $x $label]
                                 lappend curve_lol $point_new
                             }
                             # save new curve
+
                             set tcurvenum [acc_fin::larr_set time_clarr $curve_lol]
                             # save new reference
                             lappend $p2_larr(_tCurveRef) $tcurvenum
+                            ns_log Notice "acc_fin::scenario_prettify.1674: scenario '$scenario_tid' new t curve: time_clarr($tcurvenum) '$curve_lol'"
                         } else {
                             lappend $p2_larr(_tCurveRef) ""
                         }
@@ -1680,8 +1686,8 @@ ad_proc -public acc_fin::scenario_prettify {
                             set curve_lol [list ]
                             foreach point $cost_clarr($ccurvenum) {
                                 # point: y x label
-                                set y [lindex $point 0]
-                                set x [lindex $point 1]
+                                set x [lindex $point 0]
+                                set y [lindex $point 1]
                                 set label [lindex $point 2]
                                 set y_new [expr { $y * $coefficient } ]
                                 set point_new [list $y_new $x $label]
@@ -1692,9 +1698,11 @@ ad_proc -public acc_fin::scenario_prettify {
                             set ccurvenum [acc_fin::larr_set cost_clarr $curve_lol]
                             # save new reference
                             lappend $p2_larr(_cCurveRef) $ccurvenum
+                            ns_log Notice "acc_fin::scenario_prettify.1694: scenario '$scenario_tid' new c curve: cost_clarr($ccurvenum) '$curve_lol'"
                         } else {
                             lappend $p2_larr(_cCurveRef) ""
                         }
+                        ns_log Notice "acc_fin::scenario_prettify.1700: scenario '$scenario_tid' term '$term' tcurvenum '$tcurvenum' ccurvenum '$ccurvenum'"
                     } else {
                         # No activity defined for this factor (term with coefficient), flag an error --missing dependency.
                         lappend compute_message_list "Dependency '${term}' is undefined, referenced in: '${activity}'."
@@ -1717,11 +1725,11 @@ ad_proc -public acc_fin::scenario_prettify {
     if { $p1_arr(cost_probability_moment) ne "" } {
         set c_moment_list [split $p1_arr(cost_probability_moment)]
         set c_moment_blank_p 0
-        ns_log Notice "acc_fin::scenario_prettify.1633: scenario '$scenario_tid' prepare p1 time '${t_moment_list}'and cost '${c_moment_list}' probability_moment loops."
+        ns_log Notice "acc_fin::scenario_prettify.1733: scenario '$scenario_tid' prepare p1 time '${t_moment_list}'and cost '${c_moment_list}' probability_moment loops."
     } else {
         set c_moment_blank_p 1
     }
-    ns_log Notice "acc_fin::scenario_prettify.1650: scenario '$scenario_tid' prepare p1 time '${t_moment_list}'and c_moment_blank_p ${c_moment_blank_p}."
+    ns_log Notice "acc_fin::scenario_prettify.1750: scenario '$scenario_tid' prepare p1 time '${t_moment_list}'and c_moment_blank_p ${c_moment_blank_p}."
 
 
     # Be sure any new values are nullified between each loop
@@ -1762,7 +1770,7 @@ ad_proc -public acc_fin::scenario_prettify {
                     set time_expected_arr($act) $time_expected
                     set path_dur_arr($act_list) $time_expected
                 } else {
-                    ns_log Warning "acc_fin::scenario_prettify.1663: scenario '$scenario_tid' tref '${tref}' p2_larr(_tCurveRef) '$p2_larr(_tCurveRef)'"
+                    ns_log Warning "acc_fin::scenario_prettify.1763: scenario '$scenario_tid' tref '${tref}' p2_larr(_tCurveRef) '$p2_larr(_tCurveRef)'"
                 }
                 # the first paths are single activities, subsequently cost expected and path segment costs are same values
                 set cref [lindex $p2_larr(_cCurveRef) $i]
@@ -1771,7 +1779,7 @@ ad_proc -public acc_fin::scenario_prettify {
                     set cost_expected_arr($act) $cost_expected
                     set path_cost_arr($act_list) $cost_expected
                 } else {
-                    ns_log Warning "acc_fin::scenario_prettify.1673: scenario '$scenario_tid' cref '${cref}' p2_larr(_cCurveRef) '$p2_larr(_cCurveRef)'"
+                    ns_log Warning "acc_fin::scenario_prettify.1773: scenario '$scenario_tid' cref '${cref}' p2_larr(_cCurveRef) '$p2_larr(_cCurveRef)'"
                 }
                 incr i
             }
@@ -1784,7 +1792,7 @@ ad_proc -public acc_fin::scenario_prettify {
 
 
             # Build activity dependent map
-            ns_log Notice "acc_fin::scenario_prettify.1683: scenario '$scenario_tid' build activity dependents map and sequences for t_moment '${t_moment}' c_moment '${c_moment}'"
+            ns_log Notice "acc_fin::scenario_prettify.1783: scenario '$scenario_tid' build activity dependents map and sequences for t_moment '${t_moment}' c_moment '${c_moment}'"
             #  activity map table:  depnc_larr($activity_ref) dependent_tasks_list
             #  array of activity_ref sequence_num: act_seq_num_arr($activity_ref) sequence_number
 
@@ -1808,6 +1816,7 @@ ad_proc -public acc_fin::scenario_prettify {
                 }
                 set depnc_larr($act) $scratch2_list
                 # _c($act) Answers question: Has relative sequence number for $act been calculated?
+                # _c used to be called calcd_p_arr
                 set _c($act) 0
                 # act_seq_num_arr is relative sequence number of an activity. 
                 set act_seq_num_arr($act) $sequence_1
@@ -1876,9 +1885,10 @@ ad_proc -public acc_fin::scenario_prettify {
             while { !$all_calced_p && $activity_count > $i } {
                 set all_calcd_p 1
                 foreach act $p2_larr(activity_ref) {
+                    ns_log Notice "acc_fin::scenario_prettify.1887: scenario '$scenario_tid' act $act"
                     set dependencies_met_p [expr { $depnc_eq_arr($act) } ]
                     set act_seq_max $sequence_1
-                    if { $dependencies_met_p && !$calcd_p_arr($act) } {
+                    if { $dependencies_met_p && !$_c($act) } {
                         
                         # Calc max_num: maximum relative sequence number for activity dependencies
                         set max_num 0
@@ -1892,7 +1902,7 @@ ad_proc -public acc_fin::scenario_prettify {
                         # Add activity's relative sequence number: act_seq_num_arr
                         set act_seq_nbr [expr { $max_num + 1 } ]
                         set act_seq_num_arr($act) $act_seq_nbr
-                        set calcd_p_arr($act) 1
+                        set _c($act) 1
                         # increment act_seq_max and set defaults for a new max seq number?
                         if { $act_seq_nbr > $act_seq_max } {
                             set act_seq_max $act_seq_nbr
@@ -1950,7 +1960,7 @@ ad_proc -public acc_fin::scenario_prettify {
                             lappend path_seg_dur_list $pair_list
                         }
                     }
-                    set all_calcd_p [expr { $all_calcd_p && $calcd_p_arr($act) } ]
+                    set all_calcd_p [expr { $all_calcd_p && $_c($act) } ]
                 }
                 incr i
             }
