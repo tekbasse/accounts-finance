@@ -929,7 +929,7 @@ ad_proc -public acc_fin::larr_set {
 } {
     Assigns a data_list to an index in array larr_name 
     in a manner that minimizes memory footprint. 
-    If the list already exists (exactly), 
+    If the list already exists (exactly) in the array, 
     it returns the existing index, 
     otherwise it assignes a new index in array and 
     a new index of array is returned. 
@@ -1424,7 +1424,7 @@ ad_proc -public acc_fin::scenario_prettify {
             set constants_required_list [acc_fin::pretti_columns_list dc 1]
             qss_tid_columns_to_array_of_lists $p1_arr(cost_dist_curve_tid) cc_larr $constants_list $constants_required_list $instance_id $user_id
             #cc_larr(x), cc_larr(y) and optionally cc_larr(label) where _larr refers to an array where each value is a list of column data by row 1..n
-
+            ns_log Notice "acc_fin::scenario_prettify.1404: scenario '$scenario_tid' cc_larr(x) '$cc_larr(x)' cc_larr(y) '$cc_larr(y)'"
             # validate x and y values before importing
             set type_errors_count 0
             set type_errors_p 0
@@ -1752,7 +1752,9 @@ ad_proc -public acc_fin::scenario_prettify {
             array unset path_cost_arr
             array unset depnc_eq_arr
             foreach act $p2_larr(activity_ref) {
-                set $act_list [list $act]
+                # first paths are single activities, so following line of code doesn't seem significant.
+                # It's just here so that internal representation is consistent.
+                set act_list [list $act]
                 # the first paths are single activities, subsequently time expected and duration are same values
                 set tref [lindex $p2_larr(_tCurveRef) $i]
                 set time_expected $t_est_arr($tref)
