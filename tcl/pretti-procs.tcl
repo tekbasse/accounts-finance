@@ -1757,15 +1757,22 @@ ad_proc -public acc_fin::scenario_prettify {
                 set act_list [list $act]
                 # the first paths are single activities, subsequently time expected and duration are same values
                 set tref [lindex $p2_larr(_tCurveRef) $i]
-                set time_expected $t_est_arr($tref)
-                set time_expected_arr($act) $time_expected
-                set path_dur_arr($act_list) $time_expected
+                if { $tref ne "" } {
+                    set time_expected $t_est_arr($tref)
+                    set time_expected_arr($act) $time_expected
+                    set path_dur_arr($act_list) $time_expected
+                } else {
+                    ns_log Warning "acc_fin::scenario_prettify.1663: scenario '$scenario_tid' tref '${tref}' p2_larr(_tCurveRef) '$p2_larr(_tCurveRef)'"
+                }
                 # the first paths are single activities, subsequently cost expected and path segment costs are same values
                 set cref [lindex $p2_larr(_cCurveRef) $i]
-                set cost_expected $c_est_arr($cref)
-                set cost_expected_arr($act) $cost_expected
-                set path_cost_arr($act_list) $cost_expected
-                
+                if { $cref ne "" } {
+                    set cost_expected $c_est_arr($cref)
+                    set cost_expected_arr($act) $cost_expected
+                    set path_cost_arr($act_list) $cost_expected
+                } else {
+                    ns_log Warning "acc_fin::scenario_prettify.1673: scenario '$scenario_tid' cref '${cref}' p2_larr(_cCurveRef) '$p2_larr(_cCurveRef)'"
+                }
                 incr i
             }
             
