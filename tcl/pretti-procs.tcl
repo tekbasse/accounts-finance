@@ -1010,10 +1010,10 @@ ad_proc -private acc_fin::p_load_tid {
 
     # filter user input that is going to be used as references in arrays:
     if { $task_type_column_exists_p } {
-        set p_larr(type) [acc_fin::list_index_filter $p_larr(type)]
+        set p_larr(type) [acc_fin::list_filter alphanum $p_larr(type) $p_larr_name "type"]
     }
     if { [info exists p_larr(dependent_tasks) ] } {
-        set p_larr(dependent_tasks) [acc_fin::list_index_filter $p_larr(dependent_tasks)]
+        set p_larr(dependent_tasks) [acc_fin::list_filter $p_larr(dependent_tasks) $p_larr_name "dependent_tasks"]
     }
 
     # import curves referenced in the table
@@ -1452,7 +1452,7 @@ ad_proc -public acc_fin::scenario_prettify {
             set column_ck_list [list x y]
             foreach col $column_ck_list {
                 set filtered_list [acc_fin::list_filter decimal $tc_larr($col) "time_dist_curve_tid: $p1_arr(time_dist_curve_tid)" $col]
-                if { $filtered_list ne $cc_larr($col) } {
+                if { $filtered_list ne $tc_larr($col) } {
                     set type_errors_p 1
                 }
             }
@@ -1609,8 +1609,8 @@ ad_proc -public acc_fin::scenario_prettify {
             ns_log Notice "acc_fin::scenario_prettify.1495: scenario '$scenario_tid' import activity_table_tid from '$p1_arr(activity_table_tid)'."
             acc_fin::p_load_tid $constants_list $constants_required_list p2_larr $p1_arr(activity_table_tid) "" $instance_id $user_id
             # filter user input
-            set p2_larr(activity_ref) [acc_fin::list_index_filter $p2_larr(activity_ref)]
-            set p2_larr(dependent_tasks) [acc_fin::list_index_filter $p2_larr(dependent_tasks)]
+            set p2_larr(activity_ref) [acc_fin::list_filter alphanum $p2_larr(activity_ref) "p2" "activity_ref"]
+            set p2_larr(dependent_tasks) [acc_fin::list_filter alphanum $p2_larr(dependent_tasks) "p2" "dependent_tasks"]
         } else {
             acc_fin::pretti_log_create $scenario_tid "activity_table_tid" "value" "activity_table_tid reference does not exist, but is required.(ref1450)" $user_id $instance_id
         }
