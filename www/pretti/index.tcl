@@ -114,7 +114,7 @@ switch -exact -- $mode {
         set mode_name "#accounts-finance.view#"
         set table_stats_list [qss_table_stats $table_tid]
         # name, title, comments, cell_count, row_count, template_id, flags, trashed, popularity, time last_modified, time created, user_id
-        # set table_name [lindex $table_stats_list 0]
+         set table_name [lindex $table_stats_list 0]
         # set table_title [lindex $table_stats_list 1]
         # set table_comments [lindex $table_stats_list 2]
         set table_flags [lindex $table_stats_list 6]
@@ -136,5 +136,13 @@ foreach user_message $user_message_list {
     append user_message_html "<li>${user_message}</li>"
 }
 set app_name "PRETTI"
+set url "app"
 set title ${app_name}
-set context [list [list app $title] $mode_name]
+if { $mode eq "v" && [info exists table_name] } {
+    append title " "
+    append title $table_name
+    set context [list [list $url $app_name ] $title]
+} else {
+    set context [list [list $url $title] $mode_name]
+}
+

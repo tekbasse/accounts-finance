@@ -979,18 +979,10 @@ ad_proc -private acc_fin::p_load_tid {
         set user_id [ad_conn user_id]
     }
 
-    set task_type_column_exists_p 0
-    set task_types_exist_p 0    
     set type_tcurve_list [list ]
     set type_ccurve_list [list ]
-    if { [info exists p_larr(type)] } {
-        set task_type_column_exists_p 1
-    }
     if { $p3_larr_name ne ""} {
         upvar $p3_larr_name p3_larr
-        if { $task_type_column_exists_p && [llength $p_larr(type)] > 0 } {
-            set task_types_exist_p 1
-        } 
     }
 # following are not upvar'd because the cache is mainly useless after proc ends
 #    upvar tc_cache_larr tc_cache_larr
@@ -1004,6 +996,13 @@ ad_proc -private acc_fin::p_load_tid {
         set p_larr($column) [list ]
     }
     qss_tid_columns_to_array_of_lists $tid p_larr $constants_list $constants_required_list $instance_id $user_id
+    set task_type_column_exists_p [info exists p_larr(type)]
+    if { $task_type_column_exists_p && [llength $p_larr(type)] > 0 } {
+        set task_types_exist_p 1
+    } else {
+        set task_types_exist_p 0
+    }
+
     # filter user input that is going to be used as references in arrays:
     if { $task_type_column_exists_p } {
         set p_larr(type) [acc_fin::list_index_filter $p_larr(type)]
@@ -1506,14 +1505,14 @@ ad_proc -public acc_fin::scenario_prettify {
                     foreach val $p3_larr($col) {
                         if { $val ne "" && ![qf_is_natural_number $val] } {
                             incr type_errors_count
-                            ns_log Notice "acc_fin::scenario_prettify.1469: scenario '$scenario_tid' bad val '${val} in col ${col}."
+                            ns_log Notice "acc_fin::scenario_prettify.1469: scenario '$scenario_tid' bad value '${val} in column ${col}."
                         }
                     }
                 } else {
                     foreach val $p3_larr($col) {
                         if { $val ne "" && ![qf_is_decimal $val] } {
                             incr type_errors_count
-                            ns_log Notice "acc_fin::scenario_prettify.1475: scenario '$scenario_tid' bad val '${val} in col ${col}."
+                            ns_log Notice "acc_fin::scenario_prettify.1475: scenario '$scenario_tid' bad value '${val} in column ${col}."
                         }
                     }
                 }
@@ -1743,6 +1742,7 @@ ad_proc -public acc_fin::scenario_prettify {
         array unset t_est_arr
         foreach tCurve [array names time_clarr] {
             set t_est_arr($tCurve) [qaf_y_of_x_dist_curve $t_moment $time_clarr($tCurve) ]
+            ns_log Notice "acc_fin::scenario_prettify.1756: scenario '$scenario_tid' tCurve '$tCurve' t_est_arr($tCurve) '$t_est_arr($tCurve)' ."
         }
         if { $c_moment_blank_p } {
             # if cost_probability_moment is blank, loop 1:1 using time_probability_moment values
