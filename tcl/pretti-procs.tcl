@@ -971,6 +971,12 @@ ad_proc -private acc_fin::p_load_tid {
     upvar cost_clarr cost_clarr
     upvar type_t_curve_arr type_t_curve_arr
     upvar type_c_curve_arr type_c_curve_arr
+    # following are not upvar'd because the cache is mainly useless after proc ends
+    #    upvar tc_cache_larr tc_cache_larr
+    #    upvar cc_cache_larr cc_cache_larr
+    # following are not upvar'd because these are temporary arrays for loading list representations of curves
+    #    upvar tc_larr tc_larr
+    #    upvar cc_larr cc_larr
 
     if { $instance_id eq "" } {
         set instance_id [ad_conn package_id]
@@ -978,29 +984,28 @@ ad_proc -private acc_fin::p_load_tid {
     if { $user_id eq "" } {
         set user_id [ad_conn user_id]
     }
-
+    set table_type "p3"
     set type_tcurve_list [list ]
     set type_ccurve_list [list ]
     if { $p3_larr_name ne ""} {
         upvar $p3_larr_name p3_larr
+        # p_larr must be a p2 table
+        set table_type "p2"
     }
-# following are not upvar'd because the cache is mainly useless after proc ends
-#    upvar tc_cache_larr tc_cache_larr
-#    upvar cc_cache_larr cc_cache_larr
-# following are not upvar'd because these are temporary arrays for loading list representations of curves
-#    upvar tc_larr tc_larr
-#    upvar cc_larr cc_larr
 
-    # load task types table
+    # set table defaults
     foreach column $constants_list {
         set p_larr($column) [list ]
     }
+
+    # load table into array of lists {{a b c} {1 2 3} {4 5 6}} becomes p_larr(a) {1 4}, p_larr(b) {2 5}, p_larr(c) {3 6}
     qss_tid_columns_to_array_of_lists $tid p_larr $constants_list $constants_required_list $instance_id $user_id
+
+    # if 'type' column exists, then p_larr is a p3 table
     set task_type_column_exists_p [info exists p_larr(type)]
-    if { $task_type_column_exists_p && [llength $p_larr(type)] > 0 } {
-        set task_types_exist_p 1
-    } else {
-        set task_types_exist_p 0
+    set task_types_exist_p [expr { ( [llength $p_larr(type)] > 0 ) * $task_type_column_exists_p } ]
+    if { $task_types_exist_p && $table_type eq "p2" } {
+        ns_log Warning "acc_fin::p_load_tid.1005: table_type ${table_type} and task_types_exist_p $task_types_exist_p is an unexpected condition. Investigate."
     }
 
     # filter user input that is going to be used as references in arrays:
@@ -1010,11 +1015,19 @@ ad_proc -private acc_fin::p_load_tid {
     if { [info exists p_larr(dependent_tasks) ] } {
         set p_larr(dependent_tasks) [acc_fin::list_index_filter $p_larr(dependent_tasks)]
     }
+
+    # import curves referenced in the table
     set p_larr(_tCurveRef) [list ]
     set p_larr(_cCurveRef) [list ]
-    if { $task_types_exist_p } {
+
+    if { $table_type eq "p3" } {
+        # table_type is p3
+        # load any referenced curves
         set i_max [llength $p_larr(type)]
     } else {
+        # table_type is p2 (or other..)
+        # don't load any referenced curves here
+        # p2 referenced curves are loaded in context of higher level of complexity
         set i_max -1
     }
     ns_log Notice "acc_fin::p_load_tid.1021: for ${p_larr_name} i_max ${i_max}"
@@ -1103,13 +1116,12 @@ ad_proc -private acc_fin::p_load_tid {
         lappend p_larr(_tCurveRef) $tcurvenum
         lappend p_larr(_cCurveRef) $ccurvenum
         ns_log Notice "acc_fin::p_load_tid.1106: for ${p_larr_name} adding: p_larr(_tCurveRef) $tcurvenum p_larr(_cCurveRef) $ccurvenum"
-        # If this is a p3_larr, create pointer arrays for use with p2_larr
-        if { $task_type_column_exists_p && !$task_types_exist_p } {
-            if { $type ne "" } {
-                set type_t_curve_arr($type) $tcurvenum
-                set type_c_curve_arr($type) $ccurvenum
-            }
+        # Since this is a p3_larr, create pointer arrays for use with p2_larr
+        if { $type ne "" } {
+            set type_t_curve_arr($type) $tcurvenum
+            set type_c_curve_arr($type) $ccurvenum
         }
+
     }
     # end for i, $i < $i_max
     return 1
@@ -1267,6 +1279,32 @@ ad_proc -public acc_fin::scenario_prettify {
 } {
     Processes PRETTI scenario. Returns resulting PRETTI table as a list of lists. 
 } {
+    # General notes:
+
+    # Can create a projected completion curve by stepping through the range of all 
+    # the performance curves N times for N point curve --instead of Monte Carlo simm.
+
+    # About output table:
+    # Vertical represents time. All tasks are rounded up to quantized time_unit.
+    # Smallest task duration is the number of quantized time_units that result in 1 line of text.
+    # To find smallest task duration, repeat PRETTI scenario on tracks with CP tasks by task type, 
+    # then increment by quantized time_unit (row), tracking overages
+    # amount to extend CP duration: 
+    # collision_count / task_type * ( row_counts / ( time_quanta per task_type_duration ) + 1 )
+
+    # Represents task bottlenecks --limits in parallel activity of same type
+    # Parallel limits represented by using:
+    # concurrency_limit: count of tasks of same type that can operate in parallel
+    # overlap_limit: a percentage representing amount of overlap allowed.
+    #                overlap_limit, in effect, creates progressions of activity
+
+    # Since PRETTI does not schedule, don't manipulate task positioning,
+    # just increase duration of task(s) to account for any overages.
+
+    # Activities: 
+    # Represent multiple dependencies of same task for example 99 cartwheels using * as in 99*cartwheels
+
+
     set setup_start [clock seconds]
     if { $instance_id eq "" } {
         set instance_id [ad_conn package_id]
@@ -1274,47 +1312,12 @@ ad_proc -public acc_fin::scenario_prettify {
     if { $user_id eq "" } {
         set user_id [ad_conn user_id]
     }
+    set error_fail 0
 
-    # load scenario values
+    # # # load scenario values -- requires scenario_tid
     
-    # load pretti2_lol table
-    
-    #if { $with_factors_p } {
-    #    # append p2 file, call this proc referencing p2 with_factors_p 0 before continuing.
-    #    set pretti2e_lol [acc_fin::p2_factors_expand $pretti2_lol]
-    #    If with_factors_p is 1, an intermediary step processes factor multiplicands 
-    #    in dependent_tasks list, appending table with a complete list of expanded, 
-    #    nonrepeating tasks.
-    #}
-    # vertical represents time. All tasks are rounded up to quantized time_unit.
-    # Smallest task duration is the number of quantized time_units that result in 1 line of text.
-    
-    # Represent multiple dependencies of same task for example 99 cartwheels using * as in 99*cartwheels
-    
-    # Representing task bottlenecks --limits in parallel activity of same type
-    # Parallel limits represented by:
-    # concurrency_limit: count of tasks of same type that can operate in parallel
-    # overlap_limit: a percentage representing amount of overlap allowed.
-    #                overlap_limit, in effect, creates progressions of activity
-    
-    # To find, repeat PRETTI scenario on tracks with CP tasks by task type, then increment by quantized time_unit (row), tracking overages
-    # amount to extend CP duration: collision_count / task_type * ( row_counts / ( time_quanta per task_type_duration ) + 1 )
-    
-    # Since PRETTI does not schedule, don't manipulate task positioning,
-    # just increase duration of CP to account for limit overages.
-    
-    # Multiple task requirements are represented with a number followed by asterisk.
-    
-    # Create a projected completion curve by stepping through the range of all the performance curves N times instead of Monte Carlo simm.
-    
-    
-
-    #requires scenario_tid
-    
-    # given scenario_tid 
     # activity_table contains:
     # activity_ref predecessors time_est_short time_est_median time_est_long cost_est_low cost_est_median cost_est_high time_dist_curv_eq cost_dist_curv_eq
-    set error_fail 0
 
 
     # # # load p1
@@ -1327,9 +1330,10 @@ ad_proc -public acc_fin::scenario_prettify {
     }
     # preload p1 defaults
     set p1_arr(time_probability_moment) "0.5"
-    # set p1_arr(max_overlap_pct) "" is 1
-    # set p1_arr(max_concurrent) "" is 1
+    # set p1_arr(max_overlap_pct) "" defaults to 1
+    # set p1_arr(max_concurrent) "" defaults to infinite ie no concurrency limit.
 
+    # # # identify table ids to process
     set constants_required_list [acc_fin::pretti_columns_list p1 1]
     qss_tid_scalars_to_array $scenario_tid p1_arr $constants_list $constants_required_list $instance_id $user_id
     if { $p1_arr(activity_table_name) ne "" } {
@@ -1378,7 +1382,11 @@ ad_proc -public acc_fin::scenario_prettify {
     # # # set defaults specified in p1
     ns_log Notice "acc_fin::scenario_prettify.1369: scenario '$scenario_tid' set defaults specified in p1 table."
 
-    # Make time_curve_data This is the default unless more specific data is specified in a task list.
+
+    # # # Make time_curve_data defaults
+    ns_log Notice "acc_fin::scenario_prettify.1382: scenario '$scenario_tid' make time_curve_data defaults from p1."
+
+    # These are the default values unless more specific data is specified in a task list.
     # The most specific information is used for each activity.
     # Median (most likely) point is assumed along the (cumulative) distribution curve, unless
     # a time_probability_moment is specified.  time_probability_moment is only available as a general term.
@@ -1386,11 +1394,6 @@ ad_proc -public acc_fin::scenario_prettify {
     #     local 3-point (min,median,max)
     #     general curve (normalized to local 1 point median ); local 1 point median is minimum time data requirement
     #     general 3-point (normalized to local median)    
-
-
-    # # # Make time_curve_data defaults
-    ns_log Notice "acc_fin::scenario_prettify.1382: scenario '$scenario_tid' make time_curve_data defaults from p1."
-
     set constants_list [acc_fin::pretti_columns_list dc]
     foreach constant $constants_list {
         set tc_larr($constant) [list ]
@@ -1486,6 +1489,7 @@ ad_proc -public acc_fin::scenario_prettify {
             set constants_required_list [acc_fin::pretti_columns_list p3 1]
             ns_log Notice "acc_fin::scenario_prettify.1459: scenario '$scenario_tid' import task_types from '$p1_arr(task_types_tid)'."
             acc_fin::p_load_tid $constants_list $constants_required_list p3_larr $p1_arr(task_types_tid) "" $instance_id $user_id
+            ns_log Notice "acc_fin::scenario_prettify.1460: scenario '$scenario_tid' p3_larr '$p3_larr'"
 
             # validate decimal values before importing
             set type_errors_count 0
