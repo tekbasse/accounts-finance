@@ -1127,16 +1127,54 @@ ad_proc -private acc_fin::p_load_tid {
     return 1
 }
 
-ad_proc -private acc_fin::list_index_filter {
+ad_proc -private acc_fin::list_filter {
+    type
     user_input_list
+    {table_name ""}
+    {list_name ""}
 } {
-    filters alphanumeric input as a list to meet basic word or reference requirements
+    filters input as a list to meet basic word or reference requirements. type can be alphanum decimal natnum. If decimal or natural number (natnum) does not pass filter, value is replaced with blank. if list_name is specified and an input value doesn't pass, procedure logs an error and notifies user of count of filtered changes via pretti_log_create
 } {
-    set filtered_list [list ]
-    foreach input_unfiltered $user_input_list {
-        regsub -all -nocase -- {[^a-z0-9,]+} $input_unfiltered {} input_filtered
-        lappend filtered_list $input_filtered
+    set type_errors_count 0
+    switch -exact $type {
+        alphanum {
+            set filtered_list [list ]
+            foreach input_unfiltered $user_input_list {
+                regsub -all -nocase -- {[^a-z0-9,]+} $input_unfiltered {} input_filtered
+                lappend filtered_list $input_filtered
+            }
+        }
+        decimal {
+            set filtered_list [list ]
+            foreach input_unfiltered $user_input_list {
+                if { $input_unfiltered ne "" && ![qf_is_decimal $input_unfiltered] } {
+                    incr type_errors_count
+                    ns_log Notice "acc_fin::list_filter.1152: val '${val}' in '${table_name}.${list_name}' is not a decimal number."
+                    lappend filtered_list ""
+                } else {
+                    lappend filtered_list $input_unfiltered
+                }
+            }
+        }
+        natnum {
+            set filtered_list [list ]
+            foreach input_unfiltered $user_input_list {
+                if { $input_unfiltered ne "" && ![qf_is_natural_number $input_unfiltered] } {
+                    incr type_errors_count
+                    ns_log Notice "acc_fin::list_filter.1164: val '${val}' in '${table_name}.${list_name}' is not a natural number."
+                    lappend filtered_list ""
+                } else {
+                    lappend filtered_list $input_unfiltered
+                }
+            }
+        }
     }
+    if { $type_errors_count > 0 } {
+        acc_fin::pretti_log_create $scenario_tid $table_name "value" "table '${table_name}' includes ${type_errors_count} bad values for '${list_name}'." $user_id $instance_id
+        set type_errors_count 0
+        set type_errors_p 1
+    }
+
     return $filtered_list
 }
 
@@ -1407,6 +1445,26 @@ ad_proc -public acc_fin::scenario_prettify {
             set constants_required_list [acc_fin::pretti_columns_list dc 1]
             qss_tid_columns_to_array_of_lists $p1_arr(time_dist_curve_tid) tc_larr $constants_list $constants_required_list $instance_id $user_id
             #tc_larr(x), tc_larr(y) and optionally tc_larr(label) where _larr refers to an array where each value is a list of column data by row 1..n
+            ns_log Notice "acc_fin::scenario_prettify.1392: scenario '$scenario_tid' tc_larr(x) '$tc_larr(x)' tc_larr(y) '$tc_larr(y)'"
+            # validate x and y values before importing
+            set type_errors_count 0
+            set type_errors_p 0
+            set column_ck_list [list x y]
+            foreach col $column_ck_list {
+                set filtered_list [acc_fin::list_filter decimal $tc_larr($col) "time_dist_curve_tid: $p1_arr(time_dist_curve_tid)" $col]
+                if { $filtered_list ne $cc_larr($col) } {
+                    set type_errors_p 1
+                }
+            }
+            if { $type_errors_p } {
+                # undo data expansion
+                set tc_larr(x) [list ]
+                set tc_larr(y) [list ]
+                if { [info exists tc_larr(label)] } {
+                    set tc_larr(label) [list ]
+                }
+            }
+
         } else {
             acc_fin::pretti_log_create $scenario_tid "time_dist_curve_tid" "value" "time_dist_curve reference does not exist." $user_id $instance_id
         }
@@ -1434,15 +1492,8 @@ ad_proc -public acc_fin::scenario_prettify {
             set type_errors_p 0
             set column_ck_list [list x y]
             foreach col $column_ck_list {
-                foreach val $cc_larr($col) {
-                    if { ![qf_is_decimal $val] } {
-                        incr type_errors_count
-                        ns_log Notice "acc_fin::scenario_prettify.1405: scenario '$scenario_tid' bad val '${val} in col ${col}."
-                    }
-                }
-                if { $type_errors_count > 0 } {
-                    acc_fin::pretti_log_create $scenario_tid "cost_curve_data" "value" "cost_curve of tid '$p1_arr(cost_dist_curve_tid)' includes ${type_errors_count} bad values for column '${col}'." $user_id $instance_id
-                    set type_errors_count 0
+                set filtered_list [acc_fin::list_filter decimal $cc_larr($col) "cost_dist_curve_tid: $p1_arr(cost_dist_curve_tid)" $col]
+                if { $filtered_list ne $cc_larr($col) } {
                     set type_errors_p 1
                 }
             }
@@ -1506,23 +1557,11 @@ ad_proc -public acc_fin::scenario_prettify {
             # check data for each column
             foreach col $column_ck_list {
                 if { [string range $col end-3 end] eq "_tid" } {
-                    foreach val $p3_larr($col) {
-                        if { $val ne "" && ![qf_is_natural_number $val] } {
-                            incr type_errors_count
-                            ns_log Notice "acc_fin::scenario_prettify.1469: scenario '$scenario_tid' bad value '${val} in column ${col}."
-                        }
-                    }
+                    set filtered_list [acc_fin::list_filter natnum $p3_larr($col) p3 $col]
                 } else {
-                    foreach val $p3_larr($col) {
-                        if { $val ne "" && ![qf_is_decimal $val] } {
-                            incr type_errors_count
-                            ns_log Notice "acc_fin::scenario_prettify.1475: scenario '$scenario_tid' bad value '${val} in column ${col}."
-                        }
-                    }
+                    set filtered_list [acc_fin::list_filter decimal $p3_larr($col) p3 $col]
                 }
-                if { $type_errors_count > 0 } {
-                    acc_fin::pretti_log_create $scenario_tid "task_types_data" "value" "task_types of tid '$p1_arr(task_types_tid)' includes ${type_errors_count} bad values for column '${col}'." $user_id $instance_id
-                    set type_errors_count 0
+                if { $filtered_list ne $p3_larr($col) } {
                     set type_errors_p 1
                 }
             }
