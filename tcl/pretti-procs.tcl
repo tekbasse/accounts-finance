@@ -1013,7 +1013,7 @@ ad_proc -private acc_fin::p_load_tid {
         set p_larr(type) [acc_fin::list_filter alphanum $p_larr(type) $p_larr_name "type"]
     }
     if { [info exists p_larr(dependent_tasks) ] } {
-        set p_larr(dependent_tasks) [acc_fin::list_filter $p_larr(dependent_tasks) $p_larr_name "dependent_tasks"]
+        set p_larr(dependent_tasks) [acc_fin::list_filter alphanum $p_larr(dependent_tasks) $p_larr_name "dependent_tasks"]
     }
 
     # import curves referenced in the table
