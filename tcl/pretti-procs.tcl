@@ -1002,6 +1002,13 @@ ad_proc -private acc_fin::p_load_tid {
     # load table into array of lists {{a b c} {1 2 3} {4 5 6}} becomes p_larr(a) {1 4}, p_larr(b) {2 5}, p_larr(c) {3 6}
     qss_tid_columns_to_array_of_lists $tid p_larr $constants_list $constants_required_list $instance_id $user_id
 
+    if { $p3_types_exist_p && $table_type eq "p2" } {
+        ns_log Warning "acc_fin::p_load_tid.1005: table_type ${table_type} and p3_types_exist_p $p3_types_exist_p is an unexpected condition. Investigate."
+        # Is there any reason why p3 rows cannot be defined in a p2 table?
+        # Recall, p3 loads curves , whereas p2 possibly references existing curves from p3.
+        # if okay to have p3 rows in a p2, then logic changes to (p2 || p3) vs. p3 for this proc.
+    }
+    
     if { $table_type eq "p3" } {
         # if 'type' column exists, then p_larr is a p3 table
         set p3_type_column_exists_p [info exists p_larr(type)]
@@ -1014,132 +1021,155 @@ ad_proc -private acc_fin::p_load_tid {
         set p3_type_column_exists_p
         set p3_types_exist_p 0
     }
-    if { $p3_types_exist_p && $table_type eq "p2" } {
-        ns_log Warning "acc_fin::p_load_tid.1005: table_type ${table_type} and p3_types_exist_p $p3_types_exist_p is an unexpected condition. Investigate."
-    }
 
     # filter user input that is going to be used as references in arrays:
     if { $p3_type_column_exists_p } {
         set p_larr(type) [acc_fin::list_filter alphanum $p_larr(type) $p_larr_name "type"]
+        if { [info exists p_larr(dependent_tasks) ] } {
+            set p_larr(dependent_tasks) [acc_fin::list_filter alphanum $p_larr(dependent_tasks) $p_larr_name "dependent_tasks"]
+        }
     }
     if { $p2_type_column_exists_p } {
         set p_larr(aid_type) [acc_fin::list_filter alphanum $p_larr(aid_type) $p_larr_name "type"]
     }
 
-    if { [info exists p_larr(dependent_tasks) ] } {
-        set p_larr(dependent_tasks) [acc_fin::list_filter alphanum $p_larr(dependent_tasks) $p_larr_name "dependent_tasks"]
-    }
 
     # import curves referenced in the table
     set p_larr(_tCurveRef) [list ]
     set p_larr(_cCurveRef) [list ]
 
-    if { $table_type eq "p3" } {
+    if { $table_type eq "p3" && $p3_type_column_exists_p } {
         # table_type is p3
+        set p3_t_dc_tid_exists_p [info exists $p_larr(time_dist_curve_tid) ]
+        set p3_t_dc_name_exists_p [info exists $p_larr(time_dist_curve_name) ]
+        set p3_c_dc_tid_exists_p [info exists $p_larr(cost_dist_curve_tid) ]
+        set p3_c_dc_name_exists_p [info exists $p_larr(cost_dist_curve_name) ]
+
         # load any referenced curves
         set i_max [llength $p_larr(type)]
-    } else {
-        # table_type is p2 (or other..)
-        # don't load any referenced curves here
-        # p2 referenced curves are loaded in context of higher level of complexity
-        set i_max -1
-    }
-    ns_log Notice "acc_fin::p_load_tid.1021: for ${p_larr_name} i_max ${i_max}"
-    for {set i 0} {$i < $i_max} {incr i} {
-        
-        if { $p3_type_column_exists_p } {
+
+        ns_log Notice "acc_fin::p_load_tid.1021: for ${p_larr_name} i_max ${i_max}"
+        for {set i 0} {$i < $i_max} {incr i} {
+            
             set type [lindex $p_larr(type) $i]
-        }
-        if { $p2_types_exist_p } {
+          
+            # time curve
+            set time_dist_curve_tid ""
+            set time_dist_curve_name ""
+            if { $p3_t_dc_name_exists_p } {
+                set time_dist_curve_name [lindex $p_larr(time_dist_curve_name) $i]
+            }
+            if { $time_dist_curve_name ne "" } {
+                set time_dist_curve_tid [qss_tid_from_name $time_dist_curve_name ]
+            } 
+            if { $p3_t_dc_tid_exists_p && $time_dist_curve_tid eq "" } {
+                set time_dist_curve_tid [lindex $p_larr(time_dist_curve_tid) $i]
+            }
+            if { $time_dist_curve_tid ne "" } {
+                set constants_list [acc_fin::pretti_columns_list dc]
+                if { [info exists tc_cache_larr(x,${time_dist_curve_tid}) ] } {
+                    # already loaded tid curve from earlier (with same numbers but possibly different reference)
+                    foreach constant $constants_list {
+                        set tc_larr($constant) $tc_cache_larr($constant,${time_dist_curve_tid})
+                    }
+                } else {
+                    foreach constant $constants_list {
+                        set tc_larr($constant) ""
+                    }
+                    set constants_required_list [acc_fin::pretti_columns_list dc 1]
+                    qss_tid_columns_to_array_of_lists ${time_dist_curve_tid} tc_larr $constants_list $constants_required_list $instance_id $user_id
+                    # add to input tid cache
+                    foreach constant $constants_list {
+                        set tc_cache_larr($constant,${time_dist_curve_tid}) $tc_larr($constant)
+                    }
+                    #tc_larr(x), tc_larr(y) and optionally tc_larr(label) where _larr refers to an array where each value is a list of column data by row 1..n
+                }
+                # import curve given all the available curve choices
+                set curve_list [acc_fin::curve_import $tc_larr(x) $tc_larr(y) $tc_larr(label) $type_tcurve_list [lindex $p_arr(time_est_short) $i] [lindex $p_arr(time_est_median) $i] [lindex $p_arr(time_est_long) $i] $time_clarr(0) ]
+                set tcurvenum [acc_fin::larr_set time_clarr $curve_list]
+            } else {
+                # use the default curve
+                set tcurvenum 0
+            }
+            
+            # cost curve
+            set cost_dist_curve_tid ""
+            set cost_dist_curve_name ""
+            if { $p3_c_dc_name_exists_p } {
+                set cost_dist_curve_name [lindex $p_larr(cost_dist_curve_name) $i]
+            }
+            if { $cost_dist_curve_name ne "" } {
+                set cost_dist_curve_tid [qss_tid_from_name $cost_dist_curve_name ]
+            } 
+            if { $p3_c_dc_tid_exists_p && $cost_dist_curve_tid eq "" } {
+                set cost_dist_curve_tid [lindex $p_larr(cost_dist_curve_tid) $i]
+            }
+            if { $cost_dist_curve_tid ne "" } {
+                set constants_list [acc_fin::pretti_columns_list dc]
+                if { [info exists cc_cache_larr(x,${cost_dist_curve_tid}) ] } {
+                    # already loaded tid curve from earlier. 
+                    foreach constant $constants_list {
+                        set cc_larr($constant) $cc_cache_larr($constant,${cost_dist_curve_tid})
+                    }
+                } else {
+                    foreach constant $constants_list {
+                        set cc_larr($constant) ""
+                    }
+                    set constants_required_list [acc_fin::pretti_columns_list dc 1]
+                    qss_tid_columns_to_array_of_lists ${cost_dist_curve_tid} cc_larr $constants_list $constants_required_list $instance_id $user_id
+                    # add to input tid cache
+                    foreach constant $constants_list {
+                        set cc_cache_larr($constant,${cost_dist_curve_tid}) $cc_larr($constant)
+                    }
+                    #cc_larr(x), cc_larr(y) and optionally cc_larr(label) where _larr refers to an array where each value is a list of column data by row 1..n
+                }
+                # import curve given all the available curve choices
+                set curve_list [acc_fin::curve_import $cc_larr(x) $cc_larr(y) $cc_larr(label) $type_ccurve_list [lindex $p_arr(cost_est_low) $i] [lindex $p_arr(cost_est_median) $i] [lindex $p_arr(cost_est_high) $i] $cost_clarr(0) ]
+                set ccurvenum [acc_fin::larr_set cost_clarr $curve_list]
+            } else {
+                # use the default curve
+                set ccurvenum 0
+            }
+            
+            # add curve references for both time and cost. 
+            lappend p_larr(_tCurveRef) $tcurvenum
+            lappend p_larr(_cCurveRef) $ccurvenum
+            ns_log Notice "acc_fin::p_load_tid.1106: for ${p_larr_name} adding: p_larr(_tCurveRef) $tcurvenum p_larr(_cCurveRef) $ccurvenum"
+            # Since this is a p3_larr, create pointer arrays for use with p2_larr
             if { $type ne "" } {
-                set type_tcurve_list $time_clarr($type_t_curve_arr($type))
-                # also grab cost curve from task_type
-                set type_ccurve_list $cost_clarr($type_c_curve_arr($type))
-            } else {
-                set type_tcurve_list [list ]
-                set type_ccurve_list [list ]
+                ns_log Notice "acc_fin::p_load_tid.1121: type_t_curve_arr($type) $tcurvenum"
+                set type_t_curve_arr($type) $tcurvenum
+                ns_log Notice "acc_fin::p_load_tid.1123: type_c_curve_arr($type) $ccurvenum"
+                set type_c_curve_arr($type) $ccurvenum
             }
+            
         }
+        # end for i, $i < $i_max
         
-        
-        # time curve
-        if { $p_larr(time_dist_curve_name) ne "" } {
-            set p_larr(time_dist_curve_tid) [qss_tid_from_name $p_larr(time_est_curve_name) ]
-        }
-        if { $p_larr(time_dist_curve_tid) ne "" } {
-            set ctid $p_larr(time_dist_curve_tid)
-            set constants_list [acc_fin::pretti_columns_list dc]
-            if { [info exists tc_cache_larr(x,$ctid) ] } {
-                # already loaded tid curve from earlier. 
-                foreach constant $constants_list {
-                    set tc_larr($constant) $tc_cache_larr($constant,$ctid)
+    } else {
+        # table_type is p2 (or other non-p3)
+        #  load aid_type referenced curves here. ie fill p_larr(_tCurveRef) and p_larr(_cCurveRef)
+        # p2 defined curves are loaded in context of higher level of complexity
+
+        if { $p2_types_exist_p && $p2_type_column_exists_p } {
+            set i_max [llength $p_larr(aid_type)]
+            ns_log Notice "acc_fin::p_load_tid.1141: for ${p_larr_name} i_max ${i_max}"
+            for {set i 0} {$i < $i_max} {incr i} {
+            
+                set aid_type [lindex $p_larr(aid_type) $i]
+                if { $aid_type ne "" } {
+#                    set type_tcurve_list $time_clarr($type_t_curve_arr(${aid_type}))
+                    lappend p_larr(_tCurveRef) $type_t_curve_arr(${aid_type})
+                    # also grab cost curve from task_type
+#                    set type_ccurve_list $cost_clarr($type_c_curve_arr(${aid_type}))
+                    lappend p_larr(_cCurve_ref) $type_c_curve_arr(${aid_type})
+                } else {
+                    lappend p_larr(_tCurveRef) ""
+                    lappend p_larr(_cCurveRef) ""
                 }
-            } else {
-                foreach constant $constants_list {
-                    set tc_larr($constant) ""
-                }
-                set constants_required_list [acc_fin::pretti_columns_list dc 1]
-                qss_tid_columns_to_array_of_lists $ctid tc_larr $constants_list $constants_required_list $instance_id $user_id
-                # add to input tid cache
-                foreach constant $constants_list {
-                    set tc_cache_larr($constant,$ctid) $tc_larr($constant)
-                }
-                #tc_larr(x), tc_larr(y) and optionally tc_larr(label) where _larr refers to an array where each value is a list of column data by row 1..n
             }
-            # import curve given all the available curve choices
-            set curve_list [acc_fin::curve_import $tc_larr(x) $tc_larr(y) $tc_larr(label) $type_tcurve_list [lindex $p_arr(time_est_short) $i] [lindex $p_arr(time_est_median) $i] [lindex $p_arr(time_est_long) $i] $time_clarr(0) ]
-            set tcurvenum [acc_fin::larr_set time_clarr $curve_list]
-        } else {
-            # use the default curve
-            set tcurvenum 0
-        }
-        
-        # cost curve
-        if { $p_larr(cost_dist_curve_name) ne "" } {
-            set p_larr(cost_dist_curve_tid) [qss_tid_from_name $p_larr(cost_est_curve_name) ]
-        }
-        if { $p_larr(cost_dist_curve_tid) ne "" } {
-            set ctid $p_larr(cost_dist_curve_tid)
-            set constants_list [acc_fin::pretti_columns_list dc]
-            if { [info exists cc_cache_larr(x,$ctid) ] } {
-                # already loaded tid curve from earlier. 
-                foreach constant $constants_list {
-                    set cc_larr($constant) $cc_cache_larr($constant,$ctid)
-                }
-            } else {
-                foreach constant $constants_list {
-                    set cc_larr($constant) ""
-                }
-                set constants_required_list [acc_fin::pretti_columns_list dc 1]
-                qss_tid_columns_to_array_of_lists $ctid cc_larr $constants_list $constants_required_list $instance_id $user_id
-                # add to input tid cache
-                foreach constant $constants_list {
-                    set cc_cache_larr($constant,$ctid) $cc_larr($constant)
-                }
-                #cc_larr(x), cc_larr(y) and optionally cc_larr(label) where _larr refers to an array where each value is a list of column data by row 1..n
-            }
-            # import curve given all the available curve choices
-            set curve_list [acc_fin::curve_import $cc_larr(x) $cc_larr(y) $cc_larr(label) $type_ccurve_list [lindex $p_arr(cost_est_low) $i] [lindex $p_arr(cost_est_median) $i] [lindex $p_arr(cost_est_high) $i] $cost_clarr(0) ]
-            set ccurvenum [acc_fin::larr_set cost_clarr $curve_list]
-        } else {
-            # use the default curve
-            set ccurvenum 0
-        }
-        
-        # add curve references for both time and cost. 
-        lappend p_larr(_tCurveRef) $tcurvenum
-        lappend p_larr(_cCurveRef) $ccurvenum
-        ns_log Notice "acc_fin::p_load_tid.1106: for ${p_larr_name} adding: p_larr(_tCurveRef) $tcurvenum p_larr(_cCurveRef) $ccurvenum"
-        # Since this is a p3_larr, create pointer arrays for use with p2_larr
-        if { $type ne "" } {
-ns_log Notice "acc_fin::p_load_tid.1121: type_t_curve_arr($type) $tcurvenum"
-            set type_t_curve_arr($type) $tcurvenum
-ns_log Notice "acc_fin::p_load_tid.1123: type_c_curve_arr($type) $ccurvenum"
-            set type_c_curve_arr($type) $ccurvenum
-        }
 
     }
-    # end for i, $i < $i_max
     return 1
 }
 
