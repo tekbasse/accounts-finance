@@ -1158,7 +1158,7 @@ ad_proc -private acc_fin::p_load_tid {
         # p2 defined curves are loaded in context of higher level of complexity
         
         if { $p2_types_exist_p && $p2_type_column_exists_p } {
-            set i_max [llength $p_larr(aid_type)]
+
             ns_log Notice "acc_fin::p_load_tid.1141: for ${p_larr_name} i_max ${i_max}"
             for {set i 0} {$i < $i_max} {incr i} {
                 
