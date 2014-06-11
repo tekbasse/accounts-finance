@@ -1001,27 +1001,25 @@ ad_proc -private acc_fin::p_load_tid {
 
     # load table into array of lists {{a b c} {1 2 3} {4 5 6}} becomes p_larr(a) {1 4}, p_larr(b) {2 5}, p_larr(c) {3 6}
     qss_tid_columns_to_array_of_lists $tid p_larr $constants_list $constants_required_list $instance_id $user_id
-    
+    set i_max -1
+    set p2_types_exist_p 0
+    set p2_type_column_exists_p 0
+    set p3_types_exist_p 0
+    set p3_type_column_exists_p 0
+
     if { $table_type eq "p3" } {
         # if 'type' column exists, then p_larr is a p3 table
-        set p3_
         set p3_type_column_exists_p [info exists p_larr(type)]
-        if { $p3_type_column_exists_p && [llength $p_larr(type)] > 0 } {
-            set p3_types_exist_p 1
-        } else {
-            set p3_types_exist_p 0
-        }
-        set p2_type_column_exists_p 0
-        set p2_types_exist_p 0
+        if { $p3_type_column_exists_p } {
+            set i_max [llength $p_larr(type) ]
+            set p3_types_exist_p [expr { [llength $p_larr(type)] > 0 } ]
+        } 
     } elseif { $table_type eq "p2" } {
         set p2_type_column_exists_p [info exists p_larr(aid_type)]
-        if { $p2_type_column_exists_p && [llength $p_larr(aid_type)] > 0 } {
+        if { $p2_type_column_exists_p } {
+            set i_max [llength $p_larr(aid_type)]
             set p2_types_exist_p 1
-        } else {
-            set p2_types_exist_p 0
-        }
-        set p3_type_column_exists_p
-        set p3_types_exist_p 0
+        } 
     }
 
     if { $p3_types_exist_p && $table_type eq "p2" } {
@@ -1055,7 +1053,6 @@ ad_proc -private acc_fin::p_load_tid {
         set p3_c_dc_name_exists_p [info exists $p_larr(cost_dist_curve_name) ]
         
         # load any referenced curves
-        set i_max [llength $p_larr(type)]
         
         ns_log Notice "acc_fin::p_load_tid.1021: for ${p_larr_name} i_max ${i_max}"
         for {set i 0} {$i < $i_max} {incr i} {
