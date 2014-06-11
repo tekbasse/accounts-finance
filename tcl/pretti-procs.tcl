@@ -1001,6 +1001,28 @@ ad_proc -private acc_fin::p_load_tid {
 
     # load table into array of lists {{a b c} {1 2 3} {4 5 6}} becomes p_larr(a) {1 4}, p_larr(b) {2 5}, p_larr(c) {3 6}
     qss_tid_columns_to_array_of_lists $tid p_larr $constants_list $constants_required_list $instance_id $user_id
+    
+    if { $table_type eq "p3" } {
+        # if 'type' column exists, then p_larr is a p3 table
+        set p3_
+        set p3_type_column_exists_p [info exists p_larr(type)]
+        if { $p3_type_column_exists_p && [llength $p_larr(type)] > 0 } {
+            set p3_types_exist_p 1
+        } else {
+            set p3_types_exist_p 0
+        }
+        set p2_type_column_exists_p 0
+        set p2_types_exist_p 0
+    } elseif { $table_type eq "p2" } {
+        set p2_type_column_exists_p [info exists p_larr(aid_type)]
+        if { $p2_type_column_exists_p && [llength $p_larr(aid_type)] > 0 } {
+            set p2_types_exist_p 1
+        } else {
+            set p2_types_exist_p 0
+        }
+        set p3_type_column_exists_p
+        set p3_types_exist_p 0
+    }
 
     if { $p3_types_exist_p && $table_type eq "p2" } {
         ns_log Warning "acc_fin::p_load_tid.1005: table_type ${table_type} and p3_types_exist_p $p3_types_exist_p is an unexpected condition. Investigate."
@@ -1009,19 +1031,6 @@ ad_proc -private acc_fin::p_load_tid {
         # if okay to have p3 rows in a p2, then logic changes to (p2 || p3) vs. p3 for this proc.
     }
     
-    if { $table_type eq "p3" } {
-        # if 'type' column exists, then p_larr is a p3 table
-        set p3_type_column_exists_p [info exists p_larr(type)]
-        set p3_types_exist_p [expr { ( [llength $p_larr(type)] > 0 ) * $p3_type_column_exists_p } ]
-        set p2_type_column_exists_p 0
-        set p2_types_exist_p 0
-    } elseif { $table_type eq "p2" } {
-        set p2_type_column_exists_p [info exists p_larr(aid_type)]
-        set p2_types_exist_p [expr { ( [llength $p_larr(aid_type)] > 0 ) * $p2_type_column_exists_p } ]
-        set p3_type_column_exists_p
-        set p3_types_exist_p 0
-    }
-
     # filter user input that is going to be used as references in arrays:
     if { $p3_type_column_exists_p } {
         set p_larr(type) [acc_fin::list_filter alphanum $p_larr(type) $p_larr_name "type"]
@@ -1032,27 +1041,27 @@ ad_proc -private acc_fin::p_load_tid {
     if { $p2_type_column_exists_p } {
         set p_larr(aid_type) [acc_fin::list_filter alphanum $p_larr(aid_type) $p_larr_name "type"]
     }
-
-
+    
+    
     # import curves referenced in the table
     set p_larr(_tCurveRef) [list ]
     set p_larr(_cCurveRef) [list ]
-
+    
     if { $table_type eq "p3" && $p3_type_column_exists_p } {
         # table_type is p3
         set p3_t_dc_tid_exists_p [info exists $p_larr(time_dist_curve_tid) ]
         set p3_t_dc_name_exists_p [info exists $p_larr(time_dist_curve_name) ]
         set p3_c_dc_tid_exists_p [info exists $p_larr(cost_dist_curve_tid) ]
         set p3_c_dc_name_exists_p [info exists $p_larr(cost_dist_curve_name) ]
-
+        
         # load any referenced curves
         set i_max [llength $p_larr(type)]
-
+        
         ns_log Notice "acc_fin::p_load_tid.1021: for ${p_larr_name} i_max ${i_max}"
         for {set i 0} {$i < $i_max} {incr i} {
             
             set type [lindex $p_larr(type) $i]
-          
+            
             # time curve
             set time_dist_curve_tid ""
             set time_dist_curve_name ""
@@ -1150,25 +1159,26 @@ ad_proc -private acc_fin::p_load_tid {
         # table_type is p2 (or other non-p3)
         #  load aid_type referenced curves here. ie fill p_larr(_tCurveRef) and p_larr(_cCurveRef)
         # p2 defined curves are loaded in context of higher level of complexity
-
+        
         if { $p2_types_exist_p && $p2_type_column_exists_p } {
             set i_max [llength $p_larr(aid_type)]
             ns_log Notice "acc_fin::p_load_tid.1141: for ${p_larr_name} i_max ${i_max}"
             for {set i 0} {$i < $i_max} {incr i} {
-            
+                
                 set aid_type [lindex $p_larr(aid_type) $i]
                 if { $aid_type ne "" } {
-#                    set type_tcurve_list $time_clarr($type_t_curve_arr(${aid_type}))
+                    #                    set type_tcurve_list $time_clarr($type_t_curve_arr(${aid_type}))
                     lappend p_larr(_tCurveRef) $type_t_curve_arr(${aid_type})
                     # also grab cost curve from task_type
-#                    set type_ccurve_list $cost_clarr($type_c_curve_arr(${aid_type}))
+                    #                    set type_ccurve_list $cost_clarr($type_c_curve_arr(${aid_type}))
                     lappend p_larr(_cCurve_ref) $type_c_curve_arr(${aid_type})
                 } else {
                     lappend p_larr(_tCurveRef) ""
                     lappend p_larr(_cCurveRef) ""
                 }
             }
-
+            
+        }
     }
     return 1
 }
@@ -1599,7 +1609,7 @@ ad_proc -public acc_fin::scenario_prettify {
             set constants_required_list [acc_fin::pretti_columns_list p3 1]
             ns_log Notice "acc_fin::scenario_prettify.1459: scenario '$scenario_tid' import task_types from '$p1_arr(task_types_tid)'."
             acc_fin::p_load_tid $constants_list $constants_required_list p3_larr $p1_arr(task_types_tid) "" $instance_id $user_id
-            ns_log Notice "acc_fin::scenario_prettify.1460: scenario '$scenario_tid' p3_larr '$p3_larr'"
+            ns_log Notice "acc_fin::scenario_prettify.1460: scenario '$scenario_tid' p3_larr '[array get p3_larr]'"
 
             # validate decimal values before importing
             set type_errors_count 0
