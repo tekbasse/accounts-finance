@@ -952,6 +952,7 @@ ad_proc -public acc_fin::larr_set {
         set i $icount
         set larr_name($icount) $data_list
     } 
+    ns_log Notice "acc_fin::larr_set ${larr_name}($i) ${data_list}"
     return $i
 }
 
@@ -1001,17 +1002,30 @@ ad_proc -private acc_fin::p_load_tid {
     # load table into array of lists {{a b c} {1 2 3} {4 5 6}} becomes p_larr(a) {1 4}, p_larr(b) {2 5}, p_larr(c) {3 6}
     qss_tid_columns_to_array_of_lists $tid p_larr $constants_list $constants_required_list $instance_id $user_id
 
-    # if 'type' column exists, then p_larr is a p3 table
-    set task_type_column_exists_p [info exists p_larr(type)]
-    set task_types_exist_p [expr { ( [llength $p_larr(type)] > 0 ) * $task_type_column_exists_p } ]
-    if { $task_types_exist_p && $table_type eq "p2" } {
-        ns_log Warning "acc_fin::p_load_tid.1005: table_type ${table_type} and task_types_exist_p $task_types_exist_p is an unexpected condition. Investigate."
+    if { $table_type eq "p3" } {
+        # if 'type' column exists, then p_larr is a p3 table
+        set p3_type_column_exists_p [info exists p_larr(type)]
+        set p3_types_exist_p [expr { ( [llength $p_larr(type)] > 0 ) * $p3_type_column_exists_p } ]
+        set p2_type_column_exists_p 0
+        set p2_types_exist_p 0
+    } elseif { $table_type eq "p2" } {
+        set p2_type_column_exists_p [info exists p_larr(aid_type)]
+        set p2_types_exist_p [expr { ( [llength $p_larr(aid_type)] > 0 ) * $p2_type_column_exists_p } ]
+        set p3_type_column_exists_p
+        set p3_types_exist_p 0
+    }
+    if { $p3_types_exist_p && $table_type eq "p2" } {
+        ns_log Warning "acc_fin::p_load_tid.1005: table_type ${table_type} and p3_types_exist_p $p3_types_exist_p is an unexpected condition. Investigate."
     }
 
     # filter user input that is going to be used as references in arrays:
-    if { $task_type_column_exists_p } {
+    if { $p3_type_column_exists_p } {
         set p_larr(type) [acc_fin::list_filter alphanum $p_larr(type) $p_larr_name "type"]
     }
+    if { $p2_type_column_exists_p } {
+        set p_larr(aid_type) [acc_fin::list_filter alphanum $p_larr(aid_type) $p_larr_name "type"]
+    }
+
     if { [info exists p_larr(dependent_tasks) ] } {
         set p_larr(dependent_tasks) [acc_fin::list_filter alphanum $p_larr(dependent_tasks) $p_larr_name "dependent_tasks"]
     }
@@ -1033,10 +1047,10 @@ ad_proc -private acc_fin::p_load_tid {
     ns_log Notice "acc_fin::p_load_tid.1021: for ${p_larr_name} i_max ${i_max}"
     for {set i 0} {$i < $i_max} {incr i} {
         
-        if { $task_type_column_exists_p } {
+        if { $p3_type_column_exists_p } {
             set type [lindex $p_larr(type) $i]
         }
-        if { $task_types_exist_p } {
+        if { $p2_types_exist_p } {
             if { $type ne "" } {
                 set type_tcurve_list $time_clarr($type_t_curve_arr($type))
                 # also grab cost curve from task_type
@@ -1118,7 +1132,9 @@ ad_proc -private acc_fin::p_load_tid {
         ns_log Notice "acc_fin::p_load_tid.1106: for ${p_larr_name} adding: p_larr(_tCurveRef) $tcurvenum p_larr(_cCurveRef) $ccurvenum"
         # Since this is a p3_larr, create pointer arrays for use with p2_larr
         if { $type ne "" } {
+ns_log Notice "acc_fin::p_load_tid.1121: type_t_curve_arr($type) $tcurvenum"
             set type_t_curve_arr($type) $tcurvenum
+ns_log Notice "acc_fin::p_load_tid.1123: type_c_curve_arr($type) $ccurvenum"
             set type_c_curve_arr($type) $ccurvenum
         }
 
@@ -1232,24 +1248,25 @@ ad_proc -private acc_fin::curve_import {
     if { $list_len > 0 } {
         if { $c_label_list_len > 0 } {
             # x, y and label
+            ns_log Notice "acc_fin::curve_import.1237 case 1. building list from x, y and label "
             for {set i 0} {$i < $list_len} {incr i} {
                 set row [list [lindex $c_x_list $i] [lindex $c_y_list $i] [lindex $c_label_list $i] ]
                 lappend c_lists $row
             }
         } else {
             # x and y only
+            ns_log Notice "acc_fin::curve_import.1244 case 1. building list from x and y "
             for {set i 0} {$i < $list_len} {incr i} {
                 set row [list [lindex $c_x_list $i] [lindex $c_y_list $i] ]
                 lappend c_lists $row
             }
         }
-
     } 
 
     # 2. If a curve exists in curve_lists where each element is a list of x,y(,label), use it.
     set curve_lists_len [llength $curve_lists]
     if { [llength $c_lists] == 0 && $curve_lists_len > 0 } {
-
+        ns_log Notice "acc_fin::curve_import.1255 case 2. building curve_lists "
         # curve exists. 
         set point_len [llength [lindex $curve_lists 0] ]
         if { $point_len > 1 } {
@@ -1266,6 +1283,7 @@ ad_proc -private acc_fin::curve_import {
     #set outliers [expr { 0.317310507863 / 2. } ]
 
     if { [llength $c_lists] == 0 && $median ne "" } {
+        ns_log Notice "acc_fin::curve_import.1272 case 3 or 4. building curve from min/med/max points "
         set med_label "med"
         if { $minimum eq "" } {
             set minimum $median
@@ -1291,11 +1309,13 @@ ad_proc -private acc_fin::curve_import {
     
     # 5. if an ordered list of lists x,y,label exists, use it as a fallback default
     if { [llength $default_lists] > 0 && [llength [lindex $default_lists 0] ] > 1 } {
+        ns_log Notice "acc_fin::curve_import.1298 case 5. building curve_lists from default_lists "
         set c_lists $default_lists
     }
 
     # 6. return a representation of a normalized curve as a list of lists similar to curve_lists 
     if { [llength $c_lists] == 0 } {
+        ns_log Notice "acc_fin::curve_import.1304 case 6. building curve_lists from alt min/med/max method"
         # No time defaults.
         # following is essentially the same as acc_fin::pert_omp_to_normal_dc
         # set duration to 1 for limited block feedback.
@@ -1305,7 +1325,16 @@ ad_proc -private acc_fin::curve_import {
         set portion [expr { 1. / 6. } ]
         set tc_larr(x) [list $portion $portion $portion $portion $portion $portion ]
     }
-
+    if { [llength $c_lists] == 0 } {
+        # This shouldn't happen.. for the most part.
+        ns_log Notice "acc_fin::curve_import.1312: len c_list 0 "
+        ns_log Notice "acc_fin::curve_import.1312: c_x_list $c_x_list "
+        ns_log Notice "acc_fin::curve_import.1312: c_y_list $c_y_list "
+        ns_log Notice "acc_fin::curve_import.1312: c_label_list $c_label_list "
+        ns_log Notice "acc_fin::curve_import.1312: curve_lists $curve_lists "
+        ns_log Notice "acc_fin::curve_import.1312: minimum $minimum median $median maximum $maxium "
+        ns_log Notice "acc_fin::curve_import.1312: default_lists $default_lists "
+    }
     # Return an ordered list of lists representing a curve
     return $c_lists
 }
