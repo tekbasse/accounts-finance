@@ -1282,9 +1282,9 @@ ad_proc -private acc_fin::curve_import {
     maximum
     default_lists
 } {
-    Returns curve data to standard representation for PRETTI processing. 
+    Returns curve data to standard representation for PRETTI processing. Expects and returns no column labels (x, y or label).
     1. If a curve exists in c_x_list, c_y_list (, c_label_list), use it.
-    2. If a curve exists in curve_lists where each element is a list of x,y(,label), use it.
+    2. If a curve exists in curve_lists where each element is a list of x, followed by list of y ( and perhaps followed by label), use it.
     3. If a minimum, median, and maximum is available, make a curve of it. 
     4. if an median value is available, make a curve of it, 
     5. if an ordered list of lists x,y,label exists, use it as a fallback default, otherwise 
@@ -1394,7 +1394,7 @@ ad_proc -private acc_fin::curve_import {
         set portion [expr { 1. / 6. } ]
         set tc_larr(x) [list $portion $portion $portion $portion $portion $portion ]
         set tc_larr(label) [list "outlier" "standard deviation 2" "standard deviation 1" "standard deviation 1" "standard deviation 2" "outlier" ]
-        set c_lists [list $tc_larr(x) $c_larr(y) $c_larr(label)]
+        set c_lists [list $tc_larr(x) $tc_larr(y) $tc_larr(label)]
     }
     if { [llength $c_lists] == 0 } {
         # This shouldn't happen.. for the most part.

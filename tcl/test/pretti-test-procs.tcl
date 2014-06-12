@@ -155,20 +155,22 @@ aa_register_case curve_import {
             set c_label_list [list ]
             set curve_lists [list ]
 
-            dot_count [expr { int( [random] * ( 10 - 1 + .99 ) ) + 1 } ]
+            set dot_count [expr { int( [random] * ( 10 - 1 + .99 ) ) + 1 } ]
             set 1or2 [expr { int( [random] * ( 2 - 1 + .99 ) ) + 1 } ] 
-            foreach col_list [lrange [list x y label] 0 $1or2] {
-                switch -exact $col_list {
-                    x { 
-                        # a random amount, assume hours for a task for example
-                        lappend c_x_list [expr { int( [random] * 256. + 5. ) / 6. } ]
-                    }
-                    y {
-                        # these could be usd or btc for example
-                        lappend c_y_list [expr { int( [random] * 30000. + 90. ) / 100. } ]
-                    }
-                    label {
-                        lappend c_label_list [ad_generate_random_string]
+            for {set i o} { $i < $dot_count} {incr i} {
+                foreach col_list [lrange [list x y label] 0 $1or2] {
+                    switch -exact $col_list {
+                        x { 
+                            # a random amount, assume hours for a task for example
+                            lappend c_x_list [expr { int( [random] * 256. + 5. ) / 6. } ]
+                        }
+                        y {
+                            # these could be usd or btc for example
+                            lappend c_y_list [expr { int( [random] * 30000. + 90. ) / 100. } ]
+                        }
+                        label {
+                            lappend c_label_list [ad_generate_random_string]
+                        }
                     }
                 }
             }
@@ -180,31 +182,75 @@ aa_register_case curve_import {
 
 
             set test1 [acc_fin::curve_import $c_x_list $c_y_list $c_label_list $curve_lists $minimum $median $maximum $default_lists]
-
+            set expected [list ]
+            set x_len [llength $c_x_list]
+            for {set i 0} {$i < $c_x_list} {incr i} {
+                lappend expected [list [lindex $c_x_list $i] [lindex $c_y_list $i] [lindex $c_label_list $i]]
+            }
+            aa_equals "Case 1" $test1 $expected
             # 2. If a curve exists in curve_lists where each element is a list of x,y(,label), use it.
             set c_x_list [list ]
             set c_y_list [list ]
             set c_label_list [list ]
 
             set test2 [acc_fin::curve_import $c_x_list $c_y_list $c_label_list $curve_lists $minimum $median $maximum $default_lists]
-
+            aa_equals "Case 2" $test2 $curve_lists
             # 3. If a minimum, median, and maximum is available, make a curve of it. 
             set curve_lists [list ]
             set test3 [acc_fin::curve_import $c_x_list $c_y_list $c_label_list $curve_lists $minimum $median $maximum $default_lists]
+            set med_label "med"
+            if { $minimum eq "" } {
+                set minimum $median
+                set min_label $med_label
+            } else {
+                set min_label "min"
+            }
+            if { $maximum eq "" } {
+                set maximum $median
+                set max_label $med_label
+            } else {
+                set max_label "max"
+            }
+            set c_lists [acc_fin::pert_omp_to_normal_dc $minimum $median $maximum ]
+            aa_equals "Case 3" $test3 $c_lists
 
-            # 4. if an median value is available, make a curve of it, 
+            # 4. if a median value is available, make a curve of it
             set minimum ""
             set maximum ""
             set test4 [acc_fin::curve_import $c_x_list $c_y_list $c_label_list $curve_lists $minimum $median $maximum $default_lists]
-
+            set med_label "med"
+            if { $minimum eq "" } {
+                set minimum $median
+                set min_label $med_label
+            } else {
+                set min_label "min"
+            }
+            if { $maximum eq "" } {
+                set maximum $median
+                set max_label $med_label
+            } else {
+                set max_label "max"
+            }
+            set c_lists [acc_fin::pert_omp_to_normal_dc $minimum $median $maximum ]
+            aa_equals "Case 4" $test4 $c_lists
             # 5. if an ordered list of lists x,y,label exists, use it as a fallback default, otherwise 
             set median ""
             set test5 [acc_fin::curve_import $c_x_list $c_y_list $c_label_list $curve_lists $minimum $median $maximum $default_lists]
-
+            aa_equals "Case 5" $test4 $default_lists
             # 6. return a representation of a normalized curve as a list of lists similar to curve_lists 
             set default_lists [list ]
             set test6 [acc_fin::curve_import $c_x_list $c_y_list $c_label_list $curve_lists $minimum $median $maximum $default_lists]
-
+            set minimum 0.5
+            set median 1.
+            set maximum 2.
+            set tc_larr(y) [list $minimum $median $median $median $median $maximum]
+            # using approximate cumulative distribution y values for standard deviation of 1.
+            set portion [expr { 1. / 6. } ]
+            set tc_larr(x) [list $portion $portion $portion $portion $portion $portion ]
+            set tc_larr(label) [list "outlier" "standard deviation 2" "standard deviation 1" "standard deviation 1" "standard deviation 2" "outlier" ]
+            set c_lists [list $tc_larr(x) $tc_larr(y) $tc_larr(label)]
+            aa_equals "Case 6" $test4 $c_lists
+        }
 }
 
 
