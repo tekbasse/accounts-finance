@@ -1282,7 +1282,10 @@ ad_proc -private acc_fin::curve_import {
     maximum
     default_lists
 } {
-    Returns curve data to standard representation for PRETTI processing. Expects and returns no column labels (x, y or label).
+    Returns curve data to standard representation for PRETTI processing. 
+    Expects column labels in arbitrary order in row lists, but no titles with c_*_list.
+    Distribution curve format is a spreadsheet table format with labeled columns 'x' and 'y' (and optionally 'label').
+    Returns columns in order of x,y (,label) for minimizing memory footprint when used with acc_fin::larr_set.
     1. If a curve exists in c_x_list, c_y_list (, c_label_list), use it.
     2. If a curve exists in curve_lists where each element is a list of x, followed by list of y ( and perhaps followed by label), use it.
     3. If a minimum, median, and maximum is available, make a curve of it. 
@@ -1291,8 +1294,8 @@ ad_proc -private acc_fin::curve_import {
     6. return a representation of a normalized curve as a list of lists similar to curve_lists 
 } {
     # In persuit of making curve_data
-    #     local curves are represented as a list of lists, with each list a triplet set x, y, label
-    #     or as separate lists.. so this proc must check for both forms.
+    #     local curves are represented as a list of lists
+    #     with each list a triplet set x, y, label, with the first row consisting of title names
 
     #     local 3-point (min,median,max) represented as a list of 3 elements
     #     local median represented as a single element
@@ -1314,6 +1317,7 @@ ad_proc -private acc_fin::curve_import {
     if { $list_len > 0 } {
         if { $c_label_list_len > 0 } {
             # x, y and label
+            lappend c_lists [list x y label]
             ns_log Notice "acc_fin::curve_import.1237 case 1. building list from x, y and label "
             for {set i 0} {$i < $list_len} {incr i} {
                 set row [list [lindex $c_x_list $i] [lindex $c_y_list $i] [lindex $c_label_list $i] ]
@@ -1321,6 +1325,7 @@ ad_proc -private acc_fin::curve_import {
             }
         } else {
             # x and y only
+            lappend c_lists [list x y]
             ns_log Notice "acc_fin::curve_import.1244 case 1. building list from x and y "
             for {set i 0} {$i < $list_len} {incr i} {
                 set row [list [lindex $c_x_list $i] [lindex $c_y_list $i] ]
@@ -1332,11 +1337,37 @@ ad_proc -private acc_fin::curve_import {
     # 2. If a curve exists in curve_lists where each element is a list of x,y(,label), use it.
     set curve_lists_len [llength $curve_lists]
     if { [llength $c_lists] == 0 && $curve_lists_len > 0 } {
+        set title_list [lindex $curve_lol 0]
+        set y_idx [lsearch -exact $title_list "y"]
+        set x_idx [lsearch -exact $title_list "x"]
+        set label_idx [lsearch -exact $title_list "label"]
+        if { $label_idx > -1 } {
+            set label_exists_p 1
+        } else {
+            set label_exists_p 0
+        }
         ns_log Notice "acc_fin::curve_import.1255 case 2. building curve_lists "
         # curve exists. 
         set point_len [llength [lindex $curve_lists 0] ]
         if { $point_len > 1 } {
-            set c_lists $curve_lists
+            # Reorder columns?
+            if { $x_idx == 0 && $y_idx == 1 } {
+                set c_lists $curve_lists
+            } else {
+                # Reorder columns for output
+                foreach point_list $curve_lists {
+                    set x [lindex $point_list $x_idx]
+                    set y [lindex $point_list $y_idx]
+                    if { $label_exists_p } {
+                        set label [lindex $point_list $label_idx]
+                        set point_new_list [list $x $y $label]
+                    } else {
+                        set point_new_list [list $x $y]
+                    }
+                    lappend c_lists $point_new_list
+                }
+            }
+
         }
         
     }
