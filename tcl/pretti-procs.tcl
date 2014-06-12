@@ -1381,15 +1381,20 @@ ad_proc -private acc_fin::curve_import {
 
     # 6. return a representation of a normalized curve as a list of lists similar to curve_lists 
     if { [llength $c_lists] == 0 } {
-        ns_log Notice "acc_fin::curve_import.1304 case 6. building curve_lists from alt min/med/max method"
+        ns_log Notice "acc_fin::curve_import.1304 case 6. building curve_lists from blanks"
         # No time defaults.
         # following is essentially the same as acc_fin::pert_omp_to_normal_dc
         # set duration to 1 for limited block feedback.
         #set tc_larr(y) [list $outliers $std_dev_parts $std_dev_parts $std_dev_parts $std_dev_parts $outliers]
+        set minimum 0.5
+        set median 1.
+        set maximum 2.
         set tc_larr(y) [list $minimum $median $median $median $median $maximum]
         # using approximate cumulative distribution y values for standard deviation of 1.
         set portion [expr { 1. / 6. } ]
         set tc_larr(x) [list $portion $portion $portion $portion $portion $portion ]
+        set tc_larr(label) [list "outlier" "standard deviation 2" "standard deviation 1" "standard deviation 1" "standard deviation 2" "outlier" ]
+        set c_lists [list $tc_larr(x) $c_larr(y) $c_larr(label)]
     }
     if { [llength $c_lists] == 0 } {
         # This shouldn't happen.. for the most part.
