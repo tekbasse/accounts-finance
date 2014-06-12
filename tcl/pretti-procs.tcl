@@ -1049,9 +1049,17 @@ ad_proc -private acc_fin::p_load_tid {
         # table_type is p3
         set p3_t_dc_tid_exists_p [info exists $p_larr(time_dist_curve_tid) ]
         set p3_t_dc_name_exists_p [info exists $p_larr(time_dist_curve_name) ]
+        set p3_t_est_short_exists_p [info exists $p_larr(time_est_short) ]
+        set p3_t_est_median_exists_p [info exists $p_larr(time_est_median) ]
+        set p3_t_est_long_exists_p [info exists $p_larr(time_est_long) ]
+
         set p3_c_dc_tid_exists_p [info exists $p_larr(cost_dist_curve_tid) ]
         set p3_c_dc_name_exists_p [info exists $p_larr(cost_dist_curve_name) ]
-        
+        set p3_c_est_low_exists_p [info exists $p_larr(cost_est_low) ]
+        set p3_c_est_median_exists_p [info exists $p_larr(cost_est_median) ]
+        set p3_c_est_high_exists_p [info exists $p_larr(cost_est_high) ]
+
+
         # load any referenced curves
         
         ns_log Notice "acc_fin::p_load_tid.1021: for ${p_larr_name} i_max ${i_max}"
@@ -1062,6 +1070,9 @@ ad_proc -private acc_fin::p_load_tid {
             # time curve
             set time_dist_curve_tid ""
             set time_dist_curve_name ""
+            set time_est_short ""
+            set time_est_median ""
+            set time_est_long ""
             if { $p3_t_dc_name_exists_p } {
                 set time_dist_curve_name [lindex $p_larr(time_dist_curve_name) $i]
             }
@@ -1071,36 +1082,47 @@ ad_proc -private acc_fin::p_load_tid {
             if { $p3_t_dc_tid_exists_p && $time_dist_curve_tid eq "" } {
                 set time_dist_curve_tid [lindex $p_larr(time_dist_curve_tid) $i]
             }
+            # set defaults
+            set constants_list [acc_fin::pretti_columns_list dc]
+            foreach constant $constants_list {
+                set tc_larr($constant) ""
+            }
+
             if { $time_dist_curve_tid ne "" } {
-                set constants_list [acc_fin::pretti_columns_list dc]
-                if { [info exists tc_cache_larr(x,${time_dist_curve_tid}) ] } {
-                    # already loaded tid curve from earlier (with same numbers but possibly different reference)
-                    foreach constant $constants_list {
-                        set tc_larr($constant) $tc_cache_larr($constant,${time_dist_curve_tid})
-                    }
-                } else {
-                    foreach constant $constants_list {
-                        set tc_larr($constant) ""
-                    }
+                if { ![info exists tc_cache_larr(x,${time_dist_curve_tid}) ] } {
                     set constants_required_list [acc_fin::pretti_columns_list dc 1]
                     qss_tid_columns_to_array_of_lists ${time_dist_curve_tid} tc_larr $constants_list $constants_required_list $instance_id $user_id
                     # add to input tid cache
                     foreach constant $constants_list {
                         set tc_cache_larr($constant,${time_dist_curve_tid}) $tc_larr($constant)
                     }
-                    #tc_larr(x), tc_larr(y) and optionally tc_larr(label) where _larr refers to an array where each value is a list of column data by row 1..n
                 }
-                # import curve given all the available curve choices
-                set curve_list [acc_fin::curve_import $tc_larr(x) $tc_larr(y) $tc_larr(label) $type_tcurve_list [lindex $p_arr(time_est_short) $i] [lindex $p_arr(time_est_median) $i] [lindex $p_arr(time_est_long) $i] $time_clarr(0) ]
-                set tcurvenum [acc_fin::larr_set time_clarr $curve_list]
-            } else {
-                # use the default curve
-                set tcurvenum 0
+                #tc_larr(x), tc_larr(y) and optionally tc_larr(label) where _larr refers to an array where each value is a list of column data by row 1..n
+                foreach constant $constants_list {
+                    set tc_larr($constant) $tc_cache_larr($constant,${time_dist_curve_tid})
+                }
             }
-            
+            if { $p3_t_est_short_exists_p } {
+                set time_est_short [lindex $p_arr(time_est_short) $i]
+            }
+            if { $p3_t_est_median_exists_p } {
+                set time_est_median [lindex $p_arr(time_est_median) $i]
+            }
+            if { $p3_t_est_long_exists_p } {
+                set time_est_long [lindex $p_arr(time_est_long) $i]
+            }
+            # import curve given all the available curve choices
+
+            set curve_list [acc_fin::curve_import $tc_larr(x) $tc_larr(y) $tc_larr(label) $type_tcurve_list $time_est_short $time_est_median $time_est_long $time_clarr(0) ]
+            set tcurvenum [acc_fin::larr_set time_clarr $curve_list]
+
+
             # cost curve
             set cost_dist_curve_tid ""
             set cost_dist_curve_name ""
+            set cost_est_low ""
+            set cost_est_median ""
+            set cost_est_high ""
             if { $p3_c_dc_name_exists_p } {
                 set cost_dist_curve_name [lindex $p_larr(cost_dist_curve_name) $i]
             }
@@ -1110,33 +1132,40 @@ ad_proc -private acc_fin::p_load_tid {
             if { $p3_c_dc_tid_exists_p && $cost_dist_curve_tid eq "" } {
                 set cost_dist_curve_tid [lindex $p_larr(cost_dist_curve_tid) $i]
             }
+            # set defaults
+            foreach constant $constants_list {
+                set cc_larr($constant) ""
+            }
+
             if { $cost_dist_curve_tid ne "" } {
                 set constants_list [acc_fin::pretti_columns_list dc]
-                if { [info exists cc_cache_larr(x,${cost_dist_curve_tid}) ] } {
-                    # already loaded tid curve from earlier. 
-                    foreach constant $constants_list {
-                        set cc_larr($constant) $cc_cache_larr($constant,${cost_dist_curve_tid})
-                    }
-                } else {
-                    foreach constant $constants_list {
-                        set cc_larr($constant) ""
-                    }
+                if { ![info exists cc_cache_larr(x,${cost_dist_curve_tid}) ] } {
                     set constants_required_list [acc_fin::pretti_columns_list dc 1]
                     qss_tid_columns_to_array_of_lists ${cost_dist_curve_tid} cc_larr $constants_list $constants_required_list $instance_id $user_id
                     # add to input tid cache
                     foreach constant $constants_list {
                         set cc_cache_larr($constant,${cost_dist_curve_tid}) $cc_larr($constant)
                     }
-                    #cc_larr(x), cc_larr(y) and optionally cc_larr(label) where _larr refers to an array where each value is a list of column data by row 1..n
                 }
-                # import curve given all the available curve choices
-                set curve_list [acc_fin::curve_import $cc_larr(x) $cc_larr(y) $cc_larr(label) $type_ccurve_list [lindex $p_arr(cost_est_low) $i] [lindex $p_arr(cost_est_median) $i] [lindex $p_arr(cost_est_high) $i] $cost_clarr(0) ]
-                set ccurvenum [acc_fin::larr_set cost_clarr $curve_list]
-            } else {
-                # use the default curve
-                set ccurvenum 0
+                #cc_larr(x), cc_larr(y) and optionally cc_larr(label) where _larr refers to an array where each value is a list of column data by row 1..n                
+                foreach constant $constants_list {
+                    set cc_larr($constant) $cc_cache_larr($constant,${cost_dist_curve_tid})
+                }
             }
-            
+            if { $p3_c_est_low_exists_p } {
+                [lindex $p_arr(cost_est_low) $i] 
+            }
+            if { $p3_c_est_median_exists_p } {
+                [lindex $p_arr(cost_est_median) $i] 
+            }
+            if { $p3_c_est_high_exists_p } {
+                [lindex $p_arr(cost_est_high) $i]
+            }
+            # import curve given all the available curve choices
+            set curve_list [acc_fin::curve_import $cc_larr(x) $cc_larr(y) $cc_larr(label) $type_ccurve_list $cost_est_low $cost_est_median $cost_est_high $cost_clarr(0) ]
+            set ccurvenum [acc_fin::larr_set cost_clarr $curve_list]
+
+
             # add curve references for both time and cost. 
             lappend p_larr(_tCurveRef) $tcurvenum
             lappend p_larr(_cCurveRef) $ccurvenum
