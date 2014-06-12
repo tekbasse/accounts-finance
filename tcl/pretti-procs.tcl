@@ -936,23 +936,23 @@ ad_proc -public acc_fin::larr_set {
     This procedure helps reduce memory overhead 
     for indexes with lots of list data.
 } {
-    upvar $larr_name larr_name
+    upvar 1 ${larr_name} larr
     # If memory issues exist even after using this proc, one can further compress the array by applying a dictionary storage technique.
     # It may be possible to use the list as an index and gain from tcl internal handling for example.
     # hmm. Initial tests suggest this array(list) works, but might not be practical to store references..
-    set indexes_list [array names $larr_name]
+    set indexes_list [array names larr]
     set icount [llength $indexes_list]
     set i 0
     set index [lindex $indexes_list $i]
-    while { $i < $icount && $larr_name($index) ne $data_list } {
+    while { $i < $icount && $larr($index) ne $data_list } {
         incr i
         set index [lindex $indexes_list $i]
     }
-    if { $larr_name($index) ne $data_list } {
+    if { $larr($index) ne $data_list } {
         set i $icount
-        set larr_name($icount) $data_list
+        set larr($icount) $data_list
     } 
-    ns_log Notice "acc_fin::larr_set ${larr_name}($i) ${data_list}"
+    ns_log Notice "acc_fin::larr_set $larr($i) ${data_list}"
     return $i
 }
 
@@ -967,17 +967,17 @@ ad_proc -private acc_fin::p_load_tid {
 } {
     loads array_name with p2 or p3 style table for use with internal code
 } {
-    upvar $p_larr_name p_larr
-    upvar time_clarr time_clarr
-    upvar cost_clarr cost_clarr
-    upvar type_t_curve_arr type_t_curve_arr
-    upvar type_c_curve_arr type_c_curve_arr
+    upvar 1 $p_larr_name p_larr
+    upvar 1 time_clarr time_clarr
+    upvar 1 cost_clarr cost_clarr
+    upvar 1 type_t_curve_arr type_t_curve_arr
+    upvar 1 type_c_curve_arr type_c_curve_arr
     # following are not upvar'd because the cache is mainly useless after proc ends
-    #    upvar tc_cache_larr tc_cache_larr
-    #    upvar cc_cache_larr cc_cache_larr
+    #    upvar 1 tc_cache_larr tc_cache_larr
+    #    upvar 1 cc_cache_larr cc_cache_larr
     # following are not upvar'd because these are temporary arrays for loading list representations of curves
-    #    upvar tc_larr tc_larr
-    #    upvar cc_larr cc_larr
+    #    upvar 1 tc_larr tc_larr
+    #    upvar 1 cc_larr cc_larr
 
     if { $instance_id eq "" } {
         set instance_id [ad_conn package_id]
@@ -989,7 +989,7 @@ ad_proc -private acc_fin::p_load_tid {
     set type_tcurve_list [list ]
     set type_ccurve_list [list ]
     if { $p3_larr_name ne ""} {
-        upvar $p3_larr_name p3_larr
+        upvar 1 $p3_larr_name p3_larr
         # p_larr must be a p2 table
         set table_type "p2"
     }
