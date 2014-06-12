@@ -140,6 +140,74 @@ aa_register_case list_index_filter {
         }
 }
 
+
+aa_register_case curve_import {
+    Test acc_fin::curve_import proc
+} {
+
+    aa_run_with_teardown \
+        -rollback \
+        -test_code {
+            # case
+            # 1. If a curve exists in c_x_list, c_y_list (, c_label_list), use it.
+            set c_x_list [list ]
+            set c_y_list [list ]
+            set c_label_list [list ]
+            set curve_lists [list ]
+
+            dot_count [expr { int( [random] * ( 10 - 1 + .99 ) ) + 1 } ]
+            set 1or2 [expr { int( [random] * ( 2 - 1 + .99 ) ) + 1 } ] 
+            foreach col_list [lrange [list x y label] 0 $1or2] {
+                switch -exact $col_list {
+                    x { 
+                        # a random amount, assume hours for a task for example
+                        lappend c_x_list [expr { int( [random] * 256. + 5. ) / 6. } ]
+                    }
+                    y {
+                        # these could be usd or btc for example
+                        lappend c_y_list [expr { int( [random] * 30000. + 90. ) / 100. } ]
+                    }
+                    label {
+                        lappend c_label_list [ad_generate_random_string]
+                    }
+                }
+            }
+            set default_lists [list $c_x_list $c_y_list $c_label_list]
+
+            set minimum [expr { int( [random] * 256. + 5. ) / 6. } ]
+            set median [expr { int( [random] * 512. + 5. ) / 6. + 256. } ]
+            set maximum [expr { int( [random] * 1024. + 5. ) / 6. + 1024 } ]
+
+
+            set test1 [acc_fin::curve_import $c_x_list $c_y_list $c_label_list $curve_lists $minimum $median $maximum $default_lists]
+
+            # 2. If a curve exists in curve_lists where each element is a list of x,y(,label), use it.
+            set c_x_list [list ]
+            set c_y_list [list ]
+            set c_label_list [list ]
+
+            set test2 [acc_fin::curve_import $c_x_list $c_y_list $c_label_list $curve_lists $minimum $median $maximum $default_lists]
+
+            # 3. If a minimum, median, and maximum is available, make a curve of it. 
+            set curve_lists [list ]
+            set test3 [acc_fin::curve_import $c_x_list $c_y_list $c_label_list $curve_lists $minimum $median $maximum $default_lists]
+
+            # 4. if an median value is available, make a curve of it, 
+            set minimum ""
+            set maximum ""
+            set test4 [acc_fin::curve_import $c_x_list $c_y_list $c_label_list $curve_lists $minimum $median $maximum $default_lists]
+
+            # 5. if an ordered list of lists x,y,label exists, use it as a fallback default, otherwise 
+            set median ""
+            set test5 [acc_fin::curve_import $c_x_list $c_y_list $c_label_list $curve_lists $minimum $median $maximum $default_lists]
+
+            # 6. return a representation of a normalized curve as a list of lists similar to curve_lists 
+            set default_lists [list ]
+            set test6 [acc_fin::curve_import $c_x_list $c_y_list $c_label_list $curve_lists $minimum $median $maximum $default_lists]
+
+}
+
+
 aa_register_case scenario_prettify_test1 {
     Test acc_fin::scenario_prettify proc
 } {
