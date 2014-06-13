@@ -156,8 +156,8 @@ aa_register_case curve_import {
             set curve_lists [list ]
 
             set dot_count [expr { int( [random] * ( 10 - 1 + .99 ) ) + 1 } ]
-            set 1or2 [expr { int( [random] * ( 2 - 1 + .99 ) ) + 1 } ] 
-            for {set i o} { $i < $dot_count} {incr i} {
+            set 1or2 [expr { int( [random] * ( 2 - 1 + .5 ) ) + 1 } ] 
+            for {set i 0} { $i < $dot_count} {incr i} {
                 foreach col_list [lrange [list x y label] 0 $1or2] {
                     switch -exact $col_list {
                         x { 
@@ -174,27 +174,50 @@ aa_register_case curve_import {
                     }
                 }
             }
-            set default_lists [list $c_x_list $c_y_list $c_label_list]
 
             set minimum [expr { int( [random] * 256. + 5. ) / 6. } ]
             set median [expr { int( [random] * 512. + 5. ) / 6. + 256. } ]
             set maximum [expr { int( [random] * 1024. + 5. ) / 6. + 1024 } ]
-
+            set x_len [llength $c_x_list]
+            if { $c_label_list eq "" } {
+                set titles [list x y]
+                set expected [list $titles]
+                for {set i 0} {$i < $x_len} {incr i} {
+                    set row [list [lindex $c_x_list $i] [lindex $c_y_list $i]]
+                    lappend expected $row
+                }
+            } else {
+                set titles [list x y label]
+                set expected [list $titles]
+                for {set i 0} {$i < $x_len} {incr i} {
+                    set row [list [lindex $c_x_list $i] [lindex $c_y_list $i] [lindex $c_label_list $i]]
+                    lappend expected $row
+                }
+            }
+            set default_lists $expected
+            set curve_lists $expected
 
             set test1 [acc_fin::curve_import $c_x_list $c_y_list $c_label_list $curve_lists $minimum $median $maximum $default_lists]
-            set expected [list ]
-            set x_len [llength $c_x_list]
-            for {set i 0} {$i < $c_x_list} {incr i} {
-                lappend expected [list [lindex $c_x_list $i] [lindex $c_y_list $i] [lindex $c_label_list $i]]
+            set affirm_p [qss_tables_are_equiv_p $test1 $expected]
+            if { $affirm_p } {
+                aa_true "Case 1" $affirm_p
+            } else {
+                aa_true "Case 1" $affirm_p
+                aa_log "Case 1 \n $test1 \n != $expected \n"
             }
-            aa_equals "Case 1" $test1 $expected
             # 2. If a curve exists in curve_lists where each element is a list of x,y(,label), use it.
             set c_x_list [list ]
             set c_y_list [list ]
             set c_label_list [list ]
 
             set test2 [acc_fin::curve_import $c_x_list $c_y_list $c_label_list $curve_lists $minimum $median $maximum $default_lists]
-            aa_equals "Case 2" $test2 $curve_lists
+            set affirm_p [qss_tables_are_equiv_p $test2 $curve_lists]
+            if { $affirm_p } {
+                aa_true "Case 2" $affirm_p
+            } else {
+                aa_true "Case 2" $affirm_p
+                aa_log "Case 2 \n $test2 \n != $curve_lists \n"
+            }
             # 3. If a minimum, median, and maximum is available, make a curve of it. 
             set curve_lists [list ]
             set test3 [acc_fin::curve_import $c_x_list $c_y_list $c_label_list $curve_lists $minimum $median $maximum $default_lists]
@@ -212,7 +235,13 @@ aa_register_case curve_import {
                 set max_label "max"
             }
             set c_lists [acc_fin::pert_omp_to_normal_dc $minimum $median $maximum ]
-            aa_equals "Case 3" $test3 $c_lists
+            set affirm_p [qss_tables_are_equiv_p $test3 $c_lists]
+            if { $affirm_p } {
+                aa_true "Case 3" $affirm_p
+            } else {
+                aa_true "Case 3" $affirm_p
+                aa_log "Case 3 \n $test3 \n != $c_lists \n"
+            }
 
             # 4. if a median value is available, make a curve of it
             set minimum ""
@@ -232,11 +261,25 @@ aa_register_case curve_import {
                 set max_label "max"
             }
             set c_lists [acc_fin::pert_omp_to_normal_dc $minimum $median $maximum ]
-            aa_equals "Case 4" $test4 $c_lists
+            set affirm_p [qss_tables_are_equiv_p $test4 $c_lists]
+            if { $affirm_p } {
+                aa_true "Case 4" $affirm_p
+            } else {
+                aa_true "Case 4" $affirm_p
+                aa_log "Case 4 \n $test4 \n != $c_lists \n"
+            }
+
             # 5. if an ordered list of lists x,y,label exists, use it as a fallback default, otherwise 
             set median ""
             set test5 [acc_fin::curve_import $c_x_list $c_y_list $c_label_list $curve_lists $minimum $median $maximum $default_lists]
-            aa_equals "Case 5" $test4 $default_lists
+            set affirm_p [qss_tables_are_equiv_p $test5 $default_lists]
+            if { $affirm_p } {
+                aa_true "Case 5" $affirm_p
+            } else {
+                aa_true "Case 5" $affirm_p
+                aa_log "Case 5 \n $test5 \n != $default_lists \n"
+            }
+
             # 6. return a representation of a normalized curve as a list of lists similar to curve_lists 
             set default_lists [list ]
             set test6 [acc_fin::curve_import $c_x_list $c_y_list $c_label_list $curve_lists $minimum $median $maximum $default_lists]
@@ -249,7 +292,14 @@ aa_register_case curve_import {
             set tc_larr(x) [list $portion $portion $portion $portion $portion $portion ]
             set tc_larr(label) [list "outlier" "standard deviation 2" "standard deviation 1" "standard deviation 1" "standard deviation 2" "outlier" ]
             set c_lists [list $tc_larr(x) $tc_larr(y) $tc_larr(label)]
-            aa_equals "Case 6" $test4 $c_lists
+            set affirm_p [qss_tables_are_equiv_p $test6 $c_lists]
+            if { $affirm_p } {
+                aa_true "Case 6" $affirm_p
+            } else {
+                aa_true "Case 6" $affirm_p
+                aa_log "Case 6 \n $test6 \n != $c_lists \n"
+            }
+
         }
 }
 

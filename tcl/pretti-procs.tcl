@@ -1337,7 +1337,7 @@ ad_proc -private acc_fin::curve_import {
     # 2. If a curve exists in curve_lists where each element is a list of x,y(,label), use it.
     set curve_lists_len [llength $curve_lists]
     if { [llength $c_lists] == 0 && $curve_lists_len > 0 } {
-        set title_list [lindex $curve_lol 0]
+        set title_list [lindex $curve_lists 0]
         set y_idx [lsearch -exact $title_list "y"]
         set x_idx [lsearch -exact $title_list "x"]
         set label_idx [lsearch -exact $title_list "label"]
