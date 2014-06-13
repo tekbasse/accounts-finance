@@ -1374,13 +1374,23 @@ ad_proc -private acc_fin::curve_import {
  
     # 3. If a minimum, median, and maximum is available, make a curve of it. 
     # or
+    if { [llength $c_lists] == 0 && $minimum ne "" && $median ne "" && $maximum ne "" } {
+        ns_log Notice "acc_fin::curve_import.1272 case 3. building curve from min/med/max points "
+        # min,med,max values available
+        # Geometric median requires all three values
+        
+        # time_expected = ( time_optimistic + 4 * time_most_likely + time_pessimistic ) / 6.
+        # per http://en.wikipedia.org/wiki/Program_Evaluation_and_Review_Technique
+
+        set c_lists [acc_fin::pert_omp_to_normal_dc $minimum $median $maximum ]
+    }
+
     # 4. if an median value is available, make a curve of it, 
     #set standard_deviation 0.682689492137 
     #set std_dev_parts [expr { $standard_deviation / 4. } ]
     #set outliers [expr { 0.317310507863 / 2. } ]
-
     if { [llength $c_lists] == 0 && $median ne "" } {
-        ns_log Notice "acc_fin::curve_import.1272 case 3 or 4. building curve from min/med/max points "
+        ns_log Notice "acc_fin::curve_import.1272 case 4. building curve from med and maybe min or max points "
         set med_label "med"
         if { $minimum eq "" } {
             set minimum $median
@@ -1405,7 +1415,7 @@ ad_proc -private acc_fin::curve_import {
     }
     
     # 5. if an ordered list of lists x,y,label exists, use it as a fallback default
-    if { [llength $default_lists] > 0 && [llength [lindex $default_lists 0] ] > 1 } {
+    if { [llength $c_lists] == 0 && [llength $default_lists] > 0 && [llength [lindex $default_lists 0] ] > 1 } {
         ns_log Notice "acc_fin::curve_import.1298 case 5. building curve_lists from default_lists "
         set c_lists $default_lists
     }

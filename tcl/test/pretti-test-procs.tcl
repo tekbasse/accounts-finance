@@ -221,19 +221,6 @@ aa_register_case curve_import {
             # 3. If a minimum, median, and maximum is available, make a curve of it. 
             set curve_lists [list ]
             set test3 [acc_fin::curve_import $c_x_list $c_y_list $c_label_list $curve_lists $minimum $median $maximum $default_lists]
-            set med_label "med"
-            if { $minimum eq "" } {
-                set minimum $median
-                set min_label $med_label
-            } else {
-                set min_label "min"
-            }
-            if { $maximum eq "" } {
-                set maximum $median
-                set max_label $med_label
-            } else {
-                set max_label "max"
-            }
             set c_lists [acc_fin::pert_omp_to_normal_dc $minimum $median $maximum ]
             set affirm_p [qss_tables_are_equiv_p $test3 $c_lists]
             if { $affirm_p } {
