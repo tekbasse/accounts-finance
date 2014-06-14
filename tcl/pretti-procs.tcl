@@ -1050,17 +1050,17 @@ ad_proc -private acc_fin::p_load_tid {
     
     if { $table_type eq "p3" && $p3_type_column_exists_p } {
         # table_type is p3
-        set p3_t_dc_tid_exists_p [info exists $p_larr(time_dist_curve_tid) ]
-        set p3_t_dc_name_exists_p [info exists $p_larr(time_dist_curve_name) ]
-        set p3_t_est_short_exists_p [info exists $p_larr(time_est_short) ]
-        set p3_t_est_median_exists_p [info exists $p_larr(time_est_median) ]
-        set p3_t_est_long_exists_p [info exists $p_larr(time_est_long) ]
+        set p3_t_dc_tid_exists_p [info exists p_larr(time_dist_curve_tid) ]
+        set p3_t_dc_name_exists_p [info exists p_larr(time_dist_curve_name) ]
+        set p3_t_est_short_exists_p [info exists p_larr(time_est_short) ]
+        set p3_t_est_median_exists_p [info exists p_larr(time_est_median) ]
+        set p3_t_est_long_exists_p [info exists p_larr(time_est_long) ]
 
-        set p3_c_dc_tid_exists_p [info exists $p_larr(cost_dist_curve_tid) ]
-        set p3_c_dc_name_exists_p [info exists $p_larr(cost_dist_curve_name) ]
-        set p3_c_est_low_exists_p [info exists $p_larr(cost_est_low) ]
-        set p3_c_est_median_exists_p [info exists $p_larr(cost_est_median) ]
-        set p3_c_est_high_exists_p [info exists $p_larr(cost_est_high) ]
+        set p3_c_dc_tid_exists_p [info exists p_larr(cost_dist_curve_tid) ]
+        set p3_c_dc_name_exists_p [info exists p_larr(cost_dist_curve_name) ]
+        set p3_c_est_low_exists_p [info exists p_larr(cost_est_low) ]
+        set p3_c_est_median_exists_p [info exists p_larr(cost_est_median) ]
+        set p3_c_est_high_exists_p [info exists p_larr(cost_est_high) ]
 
 
         # load any referenced curves
@@ -1078,12 +1078,15 @@ ad_proc -private acc_fin::p_load_tid {
             set time_est_long ""
             if { $p3_t_dc_name_exists_p } {
                 set time_dist_curve_name [lindex $p_larr(time_dist_curve_name) $i]
+                ns_log Notice "acc_fin::p_load_tid.1081: for ${p_larr_name} i $i q1"
             }
             if { $time_dist_curve_name ne "" } {
                 set time_dist_curve_tid [qss_tid_from_name $time_dist_curve_name ]
+                ns_log Notice "acc_fin::p_load_tid.1085: for ${p_larr_name} i $i q2"
             } 
             if { $p3_t_dc_tid_exists_p && $time_dist_curve_tid eq "" } {
                 set time_dist_curve_tid [lindex $p_larr(time_dist_curve_tid) $i]
+                ns_log Notice "acc_fin::p_load_tid.1089: for ${p_larr_name} i $i q3"
             }
             # set defaults
             set constants_list [acc_fin::pretti_columns_list dc]
@@ -1095,7 +1098,7 @@ ad_proc -private acc_fin::p_load_tid {
                 if { ![info exists tc_cache_larr(x,${time_dist_curve_tid}) ] } {
                     set constants_required_list [acc_fin::pretti_columns_list dc 1]
                     qss_tid_columns_to_array_of_lists ${time_dist_curve_tid} tc_larr $constants_list $constants_required_list $instance_id $user_id
-                    # add to input tid cache
+                    # add to temporary cache
                     foreach constant $constants_list {
                         set tc_cache_larr($constant,${time_dist_curve_tid}) $tc_larr($constant)
                     }
@@ -1106,16 +1109,17 @@ ad_proc -private acc_fin::p_load_tid {
                 }
             }
             if { $p3_t_est_short_exists_p } {
-                set time_est_short [lindex $p_arr(time_est_short) $i]
+                set time_est_short [lindex $p_larr(time_est_short) $i]
             }
+
             if { $p3_t_est_median_exists_p } {
-                set time_est_median [lindex $p_arr(time_est_median) $i]
+                set time_est_median [lindex $p_larr(time_est_median) $i]
             }
             if { $p3_t_est_long_exists_p } {
-                set time_est_long [lindex $p_arr(time_est_long) $i]
+                set time_est_long [lindex $p_larr(time_est_long) $i]
             }
             # import curve given all the available curve choices
-
+            ns_log Notice "acc_fin::p_load_tid.1118: for ${p_larr_name} i $i time_est_short '${time_est_short}' time_est_median '${time_est_median}' time_est_long '${time_est_long}' type_tcurve_list '${type_tcurve_list}' tc_larr(x) '$tc_larr(x)' tc_larr(y) '$tc_larr(y)' tc_larr(label) '$tc_larr(label)'"
             set curve_list [acc_fin::curve_import $tc_larr(x) $tc_larr(y) $tc_larr(label) $type_tcurve_list $time_est_short $time_est_median $time_est_long $time_clarr(0) ]
             set tcurvenum [acc_fin::larr_set time_clarr $curve_list]
 
@@ -1156,15 +1160,16 @@ ad_proc -private acc_fin::p_load_tid {
                 }
             }
             if { $p3_c_est_low_exists_p } {
-                [lindex $p_arr(cost_est_low) $i] 
+                [lindex $p_larr(cost_est_low) $i] 
             }
             if { $p3_c_est_median_exists_p } {
-                [lindex $p_arr(cost_est_median) $i] 
+                [lindex $p_larr(cost_est_median) $i] 
             }
             if { $p3_c_est_high_exists_p } {
-                [lindex $p_arr(cost_est_high) $i]
+                [lindex $p_larr(cost_est_high) $i]
             }
             # import curve given all the available curve choices
+            ns_log Notice "acc_fin::p_load_tid.1168: for ${p_larr_name} i $i cost_est_low '${cost_est_low}' cost_est_median '${cost_est_median}' cost_est_high '${cost_est_high}' type_ccurve_list '${type_ccurve_list}' cc_larr(x) '$cc_larr(x)' cc_larr(y) '$cc_larr(y)' cc_larr(label) 'ctc_larr(label)'"
             set curve_list [acc_fin::curve_import $cc_larr(x) $cc_larr(y) $cc_larr(label) $type_ccurve_list $cost_est_low $cost_est_median $cost_est_high $cost_clarr(0) ]
             set ccurvenum [acc_fin::larr_set cost_clarr $curve_list]
 

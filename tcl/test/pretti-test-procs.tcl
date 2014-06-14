@@ -109,8 +109,8 @@ ns_log Notice "aa_register_case.14: Begin test
 }
 
 
-aa_register_case list_index_filter {
-    Test acc_fin::list_index_filter proc
+aa_register_case list_filter {
+    Test acc_fin::list_filter proc
 } {
 
     aa_run_with_teardown \
@@ -121,7 +121,7 @@ aa_register_case list_index_filter {
                 set name [ad_generate_random_string]
                 lappend unfiltered_name_list $name
             }
-            set filtered_name_list [acc_fin::list_index_filter $unfiltered_name_list]
+            set filtered_name_list [acc_fin::list_filter alphanum $unfiltered_name_list]
             set success_p 1
             set violations ""
             set violations_list [list ]
