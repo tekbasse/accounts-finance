@@ -952,7 +952,10 @@ ad_proc -public acc_fin::larr_set {
         set i $icount
         set larr($icount) $data_list
     } 
-    ns_log Notice "acc_fin::larr_set $larr($i) ${data_list}"
+    if { [llength $data_list] == 0 } { 
+        ns_log Warning "acc_fin::larr_set.956: empty data_list request in larr ${larr_name}."
+    } 
+#        ns_log Notice "acc_fin::larr_set.958: ${larr_name}($i) $larr($i) ${data_list}"
     return $i
 }
 
@@ -1169,7 +1172,7 @@ ad_proc -private acc_fin::p_load_tid {
             # add curve references for both time and cost. 
             lappend p_larr(_tCurveRef) $tcurvenum
             lappend p_larr(_cCurveRef) $ccurvenum
-            ns_log Notice "acc_fin::p_load_tid.1106: for ${p_larr_name} adding: p_larr(_tCurveRef) $tcurvenum p_larr(_cCurveRef) $ccurvenum"
+            ns_log Notice "acc_fin::p_load_tid.1106: for ${p_larr_name} added: p_larr(_tCurveRef) $tcurvenum p_larr(_cCurveRef) $ccurvenum"
             # Since this is a p3_larr, create pointer arrays for use with p2_larr
             if { $type ne "" } {
                 ns_log Notice "acc_fin::p_load_tid.1121: type_t_curve_arr($type) $tcurvenum"
@@ -1959,7 +1962,7 @@ ad_proc -public acc_fin::scenario_prettify {
                         set path_dur_arr($act_list) $time_expected
                     } else {
                         ns_log Warning "acc_fin::scenario_prettify.1763: scenario '$scenario_tid' act '$act' tref '${tref}' p2_larr(_tCurveRef) '$p2_larr(_tCurveRef)'"
-                        acc_fin::pretti_log_create $scenario_tid "${act}" "value" "Duration referenced in '${act}' is undefined.(ref1763)" $user_id $instance_id
+                        acc_fin::pretti_log_create $scenario_tid "${act}" "value" "Duration referenced in activity' ${act}' is undefined.(ref1763)" $user_id $instance_id
                         set error_time 1
                     }
                     # the first paths are single activities, subsequently cost expected and path segment costs are same values
@@ -1970,7 +1973,7 @@ ad_proc -public acc_fin::scenario_prettify {
                         set path_cost_arr($act_list) $cost_expected
                     } else {
                         ns_log Warning "acc_fin::scenario_prettify.1773: scenario '$scenario_tid' act '$act' cref '${cref}' p2_larr(_cCurveRef) '$p2_larr(_cCurveRef)'"
-                        acc_fin::pretti_log_create $scenario_tid "${act}" "value" "Cost referenced in '${act}' is undefined.(ref1773)" $user_id $instance_id
+                        acc_fin::pretti_log_create $scenario_tid "${act}" "value" "Cost referenced in activity '${act}' is undefined.(ref1773)" $user_id $instance_id
                         set error_cost 1
                     }
                     incr i
