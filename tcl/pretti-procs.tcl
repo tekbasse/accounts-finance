@@ -940,18 +940,23 @@ ad_proc -public acc_fin::larr_set {
     # If memory issues exist even after using this proc, one can further compress the array by applying a dictionary storage technique.
     # It may be possible to use the list as an index and gain from tcl internal handling for example.
     # hmm. Initial tests suggest this array(list) works, but might not be practical to store references..
-    set indexes_list [array names larr]
+    set indexes_list [array names $larr_name]
     set icount [llength $indexes_list]
-    set i 0
-    set index [lindex $indexes_list $i]
-    while { $i < $icount && $larr($index) ne $data_list } {
-        incr i
+    if { $icount > 0 } {
+        set i 0
         set index [lindex $indexes_list $i]
-    }
-    if { $larr($index) ne $data_list } {
+        while { $i < $icount && $larr($index) ne $data_list } {
+            incr i
+            set index [lindex $indexes_list $i]
+        }
+        if { $larr($index) ne $data_list } {
+            set i $icount
+            set larr($icount) $data_list
+        } 
+    } else {
         set i $icount
         set larr($icount) $data_list
-    } 
+    }
     if { [llength $data_list] == 0 } { 
         ns_log Warning "acc_fin::larr_set.956: empty data_list request in larr ${larr_name}."
     } 
@@ -1160,13 +1165,13 @@ ad_proc -private acc_fin::p_load_tid {
                 }
             }
             if { $p3_c_est_low_exists_p } {
-                [lindex $p_larr(cost_est_low) $i] 
+                set cost_est_low [lindex $p_larr(cost_est_low) $i] 
             }
             if { $p3_c_est_median_exists_p } {
-                [lindex $p_larr(cost_est_median) $i] 
+                set cost_est_median [lindex $p_larr(cost_est_median) $i] 
             }
             if { $p3_c_est_high_exists_p } {
-                [lindex $p_larr(cost_est_high) $i]
+                set cost_est_hight [lindex $p_larr(cost_est_high) $i]
             }
             # import curve given all the available curve choices
             ns_log Notice "acc_fin::p_load_tid.1168: for ${p_larr_name} i $i cost_est_low '${cost_est_low}' cost_est_median '${cost_est_median}' cost_est_high '${cost_est_high}' type_ccurve_list '${type_ccurve_list}' cc_larr(x) '$cc_larr(x)' cc_larr(y) '$cc_larr(y)' cc_larr(label) 'ctc_larr(label)'"
