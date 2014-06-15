@@ -150,7 +150,7 @@ aa_register_case larr_set {
             set unsorted_name_list [list ]
             set unique_counter 0
             set larr_max 0
-            for { set j 1} { $j < 15} { incr j } {
+            for { set j 1} { $j < 16} { incr j } {
                 # create delay
                 set delay [string range [clock clicks -microseconds] end-4 end]
                 for { set ii 1} { $ii < $delay } { incr ii } {
@@ -171,9 +171,11 @@ aa_register_case larr_set {
             set sorted_name_list [lsort -unique $unsorted_name_list]
             # compare count_arr index count with test_arr index count (s/b same) and identical to llength $sorted_name_list
             set sorted_uniques_count [llength $sorted_name_list]
-            set success_p [expr { $sorted_uniques_count eq $larr_counter && $larr_counter eq $unique_counter } ]
+            # larr_counter includes 0 in count
+            incr larr_max
+            set success_p [expr { $sorted_uniques_count eq $larr_max && $larr_max eq $unique_counter } ]
             
-            aa_true "Test acc_fin::larr_set sorted_uniques ${sorted_uniques_count} larr ${larr_counter} uniques ${unique_counter}" $success_p
+            aa_true "Test acc_fin::larr_set sorted_uniques ${sorted_uniques_count} larr ${larr_max} uniques ${unique_counter}" $success_p
         }
 }
 

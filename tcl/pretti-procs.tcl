@@ -926,7 +926,7 @@ ad_proc -public acc_fin::pretti_table_to_html {
 ad_proc -public acc_fin::larr_set {
     larr_name
     data_list
-} {
+} 
     Assigns a data_list to an index in array larr_name 
     in a manner that minimizes memory footprint. 
     If the list already exists (exactly) in the array, 
@@ -943,17 +943,17 @@ ad_proc -public acc_fin::larr_set {
     set indexes_list [array names larr]
     set icount [llength $indexes_list]
     set idx_last [expr { $icount - 1 } ]
-    ns_log Notice "acc_fin::larr_ste.945: larr_name $larr_name indexes_list '$indexes_list' icount '$icount'"
+#    ns_log Notice "acc_fin::larr_ste.945: larr_name $larr_name indexes_list '$indexes_list' icount '$icount'"
     if { $icount > 0 } {
         set i 0
         set index [lindex $indexes_list $i]
-        ns_log Notice "acc_fin::larr_ste.949: index '$index' i $i"
+#        ns_log Notice "acc_fin::larr_ste.949: index '$index' i $i"
         while { $i < $idx_last && $larr($index) ne $data_list } {
             incr i
             set index [lindex $indexes_list $i]
-            ns_log Notice "acc_fin::larr_ste.953: index '$index' i $i"
+#            ns_log Notice "acc_fin::larr_ste.953: index '$index' i $i"
         }
-        ns_log Notice "acc_fin::larr_ste.955: index '$index' i $i"
+#        ns_log Notice "acc_fin::larr_ste.955: index '$index' i $i"
         if { $larr($index) ne $data_list } {
             set i $icount
             set larr($icount) $data_list
@@ -965,7 +965,7 @@ ad_proc -public acc_fin::larr_set {
     if { [llength $data_list] == 0 } { 
         ns_log Warning "acc_fin::larr_set.956: empty data_list request in larr ${larr_name}."
     } 
-    ns_log Notice "acc_fin::larr_set.958: ${larr_name}\(${i}\) '$larr($i)' data_list '${data_list}'"
+#    ns_log Notice "acc_fin::larr_set.958: ${larr_name}\(${i}\) '$larr($i)' data_list '${data_list}'"
     return $i
 }
 
