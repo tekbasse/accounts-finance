@@ -140,6 +140,42 @@ aa_register_case list_filter {
         }
 }
 
+aa_register_case larr_set {
+    Test acc_fin::larr_set proc
+} {
+
+    aa_run_with_teardown \
+        -rollback \
+        -test_code {
+            set unsorted_name_list [list ]
+            set unique_counter 0
+            set larr_max 0
+            for { set j 1} { $j < 15} { incr j } {
+                # create delay
+                set delay [string range [clock clicks -microseconds] end-4 end]
+                for { set ii 1} { $ii < $delay } { incr ii } {
+                    # wait for it..
+                }
+                set val [string range [clock clicks -microseconds] end end]
+                set larr_counter [acc_fin::larr_set test_arr $val]
+                set larr_max [f::max $larr_counter $larr_max]
+                if { [info exists count_arr($val)] } {
+                    # do nothing, larr_counter already counted
+                    incr count_arr($val)
+                } else {
+                    set count_arr($val) 1
+                    incr unique_counter
+                }
+                lappend unsorted_name_list $val
+            }
+            set sorted_name_list [lsort -unique $unsorted_name_list]
+            # compare count_arr index count with test_arr index count (s/b same) and identical to llength $sorted_name_list
+            set sorted_uniques_count [llength $sorted_name_list]
+            set success_p [expr { $sorted_uniques_count eq $larr_counter && $larr_counter eq $unique_counter } ]
+            
+            aa_true "Test acc_fin::larr_set sorted_uniques ${sorted_uniques_count} larr ${larr_counter} uniques ${unique_counter}" $success_p
+        }
+}
 
 aa_register_case curve_import {
     Test acc_fin::curve_import proc

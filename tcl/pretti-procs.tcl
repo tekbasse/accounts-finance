@@ -940,15 +940,20 @@ ad_proc -public acc_fin::larr_set {
     # If memory issues exist even after using this proc, one can further compress the array by applying a dictionary storage technique.
     # It may be possible to use the list as an index and gain from tcl internal handling for example.
     # hmm. Initial tests suggest this array(list) works, but might not be practical to store references..
-    set indexes_list [array names $larr_name]
+    set indexes_list [array names larr]
     set icount [llength $indexes_list]
+    set idx_last [expr { $icount - 1 } ]
+    ns_log Notice "acc_fin::larr_ste.945: larr_name $larr_name indexes_list '$indexes_list' icount '$icount'"
     if { $icount > 0 } {
         set i 0
         set index [lindex $indexes_list $i]
-        while { $i < $icount && $larr($index) ne $data_list } {
+        ns_log Notice "acc_fin::larr_ste.949: index '$index' i $i"
+        while { $i < $idx_last && $larr($index) ne $data_list } {
             incr i
             set index [lindex $indexes_list $i]
+            ns_log Notice "acc_fin::larr_ste.953: index '$index' i $i"
         }
+        ns_log Notice "acc_fin::larr_ste.955: index '$index' i $i"
         if { $larr($index) ne $data_list } {
             set i $icount
             set larr($icount) $data_list
@@ -960,7 +965,7 @@ ad_proc -public acc_fin::larr_set {
     if { [llength $data_list] == 0 } { 
         ns_log Warning "acc_fin::larr_set.956: empty data_list request in larr ${larr_name}."
     } 
-#        ns_log Notice "acc_fin::larr_set.958: ${larr_name}($i) $larr($i) ${data_list}"
+    ns_log Notice "acc_fin::larr_set.958: ${larr_name}\(${i}\) '$larr($i)' data_list '${data_list}'"
     return $i
 }
 
@@ -1171,10 +1176,10 @@ ad_proc -private acc_fin::p_load_tid {
                 set cost_est_median [lindex $p_larr(cost_est_median) $i] 
             }
             if { $p3_c_est_high_exists_p } {
-                set cost_est_hight [lindex $p_larr(cost_est_high) $i]
+                set cost_est_high [lindex $p_larr(cost_est_high) $i]
             }
             # import curve given all the available curve choices
-            ns_log Notice "acc_fin::p_load_tid.1168: for ${p_larr_name} i $i cost_est_low '${cost_est_low}' cost_est_median '${cost_est_median}' cost_est_high '${cost_est_high}' type_ccurve_list '${type_ccurve_list}' cc_larr(x) '$cc_larr(x)' cc_larr(y) '$cc_larr(y)' cc_larr(label) 'ctc_larr(label)'"
+            ns_log Notice "acc_fin::p_load_tid.1168: for ${p_larr_name} i $i cost_est_low '${cost_est_low}' cost_est_median '${cost_est_median}' cost_est_high '${cost_est_high}' type_ccurve_list '${type_ccurve_list}' cc_larr(x) '$cc_larr(x)' cc_larr(y) '$cc_larr(y)' cc_larr(label) '$cc_larr(label)'"
             set curve_list [acc_fin::curve_import $cc_larr(x) $cc_larr(y) $cc_larr(label) $type_ccurve_list $cost_est_low $cost_est_median $cost_est_high $cost_clarr(0) ]
             set ccurvenum [acc_fin::larr_set cost_clarr $curve_list]
 
@@ -1189,7 +1194,7 @@ ad_proc -private acc_fin::p_load_tid {
                 set type_t_curve_arr($type) $tcurvenum
                 ns_log Notice "acc_fin::p_load_tid.1123: type_c_curve_arr($type) $ccurvenum"
                 set type_c_curve_arr($type) $ccurvenum
-            }
+            } 
             
         }
         # end for i, $i < $i_max
