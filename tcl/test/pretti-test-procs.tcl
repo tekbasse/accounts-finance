@@ -150,12 +150,9 @@ aa_register_case larr_set {
             set unsorted_name_list [list ]
             set unique_counter 0
             set larr_max 0
-            for { set j 1} { $j < 16} { incr j } {
-                # create delay
-                set delay [string range [clock clicks -microseconds] end-4 end]
-                for { set ii 1} { $ii < $delay } { incr ii } {
-                    # wait for it..
-                }
+            set jcount [string range [clock clicks -microseconds] end end]
+            incr jcount
+            for { set j 0} { $j < $jcount } { incr j } {
                 set val [string range [clock clicks -microseconds] end end]
                 set larr_counter [acc_fin::larr_set test_arr $val]
                 set larr_max [f::max $larr_counter $larr_max]
