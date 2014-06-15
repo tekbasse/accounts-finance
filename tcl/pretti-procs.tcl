@@ -1130,7 +1130,7 @@ ad_proc -private acc_fin::p_load_tid {
             }
             # import curve given all the available curve choices
             ns_log Notice "acc_fin::p_load_tid.1118: for ${p_larr_name} i $i time_est_short '${time_est_short}' time_est_median '${time_est_median}' time_est_long '${time_est_long}' type_tcurve_list '${type_tcurve_list}' tc_larr(x) '$tc_larr(x)' tc_larr(y) '$tc_larr(y)' tc_larr(label) '$tc_larr(label)'"
-            set curve_list [acc_fin::curve_import $tc_larr(x) $tc_larr(y) $tc_larr(label) $type_tcurve_list $time_est_short $time_est_median $time_est_long $time_clarr(0) ]
+            set curve_list [acc_fin::curve_import $tc_larr(x) $tc_larr(y) $tc_larr(label) $type_tcurve_list $time_est_short $time_est_median $time_est_long $time_clarr($p1_larr(_tCurveRef)) ]
             set tcurvenum [acc_fin::larr_set time_clarr $curve_list]
 
 
@@ -1180,7 +1180,7 @@ ad_proc -private acc_fin::p_load_tid {
             }
             # import curve given all the available curve choices
             ns_log Notice "acc_fin::p_load_tid.1168: for ${p_larr_name} i $i cost_est_low '${cost_est_low}' cost_est_median '${cost_est_median}' cost_est_high '${cost_est_high}' type_ccurve_list '${type_ccurve_list}' cc_larr(x) '$cc_larr(x)' cc_larr(y) '$cc_larr(y)' cc_larr(label) '$cc_larr(label)'"
-            set curve_list [acc_fin::curve_import $cc_larr(x) $cc_larr(y) $cc_larr(label) $type_ccurve_list $cost_est_low $cost_est_median $cost_est_high $cost_clarr(0) ]
+            set curve_list [acc_fin::curve_import $cc_larr(x) $cc_larr(y) $cc_larr(label) $type_ccurve_list $cost_est_low $cost_est_median $cost_est_high $cost_clarr($p1_larr(_cCurveRef)) ]
             set ccurvenum [acc_fin::larr_set cost_clarr $curve_list]
 
 
@@ -1674,10 +1674,12 @@ ad_proc -public acc_fin::scenario_prettify {
     
     # curves_larr ie *_c_larr has 2 versions: time as t_c_larr and cost as c_c_larr
     # index 0 is default
-    set time_clarr(0) $tc_lists
-    set cost_clarr(0) $cc_lists
-    ns_log Notice "acc_fin::scenario_prettify.1426: scenario '$scenario_tid' default t curve: time_clarr(0) '$time_clarr(0)'"
-    ns_log Notice "acc_fin::scenario_prettify.1427: scenario '$scenario_tid' default c curve: cost_clarr(0) '$cost_clarr(0)'"
+    set p1_larr(_tCurveRef) [acc_fin::larr_set time_clarr $tc_lists]
+ #   set time_clarr(0) $tc_lists
+    set p1_larr(_cCurveRef) [acc_fin::larr_set cost_clarr $cc_lists]
+#    set cost_clarr(0) $cc_lists
+    ns_log Notice "acc_fin::scenario_prettify.1426: scenario '$scenario_tid' default t curve: time_clarr($p1_larr(_tCurveRef)) '$tc_lists'"
+    ns_log Notice "acc_fin::scenario_prettify.1427: scenario '$scenario_tid' default c curve: cost_clarr($p1_larr(_cCurveRef)) '$cc_lists'"
     
     # # # import task_types table p3
     ns_log Notice "acc_fin::scenario_prettify.1432: scenario '$scenario_tid' import task_types table p3, if any."
