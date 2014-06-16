@@ -2364,11 +2364,14 @@ ad_proc -public acc_fin::scenario_prettify {
                 
                 # act_freq_in_load_cp_alts_arr   a count the number of times an activity is in a path 
                 # max_act_count_per_seq          maximum number of activities in a sequence number.
-                unset act_freq_in_load_cp_alts_arr
+                # following line should be unnecessary, likely orphan code. Leave for now..
+                array unset act_freq_in_load_cp_alts_arr
                 
                 set max_act_count_per_seq 0
                 foreach act $p2_larr(activity_ref) {
                     set act_freq_in_load_cp_alts_arr($act) 0
+                #### act_count_of_seq_arr( sequence_number) is the count of activities at this sequence number
+## bad ref $act follows... what is meant?
                     if { $act_count_of_seq_arr($act) > $max_act_count_per_seq } {
                         set max_act_count_per_seq $act_count_of_seq_arr($act)
                     }
