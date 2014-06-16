@@ -1208,7 +1208,6 @@ ad_proc -private acc_fin::p_load_tid {
         
     } elseif { $table_type eq "p2" } {
         # table_type is p2 
-        #  load aid_type referenced curves here. ie fill p_larr(_tCurveRef) and p_larr(_cCurveRef)
         # p2 defined curves are loaded in context of higher level of complexity
         
         
@@ -1280,10 +1279,13 @@ ad_proc -private acc_fin::p_load_tid {
             
             # import curve given all the available curve choices
 
-            if { $p2_types_exist_p && $p2_type_column_exists_p && $aid_type ne "" } {
-                # aid_type exists, so include option in curve_import                
+            if { $p2_types_exist_p && $p2_type_column_exists_p } {
+                # aid_type exists, so include option in curve_import   
+                # load aid_type referenced curves here.              
                 set aid_type [lindex $p_larr(aid_type) $i]
-                set type_tcurve_list $time_clarr($type_t_curve_arr(${aid_type}))
+                if { $aid_type ne "" } {
+                    set type_tcurve_list $time_clarr($type_t_curve_arr(${aid_type}))
+                }
             }
             ns_log Notice "acc_fin::p_load_tid.1280: for ${p_larr_name} i $i time_est_short '${time_est_short}' time_est_median '${time_est_median}' time_est_long '${time_est_long}' type_tcurve_list '${type_tcurve_list}' tc_larr(x) '$tc_larr(x)' tc_larr(y) '$tc_larr(y)' tc_larr(label) '$tc_larr(label)'"
             set curve_list [acc_fin::curve_import $tc_larr(x) $tc_larr(y) $tc_larr(label) $type_tcurve_list $time_est_short $time_est_median $time_est_long $time_clarr($p1_larr(_tCurveRef)) ]
@@ -1357,6 +1359,8 @@ ad_proc -private acc_fin::p_load_tid {
             lappend p_larr(_cCurveRef) $ccurvenum
             
         }
+    } else {
+        ns_log Warning "acc_fin::p_load_tid.1361: for ${p_larr_name} not processed as either p2 or p3 table."
     }
     return 1
 }
@@ -1644,7 +1648,8 @@ ad_proc -public acc_fin::scenario_prettify {
         set user_id [ad_conn user_id]
     }
     set error_fail 0
-
+    set error_cost 0
+    set error_time 0
     # # # load scenario values -- requires scenario_tid
     
     # activity_table contains:
@@ -1902,7 +1907,7 @@ ad_proc -public acc_fin::scenario_prettify {
             # load activity table
             set constants_required_list [acc_fin::pretti_columns_list p2 1]
             ns_log Notice "acc_fin::scenario_prettify.1495: scenario '$scenario_tid' import activity_table_tid from '$p1_arr(activity_table_tid)'."
-            acc_fin::p_load_tid $constants_list $constants_required_list p2_larr $p1_arr(activity_table_tid) "" $instance_id $user_id
+            acc_fin::p_load_tid $constants_list $constants_required_list p2_larr $p1_arr(activity_table_tid) p3_larr $instance_id $user_id
             # filter user input
             set p2_larr(activity_ref) [acc_fin::list_filter alphanum $p2_larr(activity_ref) "p2" "activity_ref"]
             set p2_larr(dependent_tasks) [acc_fin::list_filter alphanum $p2_larr(dependent_tasks) "p2" "dependent_tasks"]
@@ -2113,7 +2118,7 @@ ad_proc -public acc_fin::scenario_prettify {
                         set path_dur_arr($act_list) $time_expected
                     } else {
                         ns_log Warning "acc_fin::scenario_prettify.1763: scenario '$scenario_tid' act '$act' tref '${tref}' p2_larr(_tCurveRef) '$p2_larr(_tCurveRef)'"
-                        acc_fin::pretti_log_create $scenario_tid "${act}" "value" "Duration referenced in activity' ${act}' is undefined.(ref1763)" $user_id $instance_id
+                        acc_fin::pretti_log_create $scenario_tid "${act}" "value" "Duration referenced in activity  '${act}' is undefined.(ref1763)" $user_id $instance_id
                         set error_time 1
                     }
                     # the first paths are single activities, subsequently cost expected and path segment costs are same values
@@ -2331,10 +2336,13 @@ ad_proc -public acc_fin::scenario_prettify {
                 
                 # remove incomplete tracks from path_seg_dur_list by placing only complete tracks in track_dur_list
                 set track_dur_list [list ]
-                foreach {path_list duration} $path_seg_dur_list {
+                foreach path_dur_list $path_seg_dur_list {
+                    set path_list [lindex $path_dur_list 0]
+                    set duration [lindex $path_dur_list 1]
                     if { $full_track_p_arr($path_list) } {
-                        set td_list [list $path_list $duration]
-                        lappend track_dur_list $td_list
+                        #set td_list [list $path_list $duration]
+                        #lappend track_dur_list $td_list
+                        lappend track_dur_list $path_dur_list
                     }
                 }
                 
