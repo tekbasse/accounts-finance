@@ -985,8 +985,8 @@ ad_proc -private acc_fin::p_load_tid {
     upvar 1 cost_clarr cost_clarr
     upvar 1 type_t_curve_arr type_t_curve_arr
     upvar 1 type_c_curve_arr type_c_curve_arr
-    # need to pass p1_larr defaults for p2 dc processing
-    upvar 1 p1_larr p1_larr
+    # need to pass p1_arr defaults for p2 dc processing
+    upvar 1 p1_arr p1_arr
     # following are not upvar'd because the cache is mainly useless after proc ends
     #    upvar 1 tc_cache_larr tc_cache_larr
     #    upvar 1 cc_cache_larr cc_cache_larr
@@ -1132,7 +1132,7 @@ ad_proc -private acc_fin::p_load_tid {
             }
             # import curve given all the available curve choices
             ns_log Notice "acc_fin::p_load_tid.1118: for ${p_larr_name} i $i time_est_short '${time_est_short}' time_est_median '${time_est_median}' time_est_long '${time_est_long}' type_tcurve_list '${type_tcurve_list}' tc_larr(x) '$tc_larr(x)' tc_larr(y) '$tc_larr(y)' tc_larr(label) '$tc_larr(label)'"
-            set curve_list [acc_fin::curve_import $tc_larr(x) $tc_larr(y) $tc_larr(label) $type_tcurve_list $time_est_short $time_est_median $time_est_long $time_clarr($p1_larr(_tCurveRef)) ]
+            set curve_list [acc_fin::curve_import $tc_larr(x) $tc_larr(y) $tc_larr(label) $type_tcurve_list $time_est_short $time_est_median $time_est_long $time_clarr($p1_arr(_tCurveRef)) ]
             set tcurvenum [acc_fin::larr_set time_clarr $curve_list]
             if { $tcurvenum eq "" } {
                 ns_log Notice "acc_fin::p_load_tid.1120: for ${p_larr_name} i $i type $type _tCurveRef is blank for curve_list '${curve_list}'."
@@ -1184,7 +1184,7 @@ ad_proc -private acc_fin::p_load_tid {
             }
             # import curve given all the available curve choices
             ns_log Notice "acc_fin::p_load_tid.1168: for ${p_larr_name} i $i cost_est_low '${cost_est_low}' cost_est_median '${cost_est_median}' cost_est_high '${cost_est_high}' type_ccurve_list '${type_ccurve_list}' cc_larr(x) '$cc_larr(x)' cc_larr(y) '$cc_larr(y)' cc_larr(label) '$cc_larr(label)'"
-            set curve_list [acc_fin::curve_import $cc_larr(x) $cc_larr(y) $cc_larr(label) $type_ccurve_list $cost_est_low $cost_est_median $cost_est_high $cost_clarr($p1_larr(_cCurveRef)) ]
+            set curve_list [acc_fin::curve_import $cc_larr(x) $cc_larr(y) $cc_larr(label) $type_ccurve_list $cost_est_low $cost_est_median $cost_est_high $cost_clarr($p1_arr(_cCurveRef)) ]
             set ccurvenum [acc_fin::larr_set cost_clarr $curve_list]
             if { $ccurvenum eq "" } {
                 ns_log Notice "acc_fin::p_load_tid.1188: for ${p_larr_name} i $i type $type _cCurveRef is blank for curve_list '${curve_list}'."
@@ -1288,7 +1288,7 @@ ad_proc -private acc_fin::p_load_tid {
                 }
             }
             ns_log Notice "acc_fin::p_load_tid.1280: for ${p_larr_name} i $i time_est_short '${time_est_short}' time_est_median '${time_est_median}' time_est_long '${time_est_long}' type_tcurve_list '${type_tcurve_list}' tc_larr(x) '$tc_larr(x)' tc_larr(y) '$tc_larr(y)' tc_larr(label) '$tc_larr(label)'"
-            set curve_list [acc_fin::curve_import $tc_larr(x) $tc_larr(y) $tc_larr(label) $type_tcurve_list $time_est_short $time_est_median $time_est_long $time_clarr($p1_larr(_tCurveRef)) ]
+            set curve_list [acc_fin::curve_import $tc_larr(x) $tc_larr(y) $tc_larr(label) $type_tcurve_list $time_est_short $time_est_median $time_est_long $time_clarr($p1_arr(_tCurveRef)) ]
             set tcurvenum [acc_fin::larr_set time_clarr $curve_list]
             if { $tcurvenum eq "" } {
                 ns_log Warning "acc_fin::p_load_tid.1284: for ${p_larr_name} i $i type $type _tCurveRef is blank for curve_list '${curve_list}'."
@@ -1350,7 +1350,7 @@ ad_proc -private acc_fin::p_load_tid {
                 set type_ccurve_list $cost_clarr($type_c_curve_arr(${aid_type}))
             }
             ns_log Notice "acc_fin::p_load_tid.1352: for ${p_larr_name} i $i cost_est_low '${cost_est_low}' cost_est_median '${cost_est_median}' cost_est_high '${cost_est_high}' type_ccurve_list '${type_ccurve_list}' cc_larr(x) '$cc_larr(x)' cc_larr(y) '$cc_larr(y)' cc_larr(label) '$cc_larr(label)'"
-            set curve_list [acc_fin::curve_import $cc_larr(x) $cc_larr(y) $cc_larr(label) $type_ccurve_list $cost_est_low $cost_est_median $cost_est_high $cost_clarr($p1_larr(_cCurveRef)) ]
+            set curve_list [acc_fin::curve_import $cc_larr(x) $cc_larr(y) $cc_larr(label) $type_ccurve_list $cost_est_low $cost_est_median $cost_est_high $cost_clarr($p1_arr(_cCurveRef)) ]
             set ccurvenum [acc_fin::larr_set cost_clarr $curve_list]
 
             if { $ccurvenum eq "" } {
@@ -1813,12 +1813,12 @@ ad_proc -public acc_fin::scenario_prettify {
     
     # curves_larr ie *_c_larr has 2 versions: time as t_c_larr and cost as c_c_larr
     # index 0 is default
-    set p1_larr(_tCurveRef) [acc_fin::larr_set time_clarr $tc_lists]
+    set p1_arr(_tCurveRef) [acc_fin::larr_set time_clarr $tc_lists]
  #   set time_clarr(0) $tc_lists
-    set p1_larr(_cCurveRef) [acc_fin::larr_set cost_clarr $cc_lists]
+    set p1_arr(_cCurveRef) [acc_fin::larr_set cost_clarr $cc_lists]
 #    set cost_clarr(0) $cc_lists
-    ns_log Notice "acc_fin::scenario_prettify.1426: scenario '$scenario_tid' default t curve: time_clarr($p1_larr(_tCurveRef)) '$tc_lists'"
-    ns_log Notice "acc_fin::scenario_prettify.1427: scenario '$scenario_tid' default c curve: cost_clarr($p1_larr(_cCurveRef)) '$cc_lists'"
+    ns_log Notice "acc_fin::scenario_prettify.1426: scenario '$scenario_tid' default t curve: time_clarr($p1_arr(_tCurveRef)) '$tc_lists'"
+    ns_log Notice "acc_fin::scenario_prettify.1427: scenario '$scenario_tid' default c curve: cost_clarr($p1_arr(_cCurveRef)) '$cc_lists'"
     
     # # # import task_types table p3
     ns_log Notice "acc_fin::scenario_prettify.1432: scenario '$scenario_tid' import task_types table p3, if any."
@@ -2394,7 +2394,9 @@ ad_proc -public acc_fin::scenario_prettify {
                 # and some others for sorting.
                 set base_lists [list ]
                 set base_titles_list [acc_fin::pretti_columns_list p5 1]
-                foreach {path_list duration} $path_seg_dur_sort1_list {
+                foreach path_seg_dur_list $path_seg_dur_sort1_list {
+                    # set duration [lindex $path_seg_dur_list 1]
+                    set path_list [lindex $path_seg_dur_list 0]
                     set act [lindex $path_list end]
                     set tree_act_cost_arr($act) $cost_arr($act)
                     set has_direct_dependency_p [expr { [llength $depnc_larr($act)] > 0 } ]
@@ -2429,7 +2431,7 @@ ad_proc -public acc_fin::scenario_prettify {
                 
                 # critical path is the longest expected duration of dependent activities, so final sort:
                 # sort by path duration descending
-                set primary_sort_lists [lsort -increasing -integer -index 6 $second_sort_lists]
+                set primary_sort_lists [lsort -increasing -real -index 6 $second_sort_lists]
                 ns_log Notice "acc_fin::scenario_prettify.1969: scenario '$scenario_tid' primary_sort_lists $primary_sort_lists"
                 
                 # *_at_pm means at probability moment
@@ -2472,10 +2474,10 @@ ad_proc -public acc_fin::scenario_prettify {
                 set comments "Scenario report for ${scenario_title}: "
                 append comments "scenario_name ${scenario_name} , cp_duration_at_pm ${cp_duration_at_pm} , cp_cost_at_pm ${cp_cost_at_pm} ,"
                 append comments "max_act_count_per_track ${act_max_count} , time_probability_moment ${t_moment} , cost_probability_moment ${c_moment} ,"
-                append comments "setup_time ${setup_diff_secs} , main_processing_time ${time_diff_secs} seconds , time/date finished processing $p1_larr(the_time) "
+                append comments "setup_time ${setup_diff_secs} , main_processing_time ${time_diff_secs} seconds , time/date finished processing $p1_arr(the_time) "
                 
                 
-                if { $p1_larr(db_format) ne "" } {
+                if { $p1_arr(db_format) ne "" } {
                     # Add titles before saving as p5 table
                     set primary_sort_lists [lreplace $primary_sort_lists 0 0 $base_titles_list]
                     qss_table_create $primary_sort_lists "${scenario_name}.p5" "${scenario_title}.p5" $comments "" p5 $instance_id $user_id
