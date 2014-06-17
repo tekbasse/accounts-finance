@@ -2535,7 +2535,7 @@ ad_proc -public acc_fin::scenario_prettify {
                 for {set i 0} {$i < $act_max_count} {incr i} {
                     lappend pretti_lists $row_larr($i)
                 }
-                qss_table_create $primary_sort_lists ${scenario_name} ${scenario_title} $comments "" p4 $instance_id $user_id
+                qss_table_create $primary_sort_lists "${scenario_name}.p4" ${scenario_title} $comments "" p4 $instance_id $user_id
                 # Comments data will be interpreted for determining standard deviation for determining cell highlighting
             }
             # next c_moment
