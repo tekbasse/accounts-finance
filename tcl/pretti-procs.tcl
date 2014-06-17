@@ -2351,7 +2351,7 @@ ad_proc -public acc_fin::scenario_prettify {
                 
                 # sort by path duration
                 # critical path is the longest path. Float is the difference between CP and next longest CP.
-                # create an array of paths from longest to shortest to help build base table
+                # create an array of paths from longest to shortest duration to help build base table
                 set path_seg_dur_sort1_list [lsort -decreasing -real -index 1 $track_dur_list]
                 # Critical Path (CP) is 
                 set cp_list [lindex [lindex $path_seg_dur_sort1_list 0] 0]
@@ -2360,21 +2360,11 @@ ad_proc -public acc_fin::scenario_prettify {
                 # Extract most significant CP alternates for a focused table
                 # by counting the number of times an act is used in the largest proportion (first half) of paths in path_set_dur_sort1_list
                 
-                
-                
-                # act_freq_in_load_cp_alts_arr   a count the number of times an activity is in a path 
-                # max_act_count_per_seq          maximum number of activities in a sequence number.
-                # following line should be unnecessary, likely orphan code. Leave for now..
-                array unset act_freq_in_load_cp_alts_arr
-                
-                set max_act_count_per_seq 0
+                # act_freq_in_load_cp_alts_arr   a count of times an activity in all paths
+                # determine act_freq_in_load_cp_alts_arr(activity)
+                # Initialize
                 foreach act $p2_larr(activity_ref) {
                     set act_freq_in_load_cp_alts_arr($act) 0
-                #### act_count_of_seq_arr( sequence_number) is the count of activities at this sequence number
-## bad ref $act follows... what is meant?
-                    if { $act_count_of_seq_arr($act) > $max_act_count_per_seq } {
-                        set max_act_count_per_seq $act_count_of_seq_arr($act)
-                    }
                 }
                 foreach path_seg_list $path_seg_dur_sort1_list {
                     set path2_list [lindex $path_seg_list 0]
@@ -2382,7 +2372,8 @@ ad_proc -public acc_fin::scenario_prettify {
                         incr act_freq_in_load_cp_alts_arr($act)
                     }
                 }
-                # Make a list of the activities in the most tracks by count
+
+                # Make a list of activities in the most tracks by count
                 set act_sig_list [list ]
                 foreach act $p2_larr(activity_ref) {
                     lappend act_sig_list [list $act $act_freq_in_load_cp_alts_arr($act)]
