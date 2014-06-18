@@ -761,13 +761,13 @@ ad_proc -public acc_fin::pretti_table_to_html {
     # "ts:[lindex $track_list 6] "
     # "c:[lindex $track_list 9] "
     # "cs:[lindex $track_list 10] "
-    # "d:(${depnc_larr(${activity})) "
+    # "d:($depnc_larr(${activity})) "
     # "<!-- [lindex $track_list 4] [lindex $track_list 5] --> "
 
     set column_count [llength [lindex $pretti_lol 0]]
     set row_count [llength $pretti_lol]
     incr row_count -1
-
+    
     # values to be extracted from comments:
     # max_act_count_per_track and cp_duration_at_pm 
     # Other parameters could be added to comments for changing color scheme/bias
@@ -787,7 +787,7 @@ ad_proc -public acc_fin::pretti_table_to_html {
         # set default
         set colorswap_p 0
     }
-
+    
     set max_act_count_per_track $row_count
     regexp -- {[^a-z\_]?max_act_count_per_track[\ \=\:]([0-9]+)[^0-9]} $comments scratch max_act_count_per_track
     if { $max_act_count_per_track == 0 } {
@@ -806,7 +806,7 @@ ad_proc -public acc_fin::pretti_table_to_html {
             set cp_duration_at_pm $test_num
         }
     }
-
+    
     # determine list of CP activities
     set cp_list [list ]
     foreach row [lrange $pretti_lol 1 end] {
@@ -814,17 +814,17 @@ ad_proc -public acc_fin::pretti_table_to_html {
         if { $cell ne "" } {
             # activity is not Title of activity, but activity_ref
             if {  [regexp -- {^([^\ ]+) t:} $cell scratch activity_ref ] } {
-                lappend cp_list $activity
+                lappend cp_list $activity_ref
             }
         }
     }
-
+    
     # Coloring and formating will be interpreted 
     # based on values provided in comments, 
     # data from track_1 and table type (p4) for maximum flexibility.   
-
+    
     # table cells need to indicate a relative time length in addition to dependency. check
-
+    
     set title_formatting_list [list ]
     foreach title [lindex $pretti_lol 0] {
         lappend title_formatting_list [list style "font-style: bold;"]
@@ -832,7 +832,7 @@ ad_proc -public acc_fin::pretti_table_to_html {
     set table_attribute_list [list ]
     set table_formating_list [list ]
     lappend table_formatting_list $title_formatting_list
-
+    
     # build formatting colors
     # contrast decreases on up to 50%
     set hex_list [list 0 1 2 3 4 5 6 7 8 9 a b c d e f]
@@ -842,28 +842,31 @@ ad_proc -public acc_fin::pretti_table_to_html {
     set row_nbr 1
     set k1 [expr { $max_act_count_per_track / $cp_duration_at_pm } ]
     set k2 [expr {  16. / $column_count } ]
-
+    
     foreach row [lrange $pretti_lol 1 end] {
-
+        
         set row_formatting_list [list ]
         set odd_row_p [expr { ( $row_nbr / 2. ) == int( $row_nbr / 2 ) } ]
         set cell_nbr 0
         foreach cell $row {
             set activity_time_expected ""
-            regexp {t:([0-9\.]+)[^0-9]} $cell scratch activity_time_expected
-            set row_size [f::max [list [expr { int( $activity_time_expected * $k1 ) } ] 1]]
+            if { [regexp {t:([0-9\.]+)[^0-9]} $cell scratch activity_time_expected ] } {
+                set row_size [f::max [expr { int( $activity_time_expected * $k1 ) } ] 1 ]
+            } else {
+                set row_size 1
+            }
             # CP in highest contrast (yellow ff9), others in lowering contrast to f70, and dimmer contrasts on even rows
             # f becomes e for even rows etc.
             # CP alt in alternating lt blue to lt green: 99f .. 9f9 
             # others in alternating medium blue/green:   66f .. 6f6
-
+            
             # set contrast 
             if { $odd_row_p } {
                 set c(0) "ee"
             } else {
                 set c(0) "ff"
             }
-
+            
             # then set color1 and color2 based on activity count, blue lots of count, green is less count
             if { $cell_nbr eq 0 } {
                 # on CP
@@ -917,11 +920,10 @@ ad_proc -public acc_fin::pretti_table_to_html {
     
     # html
     set pretti_html "<h3>Computation report</h3>"
-    
-    append pretti_html [qss_list_of_lists_to_html_table $pretty_lol $table_attribute_list $table_formatting_lists]
-}
+    append pretti_html [qss_list_of_lists_to_html_table $pretti_lol $table_attribute_list $table_formatting_lists]
     return pretti_html
 }
+
 
 ad_proc -public acc_fin::larr_set {
     larr_name
