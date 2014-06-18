@@ -771,14 +771,23 @@ ad_proc -public acc_fin::pretti_table_to_html {
     # values to be extracted from comments:
     # max_act_count_per_track and cp_duration_at_pm 
     # Other parameters could be added to comments for changing color scheme/bias
-    set contrast_mask_idx ""
-    regexp -- {[^a-z\_]?max_act_count_per_track[\ \=\:]([0-7])[^0-7]} $comments scratch contrast_mask_idx
-    if { [ad_var_type_check_number_p $contrast_mask_idx] && $contrast_mask_idx > -1 && $contrast_mask_idx < 8 } {
+    set color_sig_mask_idx ""
+    regexp -- {[^a-z\_]?max_act_count_per_track[\ \=\:]([0-7])[^0-7]} $comments scratch color_sig_mask_idx
+    if { [ad_var_type_check_number_p $color_sig_mask_idx] && $color_sig_mask_idx > -1 && $color_sig_mask_idx < 8 } {
         # do nothing
     } else {
         # set default
-        set contrast_mask_idx 1
+        set color_sig_mask_idx 3
     }
+    set color_oth_mask_idx ""
+    regexp -- {[^a-z\_]?max_act_count_per_track[\ \=\:]([0-7])[^0-7]} $comments scratch color_oth_mask_idx
+    if { [ad_var_type_check_number_p $color_oth_mask_idx] && $color_oth_mask_idx > -1 && $color_oth_mask_idx < 8 } {
+        # do nothing
+    } else {
+        # set default
+        set color_oth_mask_idx 5
+    }
+
     set colorswap_p ""
     regexp -- {[^a-z\_]?colorswap_p[\ \=\:]([0-1])[^0-1]} $comments scratch colorswap_p
     if { [ad_var_type_check_number_p $colorswap_p] && $colorswap_p > -1 && $colorswap_p < 2 } {
@@ -834,25 +843,30 @@ ad_proc -public acc_fin::pretti_table_to_html {
     lappend table_formatting_list $title_formatting_list
     
     # build formatting colors
-    # contrast decreases on up to 50%
+
     set hex_list [list 0 1 2 3 4 5 6 7 8 9 a b c d e f]
     set bin_list [list 000 100 010 110 001 101 011 111]
-    set contrast_mask [lindex $contrast_mask_idx $bin_list]
-    set contrast_mask_list [split $contrast_mask ""]
+    set color_mask_list [lrange $hex_list 0 2]
+    set color_sig_mask [lindex $bin_list $color_sig_mask_idx]
+    set color_sig_mask_list [split $color_sig_mask ""]
+    set color_oth_mask [lindex $bin_list $color_oth_mask_idx]
+    set color_oth_mask_list [split $color_sig_mask ""]
+
     set row_nbr 1
     set k1 [expr { $max_act_count_per_track / $cp_duration_at_pm } ]
     set k2 [expr {  16. / $column_count } ]
-    ns_log Notice "acc_fin::pretti_table_to_html.845: k1 $k1 k2 $k2 contrast_mask '${contrast_mask}' constrast_mask_list '${contrast_mask_list}'"
+    ns_log Notice "acc_fin::pretti_table_to_html.845: k1 $k1 k2 $k2"
     set pretti4html_lol [lrange $pretti_lol 0 0]
 
     foreach row [lrange $pretti_lol 1 end] {
         set row4html_list [list ]
-
         set row_formatting_list [list ]
-        set odd_row_p [expr { ( $row_nbr / 2. ) == int( $row_nbr / 2 ) } ]
+        set odd_row_p [expr { ( $row_nbr / 2. ) != int( $row_nbr / 2 ) } ]
+
         set cell_nbr 0
         foreach cell $row {
             set activity_time_expected ""
+
             if { [regexp -- {t:([0-9\.]+)[^0-9]} $cell scratch activity_time_expected ] } {
                 set row_size [f::max [expr { int( $activity_time_expected * $k1 ) } ] 1 ]
             } else {
@@ -865,65 +879,59 @@ ad_proc -public acc_fin::pretti_table_to_html {
                 set popularity 0
             }
 
-            # CP in highest contrast (yellow ff9), others in lowering contrast to f70, and dimmer contrasts on even rows
-            # f becomes e for even rows etc.
-            # CP alt in alternating lt blue to lt green: 99f .. 9f9 
-            # others in alternating medium blue/green:   66f .. 6f6
+            # CP in highest contrast (yellow ff9) for the column: ff9 ee9 ff9 ee9 ff9
+            # CP-alt means on_a_sig_path_p
+            # CP-alt in alternating lt magenta to lt green: 99f .. 9f9 of lowering contrast to f77
+            # others in alternating medium green/blue:   66f .. 6f6
+            # contrast decreases on up to 50%
+            # f becomes e for even rows..
+
+            # to build cell color:
+            # contrast_adj
+            # color_mask_idx
+            # 
             ns_log Notice "acc_fin::pretti_table_to_html.862: row_nbr '${row_nbr}' cell_nbr '${cell_nbr}' odd_row_p '${odd_row_p}' row_size '${row_size}' activity_time_expected '${activity_time_expected}'"
-            # set contrast 
-            if { $odd_row_p } {
-                set c(0) "ee"
+
+            # cell_nbr eq 0  is CP
+            set on_a_sig_path_p [expr { $on_a_sig_path_p || ( $cell_nbr == 0 ) } ]
+
+            if { $on_a_sig_path_p } {
+                # significant, base color pink f0f
+                # see color_sig_mask
+
+                # set color1 and color2 based on activity count, blue lots of count, green is less count
+                # max $popularity is column_count
+                # create 2 values to be used with masks, 1 is most significant, 0 less significant
+                set color_mask_list $color_sig_mask_list
+                set dec_nbr_val [f::min 1 [expr { int( $popularity * $k2 ) } ]]
+                set c(1) $dec_nbr_val
+                set c(0) [expr { 16 - $dec_nbr_val } ]
+                
             } else {
-                set c(0) "ff"
+                # other, base color green 0f0
+                # see color_oth_mask
+
+                # constrast_step is number from 1 to 7, with 7 being most popular, 1 least popular
+                # create 2 values to be used with masks, 1 is most sig, 0 less significant
+                set color_mask_list $color_oth_mask_list
+                set dec_nbr_val [f::max 7 [f::min 1 [expr { int( $popularity * $k2 / 2. ) } ] ]]
+                set c(1) $dec_nbr_val
+                set c(0) [expr { int( ( 8 - $dec_nbr_val ) / 2. ) } ]
             }
-            
-            # then set color1 and color2 based on activity count, blue lots of count, green is less count
-            if { $cell_nbr eq 0 } {
-                # on CP
-                set c(1) "ff"
-                set c(2) "99"
-            } elseif { $on_a_sig_path_p } {
-                #regexp -- { ([0-9\.]+) --> } $cell scratch popularity 
-                set dec_nbr_val [f::min [expr { int( $popularity * $k2 ) } ] 16]
-                set hex_nbr1 [expr { $dec_nbr_val } ]
-                set hex_nbr2 [expr { 16 - $hex_nbr1 } ]
-                set c(1) [lindex $hex_list $hex_nbr1]
-                set c(2) [lindex $hex_list $hex_nbr2]
-                append c(1) $c(1)
-                append c(2) $c(2)
-            } else {
-                #regexp -- { ([0-9\.]+) --> } $cell scratch popularity 
-                # constrast_step is number from 1 to 7, with 1  being most popular, 7 least popular
-                set contrast_step [f::max [f::min 7 [expr { int( $popularity * $k2 / 2. ) } ] ] 1 ]
-                set dec_nbr_val [f::min [expr { int( $popularity * $k2 ) } ] 16]
-                set hex_nbr1 [expr { $dec_nbr_val - $contrast_step } ]
-                set hex_nbr2 [expr { 16 - $hex_nbr1 - $contrast_step } ]
-                set c(1) [lindex $hex_list $hex_nbr1]
-                set c(2) [lindex $hex_list $hex_nbr2]
-                append c(1) $c(1)
-                append c(2) $c(2)
-            }
-            # contrast_mask_list
+
             set colorhex ""
-            if { $colorswap_p } {
-                set color_ref 2
-                set color_inc -1
-            } else {
-                set color_ref 1
-                set color_inc 1
+
+            if { $odd_row_p } {
+                incr c(1) -1
             }
-            foreach digit $contrast_mask_list {
-                set i $digit
-                if { $digit eq 1 } {
-                    set i $color_ref
-                    incr $color_ref $color_inc
-                    # in case all 3 digits are 1, set the last case to reference 0
-                    set color_inc [expr { -1 * $color_ref } ]
-                }
-                append colorhex $c($i)
-                ns_log Notice "acc_fin::pretti_table_to_html.914: digit '$digit'"
+
+            foreach digit $color_mask_list {
+                append colorhex [lindex $hex_list $c($digit)]
+                append colorhex "f"
+
             }
-            ns_log Notice "acc_fin::pretti_table_to_html.915: colorhex '$colorhex' c(0) '$c(0)' c(1) '$c(1)' c(2) '$c(2)' color_inc '$color_inc' color_ref '$color_ref'"
+
+            ns_log Notice "acc_fin::pretti_table_to_html.915: colorhex '$colorhex' on_a_sig_path_p ${on_a_sig_path_p} dec_nbr_val $dec_nbr_val c(0) '$c(0)' c(1) '$c(1)' color_mask_list '${color_mask_list}'"
             set cell_formatting [list style "background-color: #${colorhex};"]
             if { $cell eq "" } {
                 set cell "&nbsp;"
