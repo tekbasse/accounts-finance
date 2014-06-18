@@ -916,7 +916,7 @@ ad_proc -public acc_fin::pretti_table_to_html {
                 set color_mask_list $color_oth_mask_list
                 set dec_nbr_val [f::max 7 [f::min 1 [expr { int( $popularity * $k2 / 2. ) } ] ]]
                 set c(1) $dec_nbr_val
-                set c(0) [expr { int( ( 8 - $dec_nbr_val ) / 2. ) } ]
+                set c(0) [expr { int( ( 8 - $dec_nbr_val ) / 2. ) + 4 } ]
             }
 
             set colorhex ""
@@ -2513,7 +2513,7 @@ ad_proc -public acc_fin::scenario_prettify {
                 }
                 
                 # save as a new table of type PRETTI 
-                append comments "contrast_mask_idx 1 , colorswap_p 0"
+                append comments "color_mask_sig_idx 3 , color_mask_oth_idx 5 , colorswap_p 0"
                 
                 # max activity account per track = $act_max_count
                 # whereas
