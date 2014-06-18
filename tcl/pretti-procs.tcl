@@ -842,24 +842,34 @@ ad_proc -public acc_fin::pretti_table_to_html {
     set row_nbr 1
     set k1 [expr { $max_act_count_per_track / $cp_duration_at_pm } ]
     set k2 [expr {  16. / $column_count } ]
-    
+    ns_log Notice "acc_fin::pretti_table_to_html.845: k1 $k1 k2 $k2 contrast_mask '${contrast_mask}' constrast_mask_list '${contrast_mask_list}'"
+    set pretti4html_lol [lrange $pretti_lol 0 0]
+
     foreach row [lrange $pretti_lol 1 end] {
-        
+        set row4html_list [list ]
+
         set row_formatting_list [list ]
         set odd_row_p [expr { ( $row_nbr / 2. ) == int( $row_nbr / 2 ) } ]
         set cell_nbr 0
         foreach cell $row {
             set activity_time_expected ""
-            if { [regexp {t:([0-9\.]+)[^0-9]} $cell scratch activity_time_expected ] } {
+            if { [regexp -- {t:([0-9\.]+)[^0-9]} $cell scratch activity_time_expected ] } {
                 set row_size [f::max [expr { int( $activity_time_expected * $k1 ) } ] 1 ]
             } else {
                 set row_size 1
             }
+            if { [regexp -- {<!--[^0-9]([0-9\.]+)[^0-9]([0-9\.]+)[^0-9]-->} $cell scratch on_a_sig_path_p popularity ] } {
+                # on_a_sig_path_p specified
+            } else {
+                set on_a_sig_path_p 0
+                set popularity 0
+            }
+
             # CP in highest contrast (yellow ff9), others in lowering contrast to f70, and dimmer contrasts on even rows
             # f becomes e for even rows etc.
             # CP alt in alternating lt blue to lt green: 99f .. 9f9 
             # others in alternating medium blue/green:   66f .. 6f6
-            
+            ns_log Notice "acc_fin::pretti_table_to_html.862: row_nbr '${row_nbr}' cell_nbr '${cell_nbr}' odd_row_p '${odd_row_p}' row_size '${row_size}' activity_time_expected '${activity_time_expected}'"
             # set contrast 
             if { $odd_row_p } {
                 set c(0) "ee"
@@ -873,7 +883,7 @@ ad_proc -public acc_fin::pretti_table_to_html {
                 set c(1) "ff"
                 set c(2) "99"
             } elseif { $on_a_sig_path_p } {
-                regexp { ([0-9\.]+) --> } $cell scratch popularity 
+                #regexp -- { ([0-9\.]+) --> } $cell scratch popularity 
                 set dec_nbr_val [f::min [expr { int( $popularity * $k2 ) } ] 16]
                 set hex_nbr1 [expr { $dec_nbr_val } ]
                 set hex_nbr2 [expr { 16 - $hex_nbr1 } ]
@@ -882,9 +892,9 @@ ad_proc -public acc_fin::pretti_table_to_html {
                 append c(1) $c(1)
                 append c(2) $c(2)
             } else {
-                regexp { ([0-9\.]+) --> } $cell scratch popularity 
+                #regexp -- { ([0-9\.]+) --> } $cell scratch popularity 
                 # constrast_step is number from 1 to 7, with 1  being most popular, 7 least popular
-                set contrast_step [f::max [f::min 7 [expr { int( $popularity * $k2 / 2. ) } ] 1] ]
+                set contrast_step [f::max [f::min 7 [expr { int( $popularity * $k2 / 2. ) } ] ] 1 ]
                 set dec_nbr_val [f::min [expr { int( $popularity * $k2 ) } ] 16]
                 set hex_nbr1 [expr { $dec_nbr_val - $contrast_step } ]
                 set hex_nbr2 [expr { 16 - $hex_nbr1 - $contrast_step } ]
@@ -911,16 +921,25 @@ ad_proc -public acc_fin::pretti_table_to_html {
                     set color_inc [expr { -1 * $color_ref } ]
                 }
                 append colorhex $c($i)
+                ns_log Notice "acc_fin::pretti_table_to_html.914: digit '$digit'"
             }
+            ns_log Notice "acc_fin::pretti_table_to_html.915: colorhex '$colorhex' c(0) '$c(0)' c(1) '$c(1)' c(2) '$c(2)' color_inc '$color_inc' color_ref '$color_ref'"
             set cell_formatting [list style "background-color: #${colorhex};"]
+            if { $cell eq "" } {
+                set cell "&nbsp;"
+            }
+            lappend row4html_list $cell
             lappend row_formatting_list $cell_formatting
+            incr cell_nbr
         }
+        lappend pretti4html_lol $row4html_list
         lappend table_formatting_lists $row_formatting_list
+        incr row_nbr
     }
     
     # html
     set pretti_html "<h3>Computation report</h3>"
-    append pretti_html [qss_list_of_lists_to_html_table $pretti_lol $table_attribute_list $table_formatting_lists]
+    append pretti_html [qss_list_of_lists_to_html_table $pretti4html_lol $table_attribute_list $table_formatting_lists]
     return $pretti_html
 }
 
@@ -1969,7 +1988,7 @@ ad_proc -public acc_fin::scenario_prettify {
                 set scratch ""
                 set coefficient ""
                 set term ""
-                if { [regexp {^([0-9]+)[\*]([^\*]+)} $activity scratch coefficient term] } {
+                if { [regexp -- {^([0-9]+)[\*]([^\*]+)} $activity scratch coefficient term] } {
                     ns_log Notice "acc_fin::scenario_prettify.1624: scenario '$scenario_tid' activity '$activity' is part coefficient '$coefficient' and part term '$term'"
                     # If $term is a defined activity, get index
                     set term_idx [lsearch -exact $activities_list $term]
@@ -2409,7 +2428,7 @@ ad_proc -public acc_fin::scenario_prettify {
                     #  1 activity_seq_num_arr() ie count of activities in track
                     #  2 Q: Does this activity have any dependencies? ie predecessors
                     #  3 Q: Is this the CP?
-                    #  4 Q: Is this activity referenced in more than a median number of times?
+                    #  4 Q: Is this activity referenced in more than a median number of times? on_a_sig_path_p
                     #  5 act_freq_in_load_cp_alts  count of activity is in a path or track
                     #  6 duration_arr              track duration
                     #  7 activity_time_expected    time expected of this activity
