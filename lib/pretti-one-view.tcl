@@ -16,17 +16,21 @@ if { [qf_is_natural_number $table_tid] } {
     set table_lists [qss_table_read $table_tid]
     set table_text [qss_lists_to_text $table_lists]
     set table_tag_atts_list [list border 1 cellpadding 3 cellspacing 0]
-    set table_html [qss_list_of_lists_to_html_table $table_lists $table_tag_atts_list]
-#    append table_html "<p>${table_comments}</p>"
-    set table_log_messages_list [acc_fin::pretti_log_read $table_tid 3 $user_id $instance_id]
-    if { [llength $table_log_messages_list] > 0 } {
-        set message_html "<h3>Most Recent Activity Log</h3><ul>"
-        foreach message $table_log_messages_list {
-            append message_html "<li>"
-            append message_html $message
-        append message_html "</li>"
+    if { $table_flags eq "p4" } {
+        set table_html [acc_fin::pretti_table_to_html $table_lists $table_comments]
+    } else {
+        set table_html [qss_list_of_lists_to_html_table $table_lists $table_tag_atts_list]
+        #    append table_html "<p>${table_comments}</p>"
+        set table_log_messages_list [acc_fin::pretti_log_read $table_tid 3 $user_id $instance_id]
+        if { [llength $table_log_messages_list] > 0 } {
+            set message_html "<h3>Most Recent Activity Log</h3><ul>"
+            foreach message $table_log_messages_list {
+                append message_html "<li>"
+                append message_html $message
+                append message_html "</li>"
+            }
+            append message_html "</ul>"
+            append table_comments $message_html
         }
-        append message_html "</ul>"
-        append table_comments $message_html
     }
 }

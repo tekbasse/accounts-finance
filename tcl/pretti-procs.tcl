@@ -841,7 +841,7 @@ ad_proc -public acc_fin::pretti_table_to_html {
     set contrast_mask_list [split $contrast_mask ""]
     set row_nbr 1
     set k1 [expr { $max_act_count_per_track / $cp_duration_at_pm } ]
-    set k2 [expr {  16. / $column_count }
+    set k2 [expr {  16. / $column_count } ]
 
     foreach row [lrange $pretti_lol 1 end] {
 
@@ -2115,7 +2115,7 @@ ad_proc -public acc_fin::scenario_prettify {
                     if { $tref ne "" } {
                         set time_expected $t_est_arr($tref)
                         set time_expected_arr($act) $time_expected
-                        set path_dur_arr($act_list) $time_expected
+                        set path_dur_arr(${act_list}) $time_expected
                     } else {
                         ns_log Warning "acc_fin::scenario_prettify.1763: scenario '$scenario_tid' act '$act' tref '${tref}' p2_larr(_tCurveRef) '$p2_larr(_tCurveRef)'"
                         acc_fin::pretti_log_create $scenario_tid "${act}" "value" "Duration referenced in activity  '${act}' is undefined.(ref1763)" $user_id $instance_id
@@ -2126,7 +2126,7 @@ ad_proc -public acc_fin::scenario_prettify {
                     if { $cref ne "" } {
                         set cost_expected $c_est_arr($cref)
                         set cost_expected_arr($act) $cost_expected
-                        set path_cost_arr($act_list) $cost_expected
+                        set path_cost_arr(${act_list}) $cost_expected
                     } else {
                         ns_log Warning "acc_fin::scenario_prettify.1773: scenario '$scenario_tid' act '$act' cref '${cref}' p2_larr(_cCurveRef) '$p2_larr(_cCurveRef)'"
                         acc_fin::pretti_log_create $scenario_tid "${act}" "value" "Cost referenced in activity '${act}' is undefined.(ref1773)" $user_id $instance_id
@@ -2226,9 +2226,9 @@ ad_proc -public acc_fin::scenario_prettify {
                 set all_calced_p 0
                 set activity_count [llength $p2_larr(activity_ref)]
                 set i 0
-                set act_seq_list_arr($sequence_1) [list ]
+                set act_seq_list_arr(${sequence_1}) [list ]
                 # act_count_of_seq_arr( sequence_number) is the count of activities at this sequence number
-                set act_count_of_seq_arr($sequence_1) 0
+                set act_count_of_seq_arr(${sequence_1}) 0
                 set path_seg_dur_list [list ]
                 # act_seq_max is the current maximum path length
                 array unset duration_arr
@@ -2247,7 +2247,7 @@ ad_proc -public acc_fin::scenario_prettify {
                             # Calc max_num: maximum relative sequence number for activity dependencies
                             set max_num 0
                             foreach test_act $depnc_larr($act) {
-                                set test $act_seq_num_arr($test_act)
+                                set test $act_seq_num_arr(${test_act})
                                 if { $max_num < $test } {
                                     set max_num $test
                                 }
@@ -2260,12 +2260,12 @@ ad_proc -public acc_fin::scenario_prettify {
                             # increment act_seq_max and set defaults for a new max seq number?
                             if { $act_seq_nbr > $act_seq_max } {
                                 set act_seq_max $act_seq_nbr
-                                set act_seq_list_arr($act_seq_max) [list ]
-                                set act_count_of_seq_arr($act_seq_max) 0
+                                set act_seq_list_arr(${act_seq_max}) [list ]
+                                set act_count_of_seq_arr(${act_seq_max}) 0
                             }
                             # add activity to the network for this sequence number
-                            lappend act_seq_list_arr($act_seq_nbr) $act
-                            incr act_count_of_seq_arr($act_seq_nbr)
+                            lappend act_seq_list_arr(${act_seq_nbr}) $act
+                            incr act_count_of_seq_arr(${act_seq_nbr})
                             
                             # Analize prior path segments here.
                             
@@ -2275,11 +2275,11 @@ ad_proc -public acc_fin::scenario_prettify {
                             # set duration_new to the longest duration dependent segment.
                             # depnc_larr() is a list of direct dependencies for each activity
                             foreach dep_act $depnc_larr($act) {
-                                if { $path_dur_arr($dep_act) > $path_duration } {
-                                    set path_duration $path_dur_arr($dep_act)
+                                if { $path_dur_arr(${dep_act}) > $path_duration } {
+                                    set path_duration $path_dur_arr(${dep_act})
                                 }
                                 # Add all the costs for each dependency path
-                                set paths_cost [expr { $paths_cost + $cost_expected_arr($dep_act) } ]
+                                set paths_cost [expr { $paths_cost + $cost_expected_arr(${dep_act}) } ]
                             }
                             if { !$error_time } {
                                 # duration_arr() is duration of track segment up to (and including) activity.
@@ -2297,13 +2297,13 @@ ad_proc -public acc_fin::scenario_prettify {
                             # path_seg_dur_list is a list_of_list pairs: path_list and duration. This allows the paths to be sorted to quickly determine CP.
                             set path_seg_larr($act) [list ]
                             foreach dep_act $depnc_larr($act) {
-                                foreach path_list $path_seg_larr($dep_act) {
+                                foreach path_list $path_seg_larr(${dep_act}) {
                                     set path_new_list $path_list
                                     # Mark which tracks are complete (not partial track segments), 
                                     # so that total program cost calculations don't include duplicate, incomplete tracks that remain in path_seg_dur_list
-                                    set full_track_p_arr($path_list) 0
+                                    set full_track_p_arr(${path_list}) 0
                                     lappend path_new_list $act
-                                    set full_track_p_arr($path_new_list) 1
+                                    set full_track_p_arr(${path_new_list}) 1
                                     lappend path_seg_larr($act) $path_new_list
                                     set pair_list [list $path_new_list $duration_arr($act)]
                                     lappend path_seg_dur_list $pair_list
@@ -2339,7 +2339,7 @@ ad_proc -public acc_fin::scenario_prettify {
                 foreach path_dur_list $path_seg_dur_list {
                     set path_list [lindex $path_dur_list 0]
                     set duration [lindex $path_dur_list 1]
-                    if { $full_track_p_arr($path_list) } {
+                    if { $full_track_p_arr(${path_list}) } {
                         #set td_list [list $path_list $duration]
                         #lappend track_dur_list $td_list
                         lappend track_dur_list $path_dur_list
@@ -2495,7 +2495,20 @@ ad_proc -public acc_fin::scenario_prettify {
                 set pretti_lists [list ]
                 set title_row_list [list ]
                 set track_num 1
-                foreach track_list $primary_sort_lists {
+                    
+                    #  0 activity_ref
+                    #  1 activity_seq_num_arr() ie count of activities in track
+                    #  2 Q: Does this activity have any dependencies? ie predecessors
+                    #  3 Q: Is this the CP?
+                    #  4 Q: Is this activity referenced in more than a median number of times?
+                    #  5 act_freq_in_load_cp_alts  count of activity is in a path or track
+                    #  6 duration_arr              track duration
+                    #  7 activity_time_expected    time expected of this activity
+                    #  8 depnc_larr                direct activity dependencies
+                    #  9 cost_expected_arr         cost to complete activity
+                    # 10 cost_arr                  cost to complete path (including all path dependents)
+
+                foreach track_list [lrange $primary_sort_lists 1 end] {
                     # each primary_sort_lists is a track:
                     # activity_ref  is the last activity_ref in the track
                     set activity_ref [lindex $track_list 0]
@@ -2504,7 +2517,7 @@ ad_proc -public acc_fin::scenario_prettify {
                     # direct_dependencies activity_cost waypoint_cost
                     
                     # path_seg_larr($act) is a list of activities in track, from left to right, right being last, referenced by last activity.
-                    set track_activity_list $path_seg_larr($activity_ref)
+                    set track_activity_list $path_seg_larr(${activity_ref})
                     set track_name "track_${track_num}"
                     lappend title_row_list $track_name
                     # in PRETTI table, each track is a column, so each row is built from each column, each column lappends each row..
@@ -2535,7 +2548,7 @@ ad_proc -public acc_fin::scenario_prettify {
                 for {set i 0} {$i < $act_max_count} {incr i} {
                     lappend pretti_lists $row_larr($i)
                 }
-                qss_table_create $primary_sort_lists "${scenario_name}.p4" ${scenario_title} $comments "" p4 $instance_id $user_id
+                qss_table_create $pretti_lists "${scenario_name}.p4" ${scenario_title} $comments "" p4 $instance_id $user_id
                 # Comments data will be interpreted for determining standard deviation for determining cell highlighting
             }
             # next c_moment
