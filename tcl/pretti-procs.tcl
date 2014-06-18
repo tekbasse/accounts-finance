@@ -874,7 +874,7 @@ ad_proc -public acc_fin::pretti_table_to_html {
                 set c(2) "99"
             } elseif { $on_a_sig_path_p } {
                 regexp { ([0-9\.]+) --> } $cell scratch popularity 
-                set dec_nbr_val [f::min [list [expr { int( $popularity * $k2 ) } ] 16]]
+                set dec_nbr_val [f::min [expr { int( $popularity * $k2 ) } ] 16]
                 set hex_nbr1 [expr { $dec_nbr_val } ]
                 set hex_nbr2 [expr { 16 - $hex_nbr1 } ]
                 set c(1) [lindex $hex_list $hex_nbr1]
@@ -884,8 +884,8 @@ ad_proc -public acc_fin::pretti_table_to_html {
             } else {
                 regexp { ([0-9\.]+) --> } $cell scratch popularity 
                 # constrast_step is number from 1 to 7, with 1  being most popular, 7 least popular
-                set contrast_step [f::max [list [f::min [list 7 [expr { int( $popularity * $k2 / 2. ) } ]]] 1]]
-                set dec_nbr_val [f::min [list [expr { int( $popularity * $k2 ) } ] 16]]
+                set contrast_step [f::max [f::min 7 [expr { int( $popularity * $k2 / 2. ) } ] 1] ]
+                set dec_nbr_val [f::min [expr { int( $popularity * $k2 ) } ] 16]
                 set hex_nbr1 [expr { $dec_nbr_val - $contrast_step } ]
                 set hex_nbr2 [expr { 16 - $hex_nbr1 - $contrast_step } ]
                 set c(1) [lindex $hex_list $hex_nbr1]
@@ -921,7 +921,7 @@ ad_proc -public acc_fin::pretti_table_to_html {
     # html
     set pretti_html "<h3>Computation report</h3>"
     append pretti_html [qss_list_of_lists_to_html_table $pretti_lol $table_attribute_list $table_formatting_lists]
-    return pretti_html
+    return $pretti_html
 }
 
 
@@ -2005,7 +2005,7 @@ ad_proc -public acc_fin::scenario_prettify {
                             # k4 calculates length of partial blocks (one more activity than full block activity count, but maybe not overlapped as far)
                             set k4 [expr { 1. + ( $coef_p2 - 1 ) * ( 1. - $max_overlap_pct ) } ]
                             # Choose the longer of the two blocks:
-                            set k5 [f::max [list $k3 $k4] ]
+                            set k5 [f::max $k3 $k4]
                             set curve_lol [list ]
                             foreach point $time_clarr($tcurvenum) {
                                 # point: x y label
