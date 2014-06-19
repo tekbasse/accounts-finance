@@ -2362,7 +2362,8 @@ ad_proc -public acc_fin::scenario_prettify {
                             # path_seg_larr() is an array of partial (and perhaps complete) 
                             #   activity paths (or tracks) represented as a list of lists in chronological order (last acitivty last).
                             #   For example, if A depends on B and C, and C depends on D then:
-                            #   path_seg_larr(A) == list list B A list D C A
+                            #   path_seg_larr(A) == (list (list B A) (list D C A ) )
+
                             # full_track_p_arr answers question: is this track complete (ie not a subset of another track)?
                             # path_seg_dur_list is a list_of_list pairs: path_list and duration. This allows the paths to be sorted to quickly determine CP.
                             set path_seg_larr($act) [list ]
@@ -2591,14 +2592,19 @@ ad_proc -public acc_fin::scenario_prettify {
 
                 foreach track_list [lrange $primary_sort_lists 1 end] {
                     # each primary_sort_lists is a track:
-                    # activity_ref  is the last activity_ref in the track
+                    # activity_ref  is the last activity_ref in the tracks
                     set activity_ref [lindex $track_list 0]
                     # activity_seq_num 
                     # dependencies_q cp_q significant_q popularity waypoint_duration activity_time 
                     # direct_dependencies activity_cost waypoint_cost
                     
-                    # path_seg_larr($act) is a list of activities in track, from left to right, right being last, referenced by last activity.
-                    set track_activity_list $path_seg_larr(${activity_ref})
+                    # path_seg_larr($act) is a list of list of activities in track, from left to right, right being last, referenced by last activity.
+                    # where each list is its own separate column ending in the last activity...
+
+                    #### So, column looping should include track_activity_lists as well as primary_sort_lists...
+                    ## and each subtrack should be analyzed to see if on CP, significant etc. ie recalced for index 4 and 5 of primary_sort_lists..
+
+                    set track_activity_lists $path_seg_larr(${activity_ref})
                     set track_name "track_${track_num}"
                     lappend title_row_list $track_name
                     # in PRETTI table, each track is a column, so each row is built from each column, each column lappends each row..
