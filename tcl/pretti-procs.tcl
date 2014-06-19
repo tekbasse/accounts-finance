@@ -2211,7 +2211,8 @@ ad_proc -public acc_fin::scenario_prettify {
                 set sequence_1 0
                 array unset act_seq_num_arr
                 array unset depnc_larr
-                array unset _c
+                array unset calcd_p_larr
+                array unset c3
                 foreach act $p2_larr(activity_ref) {
                     set depnc [lindex $p2_larr(dependent_tasks) $i]
                     # depnc: comma list of dependencies
@@ -2225,10 +2226,13 @@ ad_proc -public acc_fin::scenario_prettify {
                         }
                     }
                     set depnc_larr($act) $scratch2_list
-                    # _c($act) Answers question: Has relative sequence number for $act been calculated?
-                    # _c used to be called calcd_p_arr
-                    set _c($act) 0
-                    # act_seq_num_arr is relative sequence number of an activity. 
+                    # c3($act) Answers question: Has relative sequence number for $act been calculated?
+                    # c3 used to be called calcd_p_arr
+                    # c3 now called calcd_p_larr and processed as a list
+                    set c3($act) 0
+                    set calcd_p_larr($act) 0
+                    ns_log Notice "acc_finn::scenario_prettify.1793: scenario '$scenario_tid' set calcd_p_larr($act) 0 len \$act [string length $act]"
+                   # act_seq_num_arr is relative sequence number of an activity. 
                     set act_seq_num_arr($act) $sequence_1
                     incr i
                 }
@@ -2259,17 +2263,21 @@ ad_proc -public acc_fin::scenario_prettify {
                 # depnc_eq_arr() is equation that answers question: Are dependencies met for $act?
                 foreach act $p2_larr(activity_ref) {
                     set eq "1 &&"
+                    set calcd_p_larr($act) [list ]
                     foreach dep $depnc_larr($act) {
                         # CODING NOTE: strings generally are okay to 100,000,000+ chars..
                         # If there are memory issues, convert eq to an eq_reference_list to calculate elements sequentially. Sort of what it does internally anyway.
                         
-                        # array _c() answers question: are all dependencies calculated for activity?
-                        append eq " _c($dep) &&"
+                        # array c3() answers question: are all dependencies calculated for activity?
+                        # array calcd_p_larr..
+                        append eq " c3($dep) &&"
+                        lappend calcd_p_larr($act) $dep
+#                        set calcd_p_larr($dep) 0
                     }
                     # remove the last " &&":
                     set eq [string range $eq 0 end-3]
                     # convert _c_arr reference to a variable by adding a dollar sign prefix:
-                    regsub -all -- { _c} $eq { $_c} depnc_eq_arr($act)
+                    regsub -all -- { c3} $eq { $c3} depnc_eq_arr($act)
                 }
                 
                 
@@ -2295,11 +2303,17 @@ ad_proc -public acc_fin::scenario_prettify {
                 while { !$all_calced_p && $activity_count > $i } {
                     set all_calcd_p 1
                     foreach act $p2_larr(activity_ref) {
-                        ns_log Notice "acc_fin::scenario_prettify.1887: scenario '$scenario_tid' act $act"
+                        ns_log Notice "acc_fin::scenario_prettify.1867: depnc_eq_arr($act) '$depnc_eq_arr($act)' len \$act [string length $act]"
                         set dependencies_met_p [expr { $depnc_eq_arr($act) } ]
                         set act_seq_max $sequence_1
-                        if { $dependencies_met_p && !$_c($act) } {
-                            
+                        #set test_p [expr [expr { $c3($act) } ] ]
+                        set test_p 1
+                        foreach dep $calcd_p_larr($act) {
+                            ns_log Notice "acc_fin::scenario_prettify.1877: dep $dep calcd_p_larr($dep) '$calcd_p_larr($dep)' len \$dep [string length $dep]"
+                            set test_p [expr { $test_p && $calcd_p_larr($dep) } ]
+                        }
+                        ns_log Notice "acc_fin::scenario_prettify.1887: scenario '$scenario_tid' act $act c3($act) $c3($act) not [expr { !$c3($act) } ] test_p $test_p act_seq_max ${act_seq_max}"
+                        if { ( $dependencies_met_p ) && ( $test_p == 0 ) } {
                             # Calc max_num: maximum relative sequence number for activity dependencies
                             set max_num 0
                             foreach test_act $depnc_larr($act) {
@@ -2312,7 +2326,8 @@ ad_proc -public acc_fin::scenario_prettify {
                             # Add activity's relative sequence number: act_seq_num_arr
                             set act_seq_nbr [expr { $max_num + 1 } ]
                             set act_seq_num_arr($act) $act_seq_nbr
-                            set _c($act) 1
+                            set c3($act) 1
+                            set calcd_p_larr($act) 1
                             # increment act_seq_max and set defaults for a new max seq number?
                             if { $act_seq_nbr > $act_seq_max } {
                                 set act_seq_max $act_seq_nbr
@@ -2372,7 +2387,12 @@ ad_proc -public acc_fin::scenario_prettify {
                                 lappend path_seg_dur_list $pair_list
                             }
                         }
-                        set all_calcd_p [expr { $all_calcd_p && $_c($act) } ]
+                        #set all_calcd_p [expr { $all_calcd_p && $c3($act) } ]
+                        set test_p 1
+                        foreach dep $calcd_p_larr($act) {
+                            set test_p [expr { $test_p && $calcd_p_larr($dep) } ]
+                        }
+                        set all_calcd_p [expr { $all_calcd_p && $test_p } ]
                     }
                     incr i
                 }
