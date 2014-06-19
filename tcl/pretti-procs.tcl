@@ -1077,7 +1077,7 @@ ad_proc -private acc_fin::p_load_tid {
     if { $p3_type_column_exists_p } {
         set p_larr(type) [acc_fin::list_filter alphanum $p_larr(type) $p_larr_name "type"]
         if { [info exists p_larr(dependent_tasks) ] } {
-            set p_larr(dependent_tasks) [acc_fin::list_filter alphanum $p_larr(dependent_tasks) $p_larr_name "dependent_tasks"]
+            set p_larr(dependent_tasks) [acc_fin::list_filter alphanumlist $p_larr(dependent_tasks) $p_larr_name "dependent_tasks"]
         }
     }
     if { $p2_type_column_exists_p } {
@@ -1404,6 +1404,19 @@ ad_proc -private acc_fin::list_filter {
 } {
     set type_errors_count 0
     switch -exact $type {
+        alphanumlist {
+            # some table columns contain lists of items..
+            set filtered_list [list ]
+            foreach input_row_unfiltered $user_input_list {
+                set filtered_row_list [list ]
+                foreach input_unfiltered $input_row_unfiltered {
+                    regsub -all -nocase -- {[^a-z0-9,]+} $input_unfiltered {} input_filtered
+                    lappend filtered_row_list $input_filtered
+                }
+                lappend filtered_list $filtered_row_list
+            }
+        }
+
         alphanum {
             set filtered_list [list ]
             foreach input_unfiltered $user_input_list {
@@ -1944,7 +1957,8 @@ ad_proc -public acc_fin::scenario_prettify {
             acc_fin::p_load_tid $constants_list $constants_required_list p2_larr $p1_arr(activity_table_tid) p3_larr $instance_id $user_id
             # filter user input
             set p2_larr(activity_ref) [acc_fin::list_filter alphanum $p2_larr(activity_ref) "p2" "activity_ref"]
-            set p2_larr(dependent_tasks) [acc_fin::list_filter alphanum $p2_larr(dependent_tasks) "p2" "dependent_tasks"]
+            set p2_larr(dependent_tasks) [acc_fin::list_filter alphanumlist $p2_larr(dependent_tasks) "p2" "dependent_tasks"]
+            
         } else {
             acc_fin::pretti_log_create $scenario_tid "activity_table_tid" "value" "activity_table_tid reference does not exist, but is required.(ref1450)" $user_id $instance_id
         }
@@ -1989,9 +2003,13 @@ ad_proc -public acc_fin::scenario_prettify {
     #  Expand p2_larr to include dependent activities with coefficients.
     #  by appending new definitions of tasks that don't yet have defined coefficients.
     set activities_list $p2_larr(activity_ref)
-    
+
+    ns_log Notice "acc_fin::scenario_prettify.1529: scenario '$scenario_tid' activities_list '${activities_list}'"     
+    ns_log Notice "acc_fin::scenario_prettify.1531: scenario '$scenario_tid' p2_larr(dependent_tasks) '$p2_larr(dependent_tasks)'"   
     foreach dependencies_list $p2_larr(dependent_tasks) {
+    ns_log Notice "acc_fin::scenario_prettify.1533: scenario '$scenario_tid' dependencies_list '${dependencies_list}'"     
         foreach activity $dependencies_list {
+    ns_log Notice "acc_fin::scenario_prettify.1535: scenario '$scenario_tid' activity '${activity}'"     
             if { [lsearch -exact $activities_list $activity] == -1 } {
                 # A dependent activity doesn't exist..
                 ns_log Notice "acc_fin::scenario_prettify.1619: scenario '$scenario_tid' activity '$activity' doesn't exist on direct search."
