@@ -2019,6 +2019,7 @@ ad_proc -public acc_fin::scenario_prettify {
                 set scratch ""
                 set coefficient ""
                 set term ""
+####### term not carrying activity...
                 if { [regexp -- {^([0-9]+)[\*]([^\*]+)} $activity scratch coefficient term] } {
                     ns_log Notice "acc_fin::scenario_prettify.1624: scenario '$scenario_tid' activity '$activity' is part coefficient '$coefficient' and part term '$term'"
                     # If $term is a defined activity, get index
@@ -2074,6 +2075,7 @@ ad_proc -public acc_fin::scenario_prettify {
                             ns_log Notice "acc_fin::scenario_prettify.1674: scenario '$scenario_tid' new t curve: time_clarr($tcurvenum) '$curve_lol'"
                         } else {
                             lappend $p2_larr(_tCurveRef) ""
+                            ns_log Warning "acc_fin::scenario_prettify.1676: scenario '$scenario_tid' NO tcurvenum for '$curve_lol'"
                         }
                         if { [lindex $p2_larr(_cCurveRef) $term_idx] ne "" } {
                             # New curve is isn't affected by overlap or max_concurrent. 
