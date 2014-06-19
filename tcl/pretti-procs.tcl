@@ -1615,12 +1615,16 @@ ad_proc -private acc_fin::curve_import {
         set minimum 0.5
         set median 1.
         set maximum 2.
-        set tc_larr(y) [list $minimum $median $median $median $median $maximum]
+        set tc_larr(y) [list y $minimum $median $median $median $median $maximum]
         # using approximate cumulative distribution y values for standard deviation of 1.
         set portion [expr { 1. / 6. } ]
-        set tc_larr(x) [list $portion $portion $portion $portion $portion $portion ]
-        set tc_larr(label) [list "outlier" "standard deviation 2" "standard deviation 1" "standard deviation 1" "standard deviation 2" "outlier" ]
-        set c_lists [list $tc_larr(x) $tc_larr(y) $tc_larr(label)]
+        set tc_larr(x) [list x $portion $portion $portion $portion $portion $portion ]
+        set tc_larr(label) [list label "outlier" "standard deviation 2" "standard deviation 1" "standard deviation 1" "standard deviation 2" "outlier" ]
+
+        set c_lists [list ]
+        for {set i 0} {$i < 7} {incr i} {
+            lappend c_lists [list [lindex $tc_larr(x) $i] [lindex $tc_larr(y) $i] [lindex $tc_larr(label) $i]]
+        }
     }
     if { [llength $c_lists] == 0 } {
         # This shouldn't happen.. for the most part.
@@ -1633,6 +1637,7 @@ ad_proc -private acc_fin::curve_import {
         ns_log Notice "acc_fin::curve_import.1312: default_lists $default_lists "
     }
     # Return an ordered list of lists representing a curve
+        ns_log Notice "acc_fin::curve_import.1639: c_lists '$c_lists'"
     return $c_lists
 }
 
