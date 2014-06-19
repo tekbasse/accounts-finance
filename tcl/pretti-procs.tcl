@@ -1059,10 +1059,14 @@ ad_proc -private acc_fin::p_load_tid {
             set p3_types_exist_p [expr { [llength $p_larr(type)] > 0 } ]
         } 
     } elseif { $table_type eq "p2" } {
+        # i_max is activity_ref length
+        set p2_actref_column_exists_p [info exists p_larr(activity_ref)]
+        if { $p2_actref_column_exists_p } {
+            set i_max [llength $p_larr(activity_ref)]
+        }       
         set p2_type_column_exists_p [info exists p_larr(aid_type)]
         if { $p2_type_column_exists_p } {
-            set i_max [llength $p_larr(aid_type)]
-            set p2_types_exist_p 1
+            set p2_types_exist_p [expr { [llength $p_larr(aid_type)] > 0 } ]
         } 
     }
 
@@ -1321,7 +1325,7 @@ ad_proc -private acc_fin::p_load_tid {
             set tcurvenum [acc_fin::larr_set time_clarr $curve_list]
             if { $tcurvenum eq "" } {
                 ns_log Warning "acc_fin::p_load_tid.1284: for ${p_larr_name} i $i type $type _tCurveRef is blank for curve_list '${curve_list}'."
-            }
+            } 
             
             lappend p_larr(_tCurveRef) $tcurvenum
 
@@ -2007,9 +2011,9 @@ ad_proc -public acc_fin::scenario_prettify {
     ns_log Notice "acc_fin::scenario_prettify.1529: scenario '$scenario_tid' activities_list '${activities_list}'"     
     ns_log Notice "acc_fin::scenario_prettify.1531: scenario '$scenario_tid' p2_larr(dependent_tasks) '$p2_larr(dependent_tasks)'"   
     foreach dependencies_list $p2_larr(dependent_tasks) {
-    ns_log Notice "acc_fin::scenario_prettify.1533: scenario '$scenario_tid' dependencies_list '${dependencies_list}'"     
+        ns_log Notice "acc_fin::scenario_prettify.1533: scenario '$scenario_tid' dependencies_list '${dependencies_list}'"     
         foreach activity $dependencies_list {
-    ns_log Notice "acc_fin::scenario_prettify.1535: scenario '$scenario_tid' activity '${activity}'"     
+            ns_log Notice "acc_fin::scenario_prettify.1535: scenario '$scenario_tid' activity '${activity}'"     
             if { [lsearch -exact $activities_list $activity] == -1 } {
                 # A dependent activity doesn't exist..
                 ns_log Notice "acc_fin::scenario_prettify.1619: scenario '$scenario_tid' activity '$activity' doesn't exist on direct search."
@@ -2017,8 +2021,6 @@ ad_proc -public acc_fin::scenario_prettify {
                 set coefficient ""
                 # Is $activity an existing activity, but referenced with a coeffient?
                 set scratch ""
-                set coefficient ""
-                set term ""
 ####### term not carrying activity...
                 if { [regexp -- {^([0-9]+)[\*]([^\*]+)} $activity scratch coefficient term] } {
                     ns_log Notice "acc_fin::scenario_prettify.1624: scenario '$scenario_tid' activity '$activity' is part coefficient '$coefficient' and part term '$term'"
