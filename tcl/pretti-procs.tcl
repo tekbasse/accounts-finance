@@ -492,7 +492,7 @@ ad_proc -public acc_fin::pretti_type_flag {
     #  p3  task types (can also have dependencies)
     #  dc distribution curve
     #  p4  PRETTI report (output)
-    #  p5  PRETTI db report (output) (similar format to  p3, where each row represents a path, but in p5 all paths are represented
+    #  p5  PRETTI db report (output) (similar format to  p3, where each row represents a path, but in p5 all paths are represented)
     #  dc Estimated project duration distribution curve (can be used to create other projects)
 
     # get first row
@@ -628,7 +628,7 @@ ad_proc -private acc_fin::pretti_columns_list {
             #                             within the function, similar to how app-model handles functions aka vectors
             #                             The multiple of an activity is respresented by a whole number followed by an "*" 
             #                             with no spaces between (when spaces are used as an activity delimiter), or
-            #                             with spaces allowed (when commas or another character is used as an activity delimiter.
+            #                             with spaces allowed (when commas or another character is used as an activity delimiter.)
             #                
             #      aid_type               activity type from p3
             #      dependent_tasks        direct predecessors , activity_ref of activiites this activity depends on.
@@ -662,7 +662,7 @@ ad_proc -private acc_fin::pretti_columns_list {
         p30 {
             # p3 Task Types:   
             #      type
-            #      dependent_types      Other dependent types required by this type. (possible reference collisions. type_refs != activity_refs.
+            #      dependent_types      Other dependent types required by this type. (possible reference collisions. type_refs != activity_refs.)
             #
             #####                       dependent_types should be checked against activity_dependents' types 
             #                           to confirm that all dependencies are satisified.
@@ -2263,7 +2263,7 @@ ad_proc -public acc_fin::scenario_prettify {
                 # depnc_eq_arr() is equation that answers question: Are dependencies met for $act?
                 foreach act $p2_larr(activity_ref) {
                     set eq "1 &&"
-                    set calcd_p_larr($act) [list ]
+                    set calcd_p_larr($act) 0
                     foreach dep $depnc_larr($act) {
                         # CODING NOTE: strings generally are okay to 100,000,000+ chars..
                         # If there are memory issues, convert eq to an eq_reference_list to calculate elements sequentially. Sort of what it does internally anyway.
@@ -2271,7 +2271,6 @@ ad_proc -public acc_fin::scenario_prettify {
                         # array c3() answers question: are all dependencies calculated for activity?
                         # array calcd_p_larr..
                         append eq " c3($dep) &&"
-                        lappend calcd_p_larr($act) $dep
 #                        set calcd_p_larr($dep) 0
                     }
                     # remove the last " &&":
@@ -2282,7 +2281,7 @@ ad_proc -public acc_fin::scenario_prettify {
                 
                 
                 # # # main process looping
-                ns_log Notice "acc_fin::scenario_prettify.1755: scenario '$scenario_tid' begin main process"
+                ns_log Notice "acc_fin::scenario_prettify.2284: scenario '$scenario_tid' begin main process"
                 
                 
                 array unset act_seq_list_arr
@@ -2303,17 +2302,17 @@ ad_proc -public acc_fin::scenario_prettify {
                 while { !$all_calced_p && $activity_count > $i } {
                     set all_calcd_p 1
                     foreach act $p2_larr(activity_ref) {
-                        ns_log Notice "acc_fin::scenario_prettify.1867: depnc_eq_arr($act) '$depnc_eq_arr($act)' len \$act [string length $act]"
-                        set dependencies_met_p [expr { $depnc_eq_arr($act) } ]
+                        ns_log Notice "acc_fin::scenario_prettify.2305: depnc_eq_arr($act) '$depnc_eq_arr($act)' len \$act [string length $act]"
+                        set dependencies_met_p 1
+                        foreach dep $depnc_larr($act) {
+                            ns_log Notice "acc_fin::scenario_prettify.2308: dep $dep calcd_p_larr($dep) '$calcd_p_larr($dep)' len \$dep [string length $dep]"
+                            set dependencies_met_p [expr { $dependencies_met_p && $calcd_p_larr($dep) } ]
+                        }
                         set act_seq_max $sequence_1
                         #set test_p [expr [expr { $c3($act) } ] ]
-                        set test_p 1
-                        foreach dep $calcd_p_larr($act) {
-                            ns_log Notice "acc_fin::scenario_prettify.1877: dep $dep calcd_p_larr($dep) '$calcd_p_larr($dep)' len \$dep [string length $dep]"
-                            set test_p [expr { $test_p && $calcd_p_larr($dep) } ]
-                        }
-                        ns_log Notice "acc_fin::scenario_prettify.1887: scenario '$scenario_tid' act $act c3($act) $c3($act) not [expr { !$c3($act) } ] test_p $test_p act_seq_max ${act_seq_max}"
-                        if { ( $dependencies_met_p ) && ( $test_p == 0 ) } {
+
+                        ns_log Notice "acc_fin::scenario_prettify.2314: scenario '$scenario_tid' act $act c3($act) $c3($act) not [expr { !$c3($act) } ] act_seq_max ${act_seq_max}"
+                        if { $dependencies_met_p } {
                             # Calc max_num: maximum relative sequence number for activity dependencies
                             set max_num 0
                             foreach test_act $depnc_larr($act) {
@@ -2388,27 +2387,33 @@ ad_proc -public acc_fin::scenario_prettify {
                             }
                         }
                         #set all_calcd_p [expr { $all_calcd_p && $c3($act) } ]
-                        set test_p 1
-                        foreach dep $calcd_p_larr($act) {
-                            set test_p [expr { $test_p && $calcd_p_larr($dep) } ]
+                        set dependencies_met_p 1
+                        foreach dep $depnc_larr($act) {
+                            ns_log Notice "acc_fin::scenario_prettify.2392: dep $dep calcd_p_larr($dep) '$calcd_p_larr($dep)' len \$dep [string length $dep]"
+                            set dependencies_met_p [expr { $dependencies_met_p && $calcd_p_larr($dep) } ]
                         }
-                        set all_calcd_p [expr { $all_calcd_p && $test_p } ]
+                        set all_calcd_p [expr { $all_calcd_p && $dependencies_met_p } ]
                     }
                     incr i
                 }
                 
                 
                 # # # Curve calculations complete for t_moment and c_moment.
-                ns_log Notice "acc_fin::scenario_prettify.1859: scenario '$scenario_tid' Curve calculations completed for t_moment and c_moment. path_seg_dur_list $path_seg_dur_list"
+                ns_log Notice "acc_fin::scenario_prettify.2402: scenario '$scenario_tid' Curve calculations completed for t_moment and c_moment. path_seg_dur_list $path_seg_dur_list"
                 
                 
                 set dep_met_p 1
                 foreach act $p2_larr(activity_ref) {
-                    set $dep_met_p [expr { $depnc_eq_arr($act) && $dep_met_p } ] 
+                    set dependencies_met_p 1
+                    foreach dep $depnc_larr($act) {
+                        ns_log Notice "acc_fin::scenario_prettify.2409: dep $dep calcd_p_larr($dep) '$calcd_p_larr($dep)' len \$dep [string length $dep]"
+                        set dependencies_met_p [expr { $dependencies_met_p && $calcd_p_larr($dep) } ]
+                    }
+                    set $dep_met_p [expr { $dependencies_met_p && $dep_met_p } ] 
                     # ns_log Notice "acc_fin::scenario_prettify: act $act act_seq_num_arr '$act_seq_num_arr($act)'"
                     # ns_log Notice "acc_fin::scenario_prettify: act_seq_list_arr '$act_seq_list_arr($act_seq_num_arr($act))' $act_count_of_seq_arr($act_seq_num_arr($act))"
                 }
-                ns_log Notice "acc_fin::scenario_prettify.1868: scenario '$scenario_tid' All dependencies met? 1 = yes. dep_met_p $dep_met_p"
+                ns_log Notice "acc_fin::scenario_prettify.2416: scenario '$scenario_tid' All dependencies met? 1 = yes. dep_met_p $dep_met_p"
                 
                 # remove incomplete tracks from path_seg_dur_list by placing only complete tracks in track_dur_list
                 set track_dur_list [list ]
@@ -2423,7 +2428,7 @@ ad_proc -public acc_fin::scenario_prettify {
                 }
                 
                 # # # sort and compile results for report
-                ns_log Notice "acc_fin::scenario_prettify.1880: scenario '$scenario_tid' Sort and compile results for report."
+                ns_log Notice "acc_fin::scenario_prettify.2431: scenario '$scenario_tid' Sort and compile results for report."
                 
                 # sort by path duration
                 # critical path is the longest path. Float is the difference between CP and next longest CP.
@@ -2460,7 +2465,7 @@ ad_proc -public acc_fin::scenario_prettify {
                 set act_median_count [lindex [lindex $act_sig_sorted_list $act_sig_median_pos] 1]
                 
                 # # # build base table
-                ns_log Notice "acc_fin::scenario_prettify.1923: scenario '$scenario_tid' Build base report table."
+                ns_log Notice "acc_fin::scenario_prettify.2468: scenario '$scenario_tid' Build base report table."
                 
                 
                 # Cells need this info for presentation: 
@@ -2496,7 +2501,7 @@ ad_proc -public acc_fin::scenario_prettify {
                 }
                 
                 # # # PRETTI sorts
-                ns_log Notice "acc_fin::scenario_prettify.1956: scenario '$scenario_tid' PRETTI sorts. base_lists $base_lists"
+                ns_log Notice "acc_fin::scenario_prettify.2504: scenario '$scenario_tid' PRETTI sorts. base_lists $base_lists"
                 
                 # sort by: act_seq_num_arr descending
                 set fourth_sort_lists [lsort -decreasing -real -index 1 $base_lists]
@@ -2508,7 +2513,7 @@ ad_proc -public acc_fin::scenario_prettify {
                 # critical path is the longest expected duration of dependent activities, so final sort:
                 # sort by path duration descending
                 set primary_sort_lists [lsort -increasing -real -index 6 $second_sort_lists]
-                ns_log Notice "acc_fin::scenario_prettify.1969: scenario '$scenario_tid' primary_sort_lists $primary_sort_lists"
+                ns_log Notice "acc_fin::scenario_prettify.2516: scenario '$scenario_tid' primary_sort_lists $primary_sort_lists"
                 
                 # *_at_pm means at probability moment
                 set cp_duration_at_pm [lindex [lindex $primary_sort_lists 0] 1]
@@ -2631,7 +2636,7 @@ ad_proc -public acc_fin::scenario_prettify {
         }
         # next t_moment
     }
-    ns_log Notice "acc_fin::scenario_prettify.2078: scenario '$scenario_tid' done."
+    ns_log Notice "acc_fin::scenario_prettify.2639: scenario '$scenario_tid' done."
     return !${error_fail}
 }
 
