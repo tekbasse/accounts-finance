@@ -772,7 +772,7 @@ ad_proc -public acc_fin::pretti_table_to_html {
     # max_act_count_per_track and cp_duration_at_pm 
     # Other parameters could be added to comments for changing color scheme/bias
     set color_sig_mask_idx ""
-    regexp -- {[^a-z\_]?max_act_count_per_track[\ \=\:]([0-7])[^0-7]} $comments scratch color_sig_mask_idx
+    regexp -- {[^a-z\_]?color_sig_mask_idx[\ \=\:]([0-7])[^0-7]} $comments scratch color_sig_mask_idx
     if { [ad_var_type_check_number_p $color_sig_mask_idx] && $color_sig_mask_idx > -1 && $color_sig_mask_idx < 8 } {
         # do nothing
     } else {
@@ -780,7 +780,7 @@ ad_proc -public acc_fin::pretti_table_to_html {
         set color_sig_mask_idx 3
     }
     set color_oth_mask_idx ""
-    regexp -- {[^a-z\_]?max_act_count_per_track[\ \=\:]([0-7])[^0-7]} $comments scratch color_oth_mask_idx
+    regexp -- {[^a-z\_]?color_oth_mask_idx[\ \=\:]([0-7])[^0-7]} $comments scratch color_oth_mask_idx
     if { [ad_var_type_check_number_p $color_oth_mask_idx] && $color_oth_mask_idx > -1 && $color_oth_mask_idx < 8 } {
         # do nothing
     } else {
@@ -846,16 +846,16 @@ ad_proc -public acc_fin::pretti_table_to_html {
 
     set hex_list [list 0 1 2 3 4 5 6 7 8 9 a b c d e f]
     set bin_list [list 000 100 010 110 001 101 011 111]
-    set color_mask_list [lrange $hex_list 0 2]
+
     set color_sig_mask [lindex $bin_list $color_sig_mask_idx]
     set color_sig_mask_list [split $color_sig_mask ""]
     set color_oth_mask [lindex $bin_list $color_oth_mask_idx]
-    set color_oth_mask_list [split $color_sig_mask ""]
+    set color_oth_mask_list [split $color_oth_mask ""]
 
     set row_nbr 1
     set k1 [expr { $max_act_count_per_track / $cp_duration_at_pm } ]
     set k2 [expr {  16. / $column_count } ]
-    ns_log Notice "acc_fin::pretti_table_to_html.845: k1 $k1 k2 $k2"
+    ns_log Notice "acc_fin::pretti_table_to_html.845: k1 $k1 k2 $k2 color_sig_mask_list '${color_sig_mask_list}' color_oth_mask_list '${color_oth_mask_list}'"
     set pretti4html_lol [lrange $pretti_lol 0 0]
 
     foreach row [lrange $pretti_lol 1 end] {
@@ -903,7 +903,7 @@ ad_proc -public acc_fin::pretti_table_to_html {
                 # max $popularity is column_count
                 # create 2 values to be used with masks, 1 is most significant, 0 less significant
                 set color_mask_list $color_sig_mask_list
-                set dec_nbr_val [f::min 1 [expr { int( $popularity * $k2 ) } ]]
+                set dec_nbr_val [f::max 16 [expr { int( $popularity * $k2 ) } ]]
                 set c(1) $dec_nbr_val
                 set c(0) [expr { 16 - $dec_nbr_val } ]
                 
@@ -915,8 +915,8 @@ ad_proc -public acc_fin::pretti_table_to_html {
                 # create 2 values to be used with masks, 1 is most sig, 0 less significant
                 set color_mask_list $color_oth_mask_list
                 set dec_nbr_val [f::max 7 [f::min 1 [expr { int( $popularity * $k2 / 2. ) } ] ]]
-                set c(1) $dec_nbr_val
-                set c(0) [expr { int( ( 8 - $dec_nbr_val ) / 2. ) + 4 } ]
+                set c(0) $dec_nbr_val
+                set c(1) [expr { int( ( 8 - $dec_nbr_val ) / 2. ) + 4 } ]
             }
 
             set colorhex ""
@@ -931,7 +931,7 @@ ad_proc -public acc_fin::pretti_table_to_html {
 
             }
 
-            ns_log Notice "acc_fin::pretti_table_to_html.915: colorhex '$colorhex' on_a_sig_path_p ${on_a_sig_path_p} dec_nbr_val $dec_nbr_val c(0) '$c(0)' c(1) '$c(1)' color_mask_list '${color_mask_list}'"
+            ns_log Notice "acc_fin::pretti_table_to_html.915: colorhex '$colorhex' on_a_sig_path_p ${on_a_sig_path_p} popularity $popularity dec_nbr_val ${dec_nbr_val} c(0) '$c(0)' c(1) '$c(1)' color_mask_list '${color_mask_list}'"
             set cell_formatting [list style "background-color: #${colorhex};"]
             if { $cell eq "" } {
                 set cell "&nbsp;"
