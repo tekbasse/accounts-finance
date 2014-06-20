@@ -2157,7 +2157,7 @@ ad_proc -public acc_fin::scenario_prettify {
                 # These arrays vary in values by t_moment and c_moment
                 set i 0
                 array unset act_time_expected_arr
-                array unset path_dur_arr
+                array unset trunk_duration_arr
                 array unset act_cost_expected_arr
                 array unset path_cost_arr
                 array unset depnc_eq_arr
@@ -2171,7 +2171,7 @@ ad_proc -public acc_fin::scenario_prettify {
                     if { $tref ne "" } {
                         set time_expected $t_est_arr($tref)
                         set act_time_expected_arr($act) $time_expected
-                        set path_dur_arr(${act_list}) $time_expected
+                        set trunk_duration_arr(${act_list}) $time_expected
                     } else {
                         ns_log Warning "acc_fin::scenario_prettify.1763: scenario '$scenario_tid' act '$act' tref '${tref}' p2_larr(_tCurveRef) '$p2_larr(_tCurveRef)'"
                         acc_fin::pretti_log_create $scenario_tid "${act}" "value" "Duration referenced in activity  '${act}' is undefined.(ref1763)" $user_id $instance_id
@@ -2266,7 +2266,7 @@ ad_proc -public acc_fin::scenario_prettify {
                 array unset trunk_duration_arr
                 array unset trunk_cost_arr
                 array unset subtrees_larr
-                array unset full_tree_track_p_arr
+                array unset path_tree_p_arr
                 set all_paths_calculated_p 0
                 set activity_count [llength $p2_larr(activity_ref)]
                 set i 0
@@ -2315,65 +2315,51 @@ ad_proc -public acc_fin::scenario_prettify {
                             incr act_count_of_seq_arr(${act_seq_nbr})
 
 
-                            # Analize prior path segments and branches
+                            # Analyze prior path segments and branches
                             
                             if { !$error_time } {
                                 # branches_duration_max is the min. path duration to complete dependent paths
                                 # set branches_duration_max to the longest duration of dependent segments.
                                 set branches_duration_max 0.
                                 foreach dep_act $dependencies_larr($act) {
-                                    if { $path_dur_arr(${dep_act}) > $branches_duration_max } {
-                                        set branches_duration_max $path_dur_arr(${dep_act})
+                                    if { $trunk_duration_arr(${dep_act}) > $branches_duration_max } {
+                                        set branches_duration_max $trunk_duration_arr(${dep_act})
                                     }
                                 }
-                                # trunk_duration_arr() is duration of track segment up to (and including) activity.
+                                #   trunk_duration_arr() is duration of ptrack up to (and including) activity.
                                 set trunk_duration_arr($act) [expr { $branches_duration_max + $act_time_expected_arr($act) } ]
                             }
 
                             if { !$error_cost } {
                                 set paths_cost_sum 0.
                                 foreach dep_act $dependencies_larr($act) {
-                                    # Add all the costs for each dependency path
+                                    #   paths_cost_sum is sum of costs for each dependent ptrack
                                     set paths_cost_sum [expr { $paths_cost_sum + $act_cost_expected_arr(${dep_act}) } ]
                                 }
-                                # cost is cost of all dependent paths plus cost of this activity
+                                #   trunk_cost_arr is cost of all dependent ptrack plus cost of activity
                                 set trunk_cost_arr($act) [expr { $paths_cost_sum + $act_cost_expected_arr($act) } ]
                             }
 
-                            # subtrees_larr(activity) is an array of list of ptracks ending with the indexed activity
+                            # subtrees_larr(activity) is an array of list of ptracks ending with trunk activity
                             #   paths (or ptracks) represented as a list of activity lists in chronological order (last acitivty last).
                             #   For example, if A depends on B and C, and C depends on D, and A depends on F then:
                             #   subtrees_larr(A) == (list (list B A) (list D C A ) (list F A) )
-                            #   
-                            # full_tree_track_p_arr answers question: is this tree of tracks complete (ie not a subset of another track or tree)?
-                            # tree_seg_dur_lists is a list_of_list pairs: path_list and duration. This allows the paths to be sorted to quickly determine CP.
-                            # tree_seg_dur_lists is deprecated. Instead, 
-
-                            # use subtrees_larr(act) to build a tracks_list
-                            #
-                            # subtrees_larr($act) is a list of list of activities in track, from left to right, right being last, referenced by last activity.
-                            # where each list is its own separate column ending in the last activity.
-                            # ie. subtrees_larr($act) is a list of ptracks..
-
                             set subtrees_larr($act) [list ]
                             foreach dep_act $dependencies_larr($act) {
                                 foreach path_list $subtrees_larr(${dep_act}) {
-                                    set path_new_list $path_list
                                     # Mark which tracks are complete (not partial track segments), 
                                     # so that total program cost calculations don't include duplicate, incomplete ptracks
-                                    set full_tree_track_p_arr(${path_list}) 0
+                                    # path_tree_p_arr answers question: is this tree of tracks complete (ie not a subset of another track or tree)?
+                                    set path_tree_p_arr($dep_act) 0
+                                    set path_tree_p_arr($act) 1
+                                    set path_new_list $path_list
                                     lappend path_new_list $act
-                                    set full_tree_track_p_arr(${path_new_list}) 1
                                     lappend subtrees_larr($act) $path_new_list
-#                                    set pair_list [list $path_new_list $trunk_duration_arr($act)]
-                                    # lappend tree_seg_dur_lists $pair_new_list
                                 }
                             }
                             if { [llength $subtrees_larr($act)] eq 0 } {
                                 lappend subtrees_larr($act) $act
-                                set full_tree_track_p_arr($act) 1
-#                                set pair_list [list $act $trunk_duration_arr($act)]
-                                # lappend tree_seg_dur_lists $act
+                                set path_tree_p_arr($act) 1
                             }
                         }
 
@@ -2389,7 +2375,7 @@ ad_proc -public acc_fin::scenario_prettify {
                 
                 
                 # # # Curve calculations complete for t_moment and c_moment.
-                ns_log Notice "acc_fin::scenario_prettify.2402: scenario '$scenario_tid' Curve calculations completed for t_moment and c_moment. tree_seg_dur_lists $tree_seg_dur_lists"
+                ns_log Notice "acc_fin::scenario_prettify.2402: scenario '$scenario_tid' Curve calculations completed for t_moment and c_moment. "
                 
                 
                 set all_deps_met_p 1
@@ -2405,39 +2391,63 @@ ad_proc -public acc_fin::scenario_prettify {
                 }
                 ns_log Notice "acc_fin::scenario_prettify.2416: scenario '$scenario_tid' All dependencies met? 1 = yes. all_deps_met_p $all_deps_met_p"
                 
-                # remove incomplete tracks from tree_seg_dur_lists by placing only complete tracks in track_dur_lists
-                set track_dur_lists [list ]
-                foreach path_dur_lists $tree_seg_dur_lists {
-#                    set path_lists [lindex $path_dur_lists 0]
-#                    set duration [lindex $path_dur_lists 1]
-                    if { $full_tree_track_p_arr(${path_dur_lists}) } {
-                        #set td_list [list $path_list $duration]
-                        #lappend track_dur_lists $td_list
-                        lappend track_dur_lists $path_dur_lists
+                # # # compile results for report
+                ns_log Notice "acc_fin::scenario_prettify.2431: scenario '$scenario_tid' compile results for report."
+
+                # Remove incomplete tracks from tree_seg_dur_lists by placing only complete tracks in paths_lists, and
+                #   paths_list is a list of full paths.
+                set paths_list [list ]
+                foreach act $p2_larr(activity_ref) {
+                    if { $path_tree_p_arr($act) } {
+                        # subtrees_larr($act) is a tree of full paths here.
+                        # Expand path trees to a list of paths
+                        foreach path_list $subtrees_larr($act) {
+                            # build a sortable list
+                            set row_list [list ]
+                            lappend row_list $path_list
+                            set path_duration  0.
+                            set ptrack_list [list ]
+                            if { !$error_time } {
+                                # calculate no-float,no-lag duration for each path
+                                foreach pa $path_list {
+                                    lappend ptrack_list $pa
+                                    set path_duration [expr { $path_duration + $act_time_expected_arr($pa) } ]
+                                    set ptrack_dur_arr($ptrack_list) $path_duration
+                                }
+                                # save this for later reporting
+                                # set path_dur_arr($path_list) $path_duration
+                                # duplicative. ptrack_dur_arr($ptrack_list) = path_dur_arr($path_list) here
+                            } 
+                            lappend row_list $path_duration
+                            set path_cost 0.
+                            set ptrack_list [list ]
+                            if { !$error_cost } {
+                                # calculate cost for each path. 
+                                # Since paths share activities, some costs are duplicative and so do not total these
+                                foreach pa $path_list {
+                                    lappend ptrack_list $pa
+                                    set path_cost [expr { $path_cost + $act_cost_expected_arr($pa) } ]
+                                    set path_cost_arr($ptrack_list) $path_cost
+                                }
+                                # save this for later reporting
+                                #set path_cost_arr($path_list) $path_cost
+                                # duplicative. see above.
+                            } 
+                            lappend row_list $path_cost
+                            lappend paths_list $row_list
+                        }
                     }
                 }
 
-                # track_dur_lists is a list of track segment lists (ie. tree). Expand to a list of tracks:
-                tracks_lists [list ]
-                foreach pair_lists $track_dur_lists {
-                    set tree_lists [lindex $pair_lists 0]
-                    #set tree_duration [lindex $tree_lists 1]
-                    # expand tree_list
-                    foreach track_list $tree_lists {
-                        lappend tracks_lists $track_list
-                    }
-                }
-                # get duration from no_float_arr(track)
 
-                # # # sort and compile results for report
-                ns_log Notice "acc_fin::scenario_prettify.2431: scenario '$scenario_tid' Sort and compile results for report."
+
                 
                 # sort by path duration
                 # critical path is the longest path. Float is the difference between CP and next longest CP.
                 # create an array of paths from longest to shortest duration to help build base table
-                set path_seg_dur_sort1_list [lsort -decreasing -real -index 1 $track_dur_lists]
-                # Critical Path (CP) is in this tree: 
-                set cp_tree_list [lindex [lindex $path_seg_dur_sort1_list 0] 0]
+                set path_seg_dur_sort1_list [lsort -decreasing -real -index 1 $paths_list]
+                # Critical Path (CP) is: 
+                set cp_list [lindex [lindex $path_seg_dur_sort1_list 0] 0]
                 #ns_log Notice "acc_fin::scenario_prettify: path_seg_dur_sort1_list $path_seg_dur_sort1_list"
                 
                 # Extract most significant CP alternates for a focused table
