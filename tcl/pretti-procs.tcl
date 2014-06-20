@@ -2211,12 +2211,11 @@ ad_proc -public acc_fin::scenario_prettify {
                 set sequence_1 0
                 array unset act_seq_num_arr
                 array unset dependencies_larr
-                array unset calcd_p_larr
-                # array unset c3
+                array unset act_calculated_p_larr
+
                 foreach act $p2_larr(activity_ref) {
+                    #   depnc: comma list of activity's dependencies
                     set depnc [lindex $p2_larr(dependent_tasks) $i]
-                    # depnc: comma list of dependencies
-                    # dependencies_larr() list of dependencies
                     # Filter out any blanks
                     set scratch_list [split $depnc ";, "]
                     set scratch2_list [list ]
@@ -2225,14 +2224,11 @@ ad_proc -public acc_fin::scenario_prettify {
                             lappend scratch2_list $dep
                         }
                     }
+                    #   dependencies_larr() is a list of direct dependencies for each activity
                     set dependencies_larr($act) $scratch2_list
-                    # c3($act) Answers question: Has relative sequence number for $act been calculated?
-                    # c3 used to be called calcd_p_arr
-                    # c3 now called calcd_p_larr and processed as a list
-                    # set c3($act) 0
-                    set calcd_p_larr($act) 0
-                    ns_log Notice "acc_finn::scenario_prettify.1793: scenario '$scenario_tid' set calcd_p_larr($act) 0 len \$act [string length $act]"
-                   # act_seq_num_arr is relative sequence number of an activity. 
+                    set act_calculated_p_larr($act) 0
+                    ns_log Notice "acc_finn::scenario_prettify.1793: scenario '$scenario_tid' set act_calculated_p_larr($act) 0 len \$act [string length $act]"
+                    #   act_seq_num_arr is relative sequence number of an activity. 
                     set act_seq_num_arr($act) $sequence_1
                     incr i
                 }
@@ -2261,27 +2257,6 @@ ad_proc -public acc_fin::scenario_prettify {
                 # create dependency check equations
                 ns_log Notice "acc_fin::scenario_prettify.1737: scenario '$scenario_tid' create equations for checking if dependencies are met."
                 
-                # act_deps_met_p_arr() is equation that answers question: Are dependencies met for $act?
-                foreach act $p2_larr(activity_ref) {
-                    # set eq "1 &&"
-                    set calcd_p_larr($act) 0
-                    foreach dep $dependencies_larr($act) {
-                        # c3 has be deprecated., replaced with calcd_p_larr to deal with c3 equation rendering issue.
-                        # CODING NOTE: strings generally are okay to 100,000,000+ chars..
-                        # If there are memory issues, convert eq to an eq_reference_list to calculate elements sequentially. Sort of what it does internally anyway.
-                        # array c3() answers question: are all dependencies calculated for activity?
-                        # array calcd_p_larr..
-                        # append eq " c3($dep) &&"
-                        # This would be redundant:
-                        # set calcd_p_larr($dep) 0
-                    }
-                    # remove the last " &&":
-                    # set eq [string range $eq 0 end-3]
-                    # convert _c_arr reference to a variable by adding a dollar sign prefix:
-                    # regsub -all -- { c3} $eq { $c3} act_deps_met_p_arr($act)
-                }
-                
-                
                 # # # main process looping
                 ns_log Notice "acc_fin::scenario_prettify.2284: scenario '$scenario_tid' begin main process"
                 
@@ -2290,9 +2265,9 @@ ad_proc -public acc_fin::scenario_prettify {
                 array unset act_count_of_seq_arr
                 array unset trunk_duration_arr
                 array unset trunk_cost_arr
-                array unset tree_seg_larr
+                array unset subtrees_larr
                 array unset full_tree_track_p_arr
-                set all_calced_p 0
+                set all_paths_calculated_p 0
                 set activity_count [llength $p2_larr(activity_ref)]
                 set i 0
                 set act_seq_list_arr(${sequence_1}) [list ]
@@ -2301,18 +2276,17 @@ ad_proc -public acc_fin::scenario_prettify {
                 set tree_seg_dur_lists [list ]
 
                 
-                while { !$all_calced_p && $activity_count > $i } {
-                    set all_calcd_p 1
+                while { !$all_paths_calculated_p && $activity_count > $i } {
+                    set all_paths_calculated_p 1
                     foreach act $p2_larr(activity_ref) {
-#                        ns_log Notice "acc_fin::scenario_prettify.2305: act_deps_met_p_arr($act) '$act_deps_met_p_arr($act)' len \$act [string length $act]"
+
                         set dependencies_met_p 1
                         foreach dep $dependencies_larr($act) {
-                            ns_log Notice "acc_fin::scenario_prettify.2308: dep $dep calcd_p_larr($dep) '$calcd_p_larr($dep)' len \$dep [string length $dep]"
-                            set dependencies_met_p [expr { $dependencies_met_p && $calcd_p_larr($dep) } ]
+                            ns_log Notice "acc_fin::scenario_prettify.2308: dep $dep act_calculated_p_larr($dep) '$act_calculated_p_larr($dep)' len \$dep [string length $dep]"
+                            set dependencies_met_p [expr { $dependencies_met_p && $act_calculated_p_larr($dep) } ]
                         }
                         #   act_seq_max is the current maximum path length
                         set act_seq_max $sequence_1
-                        #set test_p [expr [expr { $c3($act) } ] ]
 
                         ns_log Notice "acc_fin::scenario_prettify.2314: scenario '$scenario_tid' act $act act_seq_max ${act_seq_max}"
                         if { $dependencies_met_p } {
@@ -2328,8 +2302,8 @@ ad_proc -public acc_fin::scenario_prettify {
                             # Add activity's relative sequence number: act_seq_num_arr
                             set act_seq_nbr [expr { $max_num + 1 } ]
                             set act_seq_num_arr($act) $act_seq_nbr
-                            # set c3($act) 1
-                            set calcd_p_larr($act) 1
+
+                            set act_calculated_p_larr($act) 1
                             # increment act_seq_max and set defaults for a new max seq number?
                             if { $act_seq_nbr > $act_seq_max } {
                                 set act_seq_max $act_seq_nbr
@@ -2339,33 +2313,37 @@ ad_proc -public acc_fin::scenario_prettify {
                             # add activity to the network for this sequence number
                             lappend act_seq_list_arr(${act_seq_nbr}) $act
                             incr act_count_of_seq_arr(${act_seq_nbr})
+
+
+                            # Analize prior path segments and branches
                             
-                            # Analize prior path segments here.
-                            
-                            # branches_duration_max is the min. path duration to complete dependent paths
-                            set branches_duration_max 0.
-                            set paths_cost 0.
-                            # set duration_new to the longest duration of dependent segments.
-                            # dependencies_larr() is a list of direct dependencies for each activity
-                            foreach dep_act $dependencies_larr($act) {
-                                if { $path_dur_arr(${dep_act}) > $branches_duration_max } {
-                                    set branches_duration_max $path_dur_arr(${dep_act})
-                                }
-                                # Add all the costs for each dependency path
-                                set paths_cost [expr { $paths_cost + $act_cost_expected_arr(${dep_act}) } ]
-                            }
                             if { !$error_time } {
+                                # branches_duration_max is the min. path duration to complete dependent paths
+                                # set branches_duration_max to the longest duration of dependent segments.
+                                set branches_duration_max 0.
+                                foreach dep_act $dependencies_larr($act) {
+                                    if { $path_dur_arr(${dep_act}) > $branches_duration_max } {
+                                        set branches_duration_max $path_dur_arr(${dep_act})
+                                    }
+                                }
                                 # trunk_duration_arr() is duration of track segment up to (and including) activity.
                                 set trunk_duration_arr($act) [expr { $branches_duration_max + $act_time_expected_arr($act) } ]
                             }
+
                             if { !$error_cost } {
+                                set paths_cost_sum 0.
+                                foreach dep_act $dependencies_larr($act) {
+                                    # Add all the costs for each dependency path
+                                    set paths_cost_sum [expr { $paths_cost_sum + $act_cost_expected_arr(${dep_act}) } ]
+                                }
                                 # cost is cost of all dependent paths plus cost of this activity
-                                set trunk_cost_arr($act) [expr { $paths_cost + $act_cost_expected_arr($act) } ]
+                                set trunk_cost_arr($act) [expr { $paths_cost_sum + $act_cost_expected_arr($act) } ]
                             }
-                            # tree_seg_larr() is an array of partial (and perhaps complete) 
-                            #   activity paths (or tracks) represented as a list of lists in chronological order (last acitivty last).
-                            #   For example, if A depends on B and C, and C depends on D then:
-                            #   tree_seg_larr(A) == (list (list B A) (list D C A ) )
+
+                            # subtrees_larr(activity) is an array of list of ptracks ending with the indexed activity
+                            #   paths (or ptracks) represented as a list of activity lists in chronological order (last acitivty last).
+                            #   For example, if A depends on B and C, and C depends on D, and A depends on F then:
+                            #   subtrees_larr(A) == (list (list B A) (list D C A ) (list F A) )
                             #   
                             # full_tree_track_p_arr answers question: is this tree of tracks complete (ie not a subset of another track or tree)?
                             # tree_seg_dur_lists is a list_of_list pairs: path_list and duration. This allows the paths to be sorted to quickly determine CP.
@@ -2374,36 +2352,37 @@ ad_proc -public acc_fin::scenario_prettify {
                             # use subtrees_larr(act) to build a tracks_list
                             #
                             # subtrees_larr($act) is a list of list of activities in track, from left to right, right being last, referenced by last activity.
-                            # where each list is its own separate column ending in the last activity...
+                            # where each list is its own separate column ending in the last activity.
+                            # ie. subtrees_larr($act) is a list of ptracks..
 
                             set subtrees_larr($act) [list ]
                             foreach dep_act $dependencies_larr($act) {
                                 foreach path_list $subtrees_larr(${dep_act}) {
                                     set path_new_list $path_list
                                     # Mark which tracks are complete (not partial track segments), 
-                                    # so that total program cost calculations don't include duplicate, incomplete tracks that remain in tree_seg_dur_lists
+                                    # so that total program cost calculations don't include duplicate, incomplete ptracks
                                     set full_tree_track_p_arr(${path_list}) 0
                                     lappend path_new_list $act
                                     set full_tree_track_p_arr(${path_new_list}) 1
                                     lappend subtrees_larr($act) $path_new_list
 #                                    set pair_list [list $path_new_list $trunk_duration_arr($act)]
-                                    lappend tree_seg_dur_lists $pair_new_list
+                                    # lappend tree_seg_dur_lists $pair_new_list
                                 }
                             }
                             if { [llength $subtrees_larr($act)] eq 0 } {
                                 lappend subtrees_larr($act) $act
                                 set full_tree_track_p_arr($act) 1
 #                                set pair_list [list $act $trunk_duration_arr($act)]
-                                lappend tree_seg_dur_lists $act
+                                # lappend tree_seg_dur_lists $act
                             }
                         }
-                        #set all_calcd_p [expr { $all_calcd_p && $c3($act) } ]
+
                         set dependencies_met_p 1
                         foreach dep $dependencies_larr($act) {
-                            ns_log Notice "acc_fin::scenario_prettify.2392: dep $dep calcd_p_larr($dep) '$calcd_p_larr($dep)' len \$dep [string length $dep]"
-                            set dependencies_met_p [expr { $dependencies_met_p && $calcd_p_larr($dep) } ]
+                            ns_log Notice "acc_fin::scenario_prettify.2392: dep $dep act_calculated_p_larr($dep) '$act_calculated_p_larr($dep)' len \$dep [string length $dep]"
+                            set dependencies_met_p [expr { $dependencies_met_p && $act_calculated_p_larr($dep) } ]
                         }
-                        set all_calcd_p [expr { $all_calcd_p && $dependencies_met_p } ]
+                        set all_paths_calculated_p [expr { $all_paths_calculated_p && $dependencies_met_p } ]
                     }
                     incr i
                 }
@@ -2413,18 +2392,18 @@ ad_proc -public acc_fin::scenario_prettify {
                 ns_log Notice "acc_fin::scenario_prettify.2402: scenario '$scenario_tid' Curve calculations completed for t_moment and c_moment. tree_seg_dur_lists $tree_seg_dur_lists"
                 
                 
-                set dep_met_p 1
+                set all_deps_met_p 1
                 foreach act $p2_larr(activity_ref) {
                     set dependencies_met_p 1
                     foreach dep $dependencies_larr($act) {
-                        ns_log Notice "acc_fin::scenario_prettify.2409: dep $dep calcd_p_larr($dep) '$calcd_p_larr($dep)' len \$dep [string length $dep]"
-                        set dependencies_met_p [expr { $dependencies_met_p && $calcd_p_larr($dep) } ]
+                        ns_log Notice "acc_fin::scenario_prettify.2409: dep $dep act_calculated_p_larr($dep) '$act_calculated_p_larr($dep)' len \$dep [string length $dep]"
+                        set dependencies_met_p [expr { $dependencies_met_p && $act_calculated_p_larr($dep) } ]
                     }
-                    set $dep_met_p [expr { $dependencies_met_p && $dep_met_p } ] 
+                    set all_deps_met_p [expr { $dependencies_met_p && $all_deps_met_p } ] 
                     # ns_log Notice "acc_fin::scenario_prettify: act $act act_seq_num_arr '$act_seq_num_arr($act)'"
                     # ns_log Notice "acc_fin::scenario_prettify: act_seq_list_arr '$act_seq_list_arr($act_seq_num_arr($act))' $act_count_of_seq_arr($act_seq_num_arr($act))"
                 }
-                ns_log Notice "acc_fin::scenario_prettify.2416: scenario '$scenario_tid' All dependencies met? 1 = yes. dep_met_p $dep_met_p"
+                ns_log Notice "acc_fin::scenario_prettify.2416: scenario '$scenario_tid' All dependencies met? 1 = yes. all_deps_met_p $all_deps_met_p"
                 
                 # remove incomplete tracks from tree_seg_dur_lists by placing only complete tracks in track_dur_lists
                 set track_dur_lists [list ]
