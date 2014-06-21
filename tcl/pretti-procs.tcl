@@ -697,11 +697,11 @@ ad_proc -private acc_fin::pretti_columns_list {
         p50 {
             # each row is a cell, in format of detailed PRETTI internal output. See code. All columns are required to reproduce output to p4 (including p4 comments).
 
-            set ret_list [list activity_ref activity_seq_num dependencies_q cp_q significant_q popularity waypoint_duration activity_time direct_dependencies activity_cost waypoint_cost]
+            set ret_list [list activity_ref path_act_count dependencies_q cp_q significant_q popularity waypoint_duration activity_time direct_dependencies activity_cost waypoint_cost]
         }
         p51 {
             # each row is a cell, in format of detailed PRETTI internal output. See code. 
-            set ret_list [list activity_ref activity_seq_num dependencies_q cp_q significant_q popularity waypoint_duration activity_time direct_dependencies activity_cost waypoint_cost]
+            set ret_list [list activity_ref path_act_count dependencies_q cp_q significant_q popularity waypoint_duration activity_time direct_dependencies activity_cost waypoint_cost path_col activity_seq dependents_count dep_act_seq ]
         }
         dc0 {
             # dc2 distribution curve table
@@ -2345,6 +2345,7 @@ ad_proc -public acc_fin::scenario_prettify {
                             #   For example, if A depends on B and C, and C depends on D, and A depends on F then:
                             #   subtrees_larr(A) == (list (list B A) (list D C A ) (list F A) )
                             set subtrees_larr($act) [list ]
+                            set dependents_count_arr($act) 0
                             foreach dep_act $dependencies_larr($act) {
                                 foreach path_list $subtrees_larr(${dep_act}) {
                                     # Mark which tracks are complete (not partial track segments), 
@@ -2356,6 +2357,8 @@ ad_proc -public acc_fin::scenario_prettify {
                                     lappend path_new_list $act
                                     lappend subtrees_larr($act) $path_new_list
                                 }
+                                # count number of activities in each subtree, not including the activity itself.
+                                set dependents_count_arr($act) [expr { $dependents_count_arr($act) + $dependents_count_arr($dep_act) + 1 } ]
                             }
                             if { [llength $subtrees_larr($act)] eq 0 } {
                                 lappend subtrees_larr($act) $act
@@ -2391,7 +2394,7 @@ ad_proc -public acc_fin::scenario_prettify {
                 }
                 ns_log Notice "acc_fin::scenario_prettify.2416: scenario '$scenario_tid' All dependencies met? 1 = yes. all_deps_met_p $all_deps_met_p"
                 
-
+            
                 # # # compile results for report
                 ns_log Notice "acc_fin::scenario_prettify.2431: scenario '$scenario_tid' compile results for report."
 
@@ -2570,8 +2573,9 @@ ad_proc -public acc_fin::scenario_prettify {
                 #   direct dependencies
                 # and some others for sorting.
                 # Build a list of lists, where each row is an activity
-                set base_lists [list ]
-                set base_titles_list [acc_fin::pretti_columns_list p5 1]
+                set p5_lists [list ]
+                set path_expanded_lists [list ]
+                set p5_titles_list [acc_fin::pretti_columns_list p5 1]
                 set path_counter 0
                 foreach path_dur_cost_len_list $paths_sort1_lists {
                     incr path_counter
@@ -2589,7 +2593,7 @@ ad_proc -public acc_fin::scenario_prettify {
                         set on_a_sig_path_p [expr { $act_freq_in_load_cp_alts_arr($act) > $act_path_count_median } ]
                         
                         #  0 activity_ref
-                        #  1 path_len                  count of activities in track --was act count in tree activity_seq_num_arr() 
+                        #  1 path_len                  count of activities in path --was act count in tree activity_seq_num_arr() 
                         #  2 Q: Does this activity have any dependencies? ie predecessors
                         #  3 Q: Is this the CP?
                         #  4 Q: Is this activity referenced in more than a median number of times? on_a_sig_path_p
@@ -2600,26 +2604,60 @@ ad_proc -public acc_fin::scenario_prettify {
                         #  9 act_cost_expected_arr     cost to complete activity
                         # 10 trunk_cost_arr            cost to complete path (including all path dependents)
                         # 11 path_counter
-                        # 12 path_act_counter
+                        # 12 activity_seq              activity sequence number in path          
+                        # 13 dependents_count_arr      count of dependent activities (in subtrees) --not inclusive of activity itself.
+                        # 14 dep_act_seq               activity sequence considering all dependent activities. activity_seq_num_arr()
 
-                        set activity_list [list $act $act_seq_num_arr($act) $has_direct_dependency_p $on_critical_path_p $on_a_sig_path_p $act_freq_in_load_cp_alts_arr($act) $trunk_duration_arr($act) $act_time_expected_arr($act) $dependencies_larr($act) $act_cost_expected_arr($act) $trunk_cost_arr($act) ]
-                        lappend base_lists $activity_list
+                        # base for p5
+                        set activity_list [list $act $path_len $has_direct_dependency_p $on_critical_path_p $on_a_sig_path_p $act_freq_in_load_cp_alts_arr($act) $trunk_duration_arr($act) $act_time_expected_arr($act) $dependencies_larr($act) $act_cost_expected_arr($act) $trunk_cost_arr($act) $path_counter $path_act_counter $dependents_count_arr($act) $act_seq_num_arr($act) ]
+                        lappend p5_lists $activity_list
                     }
+
+#### this needs sorted out w/improved sort indexing w/ custom calc hook w/ p1_larr(index_equation)
+                    # build p4
+                        
+                    #  0 path_list
+                    #  1 path_len                  count of activities in path --was act count in tree activity_seq_num_arr() 
+                    #  2 Q: Does this activity have any dependencies? ie predecessors
+                    #  3 Q: Is this the CP?
+                    #  4 Q: Is this activity referenced in more than a median number of times? on_a_sig_path_p
+                    #  5 act_freq_in_load_cp_alts  count of activity is in a path or track
+                    #  6 trunk_duration_arr        track duration
+                    #  7 activity_time_expected    time expected of this activity
+                    #  8 dependencies_larr         direct activity dependencies
+                    #  9 act_cost_expected_arr     cost to complete activity
+                    # 10 trunk_cost_arr            cost to complete path (including all path dependents)
+                    # 11 path_counter
+                    # 12 activity_seq              activity sequence number in path          
+                    # 13 dependents_count_arr      count of dependent activities (in subtrees) --not inclusive of activity itself.
+                    # 14 dep_act_seq               activity sequence considering all dependent activities. activity_seq_num_arr()
+                    #  1 path_duration
+                    #  2 path_cost
+
+                    set path_x_list [list $path_list $path_duration $path_cost $path_len $has_direct_dependency_p $on_critical_path_p $on_a_sig_path_p $act_freq_in_load_cp_alts_arr($act) $trunk_duration_arr($act) $act_time_expected_arr($act) $dependencies_larr($act) $act_cost_expected_arr($act) $trunk_cost_arr($act) $path_counter $path_act_counter $dependents_count_arr($act) $act_seq_num_arr($act) ]
+                    lappend path_expanded_lists $path_x_list
+
+
                 }
                 
                 # # # PRETTI sorts
-                ns_log Notice "acc_fin::scenario_prettify.2504: scenario '$scenario_tid' PRETTI sorts. base_lists $base_lists"
+                ns_log Notice "acc_fin::scenario_prettify.2504: scenario '$scenario_tid' PRETTI sorts. p5_lists $p5_lists"
                 
-                # sort by: act_seq_num_arr descending
-                set fourth_sort_lists [lsort -decreasing -real -index 1 $base_lists]
+                # sort by: path_len descending
+                set fourth_sort_lists [lsort -decreasing -real -index 1 $p5_lists]
                 # sort by: Q. has_direct_dependency_p? descending (1 = true, 0 false)
                 set third_sort_lists [lsort -decreasing -integer -index 2 $fourth_sort_lists]
                 # sort by: Q. on part_of_critical_path_p? descending
                 set second_sort_lists [lsort -decreasing -integer -index 3 $third_sort_lists]
-                
-                # critical path is the longest expected duration of dependent activities, so final sort:
-                # sort by path duration descending
-                set primary_sort_lists [lsort -increasing -real -index 6 $second_sort_lists]
+
+                # primary sort
+                if { !$error_time } {
+                    # critical path is the longest expected duration of dependent activities
+                    # sort by path duration descending
+                    set primary_sort_lists [lsort -decreasing -real -index 6 $second_sort_lists]
+                } elseif { !$error_cost } {
+                    # critical path is largest cost..
+                    set primary_sort_lists [lsort -decreasing -real -index 
                 ns_log Notice "acc_fin::scenario_prettify.2516: scenario '$scenario_tid' primary_sort_lists $primary_sort_lists"
                 
                 # *_at_pm means at probability moment
@@ -2667,7 +2705,7 @@ ad_proc -public acc_fin::scenario_prettify {
                 
                 if { $p1_arr(db_format) ne "" } {
                     # Add titles before saving as p5 table
-                    set primary_sort_lists [lreplace $primary_sort_lists 0 0 $base_titles_list]
+                    set primary_sort_lists [lreplace $primary_sort_lists 0 0 $p5_titles_list]
                     qss_table_create $primary_sort_lists "${scenario_name}.p5" "${scenario_title}.p5" $comments "" p5 $instance_id $user_id
                 }
                 
