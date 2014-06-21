@@ -2448,6 +2448,7 @@ ad_proc -public acc_fin::scenario_prettify {
                 }
 
                 if { !$error_time } {
+
                     # sort by path duration
                     # critical path is the longest path. Float is the difference between CP and next longest CP.
                     # create an array of paths from longest to shortest duration to help build base table
@@ -2461,33 +2462,38 @@ ad_proc -public acc_fin::scenario_prettify {
                     # Extract most significant CP alternates for a focused table
                     # by counting the number of times an act is used in the largest proportion (first half) of paths in path_set_dur_sort1_list
                     
-                    # act_freq_in_load_cp_alts_arr   a count of times an activity in all paths
+                    # act_freq_in_load_cp_alts_arr counts number of times an activity appears in all paths
                     # determine act_freq_in_load_cp_alts_arr(activity)
                     # Initialize
                     foreach act $p2_larr(activity_ref) {
                         set act_freq_in_load_cp_alts_arr($act) 0
                     }
-                    foreach path_seg_list $path_seg_dur_sort1_list {
-                        set path2_list [lindex $path_seg_list 0]
+                    foreach path_list $paths_list {
                         foreach act $path2_list {
                             incr act_freq_in_load_cp_alts_arr($act)
                         }
                     }
                     
-                    # Make a list of activities in the most tracks by count
-                    set act_sig_list [list ]
+                    # Make a list of activities appearing in the most paths
+                    set act_count_list [list ]
                     foreach act $p2_larr(activity_ref) {
-                        lappend act_sig_list [list $act $act_freq_in_load_cp_alts_arr($act)]
+                        lappend act_count_list [list $act $act_freq_in_load_cp_alts_arr($act)]
                     }
-                    set act_sig_sorted_list [lsort -decreasing -integer -index 1 $act_sig_list]
-                    set act_sig_median_pos [expr { [llength $path_seg_dur_sort1_list] / 2 } + 1 ]
-                    set act_max_count [lindex [lindex $act_sig_sorted_list 0] 1]
-                    set act_median_count [lindex [lindex $act_sig_sorted_list $act_sig_median_pos] 1]
+                    set act_path_count_sorted_list [lsort -decreasing -integer -index 1 $act_path_count_list]
+                    set act_path_count_median_pos [expr { [llength $path_seg_dur_sort1_list] / 2 } + 1 ]
+                    set act_path_count_max [lindex [lindex $act_path_count_sorted_list 0] 1]
+                    set act_path_count_median [lindex [lindex $act_path_count_sorted_list $act_path_count_median_pos] 1]
+
                 } elseif { !$error_cost } {
+
                     # make something useful for cost biased table, critical_path is most costly.. etc.
+                    # sort by path cost
 
                 } else {
+
                     # make something that doesn't break the final table build. critical_path is largest count of activities..
+                    # sort by number of activities per path
+
                 }
 
                 # # # build base table
@@ -2508,7 +2514,7 @@ ad_proc -public acc_fin::scenario_prettify {
                     set tree_act_cost_arr($act) $trunk_cost_arr($act)
                     set has_direct_dependency_p [expr { [llength $dependencies_larr($act)] > 0 } ]
                     set on_critical_path_p [expr { [lsearch -exact $cp_tree_list $act] > -1 } ]
-                    set on_a_sig_path_p [expr { $act_freq_in_load_cp_alts_arr($act) > $act_median_count } ]
+                    set on_a_sig_path_p [expr { $act_freq_in_load_cp_alts_arr($act) > $act_path_count_median } ]
                     
                     #  0 activity_ref
                     #  1 activity_seq_num_arr() ie count of activities in track
@@ -2580,7 +2586,7 @@ ad_proc -public acc_fin::scenario_prettify {
                 # scenario_name, processing_time, time/date finished processing
                 set comments "Scenario report for ${scenario_title}: "
                 append comments "scenario_name ${scenario_name} , cp_duration_at_pm ${cp_duration_at_pm} , cp_cost_at_pm ${cp_cost_at_pm} ,"
-                append comments "max_act_count_per_track ${act_max_count} , time_probability_moment ${t_moment} , cost_probability_moment ${c_moment} ,"
+                append comments "max_act_count_per_track ${act_path_count_max} , time_probability_moment ${t_moment} , cost_probability_moment ${c_moment} ,"
                 append comments "setup_time ${setup_diff_secs} , main_processing_time ${time_diff_secs} seconds , time/date finished processing $p1_arr(the_time) "
                 
                 
@@ -2593,7 +2599,7 @@ ad_proc -public acc_fin::scenario_prettify {
                 # save as a new table of type PRETTI 
                 append comments "color_mask_sig_idx 3 , color_mask_oth_idx 5 , colorswap_p 0"
                 
-                # max activity account per track = $act_max_count
+                # max activity account per track = $act_path_count_max
                 # whereas
                 # each PRETTI table uses standard delimited text file format.
                 # Need to convert into rows ie.. transpose rows of each column to a track with column names: track_(1..N). track_1 is CP
@@ -2632,10 +2638,10 @@ ad_proc -public acc_fin::scenario_prettify {
                     lappend title_row_list $track_name
                     # in PRETTI table, each track is a column, so each row is built from each column, each column lappends each row..
                     # store each row in: row_larr()
-                    for {set i 0} {$i < $act_max_count} {incr i} {
+                    for {set i 0} {$i < $act_path_count_max} {incr i} {
                         set row_larr($i) [list ]
                     }
-                    for {set i 0} {$i < $act_max_count} {incr i} {
+                    for {set i 0} {$i < $act_path_count_max} {incr i} {
                         set activity [lindex $track_activity_list $i]
                         if { $activity ne "" } {
                             # cell should contain this info: "$act t:${time_expected} T:${branches_duration_max} D:${dependencies} "
@@ -2655,7 +2661,7 @@ ad_proc -public acc_fin::scenario_prettify {
                 }
                 # combine the rows
                 lappend pretti_lists $title_row_list
-                for {set i 0} {$i < $act_max_count} {incr i} {
+                for {set i 0} {$i < $act_path_count_max} {incr i} {
                     lappend pretti_lists $row_larr($i)
                 }
                 qss_table_create $pretti_lists "${scenario_name}.p4" ${scenario_title} $comments "" p4 $instance_id $user_id
