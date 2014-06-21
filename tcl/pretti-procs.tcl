@@ -2453,6 +2453,11 @@ ad_proc -public acc_fin::scenario_prettify {
                             lappend row_list $path_cost
                             # if duration and cost are unavailble, list will be sorted by longest path..
                             lappend row_list [llength $path_list ]
+                            set path_len_w_coef 0
+                            foreach pa $path_list {
+                                incr path_len_w_coef $act_coef($pa)
+                            }
+                            lappend row_list $path_len_w_coef
                             lappend paths_lists $row_list
                         }
                     }
@@ -2466,27 +2471,6 @@ ad_proc -public acc_fin::scenario_prettify {
                     # create an array of paths from longest to shortest duration to help build base table
                     set paths_sort1_lists [lsort -decreasing -real -index 1 $paths_lists]
                              
-                    # act_freq_in_load_cp_alts_arr counts number of times an activity appears in all paths
-                    # determine act_freq_in_load_cp_alts_arr(activity)
-                    # Initialize
-                    foreach act $p2_larr(activity_ref) {
-                        set act_freq_in_load_cp_alts_arr($act) 0
-                    }
-                    foreach path_list $paths_lists {
-                        foreach act $path2_list {
-                            incr act_freq_in_load_cp_alts_arr($act) act_coef($act)
-                        }
-                    }
-                    
-                    # Make a list of activities appearing in the most paths
-                    set act_count_list [list ]
-                    foreach act $p2_larr(activity_ref) {
-                        lappend act_count_list [list $act $act_freq_in_load_cp_alts_arr($act)]
-                    }
-                    set act_path_count_sorted_list [lsort -decreasing -integer -index 1 $act_path_count_list]
-                    set act_path_count_median_pos [expr { [llength $paths_sort1_lists] / 2 } + 1 ]
-                    set act_path_count_max [lindex [lindex $act_path_count_sorted_list 0] 1]
-                    set act_path_count_median [lindex [lindex $act_path_count_sorted_list $act_path_count_median_pos] 1]
 
                 } elseif { !$error_cost } {
 
@@ -2496,65 +2480,40 @@ ad_proc -public acc_fin::scenario_prettify {
                     # create an array of paths from longest to shortest duration to help build base table
                     set paths_sort1_lists [lsort -decreasing -real -index 2 $paths_lists]
                     
-                    # Extract most significant CP alternates for a focused table
-                    # by counting the number of times an act is used in the largest proportion (first half) of paths in path_set_dur_sort1_list
-                    
-                    # act_freq_in_load_cp_alts_arr counts number of times an activity appears in all paths
-                    # determine act_freq_in_load_cp_alts_arr(activity)
-                    # Initialize
-                    foreach act $p2_larr(activity_ref) {
-                        set act_freq_in_load_cp_alts_arr($act) 0
-                    }
-                    foreach path_list $paths_lists {
-                        foreach act $path2_list {
-                            incr act_freq_in_load_cp_alts_arr($act) act_coef($act)
-                        }
-                    }
-                    
-                    # Make a list of activities appearing in the most paths
-                    set act_count_list [list ]
-                    foreach act $p2_larr(activity_ref) {
-                        lappend act_count_list [list $act $act_freq_in_load_cp_alts_arr($act)]
-                    }
-                    set act_path_count_sorted_list [lsort -decreasing -integer -index 1 $act_path_count_list]
-                    set act_path_count_median_pos [expr { [llength $paths_sort1_lists] / 2 } + 1 ]
-                    set act_path_count_max [lindex [lindex $act_path_count_sorted_list 0] 1]
-                    set act_path_count_median [lindex [lindex $act_path_count_sorted_list $act_path_count_median_pos] 1]
-
                 } else {
 
                     # make something that doesn't break the final table build. critical_path is largest count of activities..
                     # sort by number of activities per path
                     # critical path is the longest path. 
                     # create an array of paths from longest to shortest number of activities
-                    set paths_sort1_lists [lsort -decreasing -integer -index 3 $paths_lists]
+                    set paths_sort1_lists [lsort -decreasing -integer -index 4 $paths_lists]
                     
-                    # Extract most significant CP alternates for a focused table
-                    # by counting the number of times an act is used in the largest proportion (first half) of paths in path_set_dur_sort1_list
-                    
-                    # act_freq_in_load_cp_alts_arr counts number of times an activity appears in all paths
-                    # determine act_freq_in_load_cp_alts_arr(activity)
-                    # Initialize
-                    foreach act $p2_larr(activity_ref) {
-                        set act_freq_in_load_cp_alts_arr($act) 0
-                    }
-                    foreach path_list $paths_lists {
-                        foreach act $path2_list {
-                            incr act_freq_in_load_cp_alts_arr($act) act_coef($act)
-                        }
-                    }
-                    
-                    # Make a list of activities appearing in the most paths
-                    set act_count_list [list ]
-                    foreach act $p2_larr(activity_ref) {
-                        lappend act_count_list [list $act $act_freq_in_load_cp_alts_arr($act)]
-                    }
-                    set act_path_count_sorted_list [lsort -decreasing -integer -index 1 $act_path_count_list]
-                    set act_path_count_median_pos [expr { [llength $paths_sort1_lists] / 2 } + 1 ]
-                    set act_path_count_max [lindex [lindex $act_path_count_sorted_list 0] 1]
-                    set act_path_count_median [lindex [lindex $act_path_count_sorted_list $act_path_count_median_pos] 1]
-
                 }
+
+                # Extract most significant CP alternates for a focused table
+                # by counting the number of times an act is used in the largest proportion (first half) of paths in path_set_dur_sort1_list
+                
+                # act_freq_in_load_cp_alts_arr counts number of times an activity appears in all paths
+                # determine act_freq_in_load_cp_alts_arr(activity)
+                # Initialize
+                foreach act $p2_larr(activity_ref) {
+                    set act_freq_in_load_cp_alts_arr($act) 0
+                }
+                foreach path_list $paths_lists {
+                    foreach act $path2_list {
+                        incr act_freq_in_load_cp_alts_arr($act) act_coef($act)
+                    }
+                }
+                
+                # Make a list of activities appearing in the most paths
+                set act_count_list [list ]
+                foreach act $p2_larr(activity_ref) {
+                    lappend act_count_list [list $act $act_freq_in_load_cp_alts_arr($act)]
+                }
+                set act_path_count_sorted_list [lsort -decreasing -integer -index 1 $act_path_count_list]
+                set act_path_count_median_pos [expr { [llength $paths_sort1_lists] / 2 } + 1 ]
+                set act_path_count_max [lindex [lindex $act_path_count_sorted_list 0] 1]
+                set act_path_count_median [lindex [lindex $act_path_count_sorted_list $act_path_count_median_pos] 1]
 
                 # Critical Path (CP) is: 
                 set cp_row_list [lindex $paths_sort1_lists 0]
@@ -2563,9 +2522,10 @@ ad_proc -public acc_fin::scenario_prettify {
                 set cp_cost [lindex $cp_row_list 2]
                 set cp_len [lindex $cp_row_list 3]
 
-                # Extract most significant CP alternates for a focused table
-                # by counting the number of times an act is used in the largest proportion (first half) of paths in path_set_dur_sort1_list
-
+                foreach act $p2_larr(activity_ref) {
+                    set on_critical_path_p_arr($act) [expr { [lsearch -exact $cp_list $act] > -1 } ]
+                    set count_on_cp_p_arr($act) [expr { $on_critical_path_p_arr($act) * $act_coef($act) } ]
+                }
                 # # # build base table
                 ns_log Notice "acc_fin::scenario_prettify.2468: scenario '$scenario_tid' Build base report table."
                 
@@ -2586,13 +2546,15 @@ ad_proc -public acc_fin::scenario_prettify {
                     set path_duration [lindex $path_dur_cost_len_list 1]
                     set path_cost [lindex $path_dur_cost_len_list 2]
                     set path_len [lindex $path_dur_cost_len_list 3]
+                    set path_len_w_coefs [lindex $path_dur_cost_len_list 4]
                     # set act [lindex $path_list end]
                     set path_act_counter 0
+                    set act_count_on_cp 0
                     foreach act $path_list {
                         #set tree_act_cost_arr($act) $trunk_cost_arr($act)
                         incr path_act_counter
+                        incr act_count_on_cp $count_on_cp_arr($act)
                         set has_direct_dependency_p [expr { $path_act_counter > 1 } ]
-                        set on_critical_path_p [expr { [lsearch -exact $cp_list $act] > -1 } ]
                         set on_a_sig_path_p [expr { $act_freq_in_load_cp_alts_arr($act) > $act_path_count_median } ]
                         
                         #  0 activity_ref
@@ -2612,19 +2574,22 @@ ad_proc -public acc_fin::scenario_prettify {
                         # 14 dep_act_seq               activity sequence considering all dependent activities. activity_seq_num_arr()
 
                         # base for p5
-                        set activity_list [list $act $path_len $has_direct_dependency_p $on_critical_path_p $on_a_sig_path_p $act_freq_in_load_cp_alts_arr($act) $trunk_duration_arr($act) $act_time_expected_arr($act) $dependencies_larr($act) $act_cost_expected_arr($act) $trunk_cost_arr($act) $path_counter $path_act_counter $dependents_count_arr($act) $act_seq_num_arr($act) ]
+                        set activity_list [list $act $path_len $has_direct_dependency_p $on_critical_path_p_arr($act) $on_a_sig_path_p $act_freq_in_load_cp_alts_arr($act) $trunk_duration_arr($act) $act_time_expected_arr($act) $dependencies_larr($act) $act_cost_expected_arr($act) $trunk_cost_arr($act) $path_counter $path_act_counter $dependents_count_arr($act) $act_seq_num_arr($act) ]
                         lappend p5_lists $activity_list
                     }
-
+                    set act_pct_on_cp [expr { $act_count_on_cp / $path_len_w_coefs } ]
 #### this needs sorted out w/improved sort indexing w/ custom calc hook w/ p1_larr(index_equation)
                     # build p4
                         
                     #  0 path_list
                     #  1 path_len                  count of activities in path --was act count in tree activity_seq_num_arr() 
 ## redo questions:
-                    #  2 path_cost / cp_cost
+                    #   
+                    #   act_pct_on_cp            Q: count of this path's activities on the CP. CP = 100%
+                    #   
+                    #  2 path_cost / cp_cost       Q: % of this path's cost vs total cost.
                     #  3 Q: Is this the CP?
-                    #  4 f() : path_duration / cp_duration
+                    #  4 path_duration / cp_duration  Q: percent of this path's duration on the CP. CP = 100%
                     #  5 act_freq_in_load_cp_alts  count of activity is in a path or track
                     #  6 trunk_duration_arr        track duration
                     #  7 activity_time_expected    time expected of this activity
