@@ -653,6 +653,7 @@ ad_proc -private acc_fin::pretti_columns_list {
             #      RESERVED columns:
             #      _tCurveRef             integer reference to time curve in time_clarr and   time duration estimate at time_probability_moment in t_est_arr
             #      _cCurveRef             integer reference to cost curve in cost_clarr and   cost duration estimate at cost_probability_moment in c_est_arr
+            #      _coef                  integer coefficient for use with calculations that require remembering the coefficient when multiple of an activity is referenced.
             set ret_list [list activity_ref dependent_tasks aid_type name description max_concurrent max_overlap_pct time_est_short time_est_median time_est_long time_dist_curve_tid time_dist_curve_name time_probability_moment cost_est_low cost_est_median cost_est_high cost_dist_curve_tid cost_dist_curve_name cost_probability_moment]
 
         }
@@ -1092,7 +1093,8 @@ ad_proc -private acc_fin::p_load_tid {
     # import curves referenced in the table
     set p_larr(_tCurveRef) [list ]
     set p_larr(_cCurveRef) [list ]
-    
+    set p_larr(_coef) [list ]
+
     if { $table_type eq "p3" && $p3_type_column_exists_p } {
         # table_type is p3
         set p3_t_dc_tid_exists_p [info exists p_larr(time_dist_curve_tid) ]
@@ -1391,6 +1393,8 @@ ad_proc -private acc_fin::p_load_tid {
             }
             lappend p_larr(_cCurveRef) $ccurvenum
             
+            # add default coefficient
+            lappend p_larr(_coef) 1
         }
     } else {
         ns_log Warning "acc_fin::p_load_tid.1361: for ${p_larr_name} not processed as either p2 or p3 table."
@@ -2446,11 +2450,12 @@ ad_proc -public acc_fin::scenario_prettify {
                             }
                             lappend row_list $path_cost
                             # if duration and cost are unavailble, list will be sorted by longest path..
-                            lappend row_list [llength $path_cost ]
+                            lappend row_list [llength $path_list ]
                             lappend paths_lists $row_list
                         }
                     }
                 }
+                # paths_list: (list path_list duration cost length)
 
                 if { !$error_time } {
 
@@ -2458,15 +2463,7 @@ ad_proc -public acc_fin::scenario_prettify {
                     # critical path is the longest path. Float is the difference between CP and next longest CP.
                     # create an array of paths from longest to shortest duration to help build base table
                     set paths_sort1_lists [lsort -decreasing -real -index 1 $paths_lists]
-                    
-                    # Critical Path (CP) is: 
-                    set cp_list [lindex [lindex $paths_sort1_lists 0] 0]
-                    #ns_log Notice "acc_fin::scenario_prettify: paths_sort1_lists $paths_sort1_lists"
-                
-
-                    # Extract most significant CP alternates for a focused table
-                    # by counting the number of times an act is used in the largest proportion (first half) of paths in path_set_dur_sort1_list
-                    
+                             
                     # act_freq_in_load_cp_alts_arr counts number of times an activity appears in all paths
                     # determine act_freq_in_load_cp_alts_arr(activity)
                     # Initialize
@@ -2475,7 +2472,7 @@ ad_proc -public acc_fin::scenario_prettify {
                     }
                     foreach path_list $paths_lists {
                         foreach act $path2_list {
-                            incr act_freq_in_load_cp_alts_arr($act)
+                            incr act_freq_in_load_cp_alts_arr($act) $p2_larr(_coef)
                         }
                     }
                     
@@ -2497,9 +2494,6 @@ ad_proc -public acc_fin::scenario_prettify {
                     # create an array of paths from longest to shortest duration to help build base table
                     set paths_sort1_lists [lsort -decreasing -real -index 2 $paths_lists]
                     
-                    # Critical Path (CP) is: 
-                    set cp_list [lindex [lindex $paths_sort1_lists 0] 0]
-
                     # Extract most significant CP alternates for a focused table
                     # by counting the number of times an act is used in the largest proportion (first half) of paths in path_set_dur_sort1_list
                     
@@ -2511,7 +2505,7 @@ ad_proc -public acc_fin::scenario_prettify {
                     }
                     foreach path_list $paths_lists {
                         foreach act $path2_list {
-                            incr act_freq_in_load_cp_alts_arr($act)
+                            incr act_freq_in_load_cp_alts_arr($act) $p2_larr(_coef)
                         }
                     }
                     
@@ -2533,9 +2527,6 @@ ad_proc -public acc_fin::scenario_prettify {
                     # create an array of paths from longest to shortest number of activities
                     set paths_sort1_lists [lsort -decreasing -integer -index 3 $paths_lists]
                     
-                    # Critical Path (CP) is: 
-                    set cp_list [lindex [lindex $paths_sort1_lists 0] 0]
-
                     # Extract most significant CP alternates for a focused table
                     # by counting the number of times an act is used in the largest proportion (first half) of paths in path_set_dur_sort1_list
                     
@@ -2547,7 +2538,7 @@ ad_proc -public acc_fin::scenario_prettify {
                     }
                     foreach path_list $paths_lists {
                         foreach act $path2_list {
-                            incr act_freq_in_load_cp_alts_arr($act)
+                            incr act_freq_in_load_cp_alts_arr($act) $p2_larr(_coef)
                         }
                     }
                     
@@ -2562,6 +2553,16 @@ ad_proc -public acc_fin::scenario_prettify {
                     set act_path_count_median [lindex [lindex $act_path_count_sorted_list $act_path_count_median_pos] 1]
 
                 }
+
+                # Critical Path (CP) is: 
+                set cp_row_list [lindex $paths_sort1_lists 0]
+                set cp_list [lindex $cp_row_list 0]
+                set cp_duration [lindex $cp_row_list 1]
+                set cp_cost [lindex $cp_row_list 2]
+                set cp_len [lindex $cp_row_list 3]
+
+                # Extract most significant CP alternates for a focused table
+                # by counting the number of times an act is used in the largest proportion (first half) of paths in path_set_dur_sort1_list
 
                 # # # build base table
                 ns_log Notice "acc_fin::scenario_prettify.2468: scenario '$scenario_tid' Build base report table."
@@ -2618,9 +2619,10 @@ ad_proc -public acc_fin::scenario_prettify {
                         
                     #  0 path_list
                     #  1 path_len                  count of activities in path --was act count in tree activity_seq_num_arr() 
-                    #  2 Q: Does this activity have any dependencies? ie predecessors
+## redo questions:
+                    #  2 path_cost / cp_cost
                     #  3 Q: Is this the CP?
-                    #  4 Q: Is this activity referenced in more than a median number of times? on_a_sig_path_p
+                    #  4 f() : path_duration / cp_duration
                     #  5 act_freq_in_load_cp_alts  count of activity is in a path or track
                     #  6 trunk_duration_arr        track duration
                     #  7 activity_time_expected    time expected of this activity
@@ -2631,9 +2633,9 @@ ad_proc -public acc_fin::scenario_prettify {
                     # 12 activity_seq              activity sequence number in path          
                     # 13 dependents_count_arr      count of dependent activities (in subtrees) --not inclusive of activity itself.
                     # 14 dep_act_seq               activity sequence considering all dependent activities. activity_seq_num_arr()
-                    #  1 path_duration
-                    #  2 path_cost
-
+                    # 15 path_duration
+                    # 16 path_cost
+                    # 17 
                     set path_x_list [list $path_list $path_duration $path_cost $path_len $has_direct_dependency_p $on_critical_path_p $on_a_sig_path_p $act_freq_in_load_cp_alts_arr($act) $trunk_duration_arr($act) $act_time_expected_arr($act) $dependencies_larr($act) $act_cost_expected_arr($act) $trunk_cost_arr($act) $path_counter $path_act_counter $dependents_count_arr($act) $act_seq_num_arr($act) ]
                     lappend path_expanded_lists $path_x_list
 
