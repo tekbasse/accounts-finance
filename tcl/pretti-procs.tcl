@@ -2037,6 +2037,7 @@ ad_proc -public acc_fin::scenario_prettify {
                         foreach constant $constants_list {
                             lappend p2_larr($constant) [lindex $p2_larr($constant) $term_idx]
                         }
+                        lappend p2_larr(_coef) $coefficient
                         # create new tCurves and cCurves and references to them.
                         set tcurvenum [lindex $p2_larr(_tCurveRef) $term_idx]
                         if { $tcurvenum ne "" } {
@@ -2234,6 +2235,7 @@ ad_proc -public acc_fin::scenario_prettify {
                     ns_log Notice "acc_finn::scenario_prettify.1793: scenario '$scenario_tid' set act_calculated_p_larr($act) 0 len \$act [string length $act]"
                     #   act_seq_num_arr is relative sequence number of an activity. 
                     set act_seq_num_arr($act) $sequence_1
+                    set act_coef($act) [lindex $p2_larr(_coef) $i]
                     incr i
                 }
                 
@@ -2472,7 +2474,7 @@ ad_proc -public acc_fin::scenario_prettify {
                     }
                     foreach path_list $paths_lists {
                         foreach act $path2_list {
-                            incr act_freq_in_load_cp_alts_arr($act) $p2_larr(_coef)
+                            incr act_freq_in_load_cp_alts_arr($act) act_coef($act)
                         }
                     }
                     
@@ -2505,7 +2507,7 @@ ad_proc -public acc_fin::scenario_prettify {
                     }
                     foreach path_list $paths_lists {
                         foreach act $path2_list {
-                            incr act_freq_in_load_cp_alts_arr($act) $p2_larr(_coef)
+                            incr act_freq_in_load_cp_alts_arr($act) act_coef($act)
                         }
                     }
                     
@@ -2538,7 +2540,7 @@ ad_proc -public acc_fin::scenario_prettify {
                     }
                     foreach path_list $paths_lists {
                         foreach act $path2_list {
-                            incr act_freq_in_load_cp_alts_arr($act) $p2_larr(_coef)
+                            incr act_freq_in_load_cp_alts_arr($act) act_coef($act)
                         }
                     }
                     
