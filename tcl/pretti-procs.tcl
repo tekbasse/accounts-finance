@@ -16,6 +16,24 @@ ad_library {
 
 namespace eval acc_fin {}
 
+ad_proc -public acc_fin::pretti_equation_vars {
+} {
+    Returns a list of value triplets, where each value pair consists of 1. a variable name used in pretti custom equation feature,  2. a human legible variable equivalent, and 3. a brief definition of the variable
+} {
+    set vars_lol [list [list 0 path_len "Number of activities in path"] \
+                      [list 1 act_pct_on_cp "Percent of activities in path that is also in Critical Path"] \
+                      [list 2 cost_ratio "Cost ratio: cost of path / cost of project"] \
+                      [list 3 on_critical_path_p "1 if activity is in Critical Path, otherwise 0"] \
+                      [list 4 duration_ratio "Duration ratio: duration of path / duration of Critical Path"] \
+                      [list 5 act_freq_in_load_cp_alts "Number of times an activity occurs in a project"] \
+                      [list 6 trunk_duration "Duration of an activity and its dependents"] \
+                      [list 7 activity_time_expected "Expected duration of an activity"] \
+                      [list 8 act_cost_expected "Expected cost of an activity"] \
+                      [list 9 trunk_cost "Expected cost of an activity and its dependents"] \
+                      [list 10 path_counter "Steps of a path from Critical Path based on PRETTI index"]
+    return $vars_lol
+}
+
 ad_proc -private acc_fin::pretti_log_create {
     table_tid
     action_code
@@ -1929,14 +1947,15 @@ ad_proc -public acc_fin::scenario_prettify {
                 # validate equation or set empty
                 set index_eq ""
                 # only allow + - / * $ and numbers.  $number converts to one of the available row numbers that returns a number from in p4 
-                regsub -nocase -all {[^\$\/\+\-\*\(\)\.\ 0-9]+} $p1_arr(index_equation) "" index_eq
-                foreach {var0 var1} [list 1 path_len 2 act_pct_on_cp 3 cost_ratio 4 on_critical_path_p 5 duration_ratio 6 act_freq_in_load_cp_alts 7 trunk_duration 8 activity_time_expected 9 act_cost_expected trunk_cost 10 path_counter] {
+                regsub -nocase -all -- {[^\$\/\+\-\*\(\)\.\ 0-9]+} $p1_arr(index_equation) "" index_eq
+                set vars_list [list ]
+                foreach {var0 var1 scratch} [acc_fin::pretti_equation_vars ] {
                     set var2 "$"
                     append var2 $var0
                     set var3 "${"
                     append var3 $var1
-                    ppend var3 "}"
-                    regsub -nocase -all $var2 $index_eq $var3 index_eq
+                    append var3 "}"
+                    regsub -nocase -all -- $var2 $index_eq $var3 index_eq
                 }
             }
             if { $type_errors_p } {
@@ -2613,6 +2632,7 @@ ad_proc -public acc_fin::scenario_prettify {
                         set cost_ratio [expr { $path_cost / ( $cp_cost + 0. ) } ]
                     }
                     if { $index_eq ne "" } {
+#### add a catch here
                         set custom_index [expr { $index_eq } ]
                     }
                     #  0 path_list
