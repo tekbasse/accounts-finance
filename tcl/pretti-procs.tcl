@@ -614,7 +614,7 @@ ad_proc -private acc_fin::pretti_columns_list {
             #      cost_probability_moment A percentage (0..1) along the (cumulative) distribution curve. defaults to "", which defaults to same as time_probability_moment
             #set ret_list \[list name value\]
             ### adding max_concurrent and max_overlap_pct but not sure if these have been coded for use yet..
-            set ret_list [list activity_table_tid activity_table_name task_types_tid task_types_name time_dist_curve_name time_dist_curve_tid cost_dist_curve_name cost_dist_curve_tid time_est_short time_est_median time_est_long time_probability_moment cost_est_low cost_est_median cost_est_high cost_probability_moment db_format ]
+            set ret_list [list activity_table_tid activity_table_name task_types_tid task_types_name time_dist_curve_name time_dist_curve_tid cost_dist_curve_name cost_dist_curve_tid time_est_short time_est_median time_est_long time_probability_moment cost_est_low cost_est_median cost_est_high cost_probability_moment db_format index_equation ]
         }
         p11 {
             #set ret_list \[list name value\]
@@ -654,6 +654,8 @@ ad_proc -private acc_fin::pretti_columns_list {
             #      _tCurveRef             integer reference to time curve in time_clarr and   time duration estimate at time_probability_moment in t_est_arr
             #      _cCurveRef             integer reference to cost curve in cost_clarr and   cost duration estimate at cost_probability_moment in c_est_arr
             #      _coef                  integer coefficient for use with calculations that require remembering the coefficient when multiple of an activity is referenced.
+            #      _tDcSource             source of time curve used from acc_fin::curve_import
+            #      _cDcSource             source of cost curve used from acc_fin::curve_import
             set ret_list [list activity_ref dependent_tasks aid_type name description max_concurrent max_overlap_pct time_est_short time_est_median time_est_long time_dist_curve_tid time_dist_curve_name time_probability_moment cost_est_low cost_est_median cost_est_high cost_dist_curve_tid cost_dist_curve_name cost_probability_moment]
 
         }
@@ -675,6 +677,9 @@ ad_proc -private acc_fin::pretti_columns_list {
             #      RESERVED columns:
             #      _tCurveRef             integer reference to time curve in time_clarr and   time duration estimate at time_probability_moment in t_est_arr
             #      _cCurveRef             integer reference to cost curve in cost_clarr and   cost duration estimate at cost_probability_moment in c_est_arr
+            #      _tDcSource             source of time curve used from acc_fin::curve_import
+            #      _cDcSource             source of cost curve used from acc_fin::curve_import
+
             set ret_list [list type dependent_tasks dependent_types name description max_concurrent max_overlap_pct time_dist_curve_name time_dist_curve_tid cost_dist_curve_name cost_dist_curve_tid time_est_short time_est_median time_est_long cost_est_low cost_est_median cost_est_high ]
         }
         p31 {
@@ -1920,6 +1925,20 @@ ad_proc -public acc_fin::scenario_prettify {
                     set type_errors_p 1
                 }
             }
+            if { [info exists p1_arr(index_equation) ] } {
+                # validate equation or set empty
+                set index_eq ""
+                # only allow + - / * $ and numbers.  $number converts to one of the available row numbers that returns a number from in p4 
+                regsub -nocase -all {[^\$\/\+\-\*\(\)\.\ 0-9]+} $p1_arr(index_equation) "" index_eq
+                foreach {var0 var1} [list 1 path_len 2 act_pct_on_cp 3 cost_ratio 4 on_critical_path_p 5 duration_ratio 6 act_freq_in_load_cp_alts 7 trunk_duration 8 activity_time_expected 9 act_cost_expected trunk_cost 10 path_counter] {
+                    set var2 "$"
+                    append var2 $var0
+                    set var3 "${"
+                    append var3 $var1
+                    ppend var3 "}"
+                    regsub -nocase -all $var2 $index_eq $var3 index_eq
+                }
+            }
             if { $type_errors_p } {
                 # undo data expansion
                 foreach title $titles_list {
@@ -2221,6 +2240,9 @@ ad_proc -public acc_fin::scenario_prettify {
                 foreach act $p2_larr(activity_ref) {
                     #   depnc: comma list of activity's dependencies
                     set depnc [lindex $p2_larr(dependent_tasks) $i]
+                    set t_dc_source_arr($act) [lindex $p2_larr(_tDcSource) $i ]
+                    set c_dc_source_arr($act) [lindex $p2_larr(_cDcSource) $i ]
+
                     # Filter out any blanks
                     set scratch_list [split $depnc ";, "]
                     set scratch2_list [list ]
@@ -2556,7 +2578,7 @@ ad_proc -public acc_fin::scenario_prettify {
                         incr act_count_on_cp $count_on_cp_arr($act)
                         set has_direct_dependency_p [expr { $path_act_counter > 1 } ]
                         set on_a_sig_path_p [expr { $act_freq_in_load_cp_alts_arr($act) > $act_path_count_median } ]
-                        
+
                         #  0 activity_ref
                         #  1 path_len                  count of activities in path --was act count in tree activity_seq_num_arr() 
                         #  2 Q: Does this activity have any dependencies? ie predecessors
@@ -2572,37 +2594,49 @@ ad_proc -public acc_fin::scenario_prettify {
                         # 12 activity_seq              activity sequence number in path          
                         # 13 dependents_count_arr      count of dependent activities (in subtrees) --not inclusive of activity itself.
                         # 14 dep_act_seq               activity sequence considering all dependent activities. activity_seq_num_arr()
+                        # 16 t_dc_source_arr           source of duration distribution curve via curve_import
+                        # 17 c_dc_source_arr           source of cost distribution curve via curve_import
 
                         # base for p5
-                        set activity_list [list $act $path_len $has_direct_dependency_p $on_critical_path_p_arr($act) $on_a_sig_path_p $act_freq_in_load_cp_alts_arr($act) $trunk_duration_arr($act) $act_time_expected_arr($act) $dependencies_larr($act) $act_cost_expected_arr($act) $trunk_cost_arr($act) $path_counter $path_act_counter $dependents_count_arr($act) $act_seq_num_arr($act) ]
+                        set activity_list [list $act $path_len $has_direct_dependency_p $on_critical_path_p_arr($act) $on_a_sig_path_p $act_freq_in_load_cp_alts_arr($act) $trunk_duration_arr($act) $act_time_expected_arr($act) $dependencies_larr($act) $act_cost_expected_arr($act) $trunk_cost_arr($act) $path_counter $path_act_counter $dependents_count_arr($act) $act_seq_num_arr($act) $t_dc_source_arr($act) $c_dc_source_arr($act) ]
                         lappend p5_lists $activity_list
                     }
-                    set act_pct_on_cp [expr { $act_count_on_cp / $path_len_w_coefs } ]
-#### this needs sorted out w/improved sort indexing w/ custom calc hook w/ p1_larr(index_equation)
+
+#### this needs sorted out w/improved sort indexing w/ custom calc hook w/ p1_arr(index_equation)
                     # build p4
-                        
+
+                    set act_pct_on_cp [expr { $act_count_on_cp / $path_len_w_coefs } ]
+                    if { !$error_time } {
+                        set duration_ratio [expr { $path_duration / ( $cp_duration + 0. ) } ]
+                    }
+                    if { !$error_cost } {
+                        set cost_ratio [expr { $path_cost / ( $cp_cost + 0. ) } ]
+                    }
+                    if { $index_eq ne "" } {
+                        set custom_index [expr { $index_eq } ]
+                    }
                     #  0 path_list
-                    #  1 path_len                  count of activities in path --was act count in tree activity_seq_num_arr() 
-## redo questions:
-                    #   
-                    #   act_pct_on_cp            Q: count of this path's activities on the CP. CP = 100%
-                    #   
-                    #  2 path_cost / cp_cost       Q: % of this path's cost vs total cost.
-                    #  3 Q: Is this the CP?
-                    #  4 path_duration / cp_duration  Q: percent of this path's duration on the CP. CP = 100%
-                    #  5 act_freq_in_load_cp_alts  count of activity is in a path or track
-                    #  6 trunk_duration_arr        track duration
-                    #  7 activity_time_expected    time expected of this activity
-                    #  8 dependencies_larr         direct activity dependencies
-                    #  9 act_cost_expected_arr     cost to complete activity
-                    # 10 trunk_cost_arr            cost to complete path (including all path dependents)
-                    # 11 path_counter
-                    # 12 activity_seq              activity sequence number in path          
-                    # 13 dependents_count_arr      count of dependent activities (in subtrees) --not inclusive of activity itself.
-                    # 14 dep_act_seq               activity sequence considering all dependent activities. activity_seq_num_arr()
-                    # 15 path_duration
-                    # 16 path_cost
-                    # 17 
+                    #  1 path_len                    count of activities in path --was act count in tree activity_seq_num_arr() 
+                    #  2 act_pct_on_cp               Q: percent by count of this path's activities on the CP. CP = 100%
+                    #  3 cost_ratio               path_cost / cp_cost       Q: percent of this path's cost over total projected cost.
+                    #  4 on_critical_path_p          Q: Is this the CP?
+                    #  5 duration_ratio           path_duration / cp_duration Q: percent of this path's duration on the CP. CP = 100%
+                   
+                    #  7 trunk_duration_arr          track duration
+                    #  8 activity_time_expected      time expected of this activity
+                    #  9 dependencies_larr           direct activity dependencies
+                    # 10 act_cost_expected_arr       cost to complete activity
+                    # 11 trunk_cost_arr              cost to complete path (including all path dependents)
+                    # 12 path_counter
+     
+                    # 14 dependents_count_arr        count of dependent activities (in subtrees) --not inclusive of activity itself.
+                    # 15 dep_act_seq                 activity sequence considering all dependent activities. activity_seq_num_arr()
+                    # 16 path_duration
+                    # 17 path_cost
+                    # 18 index_eq_value
+                    #### how do activity stats fit in context with creating html?  Rebuild p4 in context similar to p5 (ie inside act loop).
+               #?? 13 activity_seq                activity sequence number in path          
+  #??  6 act_freq_in_load_cp_alts    count of activity is in a path or track
                     set path_x_list [list $path_list $path_duration $path_cost $path_len $has_direct_dependency_p $on_critical_path_p $on_a_sig_path_p $act_freq_in_load_cp_alts_arr($act) $trunk_duration_arr($act) $act_time_expected_arr($act) $dependencies_larr($act) $act_cost_expected_arr($act) $trunk_cost_arr($act) $path_counter $path_act_counter $dependents_count_arr($act) $act_seq_num_arr($act) ]
                     lappend path_expanded_lists $path_x_list
 
