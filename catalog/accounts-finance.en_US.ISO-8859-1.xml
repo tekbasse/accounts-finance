@@ -46,6 +46,8 @@
 <msg key="cp_q">In Critical Path?</msg>
 <msg key="cp_q_def">Answers question about an activity. 1 is yes, 0 is no.</msg>
 <msg key="curve">Curve</msg>
+<msg key="custom_equation_variables">Custom Equation Variables</msg>
+<msg key="custom_equation_variables_def">Variables used in creating a custom PRETTI index for path sorting.</msg>
 <msg key="db_format">Database Format</msg>
 <msg key="db_format_def">A format to use for a report.</msg>
 <msg key="delete">Delete</msg>
@@ -74,6 +76,10 @@
 <msg key="name">Name</msg>
 <msg key="name_def">A unique word used as a reference as in a variable or table name.</msg>
 <msg key="new">New</msg>
+<msg key="path_counter">Path Counter</msg>
+<msg key="path_counter_def">A path sequence number for this report.</msg>
+<msg key="path_act_counter">Activity Counter</msg>
+<msg key="path_act_counter_def">An activity sequence number for each path.</msg>
 <msg key="popularity">Popularity</msg>
 <msg key="popularity_def">An indication to the relative use of item compared to others.</msg>
 <msg key="process">Process</msg>

@@ -20,17 +20,16 @@ ad_proc -public acc_fin::pretti_equation_vars {
 } {
     Returns a list of value triplets, where each value pair consists of 1. a variable name used in pretti custom equation feature,  2. a human legible variable equivalent, and 3. a brief definition of the variable
 } {
-    set vars_lol [list [list 0 path_len "Number of activities in path"] \
-                      [list 1 act_pct_on_cp "Percent of activities in path that is also in Critical Path"] \
-                      [list 2 cost_ratio "Cost ratio: cost of path / cost of project"] \
-                      [list 3 on_critical_path_p "1 if activity is in Critical Path, otherwise 0"] \
-                      [list 4 duration_ratio "Duration ratio: duration of path / duration of Critical Path"] \
-                      [list 5 act_freq_in_load_cp_alts "Number of times an activity occurs in a project"] \
-                      [list 6 trunk_duration "Duration of an activity and its dependents"] \
-                      [list 7 activity_time_expected "Expected duration of an activity"] \
-                      [list 8 act_cost_expected "Expected cost of an activity"] \
-                      [list 9 trunk_cost "Expected cost of an activity and its dependents"] \
-                      [list 10 path_counter "Steps of a path from Critical Path based on PRETTI index"] ]
+    set vars_lol [list [list 0 path_len "Number of different activities in path"] \
+                      [list 1 path_len_w_coefs "Number of activities in path"] \
+                      [list 2 act_pct_on_cp "Percent of activities in path that is also in Critical Path"] \
+                      [list 3 cost_ratio "Cost ratio: cost of path / cost of project"] \
+                      [list 4 on_critical_path_p "1 if path is Critical Path, otherwise 0"] \
+                      [list 5 duration_ratio "Duration ratio: duration of path / duration of Critical Path"] \
+                      [list 6 path_counter "A path's sequence number from Critical Path based on PRETTI index"] \
+                      [list 7 act_path_count_median "Median count of unique activities."] \
+                      [list 8 act_path_count_max "Max count of unqiue activities."] \
+                      [list 9 a_sig_path_p "1 if path contains at least one activity that is above the median count (act_path_count_median), otherwise 0"] ]
     return $vars_lol
 }
 
@@ -721,11 +720,11 @@ ad_proc -private acc_fin::pretti_columns_list {
         p50 {
             # each row is a cell, in format of detailed PRETTI internal output. See code. All columns are required to reproduce output to p4 (including p4 comments).
 
-            set ret_list [list activity_ref path_act_count dependencies_q cp_q significant_q popularity waypoint_duration activity_time direct_dependencies activity_cost waypoint_cost]
+            set ret_list [list activity_ref path_act_counter path_counter dependencies_q cp_q significant_q popularity waypoint_duration activity_time direct_dependencies activity_cost waypoint_cost]
         }
         p51 {
             # each row is a cell, in format of detailed PRETTI internal output. See code. 
-            set ret_list [list activity_ref path_act_count dependencies_q cp_q significant_q popularity waypoint_duration activity_time direct_dependencies activity_cost waypoint_cost path_col activity_seq dependents_count dep_act_seq ]
+            set ret_list [list activity_ref path_act_counter path_counter dependencies_q cp_q significant_q popularity waypoint_duration activity_time direct_dependencies activity_cost waypoint_cost path_col activity_seq dependents_count dep_act_seq ]
         }
         dc0 {
             # dc2 distribution curve table
@@ -1946,17 +1945,24 @@ ad_proc -public acc_fin::scenario_prettify {
             if { [info exists p1_arr(index_equation) ] } {
                 # validate equation or set empty
                 set index_eq ""
-                # only allow + - / * $ and numbers.  $number converts to one of the available row numbers that returns a number from in p4 
-                regsub -nocase -all -- {[^\$\/\+\-\*\(\)\.\ 0-9]+} $p1_arr(index_equation) "" index_eq
+                # only allow + - / * $, logical comparisions > < == != and numbers.  $number converts to one of the available row numbers that returns a number from in p4 
+                regsub -nocase -all -- {[^\$\/\+\-\*\(\)\.\<\>\=\!\ 0-9]+} $p1_arr(index_equation) "" index_eq
+                # add extra spaces to help expr avoid misinterpretations
+                regsub -nocase -all -- {([\/\+\-\*\(\)])} $index_eq " \1 " index_eq
+                # get rid of extra spaces
+                regsub -nocase -all -- {[ ]+} $index_eq " " index_eq
                 set vars_list [list ]
                 foreach {var0 var1 scratch} [acc_fin::pretti_equation_vars ] {
-                    set var2 "$"
+                    set var2 " $"
                     append var2 $var0
-                    set var3 "${"
+                    set var3 " \[qaf_fp ${"
                     append var3 $var1
-                    append var3 "}"
+                    append var3 "} \] "
                     regsub -nocase -all -- $var2 $index_eq $var3 index_eq
                 }
+                # unqoute the brackets
+                regsub -nocase -all -- {[\\]} $index_eq {} index_eq
+
             }
             if { $type_errors_p } {
                 # undo data expansion
@@ -2619,27 +2625,39 @@ ad_proc -public acc_fin::scenario_prettify {
                         # base for p5
                         set activity_list [list $act $path_len $has_direct_dependency_p $on_critical_path_p_arr($act) $on_a_sig_path_p $act_freq_in_load_cp_alts_arr($act) $trunk_duration_arr($act) $act_time_expected_arr($act) $dependencies_larr($act) $act_cost_expected_arr($act) $trunk_cost_arr($act) $path_counter $path_act_counter $dependents_count_arr($act) $act_seq_num_arr($act) $t_dc_source_arr($act) $c_dc_source_arr($act) ]
                         lappend p5_lists $activity_list
-                    }
 
-#### this needs sorted out w/improved sort indexing w/ custom calc hook w/ p1_arr(index_equation)
-                    # build p4
 
-                    set act_pct_on_cp [expr { $act_count_on_cp / $path_len_w_coefs } ]
-                    if { !$error_time } {
-                        set duration_ratio [expr { $path_duration / ( $cp_duration + 0. ) } ]
-                    }
-                    if { !$error_cost } {
-                        set cost_ratio [expr { $path_cost / ( $cp_cost + 0. ) } ]
-                    }
-                    if { $index_eq ne "" } {
-#### add a catch here
-                        set custom_index [expr { $index_eq } ]
-                    }
-                    #  0 path_list
-                    #  1 path_len                    count of activities in path --was act count in tree activity_seq_num_arr() 
-                    #  2 act_pct_on_cp               Q: percent by count of this path's activities on the CP. CP = 100%
-                    #  3 cost_ratio               path_cost / cp_cost       Q: percent of this path's cost over total projected cost.
-                    #  4 on_critical_path_p          Q: Is this the CP?
+
+                        # build p4
+
+                        set act_pct_on_cp [expr { $act_count_on_cp / $path_len_w_coefs } ]
+                        if { !$error_time } {
+                            set duration_ratio [expr { $path_duration / ( $cp_duration + 0. ) } ]
+                        }
+                        if { !$error_cost } {
+                            set cost_ratio [expr { $path_cost / ( $cp_cost + 0. ) } ]
+                        }
+                        if { !$error_fail && $index_eq ne "" } {
+                            if { [catch {
+                                set custom_index [expr { $index_eq } ]
+                            } _error_text]} {
+                                set error_fail 1
+                                ns_log Warning "acc_fin::scenario_prettify.2646: scenario '$scenario_tid' act '$act' index_eq '${index_eq}'"
+                                acc_fin::pretti_log_create $scenario_tid "${act}" "calculation" "There was an error in calculation '${index_eq}' of custom equation for PRETTI index (ref2646). Error text is '${_error_text}'" $user_id $instance_id
+                            }
+                        }
+                        
+                        
+                        #  0 path_list
+                        # 16 path_duration
+                    # 17 path_cost
+                        # path_len
+                        #   path_len_w_coefs
+                        
+                        #  1 path_act_counter                    count of activities in path --was act count in tree activity_seq_num_arr() 
+                        #  2 act_pct_on_cp               Q: percent by count of this path's activities on the CP. CP = 100%
+                        #  3 cost_ratio               path_cost / cp_cost       Q: percent of this path's cost over total projected cost.
+                        #  4 on_critical_path_p          Q: Is this the CP?
                     #  5 duration_ratio           path_duration / cp_duration Q: percent of this path's duration on the CP. CP = 100%
                    
                     #  7 trunk_duration_arr          track duration
@@ -2651,8 +2669,8 @@ ad_proc -public acc_fin::scenario_prettify {
      
                     # 14 dependents_count_arr        count of dependent activities (in subtrees) --not inclusive of activity itself.
                     # 15 dep_act_seq                 activity sequence considering all dependent activities. activity_seq_num_arr()
-                    # 16 path_duration
-                    # 17 path_cost
+
+
                     # 18 index_eq_value
                     #### how do activity stats fit in context with creating html?  Rebuild p4 in context similar to p5 (ie inside act loop).
                #?? 13 activity_seq                activity sequence number in path          
@@ -2660,7 +2678,7 @@ ad_proc -public acc_fin::scenario_prettify {
                     set path_x_list [list $path_list $path_duration $path_cost $path_len $has_direct_dependency_p $on_critical_path_p $on_a_sig_path_p $act_freq_in_load_cp_alts_arr($act) $trunk_duration_arr($act) $act_time_expected_arr($act) $dependencies_larr($act) $act_cost_expected_arr($act) $trunk_cost_arr($act) $path_counter $path_act_counter $dependents_count_arr($act) $act_seq_num_arr($act) ]
                     lappend path_expanded_lists $path_x_list
 
-
+                    }
                 }
                 
                 # # # PRETTI sorts
