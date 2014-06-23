@@ -2552,7 +2552,7 @@ ad_proc -public acc_fin::scenario_prettify {
                     }
                 }
                 
-                # Make a list of activities appearing in the most paths
+                # Make a list of activities sorted by popularity (appearing in the most paths)
                 set act_count_list [list ]
                 foreach act $p2_larr(activity_ref) {
                     lappend act_count_list [list $act $act_freq_in_load_cp_alts_arr($act)]
@@ -2568,7 +2568,7 @@ ad_proc -public acc_fin::scenario_prettify {
                 set cp_duration [lindex $cp_row_list 1]
                 set cp_cost [lindex $cp_row_list 2]
                 set cp_len [lindex $cp_row_list 3]
-
+                
                 foreach act $p2_larr(activity_ref) {
                     set on_critical_path_p_arr($act) [expr { [lsearch -exact $cp_list $act] > -1 } ]
                     set count_on_cp_p_arr($act) [expr { $on_critical_path_p_arr($act) * $act_coef($act) } ]
@@ -2584,9 +2584,9 @@ ad_proc -public acc_fin::scenario_prettify {
                 # and some others for sorting.
                 # Build a list of lists, where each row is an activity
                 set p5_lists [list ]
-                set path_expanded_lists [list ]
                 set p5_titles_list [acc_fin::pretti_columns_list p5 1]
                 set path_counter 0
+                set index_custom ""
                 foreach path_dur_cost_len_list $paths_sort1_lists {
                     incr path_counter
                     set path_list [lindex $path_dur_cost_len_list 0]
@@ -2603,6 +2603,15 @@ ad_proc -public acc_fin::scenario_prettify {
                         incr act_count_on_cp $count_on_cp_arr($act)
                         set has_direct_dependency_p [expr { $path_act_counter > 1 } ]
                         set on_a_sig_path_p [expr { $act_freq_in_load_cp_alts_arr($act) > $act_path_count_median } ]
+                        if { !$error_fail && $index_eq ne "" } {
+                            if { [catch {
+                                set index_custom [expr { $index_eq } ]
+                            } _error_text]} {
+                                set error_fail 1
+                                ns_log Warning "acc_fin::scenario_prettify.2646: scenario '$scenario_tid' act '$act' index_eq '${index_eq}'"
+                                acc_fin::pretti_log_create $scenario_tid "${act}" "calculation" "There was an error in calculation '${index_eq}' of custom equation for PRETTI index (ref2646). Error text is '${_error_text}'" $user_id $instance_id
+                            }
+                        }
 
                         #  0 activity_ref
                         #  1 path_len                  count of activities in path --was act count in tree activity_seq_num_arr() 
@@ -2623,28 +2632,39 @@ ad_proc -public acc_fin::scenario_prettify {
                         # 17 c_dc_source_arr           source of cost distribution curve via curve_import
 
                         # base for p5
-                        set activity_list [list $act $path_len $has_direct_dependency_p $on_critical_path_p_arr($act) $on_a_sig_path_p $act_freq_in_load_cp_alts_arr($act) $trunk_duration_arr($act) $act_time_expected_arr($act) $dependencies_larr($act) $act_cost_expected_arr($act) $trunk_cost_arr($act) $path_counter $path_act_counter $dependents_count_arr($act) $act_seq_num_arr($act) $t_dc_source_arr($act) $c_dc_source_arr($act) ]
+                        set activity_list [list $act $path_len $has_direct_dependency_p $on_critical_path_p_arr($act) $on_a_sig_path_p $act_freq_in_load_cp_alts_arr($act) $trunk_duration_arr($act) $act_time_expected_arr($act) $dependencies_larr($act) $act_cost_expected_arr($act) $trunk_cost_arr($act) $path_counter $path_act_counter $dependents_count_arr($act) $act_seq_num_arr($act) $t_dc_source_arr($act) $c_dc_source_arr($act) $index_custom ]
                         lappend p5_lists $activity_list
+                    }
+                }
+                
+                # # # PRETTI sorts
+                ns_log Notice "acc_fin::scenario_prettify.2504: scenario '$scenario_tid' PRETTI sorts."
+
+                # primary sort
+                if { !$error_time } {
+                    # critical path is the longest expected duration of dependent activities
+                    # sort by path duration descending
+                    set primary_sort_lists [lsort -decreasing -real -index 6 $p5_lists]
+                } elseif { !$error_cost } {
+                    # critical path is largest cost..
+                    set primary_sort_lists [lsort -decreasing -real -index n $second_sort_lists]
+                } else {
+                    # critical path is longest path
+                    set primary_sort_lists []
+                }
+                ns_log Notice "acc_fin::scenario_prettify.2516: scenario '$scenario_tid' primary_sort_lists $primary_sort_lists"
 
 
 
                         # build p4
 
                         set act_pct_on_cp [expr { $act_count_on_cp / $path_len_w_coefs } ]
+
                         if { !$error_time } {
                             set duration_ratio [expr { $path_duration / ( $cp_duration + 0. ) } ]
                         }
                         if { !$error_cost } {
                             set cost_ratio [expr { $path_cost / ( $cp_cost + 0. ) } ]
-                        }
-                        if { !$error_fail && $index_eq ne "" } {
-                            if { [catch {
-                                set custom_index [expr { $index_eq } ]
-                            } _error_text]} {
-                                set error_fail 1
-                                ns_log Warning "acc_fin::scenario_prettify.2646: scenario '$scenario_tid' act '$act' index_eq '${index_eq}'"
-                                acc_fin::pretti_log_create $scenario_tid "${act}" "calculation" "There was an error in calculation '${index_eq}' of custom equation for PRETTI index (ref2646). Error text is '${_error_text}'" $user_id $instance_id
-                            }
                         }
                         
                         
@@ -2678,36 +2698,29 @@ ad_proc -public acc_fin::scenario_prettify {
                     set path_x_list [list $path_list $path_duration $path_cost $path_len $has_direct_dependency_p $on_critical_path_p $on_a_sig_path_p $act_freq_in_load_cp_alts_arr($act) $trunk_duration_arr($act) $act_time_expected_arr($act) $dependencies_larr($act) $act_cost_expected_arr($act) $trunk_cost_arr($act) $path_counter $path_act_counter $dependents_count_arr($act) $act_seq_num_arr($act) ]
                     lappend path_expanded_lists $path_x_list
 
-                    }
-                }
-                
-                # # # PRETTI sorts
-                ns_log Notice "acc_fin::scenario_prettify.2504: scenario '$scenario_tid' PRETTI sorts. p5_lists $p5_lists"
-                
-                # sort by: path_len descending
-                set fourth_sort_lists [lsort -decreasing -real -index 1 $p5_lists]
-                # sort by: Q. has_direct_dependency_p? descending (1 = true, 0 false)
-                set third_sort_lists [lsort -decreasing -integer -index 2 $fourth_sort_lists]
-                # sort by: Q. on part_of_critical_path_p? descending
-                set second_sort_lists [lsort -decreasing -integer -index 3 $third_sort_lists]
+    # p4_lol consists of first row (a list item):
+    # (list track_1 track_2 track_3 ... track_N )
+    # subsequent rows (list items):
+    # (list cell_r1c1 cell_r1c2 cell_r1c3 ... cellr1cN )
+    # ...
+    # (list cell_rMc1 cell_rMc2 cell_rMc3 ... cellrMcN )
+    # for N tracks of a maximum of M rows.
+    # Each cell is an activity.
+    # Each column is a track
+    # Track_1 is CP
 
-                # primary sort
-                if { !$error_time } {
-                    # critical path is the longest expected duration of dependent activities
-                    # sort by path duration descending
-                    set primary_sort_lists [lsort -decreasing -real -index 6 $second_sort_lists]
-                } elseif { !$error_cost } {
-                    # critical path is largest cost..
-                    set primary_sort_lists [lsort -decreasing -real -index 
-                ns_log Notice "acc_fin::scenario_prettify.2516: scenario '$scenario_tid' primary_sort_lists $primary_sort_lists"
-                
-                # *_at_pm means at probability moment
-                set cp_duration_at_pm [lindex [lindex $primary_sort_lists 0] 1]
-                # calculate cp_cost_at_pm
-                set cp_cost_at_pm 0.
-                foreach {act tree_cost} [array get tree_act_cost_arr] {
-                    set cp_cost_at_pm [expr { $cp_cost_at_pm + $tree_cost } ]
-                }
+    # empty cells have empty string value.
+    # other cells will contain comment format from acc_fin::scenario_prettify
+    # "$activity "
+    # "t:[lindex $track_list 7] "
+    # "ts:[lindex $track_list 6] "
+    # "c:[lindex $track_list 9] "
+    # "cs:[lindex $track_list 10] "
+    # "d:($depnc_larr(${activity})) "
+    # "<!-- [lindex $track_list 4] [lindex $track_list 5] --> "
+
+
+
                 set scenario_stats_list [qss_table_stats $scenario_tid]
                 set scenario_name [lindex $scenario_stats_list 0]
                 if { [llength $t_moment_list ] > 1 } {
@@ -2735,11 +2748,11 @@ ad_proc -public acc_fin::scenario_prettify {
                 set setup_diff_secs [expr { $setup_end - $setup_start } ]
                 # the_time Time calculation completed
                 set p1_arr(the_time) [clock format [clock seconds] -format "%Y %b %d %H:%M:%S"]
-                # comments should include cp_duration_at_pm, cp_cost_at_pm, max_act_count_per_track 
+                # comments should include cp_duration, cp_cost, max_act_count_per_track 
                 # time_probability_moment, cost_probability_moment, 
                 # scenario_name, processing_time, time/date finished processing
                 set comments "Scenario report for ${scenario_title}: "
-                append comments "scenario_name ${scenario_name} , cp_duration_at_pm ${cp_duration_at_pm} , cp_cost_at_pm ${cp_cost_at_pm} ,"
+                append comments "scenario_name ${scenario_name} , cp_duration_at_pm ${cp_duration} , cp_cost_pm ${cp_cost} ,"
                 append comments "max_act_count_per_track ${act_path_count_max} , time_probability_moment ${t_moment} , cost_probability_moment ${c_moment} ,"
                 append comments "setup_time ${setup_diff_secs} , main_processing_time ${time_diff_secs} seconds , time/date finished processing $p1_arr(the_time) "
                 
