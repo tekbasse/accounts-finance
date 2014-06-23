@@ -27,3 +27,14 @@ foreach type $type_list {
         }
     }
 }
+
+set eq_vars_lists [acc_fin::pretti_equation_vars]
+set eq_vars2_lists [list [list "Custom Equation Variable" "PRETTI Variable" "Description"]]
+foreach vars_list $eq_vars_lists {
+    set var0 [lindex $vars_list 0]
+    set var1 [lindex $vars_list 1]
+    set var2 [lindex $vars_list 2]
+    set row_lists [list "\$${var0}" $var1 $var2]
+    lappend eq_vars2_lists $row_lists
+}
+set eq_vars_html [qss_list_of_lists_to_html_table $eq_vars2_lists $table_attribute_list]

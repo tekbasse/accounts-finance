@@ -30,7 +30,7 @@ ad_proc -public acc_fin::pretti_equation_vars {
                       [list 7 activity_time_expected "Expected duration of an activity"] \
                       [list 8 act_cost_expected "Expected cost of an activity"] \
                       [list 9 trunk_cost "Expected cost of an activity and its dependents"] \
-                      [list 10 path_counter "Steps of a path from Critical Path based on PRETTI index"]
+                      [list 10 path_counter "Steps of a path from Critical Path based on PRETTI index"] ]
     return $vars_lol
 }
 
