@@ -1947,8 +1947,8 @@ ad_proc -public acc_fin::scenario_prettify {
                 set index_eq ""
                 # only allow + - / * $, logical comparisions > < == != and numbers.  $number converts to one of the available row numbers that returns a number from in p4 
                 regsub -nocase -all -- {[^\$\/\+\-\*\(\)\.\<\>\=\!\ 0-9]+} $p1_arr(index_equation) "" index_eq
-                # add extra spaces to help expr avoid misinterpretations
-                regsub -nocase -all -- {([\/\+\-\*\(\)])} $index_eq " \1 " index_eq
+                # add extra spaces to help expr avoid misinterpretations, but can't assume that for negative numbers vs. minus sign
+                regsub -nocase -all -- {([\/\+\*\(\)])} $index_eq " \1 " index_eq
                 # get rid of extra spaces
                 regsub -nocase -all -- {[ ]+} $index_eq " " index_eq
                 set vars_list [list ]
@@ -2032,12 +2032,13 @@ ad_proc -public acc_fin::scenario_prettify {
     # through program set-up at this time.
     set p3_type_list $p3_larr(type)
     set p2_task_type_list $p2_larr(aid_type)
+    set activities_list $p2_larr(activity_ref)
 
     foreach constant $constants_woc_list {
         if { [llength $p2_larr(aid_type) ] > 0 && [llength $p3_larr($constant)] > 0 } {
             set i 0
             set p2_col_list $p2_larr($constant)
-            foreach act $p2_larr(activity_ref) {
+            foreach act $activities_list {
                 set p2_value [lindex $p2_col_list $i]
                 if { $p2_value eq "" } {
                     set ii [lsearch -exact $p3_type_list [lindex $p2_task_type_list $i]]
@@ -2054,7 +2055,7 @@ ad_proc -public acc_fin::scenario_prettify {
 
     #  Expand p2_larr to include dependent activities with coefficients.
     #  by appending new definitions of tasks that don't yet have defined coefficients.
-    set activities_list $p2_larr(activity_ref)
+
 
     ns_log Notice "acc_fin::scenario_prettify.1529: scenario '$scenario_tid' activities_list '${activities_list}'"     
     ns_log Notice "acc_fin::scenario_prettify.1531: scenario '$scenario_tid' p2_larr(dependent_tasks) '$p2_larr(dependent_tasks)'"   
@@ -2211,7 +2212,7 @@ ad_proc -public acc_fin::scenario_prettify {
                 array unset path_cost_arr
                 array unset depnc_eq_arr
                 
-                foreach act $p2_larr(activity_ref) {
+                foreach act $activities_list {
                     # first paths are single activities, so following line of code doesn't seem significant.
                     # It's just here so that internal representation is consistent.
                     set act_list [list $act]
@@ -2262,7 +2263,7 @@ ad_proc -public acc_fin::scenario_prettify {
                 array unset dependencies_larr
                 array unset act_calculated_p_larr
 
-                foreach act $p2_larr(activity_ref) {
+                foreach act $activities_list {
                     #   depnc: comma list of activity's dependencies
                     set depnc [lindex $p2_larr(dependent_tasks) $i]
                     set t_dc_source_arr($act) [lindex $p2_larr(_tDcSource) $i ]
@@ -2321,7 +2322,7 @@ ad_proc -public acc_fin::scenario_prettify {
                 array unset subtrees_larr
                 array unset path_tree_p_arr
                 set all_paths_calculated_p 0
-                set activity_count [llength $p2_larr(activity_ref)]
+                set activity_count [llength $activities_list]
                 set i 0
                 set act_seq_list_arr(${sequence_1}) [list ]
                 #   act_count_of_seq_arr( sequence_number) is the count of activities at this sequence number
@@ -2331,7 +2332,7 @@ ad_proc -public acc_fin::scenario_prettify {
                 
                 while { !$all_paths_calculated_p && $activity_count > $i } {
                     set all_paths_calculated_p 1
-                    foreach act $p2_larr(activity_ref) {
+                    foreach act $activities_list {
 
                         set dependencies_met_p 1
                         foreach dep $dependencies_larr($act) {
@@ -2435,7 +2436,7 @@ ad_proc -public acc_fin::scenario_prettify {
                 
                 
                 set all_deps_met_p 1
-                foreach act $p2_larr(activity_ref) {
+                foreach act $activities_list {
                     set dependencies_met_p 1
                     foreach dep $dependencies_larr($act) {
                         ns_log Notice "acc_fin::scenario_prettify.2409: dep $dep act_calculated_p_larr($dep) '$act_calculated_p_larr($dep)' len \$dep [string length $dep]"
@@ -2454,7 +2455,8 @@ ad_proc -public acc_fin::scenario_prettify {
 
                 #   paths_lists is a list of (full paths, subtotal duration, subtotal cost)
                 set paths_lists [list ]
-                foreach act $p2_larr(activity_ref) {
+                set paths_idx 0
+                foreach act $activities_list {
                     # Remove partial tracks from subtrees by placing only paths in paths_lists
                     if { $path_tree_p_arr($act) } {
                         # subtrees_larr($act) is a tree of full paths here.
@@ -2462,7 +2464,12 @@ ad_proc -public acc_fin::scenario_prettify {
                         foreach path_list $subtrees_larr($act) {
                             # build a sortable list
                             set row_list [list ]
-                            lappend row_list $path_list
+
+                            # paths_lists 0
+                            lappend row_list $paths_idx
+
+                            set paths_arr(${path_idx}) $path_list
+                            incr paths_idx
                             if { !$error_time } {
                                 # calculate no-float,no-lag duration for each path
                                 set path_duration  0.
@@ -2479,7 +2486,9 @@ ad_proc -public acc_fin::scenario_prettify {
                             } else {
                                 set path_duration ""
                             }
+                            # paths_lists 1
                             lappend row_list $path_duration
+
                             if { !$error_cost } {
                                 # calculate cost for each path. 
                                 set path_cost 0.
@@ -2497,21 +2506,45 @@ ad_proc -public acc_fin::scenario_prettify {
                             } else {
                                 set path_cost ""
                             }
+                            # paths_lists 2
                             lappend row_list $path_cost
-                            # if duration and cost are unavailble, list will be sorted by longest path..
+
+                            # if duration and cost are unavailable, list will be sorted by longest path..
+                            # paths_lists 3
                             lappend row_list [llength $path_list ]
+
                             set path_len_w_coef 0
                             foreach pa $path_list {
                                 incr path_len_w_coef $act_coef($pa)
                             }
+                            # paths_lists 4
                             lappend row_list $path_len_w_coef
+
+                            # calculate custom equation for custom CP?
+                            set index_custom ""
+                            if { !$error_fail && $index_eq ne "" } {
+                                if { [catch {
+                                    set index_custom [expr { $index_eq } ]
+                                } _error_text]} {
+                                    set error_fail 1
+                                    ns_log Warning "acc_fin::scenario_prettify.2646: scenario '$scenario_tid' act '$act' index_eq '${index_eq}'"
+                                    acc_fin::pretti_log_create $scenario_tid "${act}" "calculation" "There was an error in calculation '${index_eq}' of custom equation for PRETTI index (ref2646). Error text is '${_error_text}'" $user_id $instance_id
+                                }
+                            }
+                            # paths_lists 5
+                            lappend row_list $index_custom
+
                             lappend paths_lists $row_list
                         }
                     }
                 }
+                set paths_count_max [expr { $paths_idx - 1 } ]
                 # paths_list: (list path_list duration cost length)
+                if { !$error_fail && $index_eq ne "" } {
+                    # sort by custom created index
+                    set paths_sort1_lists [lsort -decreasing -real -index 5 $paths_lists]
 
-                if { !$error_time } {
+                } elseif { !$error_time } {
 
                     # sort by path duration
                     # critical path is the longest path. Float is the difference between CP and next longest CP.
@@ -2543,33 +2576,34 @@ ad_proc -public acc_fin::scenario_prettify {
                 # act_freq_in_load_cp_alts_arr counts number of times an activity appears in all paths
                 # determine act_freq_in_load_cp_alts_arr(activity)
                 # Initialize
-                foreach act $p2_larr(activity_ref) {
+                foreach act $activities_list {
                     set act_freq_in_load_cp_alts_arr($act) 0
                 }
                 foreach path_list $paths_lists {
-                    foreach act $path2_list {
+                    foreach act $path_list {
                         incr act_freq_in_load_cp_alts_arr($act) act_coef($act)
                     }
                 }
                 
                 # Make a list of activities sorted by popularity (appearing in the most paths)
                 set act_count_list [list ]
-                foreach act $p2_larr(activity_ref) {
+                foreach act $activities_list {
                     lappend act_count_list [list $act $act_freq_in_load_cp_alts_arr($act)]
                 }
-                set act_path_count_sorted_list [lsort -decreasing -integer -index 1 $act_path_count_list]
-                set act_path_count_median_pos [expr { [llength $paths_sort1_lists] / 2 } + 1 ]
-                set act_path_count_max [lindex [lindex $act_path_count_sorted_list 0] 1]
-                set act_path_count_median [lindex [lindex $act_path_count_sorted_list $act_path_count_median_pos] 1]
+                set activities_sorted_list [lsort -decreasing -integer -index 1 $act_count_list]
+                set act_ath_count_median_pos [expr { int( $paths_count_max / 2. } + 1. ) ]
+                set act_path_count_max [lindex [lindex $activities_sorted_list 0] 1]
+                set act_path_count_median [lindex [lindex $activities_sorted_list $act_path_count_median_pos] 1]
 
                 # Critical Path (CP) is: 
-                set cp_row_list [lindex $paths_sort1_lists 0]
+                set paths_cp_idx [lindex $paths_sort1_lists 0]
+                set cp_row_list $paths_arr($paths_cp_idx)
                 set cp_list [lindex $cp_row_list 0]
                 set cp_duration [lindex $cp_row_list 1]
                 set cp_cost [lindex $cp_row_list 2]
                 set cp_len [lindex $cp_row_list 3]
-                
-                foreach act $p2_larr(activity_ref) {
+#### reviewed to here. except curve_import needs to insert the feedback on how cost and duration curves are chosen.                
+                foreach act $activities_list {
                     set on_critical_path_p_arr($act) [expr { [lsearch -exact $cp_list $act] > -1 } ]
                     set count_on_cp_p_arr($act) [expr { $on_critical_path_p_arr($act) * $act_coef($act) } ]
                 }
@@ -2603,15 +2637,6 @@ ad_proc -public acc_fin::scenario_prettify {
                         incr act_count_on_cp $count_on_cp_arr($act)
                         set has_direct_dependency_p [expr { $path_act_counter > 1 } ]
                         set on_a_sig_path_p [expr { $act_freq_in_load_cp_alts_arr($act) > $act_path_count_median } ]
-                        if { !$error_fail && $index_eq ne "" } {
-                            if { [catch {
-                                set index_custom [expr { $index_eq } ]
-                            } _error_text]} {
-                                set error_fail 1
-                                ns_log Warning "acc_fin::scenario_prettify.2646: scenario '$scenario_tid' act '$act' index_eq '${index_eq}'"
-                                acc_fin::pretti_log_create $scenario_tid "${act}" "calculation" "There was an error in calculation '${index_eq}' of custom equation for PRETTI index (ref2646). Error text is '${_error_text}'" $user_id $instance_id
-                            }
-                        }
 
                         #  0 activity_ref
                         #  1 path_len                  count of activities in path --was act count in tree activity_seq_num_arr() 
