@@ -2536,22 +2536,8 @@ ad_proc -public acc_fin::scenario_prettify {
                             ## path_len_w_coef_arr is total number of activities in a path (with coefficients)
                             set path_len_w_coef_arr(${path_idx})
                             lappend row_list $path_len_w_coef
-
-                            # calculate custom equation for custom CP?
-                            ## index_custom is value of custom index equation index_eq, or empty string
-                            set index_custom ""
-                            if { !$error_fail && $index_eq ne "" } {
-                                if { [catch {
-                                    set index_custom [expr { $index_eq } ]
-                                } _error_text]} {
-                                    set error_fail 1
-                                    ns_log Warning "acc_fin::scenario_prettify.2646: scenario '$scenario_tid' act '$act' index_eq '${index_eq}'"
-                                    acc_fin::pretti_log_create $scenario_tid "${act}" "calculation" "There was an error in calculation '${index_eq}' of custom equation for PRETTI index (ref2646). Error text is '${_error_text}'" $user_id $instance_id
-                                }
-                            }
-                            # paths_lists 5
-                            lappend row_list $index_custom
-
+                            # adding empty list incase of index_custom later
+                            lappend row_list ""
                             lappend paths_lists $row_list
                             incr paths_idx
                         }
@@ -2559,13 +2545,9 @@ ad_proc -public acc_fin::scenario_prettify {
                 }
                 ## paths_count_max is the number of paths ie length of paths_list
                 set paths_count_max [expr { $paths_idx - 1 } ]
-                # paths_list: (list path_list duration cost length)
-                if { !$error_fail && $index_eq ne "" } {
-                    # sort by custom created index
-                    set paths_sort1_lists [lsort -decreasing -real -index 5 $paths_lists]
+                ## paths_list: (list path_arr_idx duration cost length length_w_coefs )
 
-                } elseif { !$error_time } {
-
+                if { !$error_time } {
                     # sort by path duration
                     # critical path is the longest path. Float is the difference between CP and next longest CP.
                     # create an array of paths from longest to shortest duration to help build base table
@@ -2589,13 +2571,13 @@ ad_proc -public acc_fin::scenario_prettify {
                     set paths_sort1_lists [lsort -decreasing -integer -index 4 $paths_lists]
                     
                 }
+                ## paths_sort1_lists is paths_list sorted by index used to calc CP
 
                 # Extract most significant CP alternates for a focused table
                 # by counting the number of times an act is used in the largest proportion (first half) of paths in path_set_dur_sort1_list
                 
-                # act_freq_in_load_cp_alts_arr counts number of times an activity appears in all paths
+                ## act_freq_in_load_cp_alts_arr(act) counts number of times an activity appears in all paths (including coefficients)
                 # determine act_freq_in_load_cp_alts_arr(activity)
-                # Initialize
                 foreach act $activities_list {
                     set act_freq_in_load_cp_alts_arr($act) 0
                 }
@@ -2604,16 +2586,27 @@ ad_proc -public acc_fin::scenario_prettify {
                         incr act_freq_in_load_cp_alts_arr($act) act_coef($act)
                     }
                 }
-                
+                # Still need to include activity with coefficients into ones without coefficients.
+                # For example, 8*a in a. If a were 5 and 8*a were 16 (2 times 8), a should be 16 + 5 = 21
+                set coefs_list [lsearch -regex -all -inline $activities_list {[^\*]+[\*][^\*]+} ]
+                foreach coef $coefs_list {
+                    set act_idx [string first "*" $coef]
+                    incr act_idx
+                    set act [string range $coef $act_idx end]
+                    incr act_freq_in_load_cp_alts_arr($act) act_coef($coef)
+                }
+
                 # Make a list of activities sorted by popularity (appearing in the most paths)
                 set act_count_list [list ]
                 foreach act $activities_list {
                     lappend act_count_list [list $act $act_freq_in_load_cp_alts_arr($act)]
+                    # initialize this variable where values defined in the next loop using activities_list
+                    set count_on_cp_p_arr($act) 0
                 }
-                set activities_sorted_list [lsort -decreasing -integer -index 1 $act_count_list]
+                set activities_popular_sort_list [lsort -decreasing -integer -index 1 $act_count_list]
                 set act_ath_count_median_pos [expr { int( $paths_count_max / 2. } + 1. ) ]
-                set act_count_max [lindex [lindex $activities_sorted_list 0] 1]
-                set act_count_median [lindex [lindex $activities_sorted_list $act_count_median_pos] 1]
+                set act_count_max [lindex [lindex $activities_popular_sort_list 0] 1]
+                set act_count_median [lindex [lindex $activities_popular_sort_list $act_count_median_pos] 1]
 
                 # Critical Path (CP) is: 
                 set paths_cp_idx [lindex $paths_sort1_lists 0]
@@ -2622,11 +2615,83 @@ ad_proc -public acc_fin::scenario_prettify {
                 set cp_duration [lindex $cp_row_list 1]
                 set cp_cost [lindex $cp_row_list 2]
                 set cp_len [lindex $cp_row_list 3]
-#### reviewed to here. except curve_import needs to insert the feedback on how cost and duration curves are chosen.                
+#### reviewed to here. except curve_import needs to insert the feedback on how cost and duration curves are chosen, and custom index vars set
                 foreach act $activities_list {
                     set on_critical_path_p_arr($act) [expr { [lsearch -exact $cp_list $act] > -1 } ]
-                    set count_on_cp_p_arr($act) [expr { $on_critical_path_p_arr($act) * $act_coef($act) } ]
+                    # adjustment required for count_on_cp_p_arr, if this activity has a coefficient
+                    if { $act_coef($act) > 1 } {
+                        set ac_idx [string first "*" $act]
+                        incr ac_idx -1
+                        set ac [string range $act $ac_idx end]
+                        # if activity has a coefficient, then root activity gets coefs, but activity counts 1 ie. swap coef values for this case
+                        set count_on_cp_p_arr($ac) [expr { $on_critical_path_p_arr($ac) * $act_coef($act) + $count_on_cp_p_arr($ac) } ]
+                        set count_on_cp_p_arr($act) [expr { $on_critical_path_p_arr($act) * $act_coef($ac) + $count_on_cp_arr($act) } ]
+                    } else {
+                        set count_on_cp_p_arr($act) [expr { $on_critical_path_p_arr($act) * $act_coef($act) + $count_on_cp_arr($act) } ]
+                    }
                 }
+                ## count_on_cp_p_arr(act) is the count of this activity on the critical path. coef activities are also accumulated as activity to handle expansions either way
+
+
+                # variables available for use with custom index equation
+                ## activity_count                    is length activities_list
+                ## act_count_of_seq_arr(sequence no) is the count of activities at this sequence number across all paths, 0 is first sequence number
+                ## act_seq_max                       is the maximum path length in context of sequence_number
+                ## path_len_arr(path_idx)            is length of a path in paths_lists with path_idx
+                ## path_len_w_coef_arr(path_idx)     is total number of activities in a path (with coefficients)
+                ## paths_count_max                   is the number of paths ie length of paths_list
+                ## paths_sort1_lists                 is paths_list sorted by index used to calc CP
+                ## act_freq_in_load_cp_alts_arr(act) counts number of times an activity appears in all paths (including coefficients)
+                ## count_on_cp_p_arr(act)            is the count of this activity on the critical path. coef activities are also accumulated as activity to handle expansions either way
+                
+                # other variables available at this point include:
+                ## error_fail                        is set to 1 if there has been an error that prevents continued processing
+                ## error_cost                        is set to 1 if there has been an error that prevents continued processing of costing aspects
+                ## error_time                        is set to 1 if there has been an error that prevents continued processing of time aspects
+                ## activities_list                   list of activities to process
+                ## dependencies_larr(act)            is a list of direct dependencies for each activity
+                ## act_time_expected_arr(act)        is the time expected to complete an activity
+                ## trunk_duration_arr(act_tree_list) is the time expected to complete an activity and its dependents
+                ## act_cost_expected_arr(act)        is the cost expected to complete an activity
+                ## path_cost_arr(act_tree_list)      is the cost expected to complete an activity and its dependents
+                ## t_dc_source_arr(act)              answers Q: what is source of time distribution curve?
+                ## c_dc_source_arr(act)              answers Q: what is source of cost distribution curve?
+                ## act_seq_num_arr(act)              is relative sequence number of an activity in it's path. First activity is 0
+                ## act_coef(act)                     is the coefficient of an activity. If activity is defined as a multiple of another activity, it is an integer greater than 1 otherwise 1.
+                ## trunk_duration_arr(act)           is duration of ptrack up to (and including) activity.
+                ## trunk_cost_arr(act)               is cost of all dependent ptrack plus cost of activity
+                ## path_tree_p_arr(act)              answers question: is this tree of ptracks complete (ie not a subset of another track or tree)?
+                ## dependents_count_arr(act)         is count number of activities in each subtree, not including the activity itself.
+                ## index_custom                      is value of custom index equation index_eq, or empty string
+                ## paths_list:                       (list path_arr_idx duration cost length length_w_coefs index_custom)
+                
+                if { !$error_fail && $index_eq ne "" } {
+                    # resort paths_sort1_lists using index_custom
+                    # calculate custom equation for custom sort?
+                    ## index_custom is value of custom index equation index_eq, or empty string
+                    set path2_lists [list ]
+                    foreach path_list $paths_sort1_lists {
+                        set row_list [list ]
+                        foreach attr $path_list {
+                            lappend row_list $attr
+                        }
+                        set index_custom ""
+                        if { [catch {
+                            set index_custom [expr { $index_eq } ]
+                        } _error_text]} {
+                            set error_fail 1
+                            ns_log Warning "acc_fin::scenario_prettify.2646: scenario '$scenario_tid' act '$act' index_eq '${index_eq}'"
+                            acc_fin::pretti_log_create $scenario_tid "${act}" "calculation" "There was an error in calculation '${index_eq}' of custom equation for PRETTI index (ref2646). Error text is '${_error_text}'" $user_id $instance_id
+                        }
+                    
+                        # paths_lists 5
+                        lappend row_list $index_custom
+                    }
+                    # sort by custom created index
+                    set paths_sort2_lists [lsort -decreasing -real -index 5 $path2_lists]
+                    unset path2_lists
+                }
+
                 # # # build base table
                 ns_log Notice "acc_fin::scenario_prettify.2468: scenario '$scenario_tid' Build base report table."
                 
