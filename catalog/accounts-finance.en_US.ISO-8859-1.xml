@@ -62,7 +62,7 @@
 <msg key="db_format_def">A format to use for a report.</msg>
 <msg key="delete">Delete</msg>
 <msg key="delete_all">Delete All</msg>
-<msg key="dependencies_count">Dependencies count.</msg>
+<msg key="dependencies_count">Dependencies count</msg>
 <msg key="dependencies_count_def">Count of all dependencies.</msg>
 <msg key="dependencies_q">Has Dependencies?</msg>
 <msg key="dependencies_q_def">Answers question about an activity. 1 is yes, 0 is no.</msg>
