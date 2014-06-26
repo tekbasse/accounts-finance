@@ -719,14 +719,25 @@ ad_proc -private acc_fin::pretti_columns_list {
             set ret_list [list track_1]
         }
         p50 {
-            # each row is a cell, in format of detailed PRETTI internal output. See code. All columns are required to reproduce output to p4 (including p4 comments).
-
-            set ret_list [list activity_ref path_act_counter path_counter dependencies_q cp_q significant_q popularity waypoint_duration activity_time direct_dependencies activity_cost waypoint_cost]
+            # each row is a cell (ie activity on a path), in format of detailed PRETTI internal output. See code. 
+            #set ret_list [list activity_ref path_act_counter path_counter dependencies_q cp_q significant_q popularity waypoint_duration activity_time direct_dependencies activity_cost waypoint_cost]
+            set ret_list [list activity_ref activity_counter dependencies_q direct_dependencies dependencies_tot count_on_cp_p act_freq_in_load_cp_alts popularity activity_time waypoint_duration t_dc_source activity_cost waypoint_cost c_dc_source act_coef]
         }
         p51 {
-            # each row is a cell, in format of detailed PRETTI internal output. See code. 
-            set ret_list [list activity_ref path_act_counter path_counter dependencies_q cp_q significant_q popularity waypoint_duration activity_time direct_dependencies activity_cost waypoint_cost path_col activity_seq dependents_count dep_act_seq ]
+            # each row is a cell (ie activity on a path), in format of detailed PRETTI internal output. See code. 
+            # p5 was:
+            #set ret_list [list activity_ref path_act_counter path_counter dependencies_q cp_q significant_q popularity waypoint_duration activity_time direct_dependencies activity_cost waypoint_cost path_col activity_seq dependents_count dep_act_seq ]
+            set ret_list [list activity_ref activity_counter dependencies_q direct_dependencies dependencies_count count_on_cp_p act_freq_in_load_cp_alts popularity activity_time waypoint_duration t_dc_source activity_cost waypoint_cost c_dc_source act_coef]
         }
+        p60 {
+            # each row is a path, in format of detailed PRETTI internal output. See code. All columns are required to reproduce output to p4 (including p4 comments).
+            set ret_list [list path_idx path_counter cp_q significant_q path_duration path_cost index_custom]
+        }
+        p61 {
+            # each row is a path, in format of detailed PRETTI internal output. See code. All columns are required to reproduce output to p4 (including p4 comments).
+            set ret_list [list path_idx path_counter cp_q significant_q path_duration path_cost index_custom]
+        }
+
         dc0 {
             # dc2 distribution curve table
             #                   Y         where Y = f(x) and f(x) is a 
@@ -2753,25 +2764,28 @@ ad_proc -public acc_fin::scenario_prettify {
                 ## path_len_arr(path_idx)            is length of a path in paths_lists with path_idx
                 ## path_len_w_coef_arr(path_idx)     is total number of activities in a path (with coefficients)
                 ## paths_list:                       (list path_arr_idx duration cost length length_w_coefs index_custom)
-
-                # constant per activity:
-
-                ## dependencies_larr(act)            is a list of direct dependencies for each activity
-                ## act_time_expected_arr(act)        is the time expected to complete an activity
-                ## trunk_duration_arr(act_tree_list) is the time expected to complete an activity and its dependents
-                ## act_cost_expected_arr(act)        is the cost expected to complete an activity
-                ## path_cost_arr(act_tree_list)      is the cost expected to complete an activity and its dependents
-                ## t_dc_source_arr(act)              answers Q: what is source of time distribution curve?
-                ## c_dc_source_arr(act)              answers Q: what is source of cost distribution curve?
-                ## act_seq_num_arr(act)              is relative sequence number of an activity in it's path. First activity is 0
-                ## act_coef(act)                     is the coefficient of an activity. If activity is defined as a multiple of another activity, it is an integer greater than 1 otherwise 1.
-                ## trunk_duration_arr(act)           is duration of ptrack up to (and including) activity.
-                ## trunk_cost_arr(act)               is cost of all dependent ptrack plus cost of activity
-                ## path_tree_p_arr(act)              answers question: is this tree of ptracks complete (ie not a subset of another track or tree)?
-                ## dependents_count_arr(act)         is count number of activities in each subtree, not including the activity itself.
                 ## index_custom                      is value of custom index equation index_eq, or empty string
+
+                # constant per activity: activity_ref from activities_list
+
+                #
+                ## act_seq_num_arr(act)              is relative sequence number of an activity in it's path. First activity is 0
+                ## dependencies_larr(act)            is a list of direct dependencies for each activity
+                ## dependents_count_arr(act)         is count number of activities in each subtree, not including the activity itself.
                 ## count_on_cp_p_arr(act)            Answers Q: How many of this activity is on the critical path. coef activities are also accumulated as activity to handle expansions either way
                 ## act_freq_in_load_cp_alts_arr(act) counts number of times an activity appears in all paths (including coefficients)
+                ## act_time_expected_arr(act)        is the time expected to complete an activity
+                ## trunk_duration_arr(act)           is duration of ptrack up to (and including) activity.
+                ## t_dc_source_arr(act)              answers Q: what is source of time distribution curve?
+                ## act_cost_expected_arr(act)        is the cost expected to complete an activity
+                ## trunk_cost_arr(act)               is cost of all dependent ptrack plus cost of activity
+                ## c_dc_source_arr(act)              answers Q: what is source of cost distribution curve?
+                ## act_coef(act)                     is the coefficient of an activity. If activity is defined as a multiple of another activity, it is an integer greater than 1 otherwise 1.
+
+                ## path_tree_p_arr(act)              answers question: is this tree of ptracks complete (ie not a subset of another track or tree)?
+                ## trunk_duration_arr(act_tree_list) is the time expected to complete an activity and its dependents
+                ## path_cost_arr(act_tree_list)      is the cost expected to complete an activity and its dependents
+
 
                 # other
 
@@ -2779,6 +2793,7 @@ ad_proc -public acc_fin::scenario_prettify {
                 ## act_seq_max                       is the maximum path length in context of sequence_number
 
                 # Build an audit/feedback table list of lists, where each row is an activity
+                # p5 are activities, and p6 are paths. a path key is shared between p5 and p6 tables
                 set p5_lists [list ]
                 set p5_titles_list [acc_fin::pretti_columns_list p5 1]
                 set path_counter 0
@@ -2828,7 +2843,7 @@ ad_proc -public acc_fin::scenario_prettify {
                 }
                 
                 # # # PRETTI p5_lists built 
-                #### should p5 be activities, and p6 be paths? with a path key shared?
+
 
                 # # # build p4
                         
