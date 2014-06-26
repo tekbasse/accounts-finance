@@ -2738,19 +2738,26 @@ ad_proc -public acc_fin::scenario_prettify {
 
                 # variables available at this point include:
 
-                ## activity_count                    is length activities_list
-                ## path_len_arr(path_idx)            is length of a path in paths_lists with path_idx
-                ## path_len_w_coef_arr(path_idx)     is total number of activities in a path (with coefficients)
-                ## paths_count                   is the number of paths ie length of paths_list
+                # constant per project or run:
 
+                ## activities_list                   list of activities to process
+                ## activity_count                    is length activities_list
+                ## paths_count                   is the number of paths ie length of paths_list
                 ## error_fail                        is set to 1 if there has been an error that prevents continued processing
                 ## error_cost                        is set to 1 if there has been an error that prevents continued processing of costing aspects
                 ## error_time                        is set to 1 if there has been an error that prevents continued processing of time aspects
-                ## activities_list                   list of activities to process
+                ## paths_sort1_lists                 is paths_list sorted by index used to calc CP
+
+                # constant per path:
+
+                ## path_len_arr(path_idx)            is length of a path in paths_lists with path_idx
+                ## path_len_w_coef_arr(path_idx)     is total number of activities in a path (with coefficients)
+                ## paths_list:                       (list path_arr_idx duration cost length length_w_coefs index_custom)
+
+                # constant per activity:
+
                 ## dependencies_larr(act)            is a list of direct dependencies for each activity
                 ## act_time_expected_arr(act)        is the time expected to complete an activity
-                ## act_count_of_seq_arr(sequence no) is the count of activities at this sequence number across all paths, 0 is first sequence number
-                ## act_seq_max                       is the maximum path length in context of sequence_number
                 ## trunk_duration_arr(act_tree_list) is the time expected to complete an activity and its dependents
                 ## act_cost_expected_arr(act)        is the cost expected to complete an activity
                 ## path_cost_arr(act_tree_list)      is the cost expected to complete an activity and its dependents
@@ -2763,10 +2770,13 @@ ad_proc -public acc_fin::scenario_prettify {
                 ## path_tree_p_arr(act)              answers question: is this tree of ptracks complete (ie not a subset of another track or tree)?
                 ## dependents_count_arr(act)         is count number of activities in each subtree, not including the activity itself.
                 ## index_custom                      is value of custom index equation index_eq, or empty string
-                ## paths_list:                       (list path_arr_idx duration cost length length_w_coefs index_custom)
-                ## paths_sort1_lists                 is paths_list sorted by index used to calc CP
-                ## count_on_cp_p_arr(act)            is the count of this activity on the critical path. coef activities are also accumulated as activity to handle expansions either way
+                ## count_on_cp_p_arr(act)            Answers Q: How many of this activity is on the critical path. coef activities are also accumulated as activity to handle expansions either way
                 ## act_freq_in_load_cp_alts_arr(act) counts number of times an activity appears in all paths (including coefficients)
+
+                # other
+
+                ## act_count_of_seq_arr(sequence no) is the count of activities at this sequence number across all paths, 0 is first sequence number
+                ## act_seq_max                       is the maximum path length in context of sequence_number
 
                 # Build an audit/feedback table list of lists, where each row is an activity
                 set p5_lists [list ]
@@ -2815,54 +2825,56 @@ ad_proc -public acc_fin::scenario_prettify {
                         set activity_list [list $act $path_len $has_direct_dependency_p $on_critical_path_p_arr($act) $on_a_sig_path_p $act_freq_in_load_cp_alts_arr($act) $trunk_duration_arr($act) $act_time_expected_arr($act) $dependencies_larr($act) $act_cost_expected_arr($act) $trunk_cost_arr($act) $path_counter $path_act_counter $dependents_count_arr($act) $act_seq_num_arr($act) $t_dc_source_arr($act) $c_dc_source_arr($act) ]
                         lappend p5_lists $activity_list
                     }
-
-
                 }
                 
-                # # # PRETTI sorts
-                ns_log Notice "acc_fin::scenario_prettify.2504: scenario '$scenario_tid' PRETTI sorts."
+                # # # PRETTI p5_lists built 
+                #### should p5 be activities, and p6 be paths? with a path key shared?
 
-                # primary sort
-                if { !$error_time } {
-                    # critical path is the longest expected duration of dependent activities
-                    # sort by path duration descending
-                    set primary_sort_lists [lsort -decreasing -real -index 6 $p5_lists]
-                } elseif { !$error_cost } {
-                    # critical path is largest cost..
-                    set primary_sort_lists [lsort -decreasing -real -index n $second_sort_lists]
-                } else {
-                    # critical path is longest path
-                    set primary_sort_lists []
-                }
-                ns_log Notice "acc_fin::scenario_prettify.2516: scenario '$scenario_tid' primary_sort_lists $primary_sort_lists"
-
-
-
-                        # build p4
+                # # # build p4
                         
-                        
-                        #  0 path_list
-                        # 16 path_duration
-                    # 17 path_cost
-                        # path_len
-                        #   path_len_w_coefs
-                        
-                        #  1 path_act_counter                    count of activities in path --was act count in tree activity_seq_num_arr() 
-                        #  2 act_pct_on_cp               Q: percent by count of this path's activities on the CP. CP = 100%
-                        #  3 cost_ratio               path_cost / cp_cost       Q: percent of this path's cost over total projected cost.
-                        #  4 on_critical_path_p          Q: Is this the CP?
-                    #  5 duration_ratio           path_duration / cp_duration Q: percent of this path's duration on the CP. CP = 100%
-                   
-                    #  7 trunk_duration_arr          track duration
-                    #  8 activity_time_expected      time expected of this activity
-                    #  9 dependencies_larr           direct activity dependencies
-                    # 10 act_cost_expected_arr       cost to complete activity
-                    # 11 trunk_cost_arr              cost to complete path (including all path dependents)
-                    # 12 path_counter
-     
-                    # 14 dependents_count_arr        count of dependent activities (in subtrees) --not inclusive of activity itself.
-                    # 15 dep_act_seq                 activity sequence considering all dependent activities. activity_seq_num_arr()
-
+                # p4_lol consists of first row (a list item):
+                # (list track_1 track_2 track_3 ... track_N )
+                # subsequent rows (list items):
+                # (list cell_r1c1 cell_r1c2 cell_r1c3 ... cellr1cN )
+                # ...
+                # (list cell_rMc1 cell_rMc2 cell_rMc3 ... cellrMcN )
+                # for N tracks of a maximum of M rows.
+                # Each cell is an activity.
+                # Each column is a track
+                # Track_1 is CP
+                
+                # empty cells have empty string value.
+                # other cells will contain comment format from acc_fin::scenario_prettify
+                # "$activity "
+                # "t:[lindex $track_list 7] "
+                # "ts:[lindex $track_list 6] "
+                # "c:[lindex $track_list 9] "
+                # "cs:[lindex $track_list 10] "
+                # "d:($depnc_larr(${activity})) "
+                # "<!-- [lindex $track_list 4] [lindex $track_list 5] --> "
+                #####################        
+                #  0 path_list
+                # 16 path_duration
+                # 17 path_cost
+                # path_len
+                #   path_len_w_coefs
+                
+                #  1 path_act_counter                    count of activities in path --was act count in tree activity_seq_num_arr() 
+                #  2 act_pct_on_cp               Q: percent by count of this path's activities on the CP. CP = 100%
+                #  3 cost_ratio               path_cost / cp_cost       Q: percent of this path's cost over total projected cost.
+                #  4 on_critical_path_p          Q: Is this the CP?
+                #  5 duration_ratio           path_duration / cp_duration Q: percent of this path's duration on the CP. CP = 100%
+                
+                #  7 trunk_duration_arr          track duration
+                #  8 activity_time_expected      time expected of this activity
+                #  9 dependencies_larr           direct activity dependencies
+                # 10 act_cost_expected_arr       cost to complete activity
+                # 11 trunk_cost_arr              cost to complete path (including all path dependents)
+                # 12 path_counter
+                
+                # 14 dependents_count_arr        count of dependent activities (in subtrees) --not inclusive of activity itself.
+                # 15 dep_act_seq                 activity sequence considering all dependent activities. activity_seq_num_arr()
+                
 
                     # 18 index_eq_value
                     #### how do activity stats fit in context with creating html?  Rebuild p4 in context similar to p5 (ie inside act loop).
@@ -2871,26 +2883,6 @@ ad_proc -public acc_fin::scenario_prettify {
                     set path_x_list [list $path_list $path_duration $path_cost $path_len $has_direct_dependency_p $on_critical_path_p $on_a_sig_path_p $act_freq_in_load_cp_alts_arr($act) $trunk_duration_arr($act) $act_time_expected_arr($act) $dependencies_larr($act) $act_cost_expected_arr($act) $trunk_cost_arr($act) $path_counter $path_act_counter $dependents_count_arr($act) $act_seq_num_arr($act) ]
                     lappend path_expanded_lists $path_x_list
 
-    # p4_lol consists of first row (a list item):
-    # (list track_1 track_2 track_3 ... track_N )
-    # subsequent rows (list items):
-    # (list cell_r1c1 cell_r1c2 cell_r1c3 ... cellr1cN )
-    # ...
-    # (list cell_rMc1 cell_rMc2 cell_rMc3 ... cellrMcN )
-    # for N tracks of a maximum of M rows.
-    # Each cell is an activity.
-    # Each column is a track
-    # Track_1 is CP
-
-    # empty cells have empty string value.
-    # other cells will contain comment format from acc_fin::scenario_prettify
-    # "$activity "
-    # "t:[lindex $track_list 7] "
-    # "ts:[lindex $track_list 6] "
-    # "c:[lindex $track_list 9] "
-    # "cs:[lindex $track_list 10] "
-    # "d:($depnc_larr(${activity})) "
-    # "<!-- [lindex $track_list 4] [lindex $track_list 5] --> "
 
 
 
