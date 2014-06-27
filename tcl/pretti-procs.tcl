@@ -731,11 +731,11 @@ ad_proc -private acc_fin::pretti_columns_list {
         }
         p60 {
             # each row is a path, in format of detailed PRETTI internal output. See code. All columns are required to reproduce output to p4 (including p4 comments).
-            set ret_list [list path_idx path_counter cp_q significant_q path_duration path_cost index_custom]
+            set ret_list [list path_idx path path_counter cp_q significant_q path_duration path_cost index_custom]
         }
         p61 {
             # each row is a path, in format of detailed PRETTI internal output. See code. All columns are required to reproduce output to p4 (including p4 comments).
-            set ret_list [list path_idx path_counter cp_q significant_q path_duration path_cost index_custom]
+            set ret_list [list path_idx path path_counter cp_q significant_q path_duration path_cost index_custom]
         }
 
         dc0 {
@@ -2741,6 +2741,7 @@ ad_proc -public acc_fin::scenario_prettify {
                         }
                     
                         # paths_lists 5
+                        # set index_custom_arr(${path_idx})
                         lappend row_list $index_custom
                     }
                     if { !$error_fail } {
@@ -2777,10 +2778,12 @@ ad_proc -public acc_fin::scenario_prettify {
                 ## path_len_w_coef_arr(path_idx)     is total number of activities in a path (with coefficients)
                 ## paths_list:                       (list path_arr_idx duration cost length length_w_coefs index_custom)
                 ## index_custom                      is value of custom index equation index_eq, or empty string
+                ## path_counter_arr(path_idx)
+                ## a_sig_path_p_arr(path_idx)
+                ## act_cp_ratio(path_idx)
 
                 # constant per activity: activity_ref from activities_list
 
-                #
                 ## act_seq_num_arr(act)              is relative sequence number of an activity in it's path. First activity is 0
                 ## dependencies_larr(act)            is a list of direct dependencies for each activity
                 ## dependents_count_arr(act)         is count number of activities in each subtree, not including the activity itself.
@@ -2811,20 +2814,24 @@ ad_proc -public acc_fin::scenario_prettify {
                 # p5 are activities, and p6 are paths. a path key is shared between p5 and p6 tables
                 set p5_lists [list ]
                 set p5_titles_list [acc_fin::pretti_columns_list p5 1]
-                set path_counter 0
-                set index_custom ""
+                lappend p5_lists $p5_titles_list
+                set p6_lists [list ]
+                set p6_titles_list [acc_fin::pretti_columns_list p6 1]
+                lappend p6_lists $p6_titles_list
+
                 foreach path_idx_dur_len_list $paths_sort1_lists {
-                    incr path_counter
                     set path_idx [lindex $path_idx_dur_len_list 0]
                     set path_list $paths_arr(${path_idx})
+                    set path_counter $path_counter_arr(${path_idx})
+                    set a_sig_path_p $a_sig_path_p_arr(${path_idx})
+                    set act_cp_ratio $act_cp_ratio_arr(${path_idx})
+#                    set index_custom $index_custom_arr(${path_idx})
                     set path_duration [lindex $path_idx_dur_len_list 1]
                     set path_cost [lindex $path_idx_dur_len_list 2]
                     set path_len [lindex $path_idx_dur_len_list 3]
                     set path_len_w_coefs [lindex $path_idx_dur_len_list 4]
-
-                    set act_cp_ratio [expr { $act_count_on_cp / $path_len_w_coefs } ]
-
-                    set path_act_counter 0
+                    set index_custom [lindex $path_idx_dur_len_list 5]
+                    set activity_counter 0
                     set act_count_on_cp 0
                     foreach act $path_list {
                         #set tree_act_cost_arr($act) $trunk_cost_arr($act)
@@ -2833,29 +2840,15 @@ ad_proc -public acc_fin::scenario_prettify {
                         set has_direct_dependency_p [expr { $path_act_counter > 1 } ]
                         set on_a_sig_path_p [expr { $act_freq_in_load_cp_alts_arr($act) > $act_count_median } ]
 
-                        #  0 activity_ref
-                        #  1 path_len                  count of activities in path --was act count in tree activity_seq_num_arr() 
-                        #  2 Q: Does this activity have any dependencies? ie predecessors
-                        #  3 Q: Is this the CP?
-                        #  4 Q: Is this activity referenced in more than a median number of times? on_a_sig_path_p
-                        #  5 act_freq_in_load_cp_alts  count of activity is in a path or track
-                        #  6 trunk_duration_arr        track duration
-                        #  7 activity_time_expected    time expected of this activity
-                        #  8 dependencies_larr         direct activity dependencies
-                        #  9 act_cost_expected_arr     cost to complete activity
-                        #  
-                        # 10 trunk_cost_arr            cost to complete path (including all path dependents)
-                        # 11 path_counter
-                        # 12 activity_seq              activity sequence number in path          
-                        # 13 dependents_count_arr      count of dependent activities (in subtrees) --not inclusive of activity itself.
-                        # 14 dep_act_seq               activity sequence considering all dependent activities. activity_seq_num_arr()
-                        # 16 t_dc_source_arr           source of duration distribution curve via curve_import
-                        # 17 c_dc_source_arr           source of cost distribution curve via curve_import
-
                         # base for p5
                         set activity_list [list $act $activity_counter $has_direct_dependency_p $dependencies_larr($act) [llength $dependencies_larr($act)] $on_critical_path_p_arr($act) $on_a_sig_path_p $act_freq_in_load_cp_alts_arr($act) $popularity_arr($act) $act_time_expected_arr($act) $trunk_duration_arr($act)  $act_cost_expected_arr($act) $trunk_cost_arr($act) $c_dc_source_arr($act) $act_coef($act) ]
                         lappend p5_lists $activity_list
                     }
+                    # base for p6
+                    #            set ret_list [list path_idx path path_counter cp_q significant_q path_duration path_cost index_custom]
+                    set cp_q [expr { $path_counter == 0 } ]
+                    set path_list [list $path_idx [join $path_list "."] $path_counter $cp_q $a_sig_path_p $path_duration $path_cost $index_custom ]
+                    lappend p6_lists $path_lst
                 }                
 
                 # # # build p4
