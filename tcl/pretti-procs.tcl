@@ -721,13 +721,13 @@ ad_proc -private acc_fin::pretti_columns_list {
         p50 {
             # each row is a cell (ie activity on a path), in format of detailed PRETTI internal output. See code. 
             #set ret_list [list activity_ref path_act_counter path_counter dependencies_q cp_q significant_q popularity waypoint_duration activity_time direct_dependencies activity_cost waypoint_cost]
-            set ret_list [list activity_ref activity_counter dependencies_q direct_dependencies dependencies_count count_on_cp_p act_freq_in_load_cp_alts popularity activity_time waypoint_duration t_dc_source activity_cost waypoint_cost c_dc_source act_coef]
+            set ret_list [list activity_ref activity_counter dependencies_q direct_dependencies dependencies_count count_on_cp_p on_a_sig_path_p act_freq_in_load_cp_alts popularity activity_time waypoint_duration t_dc_source activity_cost waypoint_cost c_dc_source act_coef]
         }
         p51 {
             # each row is a cell (ie activity on a path), in format of detailed PRETTI internal output. See code. 
             # p5 was:
             #set ret_list [list activity_ref path_act_counter path_counter dependencies_q cp_q significant_q popularity waypoint_duration activity_time direct_dependencies activity_cost waypoint_cost path_col activity_seq dependents_count dep_act_seq ]
-            set ret_list [list activity_ref activity_counter dependencies_q direct_dependencies dependencies_count count_on_cp_p act_freq_in_load_cp_alts popularity activity_time waypoint_duration t_dc_source activity_cost waypoint_cost c_dc_source act_coef]
+            set ret_list [list activity_ref activity_counter dependencies_q direct_dependencies dependencies_count count_on_cp_p on_a_sig_path_p act_freq_in_load_cp_alts popularity activity_time waypoint_duration t_dc_source activity_cost waypoint_cost c_dc_source act_coef]
         }
         p60 {
             # each row is a path, in format of detailed PRETTI internal output. See code. All columns are required to reproduce output to p4 (including p4 comments).
@@ -2837,7 +2837,7 @@ ad_proc -public acc_fin::scenario_prettify {
                         # 17 c_dc_source_arr           source of cost distribution curve via curve_import
 
                         # base for p5
-                        set activity_list [list $act $path_len $has_direct_dependency_p $on_critical_path_p_arr($act) $on_a_sig_path_p $act_freq_in_load_cp_alts_arr($act) $trunk_duration_arr($act) $act_time_expected_arr($act) $dependencies_larr($act) $act_cost_expected_arr($act) $trunk_cost_arr($act) $path_counter $path_act_counter $dependents_count_arr($act) $act_seq_num_arr($act) $t_dc_source_arr($act) $c_dc_source_arr($act) ]
+                        set activity_list [list $act $path_len $has_direct_dependency_p $dependencies_larr($act) [llength $dependencies_larr($act)] $on_critical_path_p_arr($act) $on_a_sig_path_p $act_freq_in_load_cp_alts_arr($act) xx$trunk_duration_arr($act) $act_time_expected_arr($act) $act_cost_expected_arr($act) $trunk_cost_arr($act) $path_counter $path_act_counter $dependents_count_arr($act) $act_seq_num_arr($act) $t_dc_source_arr($act) $c_dc_source_arr($act) ]
                         lappend p5_lists $activity_list
                     }
                 }

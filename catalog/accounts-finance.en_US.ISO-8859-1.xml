@@ -12,6 +12,8 @@
 <msg key="Save">Save</msg>
 <msg key="Save_">Save </msg>
 <msg key="Save_as_new">Save as new</msg>
+<msg key="a_sig_path_p">Significant Path?</msg>
+<msg key="a_sig_path_p_def">Answers question: Might this path be significant in context of a Critical Path?</msg>
 <msg key="act_coef">Activity Coefficient</msg>
 <msg key="act_coef_def">The number of times a base activity is processed, when an activity is defined as a multiple of another.</msg>
 <msg key="act_freq_in_load_cp_alts">Activity Run Count</msg>
@@ -88,6 +90,8 @@
 <msg key="name">Name</msg>
 <msg key="name_def">A unique word used as a reference as in a variable or table name.</msg>
 <msg key="new">New</msg>
+<msg key="on_a_sig_path_p">On a Significant Path?</msg>
+<msg key="on_a_sig_path_p_def">Answers question: Is this activity on a significant path?</msg>
 <msg key="path_counter">Path Counter</msg>
 <msg key="path_counter_def">A path sequence number for this report.</msg>
 <msg key="popularity">Popularity</msg>
