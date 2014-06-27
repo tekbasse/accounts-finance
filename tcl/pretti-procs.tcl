@@ -2652,6 +2652,9 @@ ad_proc -public acc_fin::scenario_prettify {
                     } else {
                         set count_on_cp_p_arr($act) [expr { $on_critical_path_p_arr($act) * $act_coef($act) + $count_on_cp_arr($act) } ]
                     }
+                    # set defaults for popularity_arr()
+                    ## popularity_arr(act) is the count of paths that an activity is in.
+                    set popularity_arr($act) 0
                 }
                 ## count_on_cp_p_arr(act) is the count of this activity on the critical path. coef activities are also accumulated as activity to handle expansions either way
 
@@ -2664,10 +2667,19 @@ ad_proc -public acc_fin::scenario_prettify {
                     set path_len_w_coefs [lindex $path_idx_dur_len_list 4]
                     set act_count_on_cp 0
                     set a_sig_path_p 0
+                    set multiple_act_p [regexp {[^\*]+[\*]([^\*]+)} $act scratch base_act]
+                    if { !$multiple_act_p } {
+                        set base_act $act
+                    }
                     foreach act $path_list {
                         set act_on_cp_ct [llength [lsearch -exact -all $cp_list $act]]
                         incr act_count_on_cp $act_on_cp_ct
                         set a_sig_path_p [expr { 0 || ( [lsearch -exact $path_sig_list $act] > -1 ) } ]
+                        set popularity_adj [expr { [lsearch -exact $path_list $base_act] > -1 } ]
+                        incr popularity_arr(${base_act}) $popularity_adj
+                        if { $multiple_act_p } {
+                            incr popularity_arr($act)
+                        }
                     }
                     set path_counter_arr(${path_idx}) $path_counter
                     set a_sig_path_p_arr(${path_idx}) $a_sig_path_p
@@ -2781,6 +2793,7 @@ ad_proc -public acc_fin::scenario_prettify {
                 ## trunk_cost_arr(act)               is cost of all dependent ptrack plus cost of activity
                 ## c_dc_source_arr(act)              answers Q: what is source of cost distribution curve?
                 ## act_coef(act)                     is the coefficient of an activity. If activity is defined as a multiple of another activity, it is an integer greater than 1 otherwise 1.
+                ## popularity_arr(act)                   is the count of paths that an activity is in.
 
                 ## path_tree_p_arr(act)              answers question: is this tree of ptracks complete (ie not a subset of another track or tree)?
                 ## trunk_duration_arr(act_tree_list) is the time expected to complete an activity and its dependents
@@ -2792,6 +2805,8 @@ ad_proc -public acc_fin::scenario_prettify {
                 ## act_count_of_seq_arr(sequence no) is the count of activities at this sequence number across all paths, 0 is first sequence number
                 ## act_seq_max                       is the maximum path length in context of sequence_number
 
+
+                # # # PRETTI p5_lists built 
                 # Build an audit/feedback table list of lists, where each row is an activity
                 # p5 are activities, and p6 are paths. a path key is shared between p5 and p6 tables
                 set p5_lists [list ]
@@ -2828,6 +2843,7 @@ ad_proc -public acc_fin::scenario_prettify {
                         #  7 activity_time_expected    time expected of this activity
                         #  8 dependencies_larr         direct activity dependencies
                         #  9 act_cost_expected_arr     cost to complete activity
+                        #  
                         # 10 trunk_cost_arr            cost to complete path (including all path dependents)
                         # 11 path_counter
                         # 12 activity_seq              activity sequence number in path          
@@ -2837,13 +2853,10 @@ ad_proc -public acc_fin::scenario_prettify {
                         # 17 c_dc_source_arr           source of cost distribution curve via curve_import
 
                         # base for p5
-                        set activity_list [list $act $path_len $has_direct_dependency_p $dependencies_larr($act) [llength $dependencies_larr($act)] $on_critical_path_p_arr($act) $on_a_sig_path_p $act_freq_in_load_cp_alts_arr($act) xx$trunk_duration_arr($act) $act_time_expected_arr($act) $act_cost_expected_arr($act) $trunk_cost_arr($act) $path_counter $path_act_counter $dependents_count_arr($act) $act_seq_num_arr($act) $t_dc_source_arr($act) $c_dc_source_arr($act) ]
+                        set activity_list [list $act $activity_counter $has_direct_dependency_p $dependencies_larr($act) [llength $dependencies_larr($act)] $on_critical_path_p_arr($act) $on_a_sig_path_p $act_freq_in_load_cp_alts_arr($act) $popularity_arr($act) $act_time_expected_arr($act) $trunk_duration_arr($act)  $act_cost_expected_arr($act) $trunk_cost_arr($act) $c_dc_source_arr($act) $act_coef($act) ]
                         lappend p5_lists $activity_list
                     }
-                }
-                
-                # # # PRETTI p5_lists built 
-
+                }                
 
                 # # # build p4
                         
