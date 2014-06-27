@@ -2944,9 +2944,8 @@ ad_proc -public acc_fin::scenario_prettify {
                 
                 
                 if { $p1_arr(db_format) ne "" } {
-                    # Add titles before saving as p5 table
-                    set primary_sort_lists [lreplace $primary_sort_lists 0 0 $p5_titles_list]
-                    qss_table_create $primary_sort_lists "${scenario_name}.p5" "${scenario_title}.p5" $comments "" p5 $instance_id $user_id
+                    qss_table_create $p5_lists "${scenario_name}.p5" "${scenario_title}.p5" $comments "" p5 $instance_id $user_id
+                    qss_table_create $p6_lists "${scenario_name}.p6" "${scenario_title}.p6" $comments "" p6 $instance_id $user_id
                 }
                 
                 # save as a new table of type PRETTI 
