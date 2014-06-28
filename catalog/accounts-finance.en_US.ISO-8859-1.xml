@@ -111,8 +111,10 @@
 <msg key="process">Process</msg>
 <msg key="report_table_p4">Report Table (p4)</msg>
 <msg key="report_table_p4_def">A tabular report with one path per column.</msg>
-<msg key="report_table_p5">Report Table (p5)</msg>
+<msg key="report_table_p5">Activity Audit Table (p5)</msg>
 <msg key="report_table_p5_def">A tabular report with one activity per row.</msg>
+<msg key="report_table_p6">Path Audit Table (p6)</msg>
+<msg key="report_table_p6_def">A tabular report with one path per row.</msg>
 <msg key="required">Required</msg>
 <msg key="revision">Revision</msg>
 <msg key="rows">Rows</msg>
