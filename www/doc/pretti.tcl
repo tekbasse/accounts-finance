@@ -1,7 +1,7 @@
 set title "PRETTI Table definitions"
 set context [list [list index "Documentation"] $title]
 
-set type_list [list p1 p2 p3 p4 p5 dc]
+set type_list [list p1 p2 p3 p4 p5 p6 dc]
 set table_attribute_list [list style "border: 1px;"]
 foreach type $type_list {
     set all_list [acc_fin::pretti_columns_list $type]
@@ -15,7 +15,7 @@ foreach type $type_list {
     }
     set $var [qss_list_of_lists_to_html_table $table_lists $table_attribute_list]
     set $var2 ""
-    if { $type ne "p4" && $type ne "p5" } {
+    if { $type ne "p4" && $type ne "p5" && $type ne "p6" } {
         set delimiter ""
         foreach req $req_list {
             append $var2 $delimiter

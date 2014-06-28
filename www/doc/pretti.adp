@@ -30,6 +30,11 @@
 @p5_html;noquote@
 @p5b_html;noquote@
 
+<h2>#accounts-finance.report_table_p6#</h2>
+<p>#accounts-finance.report_table_p6_def#</p>
+@p6_html;noquote@
+@p6b_html;noquote@
+
 <h2>#accounts-finance.distribution_curve_dc#</h2>
 <p>#accounts-finance.distribution_curve_dc_def#</p>
 @dc_html;noquote@

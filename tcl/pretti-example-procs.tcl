@@ -134,6 +134,14 @@ C,3,20,brown\n
             # each row is a cell, in format of detailed PRETTI internal output. See code. 
             set ret_list acc_fin::pretti_columns_list p5 1
         }
+        p60 {
+            # each row is a cell, in format of detailed PRETTI internal output. See code. All columns are required to reproduce output to p4 (including p4 comments).
+            set ret_list acc_fin::pretti_columns_list p6 0
+        }
+        p61 {
+            # each row is a path, in format of detailed PRETTI internal output. See code. 
+            set ret_list acc_fin::pretti_columns_list p6 1
+        }
         dc0 {
             # dc2 distribution curve table
             #                   Y         where Y = f(x) and f(x) is a 
