@@ -2841,7 +2841,7 @@ ad_proc -public acc_fin::scenario_prettify {
                         set on_a_sig_path_p [expr { $act_freq_in_load_cp_alts_arr($act) > $act_count_median } ]
 
                         # base for p5
-                        set activity_list [list $act $activity_counter $has_direct_dependency_p $dependencies_larr($act) [llength $dependencies_larr($act)] $on_critical_path_p_arr($act) $on_a_sig_path_p $act_freq_in_load_cp_alts_arr($act) $popularity_arr($act) $act_time_expected_arr($act) $trunk_duration_arr($act)  $act_cost_expected_arr($act) $trunk_cost_arr($act) $c_dc_source_arr($act) $act_coef($act) ]
+                        set activity_list [list $act $activity_counter $has_direct_dependency_p [join $dependencies_larr($act) " "] [llength $dependencies_larr($act)] $on_critical_path_p_arr($act) $on_a_sig_path_p $act_freq_in_load_cp_alts_arr($act) $popularity_arr($act) $act_time_expected_arr($act) $trunk_duration_arr($act)  $act_cost_expected_arr($act) $trunk_cost_arr($act) $c_dc_source_arr($act) $act_coef($act) ]
                         lappend p5_lists $activity_list
                     }
                     # base for p6
@@ -2850,62 +2850,6 @@ ad_proc -public acc_fin::scenario_prettify {
                     set path_list [list $path_idx [join $path_list "."] $path_counter $cp_q $a_sig_path_p $path_duration $path_cost $index_custom ]
                     lappend p6_lists $path_lst
                 }                
-
-                # # # build p4
-                        
-                # p4_lol consists of first row (a list item):
-                # (list track_1 track_2 track_3 ... track_N )
-                # subsequent rows (list items):
-                # (list cell_r1c1 cell_r1c2 cell_r1c3 ... cellr1cN )
-                # ...
-                # (list cell_rMc1 cell_rMc2 cell_rMc3 ... cellrMcN )
-                # for N tracks of a maximum of M rows.
-                # Each cell is an activity.
-                # Each column is a track
-                # Track_1 is CP
-                
-                # empty cells have empty string value.
-                # other cells will contain comment format from acc_fin::scenario_prettify
-                # "$activity "
-                # "t:[lindex $track_list 7] "
-                # "ts:[lindex $track_list 6] "
-                # "c:[lindex $track_list 9] "
-                # "cs:[lindex $track_list 10] "
-                # "d:($depnc_larr(${activity})) "
-                # "<!-- [lindex $track_list 4] [lindex $track_list 5] --> "
-                #####################        
-                #  0 path_list
-                # 16 path_duration
-                # 17 path_cost
-                # path_len
-                #   path_len_w_coefs
-                
-                #  1 path_act_counter                    count of activities in path --was act count in tree activity_seq_num_arr() 
-                #  2 act_pct_on_cp               Q: percent by count of this path's activities on the CP. CP = 100%
-                #  3 cost_ratio               path_cost / cp_cost       Q: percent of this path's cost over total projected cost.
-                #  4 on_critical_path_p          Q: Is this the CP?
-                #  5 duration_ratio           path_duration / cp_duration Q: percent of this path's duration on the CP. CP = 100%
-                
-                #  7 trunk_duration_arr          track duration
-                #  8 activity_time_expected      time expected of this activity
-                #  9 dependencies_larr           direct activity dependencies
-                # 10 act_cost_expected_arr       cost to complete activity
-                # 11 trunk_cost_arr              cost to complete path (including all path dependents)
-                # 12 path_counter
-                
-                # 14 dependents_count_arr        count of dependent activities (in subtrees) --not inclusive of activity itself.
-                # 15 dep_act_seq                 activity sequence considering all dependent activities. activity_seq_num_arr()
-                
-
-                    # 18 index_eq_value
-                    #### how do activity stats fit in context with creating html?  Rebuild p4 in context similar to p5 (ie inside act loop).
-               #?? 13 activity_seq                activity sequence number in path          
-  #??  6 act_freq_in_load_cp_alts    count of activity is in a path or track
-                    set path_x_list [list $path_list $path_duration $path_cost $path_len $has_direct_dependency_p $on_critical_path_p $on_a_sig_path_p $act_freq_in_load_cp_alts_arr($act) $trunk_duration_arr($act) $act_time_expected_arr($act) $dependencies_larr($act) $act_cost_expected_arr($act) $trunk_cost_arr($act) $path_counter $path_act_counter $dependents_count_arr($act) $act_seq_num_arr($act) ]
-                    lappend path_expanded_lists $path_x_list
-
-
-
 
                 set scenario_stats_list [qss_table_stats $scenario_tid]
                 set scenario_name [lindex $scenario_stats_list 0]
@@ -2948,75 +2892,97 @@ ad_proc -public acc_fin::scenario_prettify {
                     qss_table_create $p6_lists "${scenario_name}.p6" "${scenario_title}.p6" $comments "" p6 $instance_id $user_id
                 }
                 
-                # save as a new table of type PRETTI 
+                # # # build p4
+                
+                # save as a new table of type p4
                 append comments "color_mask_sig_idx 3 , color_mask_oth_idx 5 , colorswap_p 0"
+                        
+                # p4_lol consists of first row (a list item):
+                # (list path_1 path_2 path_3 ... path_N )
+                # subsequent rows (list items):
+                # (list cell_r1c1 cell_r1c2 cell_r1c3 ... cellr1cN )
+                # ...
+                # (list cell_rMc1 cell_rMc2 cell_rMc3 ... cellrMcN )
+                # for N paths of a maximum of M rows.
+                # Each cell is an activity.
+                # Each column is a path
+                # Path_1 is CP
                 
-                # max activity account per track = $act_count_max
-                # whereas
-                # each PRETTI table uses standard delimited text file format.
-                # Need to convert into rows ie.. transpose rows of each column to a track with column names: track_(1..N). track_1 is CP
-                # trac_1 track_2 track_3 ... track_N
-                
-                set pretti_lists [list ]
-                set title_row_list [list ]
-                set track_num 1
-                    
-                    #  0 activity_ref
-                    #  1 activity_seq_num_arr() ie count of activities in track
-                    #  2 Q: Does this activity have any dependencies? ie predecessors
-                    #  3 Q: Is this the CP?
-                    #  4 Q: Is this activity referenced in more than a median number of times?
-                    #  5 act_freq_in_load_cp_alts  count of activity is in a path or track
-                    #  6 trunk_duration_arr              track duration
-                    #  7 act_time_expected_arr    time expected of this activity
-                    #  8 dependencies_larr                direct activity dependencies
-                    #  9 act_cost_expected_arr         cost to complete activity
-                    # 10 trunk_cost_arr                  cost to complete path (including all path dependents)
+                # empty cells have empty string value.
+                # other cells will contain comment format from acc_fin::scenario_prettify
+                # "$activity "
+                # "t:[lindex $path_list 7] "
+                # "ts:[lindex $path_list 6] " s is for sequence or plural
+                # "c:[lindex $path_list 9] "
+                # "cs:[lindex $path_list 10] " s is for sequence or plural
+                # "d:($depnc_larr(${activity})) "
+                # "<!-- [lindex $path_list 4] [lindex $path_list 5] --> "
+                #####################        
 
-                foreach track_list [lrange $primary_sort_lists 1 end] {
-                    # each primary_sort_lists is a track:
-                    # activity_ref  is the last activity_ref in the tracks
-                    set activity_ref [lindex $track_list 0]
+
+                # Need to convert into rows ie.. transpose rows of each column to a path with column names: path_(1..N). path_1 is CP
+                # trac_1 path_2 path_3 ... path_N
+                
+                set p4_lists [list ]
+                set title_row_list [list ]
+                set path_num 1
+                    
+                foreach path_idx_dur_len_list $paths_sort1_lists {
+                    set path_idx [lindex $path_idx_dur_len_list 0]
+                    set path_list $paths_arr(${path_idx})
+                    set path_counter $path_counter_arr(${path_idx})
+                    set a_sig_path_p $a_sig_path_p_arr(${path_idx})
+                    set act_cp_ratio $act_cp_ratio_arr(${path_idx})
+#                    set index_custom $index_custom_arr(${path_idx})
+                    set path_duration [lindex $path_idx_dur_len_list 1]
+                    set path_cost [lindex $path_idx_dur_len_list 2]
+                    set path_len [lindex $path_idx_dur_len_list 3]
+                    set path_len_w_coefs [lindex $path_idx_dur_len_list 4]
+                    set index_custom [lindex $path_idx_dur_len_list 5]
+
+                    # each primary_sort_lists is a path:
+                    # activity_ref  is the last activity_ref in the paths
+                    set activity_ref [lindex $path_list 0]
                     # activity_seq_num 
                     # dependencies_q cp_q significant_q popularity waypoint_duration activity_time 
                     # direct_dependencies activity_cost waypoint_cost
-                    
 
-                    #### So, column looping should include track_activity_lists as well as primary_sort_lists... see paths_arr()
-                    ## and each subtrack should be analyzed to see if on CP, significant etc. ie recalced for index 4 and 5 of primary_sort_lists..
-
-                    set track_activity_lists $subtrees_larr(${activity_ref})
-                    set track_name "track_${track_num}"
-                    lappend title_row_list $track_name
-                    # in PRETTI table, each track is a column, so each row is built from each column, each column lappends each row..
+                    #### So, column looping should include path_activity_lists as well as primary_sort_lists... see paths_arr()
+                    ## and each subpath should be analyzed to see if on CP, significant etc. ie recalced for index 4 and 5 of primary_sort_lists..
+                    #set path_activity_lists $subtrees_larr(${activity_ref})
+                    set path_name "path_${path_num}"
+                    lappend title_row_list $path_name
+                    # in p4 PRETTI table, each path is a column, so each row is built from each column, each column lappends each row..
                     # store each row in: row_larr()
                     for {set i 0} {$i < $act_count_max} {incr i} {
                         set row_larr($i) [list ]
                     }
                     for {set i 0} {$i < $act_count_max} {incr i} {
-                        set activity [lindex $track_activity_list $i]
+                        set activity [lindex $path_activity_list $i]
                         if { $activity ne "" } {
                             # cell should contain this info: "$act t:${time_expected} T:${branches_duration_max} D:${dependencies} "
-                            set cell "$activity "
-                            append cell "t:[lindex $track_list 7] "
-                            append cell "ts:[lindex $track_list 6] "
-                            append cell "c:[lindex $track_list 9] "
-                            append cell "cs:[lindex $track_list 10] "
-                            append cell "d:($dependencies_larr(${activity})) "
-                            append cell "<!-- [lindex $track_list 4] [lindex $track_list 5] --> "
+                            set cell "${activity} "
+                            append cell "t:$time_expected_arr(${activity}) "
+                            append cell "ts:${path_duration} "
+                            append cell "c:$cost_expeected_arr(${activity}) "
+                            append cell "cs:${path_cost} "
+                            append cell "d:("
+                            append cell [join $dependencies_larr(${activity}) " "]
+                            append cell ") "
+                            append cell "<!-- ${on_a_sig_path_p} ${popularity} --> "
                             lappend row_larr($i) $cell
                         } else {
                             lappend row_larr($i) ""
                         }
                     }
-                    incr track_num
+                    incr path_num
                 }
                 # combine the rows
-                lappend pretti_lists $title_row_list
+                lappend p4_lists $title_row_list
                 for {set i 0} {$i < $act_count_max} {incr i} {
-                    lappend pretti_lists $row_larr($i)
+                    lappend p4_lists $row_larr($i)
                 }
-                qss_table_create $pretti_lists "${scenario_name}.p4" ${scenario_title} $comments "" p4 $instance_id $user_id
+                qss_table_create $p4_lists "${scenario_name}.p4" ${scenario_title} $comments "" p4 $instance_id $user_id
                 # Comments data will be interpreted for determining standard deviation for determining cell highlighting
             }
             # next c_moment
