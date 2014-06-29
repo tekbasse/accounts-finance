@@ -1957,7 +1957,7 @@ ad_proc -public acc_fin::scenario_prettify {
                     set type_errors_p 1
                 }
             }
-            if { [info exists p1_arr(index_equation) ] } {
+            if { [info exists p1_arr(index_equation) ] && $p1_arr(index_equation) ne "" } {
                 # validate equation or set empty
                 set index_eq ""
                 # only allow + - / * $, logical comparisions > < == != and numbers.  $number converts to one of the available row numbers that returns a number from in p4 
@@ -2028,9 +2028,11 @@ ad_proc -public acc_fin::scenario_prettify {
             
         } else {
             acc_fin::pretti_log_create $scenario_tid "activity_table_tid" "value" "activity_table_tid reference does not exist, but is required.(ref1450)" $user_id $instance_id
+            set error_fail 1
         }
     } else {
             acc_fin::pretti_log_create $scenario_tid "activity_table_tid" "value" "activity_table_tid reference does not exist, but is required.(ref1453)" $user_id $instance_id
+            set error_fail 1
     }
     
     # Substitute task_type data (p3_larr) into activity data (p2_larr) when p2_larr data is less detailed or missing.
@@ -2049,7 +2051,7 @@ ad_proc -public acc_fin::scenario_prettify {
     set p2_task_type_list $p2_larr(aid_type)
     ## activities_list  list of activities to process
     set activities_list $p2_larr(activity_ref)
-
+    ns_log Notice "acc_fin::scenario_prettify.1500: scenario '$scenario_tid' activities_list '${activities_list}'"     
     foreach constant $constants_woc_list {
         if { [llength $p2_larr(aid_type) ] > 0 && [llength $p3_larr($constant)] > 0 } {
             set i 0
@@ -2068,6 +2070,7 @@ ad_proc -public acc_fin::scenario_prettify {
     
     # # # Confirm that dependent activities exist as activities.
     ns_log Notice "acc_fin::scenario_prettify.1527: scenario '$scenario_tid' Confirm p2 dependents exist as activities, expand dependents with coefficients."
+
 
     #  Expand p2_larr to include dependent activities with coefficients.
     #  by appending new definitions of tasks that don't yet have defined coefficients.
@@ -2479,9 +2482,10 @@ ad_proc -public acc_fin::scenario_prettify {
 
                 #   paths_lists is a list of (full paths, subtotal duration, subtotal cost)
                 set paths_lists [list ]
-                set paths_idx 0
+                set path_idx 0
                 foreach act $activities_list {
                     # Remove partial tracks from subtrees by placing only paths in paths_lists
+                    ns_log Notice "acc_fin::scenario_prettify.2485: scenario '$scenario_tid' path_tree_p_arr($act) '$path_tree_p_arr($act)' "
                     if { $path_tree_p_arr($act) } {
                         # subtrees_larr($act) is a tree of full paths here.
                         # Expand path trees to a list of paths
@@ -2490,7 +2494,7 @@ ad_proc -public acc_fin::scenario_prettify {
                             set row_list [list ]
 
                             # paths_lists 0
-                            lappend row_list $paths_idx
+                            lappend row_list $path_idx
 
                             set paths_arr(${path_idx}) $path_list
                            
@@ -2553,12 +2557,12 @@ ad_proc -public acc_fin::scenario_prettify {
                             # adding empty list incase of index_custom later
                             lappend row_list ""
                             lappend paths_lists $row_list
-                            incr paths_idx
+                            incr path_idx
                         }
                     }
                 }
                 ## paths_count is the number of paths ie length of paths_list
-                set paths_count [expr { $paths_idx - 1 } ]
+                set paths_count [expr { $path_idx - 1 } ]
                 ## paths_list: (list path_arr_idx duration cost length length_w_coefs )
 
                 if { !$error_time } {
@@ -2585,6 +2589,7 @@ ad_proc -public acc_fin::scenario_prettify {
                     set paths_sort1_lists [lsort -decreasing -integer -index 4 $paths_lists]
                     
                 }
+                ns_log Notice "acc_fin::scenario_prettify.2588: scenario '$scenario_tid' paths_lists '${paths_lists}' paths_sort1_lists '${paths_sort1_lists}' "
                 ## paths_sort1_lists is paths_list sorted by index used to calc CP
 
                 # Extract most significant CP alternates for a focused table
@@ -2633,8 +2638,10 @@ ad_proc -public acc_fin::scenario_prettify {
 
                 # Critical Path (CP) is: 
                 set cp_row_list [lindex $paths_sort1_lists 0]
+
                 set cp_path_idx [lindex $cp_row_list 0]
-                set cp_list $paths_arr($cp_path_idx)
+                ns_log Notice "acc_fin::scenario_prettify.2636: scenario '$scenario_tid' cp_path_idx '$cp_path_idx' cp_row_list '$cp_row_list' "
+                set cp_list $paths_arr(${cp_path_idx})
                 set cp_duration [lindex $cp_row_list 1]
                 set cp_cost [lindex $cp_row_list 2]
                 set cp_len [lindex $cp_row_list 3]
