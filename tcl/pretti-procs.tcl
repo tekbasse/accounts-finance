@@ -1977,9 +1977,9 @@ ad_proc -public acc_fin::scenario_prettify {
                     set type_errors_p 1
                 }
             }
-            if { [info exists p1_arr(index_equation) ] && $p1_arr(index_equation) ne "" } {
+            set index_eq ""
+            if { $p1_arr(index_equation) ne "" } {
                 # validate equation or set empty
-                set index_eq ""
                 # only allow + - / * $, logical comparisions > < == != and numbers.  $number converts to one of the available row numbers that returns a number from in p4 
                 regsub -nocase -all -- {[^\$\/\+\-\*\(\)\.\<\>\=\!\ 0-9]+} $p1_arr(index_equation) "" index_eq
                 # add extra spaces to help expr avoid misinterpretations, but can't assume that for negative numbers vs. minus sign
@@ -2576,7 +2576,7 @@ ad_proc -public acc_fin::scenario_prettify {
                             }
                             # paths_lists 4
                             ## path_len_w_coef_arr is total number of activities in a path (with coefficients)
-                            set path_len_w_coef_arr(${path_idx})
+                            set path_len_w_coef_arr(${path_idx}) $path_len_w_coef
                             lappend row_list $path_len_w_coef
                             # adding empty list incase of index_custom later
                             lappend row_list ""
@@ -2627,7 +2627,7 @@ ad_proc -public acc_fin::scenario_prettify {
                 foreach path_list $paths_lists {
                     set path_idx [lindex $path_list 0]
                     foreach act $paths_arr($path_idx) {
-                        incr act_freq_in_load_cp_alts_arr($act) act_coef($act)
+                        incr act_freq_in_load_cp_alts_arr($act) $act_coef($act)
                     }
                 }
                 # Still need to include activity with coefficients into ones without coefficients.
@@ -2637,7 +2637,7 @@ ad_proc -public acc_fin::scenario_prettify {
                     set act_idx [string first "*" $coef]
                     incr act_idx
                     set act [string range $coef $act_idx end]
-                    incr act_freq_in_load_cp_alts_arr($act) act_coef($coef)
+                    incr act_freq_in_load_cp_alts_arr($act) $act_coef($coef)
                 }
 
                 # Make a list of activities sorted by popularity (appearing in the most paths)
@@ -2672,16 +2672,17 @@ ad_proc -public acc_fin::scenario_prettify {
 
                 foreach act $activities_list {
                     set on_critical_path_p_arr($act) [expr { [lsearch -exact $cp_list $act] > -1 } ]
+                    set count_on_cp_arr($act) [llength [lsearch -exact -all $cp_list $act]]
                     # adjustment required for count_on_cp_p_arr, if this activity has a coefficient
-                    if { $act_coef($act) > 1 } {
-                        set ac_idx [string first "*" $act]
+                    set ac_idx [string first "*" $act]
+                    if { $ac_idx > 1 } {
                         incr ac_idx -1
                         set ac [string range $act $ac_idx end]
                         # if activity has a coefficient, then root activity gets coefs, but activity counts 1 ie. swap coef values for this case
                         set count_on_cp_p_arr($ac) [expr { $on_critical_path_p_arr($ac) * $act_coef($act) + $count_on_cp_p_arr($ac) } ]
-                        set count_on_cp_p_arr($act) [expr { $on_critical_path_p_arr($act) * $act_coef($ac) + $count_on_cp_arr($act) } ]
+                        set count_on_cp_p_arr($act) [expr { $on_critical_path_p_arr($act) * $act_coef($ac) + $count_on_cp_p_arr($act) } ]
                     } else {
-                        set count_on_cp_p_arr($act) [expr { $on_critical_path_p_arr($act) * $act_coef($act) + $count_on_cp_arr($act) } ]
+                        set count_on_cp_p_arr($act) [expr { $on_critical_path_p_arr($act) * $act_coef($act) + $count_on_cp_p_arr($act) } ]
                     }
                     # set defaults for popularity_arr()
                     ## popularity_arr(act) is the count of paths that an activity is in.
@@ -2692,10 +2693,10 @@ ad_proc -public acc_fin::scenario_prettify {
                 # path comparison calculations
                 set path_counter 0
                 foreach path_idx_dur_cost_len_list $paths_sort1_lists {
-                    set path_idx [lindex $path_idx_dur_len_list 0]
+                    set path_idx [lindex $path_idx_dur_cost_len_list 0]
                     set path_list $paths_arr(${path_idx})
-                    set path_len [lindex $path_idx_dur_len_list 3]
-                    set path_len_w_coefs [lindex $path_idx_dur_len_list 4]
+                    set path_len [lindex $path_idx_dur_cost_len_list 3]
+                    set path_len_w_coefs [lindex $path_idx_dur_cost_len_list 4]
                     set act_count_on_cp 0
                     set a_sig_path_p 0
                     set multiple_act_p [regexp {[^\*]+[\*]([^\*]+)} $act scratch base_act]
@@ -2703,8 +2704,7 @@ ad_proc -public acc_fin::scenario_prettify {
                         set base_act $act
                     }
                     foreach act $path_list {
-                        set act_on_cp_ct [llength [lsearch -exact -all $cp_list $act]]
-                        incr act_count_on_cp $act_on_cp_ct
+                        incr act_count_on_cp $count_on_cp_arr($act)
                         set a_sig_path_p [expr { 0 || ( [lsearch -exact $path_sig_list $act] > -1 ) } ]
                         set popularity_adj [expr { [lsearch -exact $path_list $base_act] > -1 } ]
                         incr popularity_arr(${base_act}) $popularity_adj
@@ -2712,15 +2712,18 @@ ad_proc -public acc_fin::scenario_prettify {
                             incr popularity_arr($act)
                         }
                     }
-                    set path_counter_arr(${path_idx}) $path_counter
                     set a_sig_path_p_arr(${path_idx}) $a_sig_path_p
+
                     set act_cp_ratio [expr { $act_count_on_cp / ( $cp_len + 0. ) } ]
+                    set act_cp_ratio_arr(${path_idx}) $act_cp_ratio
+
                     if { !$error_time } {
-                        set duration_ratio_arr(${path_idx}) [expr { $path_duration(${path_idx}) / ( $cp_duration + 0. ) } ]
+                        set duration_ratio_arr(${path_idx}) [expr { $path_duration_arr(${path_idx}) / ( $cp_duration + 0. ) } ]
                     } 
-                    if { !$error_calc } {
-                        set cost_ratio_arr(${path_idx}) [expr { $path_cost(${path_idx}) / ( $cp_cost + 0. ) } ]
+                    if { !$error_cost } {
+                        set cost_ratio_arr(${path_idx}) [expr { $path_cost_arr(${path_idx}) / ( $cp_cost + 0. ) } ]
                     }
+                    set path_counter_arr(${path_idx}) $path_counter
                     incr path_counter
                 }
 
@@ -2745,11 +2748,11 @@ ad_proc -public acc_fin::scenario_prettify {
                         #  cost_ratio
                         #  duration_ratio
 
-                        set path_idx [lindex $path_idx_dur_len_list 0]
+                        set path_idx [lindex $path_idx_dur_cost_len_list 0]
                         set path_list $paths_arr(${path_idx})
                         set row_list [lrange $path_list 0 4]
-                        set path_len [lindex $path_idx_dur_len_list 3]
-                        set path_len_w_coefs [lindex $path_idx_dur_len_list 4]
+                        set path_len [lindex $path_idx_dur_cost_len_list 3]
+                        set path_len_w_coefs [lindex $path_idx_dur_cost_len_list 4]
                         set path_counter $path_counter_arr(${path_idx})
                         set a_sig_path_p $a_sig_path_p_arr(${path_idx})
                         set act_cp_ratio $act_cp_ratio_arr(${path_idx})
@@ -2850,18 +2853,18 @@ ad_proc -public acc_fin::scenario_prettify {
                 set p6_titles_list [acc_fin::pretti_columns_list p6 1]
                 lappend p6_lists $p6_titles_list
 
-                foreach path_idx_dur_len_list $paths_sort1_lists {
-                    set path_idx [lindex $path_idx_dur_len_list 0]
+                foreach path_idx_dur_cost_len_list $paths_sort1_lists {
+                    set path_idx [lindex $path_idx_dur_cost_len_list 0]
                     set path_list $paths_arr(${path_idx})
                     set path_counter $path_counter_arr(${path_idx})
                     set a_sig_path_p $a_sig_path_p_arr(${path_idx})
                     set act_cp_ratio $act_cp_ratio_arr(${path_idx})
 #                    set index_custom $index_custom_arr(${path_idx})
-                    set path_duration [lindex $path_idx_dur_len_list 1]
-                    set path_cost [lindex $path_idx_dur_len_list 2]
-                    set path_len [lindex $path_idx_dur_len_list 3]
-                    set path_len_w_coefs [lindex $path_idx_dur_len_list 4]
-                    set index_custom [lindex $path_idx_dur_len_list 5]
+                    set path_duration [lindex $path_idx_dur_cost_len_list 1]
+                    set path_cost [lindex $path_idx_dur_cost_len_list 2]
+                    set path_len [lindex $path_idx_dur_cost_len_list 3]
+                    set path_len_w_coefs [lindex $path_idx_dur_cost_len_list 4]
+                    set index_custom [lindex $path_idx_dur_cost_len_list 5]
                     set activity_counter 0
                     set act_count_on_cp 0
                     foreach act $path_list {
@@ -2879,7 +2882,7 @@ ad_proc -public acc_fin::scenario_prettify {
                     #            set ret_list [list path_idx path path_counter cp_q significant_q path_duration path_cost index_custom]
                     set cp_q [expr { $path_counter == 0 } ]
                     set path_list [list $path_idx [join $path_list "."] $path_counter $cp_q $a_sig_path_p $path_duration $path_cost $index_custom ]
-                    lappend p6_lists $path_lst
+                    lappend p6_lists $path_list
                 }                
 
                 set scenario_stats_list [qss_table_stats $scenario_tid]
@@ -2959,18 +2962,18 @@ ad_proc -public acc_fin::scenario_prettify {
                 set title_row_list [list ]
                 set path_num 1
                     
-                foreach path_idx_dur_len_list $paths_sort1_lists {
-                    set path_idx [lindex $path_idx_dur_len_list 0]
+                foreach path_idx_dur_cost_len_list $paths_sort1_lists {
+                    set path_idx [lindex $path_idx_dur_cost_len_list 0]
                     set path_list $paths_arr(${path_idx})
                     set path_counter $path_counter_arr(${path_idx})
                     set a_sig_path_p $a_sig_path_p_arr(${path_idx})
                     set act_cp_ratio $act_cp_ratio_arr(${path_idx})
 #                    set index_custom $index_custom_arr(${path_idx})
-                    set path_duration [lindex $path_idx_dur_len_list 1]
-                    set path_cost [lindex $path_idx_dur_len_list 2]
-                    set path_len [lindex $path_idx_dur_len_list 3]
-                    set path_len_w_coefs [lindex $path_idx_dur_len_list 4]
-                    set index_custom [lindex $path_idx_dur_len_list 5]
+                    set path_duration [lindex $path_idx_dur_cost_len_list 1]
+                    set path_cost [lindex $path_idx_dur_cost_len_list 2]
+                    set path_len [lindex $path_idx_dur_cost_len_list 3]
+                    set path_len_w_coefs [lindex $path_idx_dur_cost_len_list 4]
+                    set index_custom [lindex $path_idx_dur_cost_len_list 5]
 
                     # each primary_sort_lists is a path:
                     # activity_ref  is the last activity_ref in the paths
