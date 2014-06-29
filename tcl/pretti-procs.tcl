@@ -1128,6 +1128,10 @@ ad_proc -private acc_fin::p_load_tid {
     set p_larr(_tCurveRef) [list ]
     set p_larr(_cCurveRef) [list ]
     set p_larr(_coef) [list ]
+    set p_larr(_tDcSource) [list ]
+    set p_larr(_cDcSource) [list ]
+    set tcurvesource ""
+    set ccurvesource ""
 
     if { $table_type eq "p3" && $p3_type_column_exists_p } {
         # table_type is p3
@@ -1201,7 +1205,8 @@ ad_proc -private acc_fin::p_load_tid {
             }
             # import curve given all the available curve choices
             ns_log Notice "acc_fin::p_load_tid.1118: for ${p_larr_name} i $i time_est_short '${time_est_short}' time_est_median '${time_est_median}' time_est_long '${time_est_long}' type_tcurve_list '${type_tcurve_list}' tc_larr(x) '$tc_larr(x)' tc_larr(y) '$tc_larr(y)' tc_larr(label) '$tc_larr(label)'"
-            set curve_list [acc_fin::curve_import $tc_larr(x) $tc_larr(y) $tc_larr(label) $type_tcurve_list $time_est_short $time_est_median $time_est_long $time_clarr($p1_arr(_tCurveRef)) ]
+            set curve_list [acc_fin::curve_import $tc_larr(x) $tc_larr(y) $tc_larr(label) $type_tcurve_list $time_est_short $time_est_median $time_est_long $time_clarr($p1_arr(_tCurveRef)) tcurve_source]
+
             set tcurvenum [acc_fin::larr_set time_clarr $curve_list]
             if { $tcurvenum eq "" } {
                 ns_log Notice "acc_fin::p_load_tid.1120: for ${p_larr_name} i $i type $type _tCurveRef is blank for curve_list '${curve_list}'."
@@ -1253,7 +1258,7 @@ ad_proc -private acc_fin::p_load_tid {
             }
             # import curve given all the available curve choices
             ns_log Notice "acc_fin::p_load_tid.1168: for ${p_larr_name} i $i cost_est_low '${cost_est_low}' cost_est_median '${cost_est_median}' cost_est_high '${cost_est_high}' type_ccurve_list '${type_ccurve_list}' cc_larr(x) '$cc_larr(x)' cc_larr(y) '$cc_larr(y)' cc_larr(label) '$cc_larr(label)'"
-            set curve_list [acc_fin::curve_import $cc_larr(x) $cc_larr(y) $cc_larr(label) $type_ccurve_list $cost_est_low $cost_est_median $cost_est_high $cost_clarr($p1_arr(_cCurveRef)) ]
+            set curve_list [acc_fin::curve_import $cc_larr(x) $cc_larr(y) $cc_larr(label) $type_ccurve_list $cost_est_low $cost_est_median $cost_est_high $cost_clarr($p1_arr(_cCurveRef)) ccurve_source ]
             set ccurvenum [acc_fin::larr_set cost_clarr $curve_list]
             if { $ccurvenum eq "" } {
                 ns_log Notice "acc_fin::p_load_tid.1188: for ${p_larr_name} i $i type $type _cCurveRef is blank for curve_list '${curve_list}'."
@@ -1262,7 +1267,9 @@ ad_proc -private acc_fin::p_load_tid {
 
             # add curve references for both time and cost. 
             lappend p_larr(_tCurveRef) $tcurvenum
+            lappend p_larr(_tDcSource) $tcurve_source
             lappend p_larr(_cCurveRef) $ccurvenum
+            lappend p_larr(_cDcSource) $ccurve_source
             ns_log Notice "acc_fin::p_load_tid.1106: for ${p_larr_name} added: p_larr(_tCurveRef) $tcurvenum p_larr(_cCurveRef) $ccurvenum"
             # Since this is a p3_larr, create pointer arrays for use with p2_larr
             if { $type ne "" } {
@@ -1357,14 +1364,14 @@ ad_proc -private acc_fin::p_load_tid {
                 }
             }
             ns_log Notice "acc_fin::p_load_tid.1280: for ${p_larr_name} i $i time_est_short '${time_est_short}' time_est_median '${time_est_median}' time_est_long '${time_est_long}' type_tcurve_list '${type_tcurve_list}' tc_larr(x) '$tc_larr(x)' tc_larr(y) '$tc_larr(y)' tc_larr(label) '$tc_larr(label)'"
-            set curve_list [acc_fin::curve_import $tc_larr(x) $tc_larr(y) $tc_larr(label) $type_tcurve_list $time_est_short $time_est_median $time_est_long $time_clarr($p1_arr(_tCurveRef)) ]
+            set curve_list [acc_fin::curve_import $tc_larr(x) $tc_larr(y) $tc_larr(label) $type_tcurve_list $time_est_short $time_est_median $time_est_long $time_clarr($p1_arr(_tCurveRef)) curve_source ]
             set tcurvenum [acc_fin::larr_set time_clarr $curve_list]
             if { $tcurvenum eq "" } {
                 ns_log Warning "acc_fin::p_load_tid.1284: for ${p_larr_name} i $i type $type _tCurveRef is blank for curve_list '${curve_list}'."
             } 
             
             lappend p_larr(_tCurveRef) $tcurvenum
-
+            lappend p_larr(_tDcSource) $curve_source
  
             # cost curve
             set cost_dist_curve_tid ""
@@ -1419,14 +1426,14 @@ ad_proc -private acc_fin::p_load_tid {
                 set type_ccurve_list $cost_clarr($type_c_curve_arr(${aid_type}))
             }
             ns_log Notice "acc_fin::p_load_tid.1352: for ${p_larr_name} i $i cost_est_low '${cost_est_low}' cost_est_median '${cost_est_median}' cost_est_high '${cost_est_high}' type_ccurve_list '${type_ccurve_list}' cc_larr(x) '$cc_larr(x)' cc_larr(y) '$cc_larr(y)' cc_larr(label) '$cc_larr(label)'"
-            set curve_list [acc_fin::curve_import $cc_larr(x) $cc_larr(y) $cc_larr(label) $type_ccurve_list $cost_est_low $cost_est_median $cost_est_high $cost_clarr($p1_arr(_cCurveRef)) ]
+            set curve_list [acc_fin::curve_import $cc_larr(x) $cc_larr(y) $cc_larr(label) $type_ccurve_list $cost_est_low $cost_est_median $cost_est_high $cost_clarr($p1_arr(_cCurveRef)) curve_source]
             set ccurvenum [acc_fin::larr_set cost_clarr $curve_list]
 
             if { $ccurvenum eq "" } {
                 ns_log Warning "acc_fin::p_load_tid.1356: for ${p_larr_name} i $i type $type _cCurveRef is blank for curve_list '${curve_list}'."
             }
             lappend p_larr(_cCurveRef) $ccurvenum
-            
+            lappend p_larr(_tDcSource) $curve_source
             # add default coefficient
             lappend p_larr(_coef) 1
         }
@@ -1521,6 +1528,7 @@ ad_proc -private acc_fin::curve_import {
     median
     maximum
     default_lists
+    {case_var_name ""}
 } {
     Returns curve data to standard representation for PRETTI processing. 
     Expects column labels in arbitrary order in row lists, but no titles with c_*_list.
@@ -1533,6 +1541,9 @@ ad_proc -private acc_fin::curve_import {
     5. if an ordered list of lists x,y,label exists, use it as a fallback default, otherwise 
     6. return a representation of a normalized curve as a list of lists similar to curve_lists 
 } {
+    if { $case_var_name ne "" } {
+        upvar 1 $case_var_name case_var
+    }
     # In persuit of making curve_data
     #     local curves are represented as a list of lists
     #     with each list a triplet set x, y, label, with the first row consisting of title names
@@ -1558,6 +1569,7 @@ ad_proc -private acc_fin::curve_import {
         if { $c_label_list_len > 0 } {
             # x, y and label
             lappend c_lists [list x y label]
+            set case_var 1
             ns_log Notice "acc_fin::curve_import.1237 case 1. building list from x, y and label "
             for {set i 0} {$i < $list_len} {incr i} {
                 set row [list [lindex $c_x_list $i] [lindex $c_y_list $i] [lindex $c_label_list $i] ]
@@ -1566,6 +1578,7 @@ ad_proc -private acc_fin::curve_import {
         } else {
             # x and y only
             lappend c_lists [list x y]
+            set case_var 1
             ns_log Notice "acc_fin::curve_import.1244 case 1. building list from x and y "
             for {set i 0} {$i < $list_len} {incr i} {
                 set row [list [lindex $c_x_list $i] [lindex $c_y_list $i] ]
@@ -1607,7 +1620,7 @@ ad_proc -private acc_fin::curve_import {
                     lappend c_lists $point_new_list
                 }
             }
-
+            set case_var 2
         }
         
     }
@@ -1623,6 +1636,7 @@ ad_proc -private acc_fin::curve_import {
         # per http://en.wikipedia.org/wiki/Program_Evaluation_and_Review_Technique
 
         set c_lists [acc_fin::pert_omp_to_normal_dc $minimum $median $maximum ]
+        set case_var 3
     }
 
     # 4. if an median value is available, make a curve of it, 
@@ -1652,12 +1666,14 @@ ad_proc -private acc_fin::curve_import {
         # per http://en.wikipedia.org/wiki/Program_Evaluation_and_Review_Technique
 
         set c_lists [acc_fin::pert_omp_to_normal_dc $minimum $median $maximum ]
+        set case_var 4
     }
     
     # 5. if an ordered list of lists x,y,label exists, use it as a fallback default
     if { [llength $c_lists] == 0 && [llength $default_lists] > 0 && [llength [lindex $default_lists 0] ] > 1 } {
         ns_log Notice "acc_fin::curve_import.1298 case 5. building curve_lists from default_lists "
         set c_lists $default_lists
+        set case_var 5
     }
 
     # 6. return a representation of a normalized curve as a list of lists similar to curve_lists 
@@ -1680,8 +1696,10 @@ ad_proc -private acc_fin::curve_import {
         for {set i 0} {$i < 7} {incr i} {
             lappend c_lists [list [lindex $tc_larr(x) $i] [lindex $tc_larr(y) $i] [lindex $tc_larr(label) $i]]
         }
+        set case_var 6
     }
     if { [llength $c_lists] == 0 } {
+        set case_var 0
         # This shouldn't happen.. for the most part.
         ns_log Notice "acc_fin::curve_import.1312: len c_list 0 "
         ns_log Notice "acc_fin::curve_import.1312: c_x_list $c_x_list "
@@ -1859,7 +1877,7 @@ ad_proc -public acc_fin::scenario_prettify {
             acc_fin::pretti_log_create $scenario_tid "time_dist_curve_tid" "value" "time_dist_curve reference does not exist." $user_id $instance_id
         }
     } 
-    set tc_lists [acc_fin::curve_import $tc_larr(x) $tc_larr(y) $tc_larr(label) [list ] $p1_arr(time_est_short) $p1_arr(time_est_median) $p1_arr(time_est_long) [list ] ]
+    set tc_lists [acc_fin::curve_import $tc_larr(x) $tc_larr(y) $tc_larr(label) [list ] $p1_arr(time_est_short) $p1_arr(time_est_median) $p1_arr(time_est_long) [list ] tcurve_source ]
 
 
     # # # Make cost_curve_data defaults
@@ -1901,13 +1919,15 @@ ad_proc -public acc_fin::scenario_prettify {
         }
     }
     ns_log Notice "acc_fin::scenario_prettify.1422: scenario '$scenario_tid' cc_larr(x) '$cc_larr(x)' cc_larr(y) '$cc_larr(y)'"
-    set cc_lists [acc_fin::curve_import $cc_larr(x) $cc_larr(y) $cc_larr(label) [list ] $p1_arr(cost_est_low) $p1_arr(cost_est_median) $p1_arr(cost_est_high) [list ] ]
+    set cc_lists [acc_fin::curve_import $cc_larr(x) $cc_larr(y) $cc_larr(label) [list ] $p1_arr(cost_est_low) $p1_arr(cost_est_median) $p1_arr(cost_est_high) [list ] ccurve_source ]
     
     # curves_larr ie *_c_larr has 2 versions: time as t_c_larr and cost as c_c_larr
     # index 0 is default
     set p1_arr(_tCurveRef) [acc_fin::larr_set time_clarr $tc_lists]
+    set p1_arr(_tDcSource) $tcurve_source
  #   set time_clarr(0) $tc_lists
     set p1_arr(_cCurveRef) [acc_fin::larr_set cost_clarr $cc_lists]
+    set p1_arr(_cDcSource) $ccurve_source
 #    set cost_clarr(0) $cc_lists
     ns_log Notice "acc_fin::scenario_prettify.1426: scenario '$scenario_tid' default t curve: time_clarr($p1_arr(_tCurveRef)) '$tc_lists'"
     ns_log Notice "acc_fin::scenario_prettify.1427: scenario '$scenario_tid' default c curve: cost_clarr($p1_arr(_cCurveRef)) '$cc_lists'"
@@ -2142,10 +2162,12 @@ ad_proc -public acc_fin::scenario_prettify {
 
                             set tcurvenum [acc_fin::larr_set time_clarr $curve_lol]
                             # save new reference
-                            lappend $p2_larr(_tCurveRef) $tcurvenum
+                            lappend p2_larr(_tCurveRef) $tcurvenum
+                            lappend p2_larr(_tDcSource) 7
                             ns_log Notice "acc_fin::scenario_prettify.1674: scenario '$scenario_tid' new t curve: time_clarr($tcurvenum) '$curve_lol'"
                         } else {
-                            lappend $p2_larr(_tCurveRef) ""
+                            lappend p2_larr(_tCurveRef) ""
+                            lappend p2_larr(_tDcSource) ""
                             ns_log Warning "acc_fin::scenario_prettify.1676: scenario '$scenario_tid' NO tcurvenum for '$curve_lol'"
                         }
                         if { [lindex $p2_larr(_cCurveRef) $term_idx] ne "" } {
@@ -2166,10 +2188,12 @@ ad_proc -public acc_fin::scenario_prettify {
                             # save new curve
                             set ccurvenum [acc_fin::larr_set cost_clarr $curve_lol]
                             # save new reference
-                            lappend $p2_larr(_cCurveRef) $ccurvenum
+                            lappend p2_larr(_cCurveRef) $ccurvenum
+                            lappend p2_larr(_tDcSource) 7
                             ns_log Notice "acc_fin::scenario_prettify.1694: scenario '$scenario_tid' new c curve: cost_clarr($ccurvenum) '$curve_lol'"
                         } else {
-                            lappend $p2_larr(_cCurveRef) ""
+                            lappend p2_larr(_cCurveRef) ""
+                            lappend p2_larr(_tDcSource) ""
                         }
                         ns_log Notice "acc_fin::scenario_prettify.1700: scenario '$scenario_tid' term '$term' tcurvenum '$tcurvenum' ccurvenum '$ccurvenum'"
                     } else {
@@ -2891,7 +2915,8 @@ ad_proc -public acc_fin::scenario_prettify {
                 set comments "Scenario report for ${scenario_title}: "
                 append comments "scenario_name ${scenario_name} , cp_duration_at_pm ${cp_duration} , cp_cost_pm ${cp_cost} ,"
                 append comments "max_act_count_per_track ${act_count_max} , time_probability_moment ${t_moment} , cost_probability_moment ${c_moment} ,"
-                append comments "setup_time ${setup_diff_secs} , main_processing_time ${time_diff_secs} seconds , time/date finished processing $p1_arr(the_time) "
+                append comments "setup_time ${setup_diff_secs} , main_processing_time ${time_diff_secs} seconds , time/date finished processing $p1_arr(the_time) , "
+                append comments "_tDcSource $p1_arr(_tDcSource) , _cDcSource $p1_arr(_cDcSource)"
                 
                 
                 if { $p1_arr(db_format) ne "" } {
