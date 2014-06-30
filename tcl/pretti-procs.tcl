@@ -893,6 +893,7 @@ ad_proc -public acc_fin::pretti_table_to_html {
     set k1 [expr { $max_act_count_per_track / $cp_duration_at_pm } ]
     set k2 [expr {  16. / $column_count } ]
     ns_log Notice "acc_fin::pretti_table_to_html.845: k1 $k1 k2 $k2 color_sig_mask_list '${color_sig_mask_list}' color_oth_mask_list '${color_oth_mask_list}'"
+    # add title column
     set pretti4html_lol [lrange $pretti_lol 0 0]
 
     foreach row [lrange $pretti_lol 1 end] {
@@ -925,7 +926,7 @@ ad_proc -public acc_fin::pretti_table_to_html {
             # contrast_adj
             # color_mask_idx
             # 
-            ns_log Notice "acc_fin::pretti_table_to_html.862: row_nbr '${row_nbr}' cell_nbr '${cell_nbr}' odd_row_p '${odd_row_p}' row_size '${row_size}' activity_time_expected '${activity_time_expected}'"
+
 
             # cell_nbr eq 0  is CP
             set on_a_sig_path_p [expr { $on_a_sig_path_p || ( $cell_nbr == 0 ) } ]
@@ -963,11 +964,13 @@ ad_proc -public acc_fin::pretti_table_to_html {
             foreach digit $color_mask_list {
                 append colorhex [lindex $hex_list $c($digit)]
                 append colorhex "f"
-
+            }
+            if { [string length $colorhex] != 6 } {
+                ns_log Notice "acc_fin::pretti_table_to_html.914: row_nbr '${row_nbr}' cell_nbr '${cell_nbr}' odd_row_p '${odd_row_p}' row_size '${row_size}' activity_time_expected '${activity_time_expected}'"
+                ns_log Notice "acc_fin::pretti_table_to_html.915: issue colorhex '$colorhex' on_a_sig_path_p ${on_a_sig_path_p} popularity $popularity dec_nbr_val ${dec_nbr_val} c(0) '$c(0)' c(1) '$c(1)' color_mask_list '${color_mask_list}'"
             }
 
-            ns_log Notice "acc_fin::pretti_table_to_html.915: colorhex '$colorhex' on_a_sig_path_p ${on_a_sig_path_p} popularity $popularity dec_nbr_val ${dec_nbr_val} c(0) '$c(0)' c(1) '$c(1)' color_mask_list '${color_mask_list}'"
-            set cell_formatting [list style "background-color: #${colorhex};"]
+            set cell_formatting [list style "vertical-align: top; background-color: #${colorhex};"]
             if { $cell eq "" } {
                 set cell "&nbsp;"
             }
