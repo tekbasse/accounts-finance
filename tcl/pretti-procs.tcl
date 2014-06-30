@@ -67,7 +67,7 @@ ad_proc -private acc_fin::pretti_log_create {
             ns_log Warning "acc_fin::pretti_log_create.48: attempt to post an empty log message has been ignored."
         }
     } else {
-        ns_log Warning "acc_fin::pretti_log_create.51: table_tid '$table_tid' is not a natural number reference. Log message '{$entry_text}' ignored."
+        ns_log Warning "acc_fin::pretti_log_create.51: table_tid '$table_tid' is not a natural number reference. Log message '${entry_text}' ignored."
     }
     return $id
 }
@@ -632,7 +632,7 @@ ad_proc -private acc_fin::pretti_columns_list {
             #      cost_probability_moment A percentage (0..1) along the (cumulative) distribution curve. defaults to "", which defaults to same as time_probability_moment
             #set ret_list \[list name value\]
             ### adding max_concurrent and max_overlap_pct but not sure if these have been coded for use yet..
-            set ret_list [list activity_table_tid activity_table_name task_types_tid task_types_name time_dist_curve_name time_dist_curve_tid cost_dist_curve_name cost_dist_curve_tid time_est_short time_est_median time_est_long time_probability_moment cost_est_low cost_est_median cost_est_high cost_probability_moment db_format index_equation ]
+            set ret_list [list activity_table_tid activity_table_name task_types_tid task_types_name time_dist_curve_name time_dist_curve_tid cost_dist_curve_name cost_dist_curve_tid time_est_short time_est_median time_est_long time_probability_moment cost_est_low cost_est_median cost_est_high cost_probability_moment db_format index_equation precision]
         }
         p11 {
             #set ret_list \[list name value\]
@@ -832,11 +832,13 @@ ad_proc -public acc_fin::pretti_table_to_html {
         set colorswap_p 0
     }
     
-    set max_act_count_per_track $row_count
+    set max_act_count_per_track $column_count
+    # max_act_count_per_track is the max count of an activity on all paths ie. answers q: What is the maximum count of an activity on this table?
     regexp -- {[^a-z\_]?max_act_count_per_track[\ \=\:]([0-9]+)[^0-9]} $comments scratch max_act_count_per_track
     if { $max_act_count_per_track == 0 } {
-        set max_act_count_per_track $row_count
+        set max_act_count_per_track $column_count
     }
+
     regexp -- {[^a-z\_]?cp_duration_at_pm[\ \=\:]([0-9]+)[^0-9]} $comments scratch cp_duration_at_pm
     if { $cp_duration_at_pm == 0 } {
         # Calculate cp_duration_at_pm manually, using path_1 (cp track)
@@ -901,18 +903,16 @@ ad_proc -public acc_fin::pretti_table_to_html {
         set cell_nbr 0
         foreach cell $row {
             set activity_time_expected ""
-
+            set on_a_sig_path_p 0
+            set popularity 0
+            set row_size 1
             if { [regexp -- {t:([0-9\.]+)[^0-9]} $cell scratch activity_time_expected ] } {
                 set row_size [f::max [expr { int( $activity_time_expected * $k1 ) } ] 1 ]
-            } else {
-                set row_size 1
-            }
+            } 
             if { [regexp -- {<!--[^0-9]([0-9\.]+)[^0-9]([0-9\.]+)[^0-9]-->} $cell scratch on_a_sig_path_p popularity ] } {
                 # on_a_sig_path_p specified
-            } else {
-                set on_a_sig_path_p 0
-                set popularity 0
-            }
+                # popularity specified
+            } 
 
             # CP in highest contrast (yellow ff9) for the column: ff9 ee9 ff9 ee9 ff9
             # CP-alt means on_a_sig_path_p
@@ -1760,6 +1760,7 @@ ad_proc -public acc_fin::scenario_prettify {
     set error_fail 0
     set error_cost 0
     set error_time 0
+    set index_eq ""
     # # # load scenario values -- requires scenario_tid
     
     # activity_table contains:
@@ -1775,6 +1776,7 @@ ad_proc -public acc_fin::scenario_prettify {
         set p1_arr($constant) ""
     }
     # preload p1 defaults
+
     set p1_arr(time_probability_moment) "0.5"
     # set p1_arr(max_overlap_pct) "" defaults to 1
     # set p1_arr(max_concurrent) "" defaults to infinite ie no concurrency limit.
@@ -2265,8 +2267,8 @@ ad_proc -public acc_fin::scenario_prettify {
                         set time_expected $t_est_arr($tref)
                         ## act_time_expected_arr(act) is the time expected to complete an activity
                         set act_time_expected_arr($act) $time_expected
-                        ## trunk_duration_arr(act_tree_list) is the time expected to complete an activity and its dependents
-                        set trunk_duration_arr(${act_list}) $time_expected
+                        ## trunk_duration_arr(act) is the time expected to complete an activity and its dependents
+                        set trunk_duration_arr($act) $time_expected
                     } else {
                         ns_log Warning "acc_fin::scenario_prettify.1763: scenario '$scenario_tid' act '$act' tref '${tref}' p2_larr(_tCurveRef) '$p2_larr(_tCurveRef)'"
                         acc_fin::pretti_log_create $scenario_tid "${act}" "value" "Duration referenced in activity  '${act}' is undefined.(ref1763)" $user_id $instance_id
@@ -2278,8 +2280,8 @@ ad_proc -public acc_fin::scenario_prettify {
                         set cost_expected $c_est_arr($cref)
                         ## act_cost_expected_arr(act) is the cost expected to complete an activity
                         set act_cost_expected_arr($act) $cost_expected
-                        ## path_cost_arr(act_tree_list) is the cost expected to complete an activity and its dependents
-                        set path_cost_arr(${act_list}) $cost_expected
+                        ## trunk_cost_arr(act) is the cost expected to complete an activity and its dependents
+                        set trunk_cost_arr($act) $cost_expected
                     } else {
                         ns_log Warning "acc_fin::scenario_prettify.1773: scenario '$scenario_tid' act '$act' cref '${cref}' p2_larr(_cCurveRef) '$p2_larr(_cCurveRef)'"
                         acc_fin::pretti_log_create $scenario_tid "${act}" "value" "Cost referenced in activity '${act}' is undefined.(ref1773)" $user_id $instance_id
@@ -2551,11 +2553,11 @@ ad_proc -public acc_fin::scenario_prettify {
                                     lappend ptrack_list $pa
                                     # subtotal
                                     set path_cost [expr { $path_cost + $act_cost_expected_arr($pa) } ]
-                                    set path_cost_arr($ptrack_list) $path_cost
+                                    set trunk_cost_arr($pa) $path_cost
                                 }
                                 # save this for later reporting
-                                #set path_cost_arr($path_list) $path_cost
-                                # duplicative. see above.
+                                ###set trunk_cost_arr($path_list) $path_cost
+                                #### duplicative. see above.
                             } else {
                                 set path_cost ""
                             }
@@ -2875,7 +2877,7 @@ ad_proc -public acc_fin::scenario_prettify {
                         set on_a_sig_path_p [expr { $act_freq_in_load_cp_alts_arr($act) > $act_count_median } ]
 
                         # base for p5
-                        set activity_list [list $act $activity_counter $has_direct_dependency_p [join $dependencies_larr($act) " "] [llength $dependencies_larr($act)] $on_critical_path_p_arr($act) $on_a_sig_path_p $act_freq_in_load_cp_alts_arr($act) $popularity_arr($act) $act_time_expected_arr($act) $trunk_duration_arr($act)  $act_cost_expected_arr($act) $trunk_cost_arr($act) $c_dc_source_arr($act) $act_coef($act) ]
+                        set activity_list [list $act $activity_counter $has_direct_dependency_p [join $dependencies_larr($act) " "] [llength $dependencies_larr($act)] $on_critical_path_p_arr($act) $on_a_sig_path_p $act_freq_in_load_cp_alts_arr($act) $popularity_arr($act) $act_time_expected_arr($act) $trunk_duration_arr($act) $t_dc_source_arr($act) $act_cost_expected_arr($act) $trunk_cost_arr($act) $c_dc_source_arr($act) $act_coef($act) ]
                         lappend p5_lists $activity_list
                     }
                     # base for p6
@@ -2926,7 +2928,10 @@ ad_proc -public acc_fin::scenario_prettify {
                     qss_table_create $p5_lists "${scenario_name}.p5" "${scenario_title}.p5" $comments "" p5 $instance_id $user_id
                     qss_table_create $p6_lists "${scenario_name}.p6" "${scenario_title}.p6" $comments "" p6 $instance_id $user_id
                 }
-                
+                set precision ""
+                if { [qf_is_decimal $p1_arr(precision) ] } {
+                    set precision $p1_arr(precision)
+                } 
                 # # # build p4
                 
                 # save as a new table of type p4
@@ -2961,6 +2966,12 @@ ad_proc -public acc_fin::scenario_prettify {
                 set p4_lists [list ]
                 set title_row_list [list ]
                 set path_num 1
+
+                # in p4 PRETTI table, each path is a column, so each row is built from each column, each column lappends each row..
+                # store each row in: row_larr()
+                for {set i 0} {$i < $act_count_max} {incr i} {
+                    set row_larr($i) [list ]
+                }
                     
                 foreach path_idx_dur_cost_len_list $paths_sort1_lists {
                     set path_idx [lindex $path_idx_dur_cost_len_list 0]
@@ -2975,35 +2986,55 @@ ad_proc -public acc_fin::scenario_prettify {
                     set path_len_w_coefs [lindex $path_idx_dur_cost_len_list 4]
                     set index_custom [lindex $path_idx_dur_cost_len_list 5]
 
-                    # each primary_sort_lists is a path:
-                    # activity_ref  is the last activity_ref in the paths
-                    set activity_ref [lindex $path_list 0]
-                    # activity_seq_num 
-                    # dependencies_q cp_q significant_q popularity waypoint_duration activity_time 
-                    # direct_dependencies activity_cost waypoint_cost
-
-                    #### So, column looping should include path_activity_lists as well as primary_sort_lists... see paths_arr()
-                    ## and each subpath should be analyzed to see if on CP, significant etc. ie recalced for index 4 and 5 of primary_sort_lists..
-                    #set path_activity_lists $subtrees_larr(${activity_ref})
                     set path_name "path_${path_num}"
                     lappend title_row_list $path_name
-                    # in p4 PRETTI table, each path is a column, so each row is built from each column, each column lappends each row..
-                    # store each row in: row_larr()
+                    set ptrack_list [list ]
+                    # fill in rows for this column
                     for {set i 0} {$i < $act_count_max} {incr i} {
-                        set row_larr($i) [list ]
-                    }
-                    for {set i 0} {$i < $act_count_max} {incr i} {
-                        set activity [lindex $path_activity_list $i]
+                        set activity [lindex $path_list $i]
                         if { $activity ne "" } {
                             # cell should contain this info: "$act t:${time_expected} T:${branches_duration_max} D:${dependencies} "
+                            lappend ptrack_list $activity
                             set cell "${activity} "
-                            append cell "t:$time_expected_arr(${activity}) "
-                            append cell "ts:${path_duration} "
-                            append cell "c:$cost_expeected_arr(${activity}) "
-                            append cell "cs:${path_cost} "
+                            append cell "t:"
+                            if { $act_time_expected_arr($activity) ne "" } {
+                                if { $precision eq "" } {
+                                    append cell $act_time_expected_arr($activity)
+                                } else {
+                                    append cell [qaf_round_to_precision $act_time_expected_arr($activity) $precision ]
+                                }
+                            } 
+                            append cell " <br> "
+                            append cell "ts:"
+                            if { $trunk_duration_arr($activity) ne "" } {
+                                if { $precision eq "" } {
+                                    append cell $trunk_duration_arr($activity) 
+                                } else {
+                                    append cell [qaf_round_to_precision $trunk_duration_arr($activity) $precision ]
+                                }
+                            }
+                            append cell " <br> "
+                            append cell "c:"
+                            if { $act_cost_expected_arr($activity) ne "" } {
+                                if { $precision eq "" } {
+                                    append cell $act_cost_expected_arr($activity)
+                                } else {
+                                    append cell [qaf_round_to_precision $act_cost_expected_arr($activity) $precision ]
+                                }
+                            }
+                            append cell " <br> "
+                            append cell "cs:"
+                            if { $trunk_cost_arr($activity) ne "" } {
+                                if { $precision eq "" } {
+                                    append cell $trunk_cost_arr($activity)
+                                } else {
+                                    append cell [qaf_round_to_precision $trunk_cost_arr($activity) $precision ]
+                                }
+                            }
+                            append cell " <br> "
                             append cell "d:("
                             append cell [join $dependencies_larr(${activity}) " "]
-                            append cell ") "
+                            append cell ") <br> "
                             set popularity $popularity_arr($activity)
                             set on_a_sig_path_p [expr { $act_freq_in_load_cp_alts_arr($act) > $act_count_median } ]
                             # this calced in p4 html generator: set on_cp_p [expr { $count_on_cp_p_arr($activity) > 0 } ]
@@ -3020,7 +3051,7 @@ ad_proc -public acc_fin::scenario_prettify {
                 for {set i 0} {$i < $act_count_max} {incr i} {
                     lappend p4_lists $row_larr($i)
                 }
-                qss_table_create $p4_lists "${scenario_name}.p4" ${scenario_title} $comments "" p4 $instance_id $user_id
+                qss_table_create $p4_lists "${scenario_name}.p4" "${scenario_title}.p4" $comments "" p4 $instance_id $user_id
                 # Comments data will be interpreted for determining standard deviation for determining cell highlighting
             }
             # next c_moment

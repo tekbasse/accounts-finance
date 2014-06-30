@@ -46,9 +46,19 @@ ad_proc -public qaf_round_to_decimals {
     number
     {exponent "0"}
 } {
-    Rounds a number to n decimal places
+    Rounds a number to n decimal places.
 } {
     set magnitude [expr { pow( 10. , $exponent ) } ] 
     set rounded [expr { round( $number * $magnitude ) / $magnitude } ]
     return $rounded
+}
+
+ad_proc -public qaf_round_to_precision {
+    number
+    {precision "1"}
+} {
+    Rounds a number to a precision value. This is handy especially for exact monetary change when the smallest unit is not decimal, 0.05 for example.
+} {
+    # copy of dt_round_to_precision from acs-datetime
+    return [expr { $precision * round( double($number) / $precision ) } ]
 }
