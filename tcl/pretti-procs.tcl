@@ -883,7 +883,7 @@ ad_proc -public acc_fin::pretti_table_to_html {
 
     set hex_list [list 0 1 2 3 4 5 6 7 8 9 a b c d e f]
     set bin_list [list 000 100 010 110 001 101 011 111]
-
+    
     set color_sig_mask [lindex $bin_list $color_sig_mask_idx]
     set color_sig_mask_list [split $color_sig_mask ""]
     set color_oth_mask [lindex $bin_list $color_oth_mask_idx]
@@ -891,7 +891,7 @@ ad_proc -public acc_fin::pretti_table_to_html {
 
     set row_nbr 1
     set k1 [expr { $max_act_count_per_track / $cp_duration_at_pm } ]
-    set k2 [expr {  16. / $column_count } ]
+    set k2 [expr {  16. / $max_act_count_per_track } ]
     ns_log Notice "acc_fin::pretti_table_to_html.845: k1 $k1 k2 $k2 color_sig_mask_list '${color_sig_mask_list}' color_oth_mask_list '${color_oth_mask_list}'"
     # add title column
     set pretti4html_lol [lrange $pretti_lol 0 0]
@@ -907,6 +907,11 @@ ad_proc -public acc_fin::pretti_table_to_html {
             set on_a_sig_path_p 0
             set popularity 0
             set row_size 1
+            set first_space [string first $cell " "]
+            incr first_space -1
+            set activity [string range $cell 0 $first_space]
+            set on_cp_p [expr { $cell_nbr == 0 || ( [lsearch $cp_list $activity] > -1 ) } ]
+
             if { [regexp -- {t:([0-9\.]+)[^0-9]} $cell scratch activity_time_expected ] } {
                 set row_size [f::max [expr { int( $activity_time_expected * $k1 ) } ] 1 ]
             } 
@@ -914,7 +919,7 @@ ad_proc -public acc_fin::pretti_table_to_html {
                 # on_a_sig_path_p specified
                 # popularity specified
             } 
-
+            ns_log Notice "acc_fin::pretti_table_to_html.913: activity '$activity' on_cp_p $on_cp_p row_size $row_size popularity $popularity on_a_sig_path_p $on_a_sig_path_p first_space $first_space"
             # CP in highest contrast (yellow ff9) for the column: ff9 ee9 ff9 ee9 ff9
             # CP-alt means on_a_sig_path_p
             # CP-alt in alternating lt magenta to lt green: 99f .. 9f9 of lowering contrast to f77
@@ -926,11 +931,11 @@ ad_proc -public acc_fin::pretti_table_to_html {
             # contrast_adj
             # color_mask_idx
             # 
-
+            # c(0) is other
+            # c(1) is primary
 
             # cell_nbr eq 0  is CP
-            set on_a_sig_path_p [expr { $on_a_sig_path_p || ( $cell_nbr == 0 ) } ]
-
+            set on_a_sig_path_p [expr { $on_a_sig_path_p || $on_cp_p } ]
             if { $on_a_sig_path_p } {
                 # significant, base color pink f0f
                 # see color_sig_mask
@@ -939,9 +944,13 @@ ad_proc -public acc_fin::pretti_table_to_html {
                 # max $popularity is column_count
                 # create 2 values to be used with masks, 1 is most significant, 0 less significant
                 set color_mask_list $color_sig_mask_list
-                set dec_nbr_val [f::max 16 [expr { int( $popularity * $k2 ) } ]]
+                if { $on_cp_p } {
+                    set dec_nbr_val 16
+                } else {
+                    set dec_nbr_val [expr { int( $popularity * $k2 ) } ]
+                }
                 set c(1) $dec_nbr_val
-                set c(0) [expr { 16 - $dec_nbr_val } ]
+                set c(0) [f::max 0 [f::min 9 [expr { $dec_nbr_val - 6 } ]]]
                 
             } else {
                 # other, base color green 0f0
@@ -960,6 +969,8 @@ ad_proc -public acc_fin::pretti_table_to_html {
             if { $odd_row_p } {
                 incr c(1) -1
             }
+            incr c(1) -1
+            incr c(0) -1
 
             foreach digit $color_mask_list {
                 append colorhex [lindex $hex_list $c($digit)]
