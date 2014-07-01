@@ -1,3 +1,4 @@
+
 ad_library {
 
     PRETTI routines used for Project Reporting Evaluation and Track Task Interpretation
@@ -833,7 +834,7 @@ ad_proc -public acc_fin::pretti_table_to_html {
         set colorswap_p 0
     }
 
-    ns_log Notice "acc_fin::pretti_table_to_html.836: color_sig_mask_idx $color_sig_mask_idx color_oth_mask_idx $color_oth_mask_idx colorswap_p $colorswap_p"
+    #ns_log Notice "acc_fin::pretti_table_to_html.836: color_sig_mask_idx $color_sig_mask_idx color_oth_mask_idx $color_oth_mask_idx colorswap_p $colorswap_p"
     set max_act_count_per_track $column_count
     # max_act_count_per_track is the max count of an activity on all paths ie. answers q: What is the maximum count of an activity on this table?
     regexp -- {[^a-z\_]?max_act_count_per_track[\ \=\:]([0-9]+)[^0-9]} $comments scratch max_act_count_per_track
@@ -854,7 +855,7 @@ ad_proc -public acc_fin::pretti_table_to_html {
             set cp_duration_at_pm $test_num
         }
     }
-    ns_log Notice "acc_fin::pretti_table_to_html.857: cp_duration_at_pm $cp_duration_at_pm max_act_count_per_track $max_act_count_per_track column_count $column_count row_count $row_count"
+    #ns_log Notice "acc_fin::pretti_table_to_html.857: cp_duration_at_pm $cp_duration_at_pm max_act_count_per_track $max_act_count_per_track column_count $column_count row_count $row_count"
     # determine list of CP activities
     set cp_list [list ]
     foreach row [lrange $pretti_lol 1 end] {
@@ -865,6 +866,7 @@ ad_proc -public acc_fin::pretti_table_to_html {
             incr first_space -1
             set activity [string trim [string range $cell 0 $first_space]]
             if { $first_space > -1 } {
+                # added letter to nulify any octal issues
                 lappend cp_list "z$activity"
             }
         }
@@ -1008,7 +1010,7 @@ ad_proc -public acc_fin::pretti_table_to_html {
                 set cell "&nbsp;"
                 set colorhex "999999"
             }
-            append cell "row $row_nbr col $cell_nbr on_cp $on_cp_p on_sig $on_a_sig_path_p act_on_cp_p $act_on_cp_p <br>"
+            #append cell "row $row_nbr col $cell_nbr on_cp $on_cp_p on_sig $on_a_sig_path_p act_on_cp_p $act_on_cp_p <br>"
             set cell_formatting [list style "vertical-align: top; background-color: #${colorhex};"]
             lappend row4html_list $cell
             lappend row_formatting_list $cell_formatting
