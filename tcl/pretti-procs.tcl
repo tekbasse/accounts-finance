@@ -2663,7 +2663,7 @@ ad_proc -public acc_fin::scenario_prettify {
                 # Extract most significant CP alternates for a focused table
                 # by counting the number of times an act is used in the largest proportion (first half) of paths in path_set_dur_sort1_list
                 
-                ## act_freq_in_load_cp_alts_arr(act) counts number of times an activity appears in all paths (including coefficients)
+                ## act_freq_in_load_cp_alts_arr(act) counts number of times an activity appears in all paths combined (including coefficients)
                 # determine act_freq_in_load_cp_alts_arr(activity)
                 foreach act $activities_list {
                     set act_freq_in_load_cp_alts_arr($act) 0
@@ -2743,17 +2743,26 @@ ad_proc -public acc_fin::scenario_prettify {
                     set path_len_w_coefs [lindex $path_idx_dur_cost_len_list 4]
                     set act_count_on_cp 0
                     set a_sig_path_p 0
-                    set multiple_act_p [regexp {[^\*]+[\*]([^\*]+)} $act scratch base_act]
+                    set term 1
+                    set multiple_act_p [regexp {^([^\*]+)[\*]([^\*]+)} $act scratch term base_act]
                     if { !$multiple_act_p } {
                         set base_act $act
                     }
                     foreach act $path_list {
                         incr act_count_on_cp $count_on_cp_arr($act)
-                        set a_sig_path_p [expr { 0 || ( [lsearch -exact $path_sig_list $act] > -1 ) } ]
-                        set popularity_adj [expr { [lsearch -exact $path_list $base_act] > -1 } ]
-                        incr popularity_arr(${base_act}) $popularity_adj
-                        if { $multiple_act_p } {
-                            incr popularity_arr($act)
+                        set sig_idx [lsearch -exact $path_sig_list $act]
+                        if { $sig_idx > -1 } {
+                            set a_sig_path_p 1
+                        } else {
+                            set a_sig_path_p 0
+                        }
+                        set pop_idx [lsearch -exact $path_list $base_act]
+                        if { $pop_idx > -1 } {
+                            incr popularity_arr(${base_act})
+                            if { $multiple_act_p } {
+                                # increment the case with coeffient as well
+                                incr popularity_arr($act)
+                            }
                         }
                     }
                     set a_sig_path_p_arr(${path_idx}) $a_sig_path_p
@@ -2893,6 +2902,19 @@ ad_proc -public acc_fin::scenario_prettify {
                 set p5_lists [list ]
                 set p5_titles_list [acc_fin::pretti_columns_list p5 1]
                 lappend p5_lists $p5_titles_list
+                set path_act_counter 0
+                foreach act $activities_list {
+                    #set tree_act_cost_arr($act) $trunk_cost_arr($act)
+                    incr path_act_counter
+                    incr act_count_on_cp $count_on_cp_arr($act)
+                    set has_direct_dependency_p [expr { $path_act_counter > 1 } ]
+                    set on_a_sig_path_p [expr { $act_freq_in_load_cp_alts_arr($act) > $act_count_median } ]
+                    
+                    # base for p5
+                    set activity_list [list $act $activity_counter $has_direct_dependency_p [join $dependencies_larr($act) " "] [llength $dependencies_larr($act)] $on_critical_path_p_arr($act) $on_a_sig_path_p $act_freq_in_load_cp_alts_arr($act) $popularity_arr($act) $act_time_expected_arr($act) $trunk_duration_arr($act) $t_dc_source_arr($act) $act_cost_expected_arr($act) $trunk_cost_arr($act) $c_dc_source_arr($act) $act_coef($act) ]
+                    lappend p5_lists $activity_list
+                }
+
                 set p6_lists [list ]
                 set p6_titles_list [acc_fin::pretti_columns_list p6 1]
                 lappend p6_lists $p6_titles_list
@@ -2911,17 +2933,6 @@ ad_proc -public acc_fin::scenario_prettify {
                     set index_custom [lindex $path_idx_dur_cost_len_list 5]
                     set activity_counter 0
                     set act_count_on_cp 0
-                    foreach act $path_list {
-                        #set tree_act_cost_arr($act) $trunk_cost_arr($act)
-                        incr path_act_counter
-                        incr act_count_on_cp $count_on_cp_arr($act)
-                        set has_direct_dependency_p [expr { $path_act_counter > 1 } ]
-                        set on_a_sig_path_p [expr { $act_freq_in_load_cp_alts_arr($act) > $act_count_median } ]
-
-                        # base for p5
-                        set activity_list [list $act $activity_counter $has_direct_dependency_p [join $dependencies_larr($act) " "] [llength $dependencies_larr($act)] $on_critical_path_p_arr($act) $on_a_sig_path_p $act_freq_in_load_cp_alts_arr($act) $popularity_arr($act) $act_time_expected_arr($act) $trunk_duration_arr($act) $t_dc_source_arr($act) $act_cost_expected_arr($act) $trunk_cost_arr($act) $c_dc_source_arr($act) $act_coef($act) ]
-                        lappend p5_lists $activity_list
-                    }
                     # base for p6
                     #            set ret_list [list path_idx path path_counter cp_q significant_q path_duration path_cost index_custom]
                     set cp_q [expr { $path_counter == 0 } ]
@@ -3078,8 +3089,9 @@ ad_proc -public acc_fin::scenario_prettify {
                             append cell "d:("
                             append cell [join $dependencies_larr(${activity}) " "]
                             append cell ") <br> "
-                            set popularity $popularity_arr($activity)
-                            set on_a_sig_path_p [expr { $act_freq_in_load_cp_alts_arr($act) > $act_count_median } ]
+#                            set popularity $popularity_arr($activity)
+                            set popularity $act_freq_in_load_cp_alts_arr($activity)
+                            set on_a_sig_path_p [expr { $act_freq_in_load_cp_alts_arr($activity) > $act_count_median } ]
                             # this calced in p4 html generator: set on_cp_p [expr { $count_on_cp_p_arr($activity) > 0 } ]
                             append cell "<!-- ${on_a_sig_path_p} ${popularity} --> "
                             lappend row_larr($i) $cell
