@@ -813,16 +813,16 @@ ad_proc -public acc_fin::pretti_table_to_html {
         # do nothing
     } else {
         # set default
-        set color_sig_mask_idx 3
+        set color_sig_mask_idx 5
     }
 
-    set color_oth_mask_idx ""
-    regexp -- {[^a-z\_]?color_oth_mask_idx[\ \=\:]([0-7])[^0-7]} $comments scratch color_oth_mask_idx
-    if { [ad_var_type_check_number_p $color_oth_mask_idx] && $color_oth_mask_idx > -1 && $color_oth_mask_idx < 8 } {
+    set color_cp_mask_idx ""
+    regexp -- {[^a-z\_]?color_cp_mask_idx[\ \=\:]([0-7])[^0-7]} $comments scratch color_cp_mask_idx
+    if { [ad_var_type_check_number_p $color_cp_mask_idx] && $color_cp_mask_idx > -1 && $color_cp_mask_idx < 8 } {
         # do nothing
     } else {
         # set default
-        set color_oth_mask_idx 5
+        set color_cp_mask_idx 3
     }
 
     set colorswap_p ""
@@ -834,7 +834,7 @@ ad_proc -public acc_fin::pretti_table_to_html {
         set colorswap_p 0
     }
 
-    #ns_log Notice "acc_fin::pretti_table_to_html.836: color_sig_mask_idx $color_sig_mask_idx color_oth_mask_idx $color_oth_mask_idx colorswap_p $colorswap_p"
+    #ns_log Notice "acc_fin::pretti_table_to_html.836: color_sig_mask_idx $color_sig_mask_idx color_cp_mask_idx $color_cp_mask_idx colorswap_p $colorswap_p"
     set max_act_count_per_track $column_count
     # max_act_count_per_track is the max count of an activity on all paths ie. answers q: What is the maximum count of an activity on this table?
     regexp -- {[^a-z\_]?max_act_count_per_track[\ \=\:]([0-9]+)[^0-9]} $comments scratch max_act_count_per_track
@@ -893,10 +893,10 @@ ad_proc -public acc_fin::pretti_table_to_html {
     set hex_list [list 0 1 2 3 4 5 6 7 8 9 a b c d e f]
     set bin_list [list 000 100 010 110 001 101 011 111]
     
+    set color_cp_mask [lindex $bin_list $color_cp_mask_idx]
+    set color_cp_mask_list [split $color_cp_mask ""]
     set color_sig_mask [lindex $bin_list $color_sig_mask_idx]
     set color_sig_mask_list [split $color_sig_mask ""]
-    set color_oth_mask [lindex $bin_list $color_oth_mask_idx]
-    set color_oth_mask_list [split $color_oth_mask ""]
 
     set k1 [expr { $row_count / $cp_duration_at_pm } ]
     set k2 [expr {  7. / $max_act_count_per_track } ]
@@ -910,10 +910,13 @@ ad_proc -public acc_fin::pretti_table_to_html {
         lappend row_formatting_list $title_formatting
     }
     lappend table_formatting_lists $row_formatting_list
+    #  red f00, green 0f0,   blue 00f
+    # cyan 0ff,  pink f0f, yellow ff0
+
     # CP in highest contrast (yellow ff9) for the column: ff9 ee9 ff9 ee9 ff9
     # CP-alt means on_a_sig_path_p
     # CP-alt in alternating lt magenta to lt green: 99f .. 9f9 of lowering contrast to f77
-    # others in alternating medium green/blue:   66f .. 6f6
+    # others in alternating medium blue/green: 66f  .. 6f6 or pink/green f6f .. 66f 
     # contrast decreases on up to 50%
     # f becomes e for even rows..
     
@@ -2742,7 +2745,7 @@ ad_proc -public acc_fin::scenario_prettify {
                     set path_len [lindex $path_idx_dur_cost_len_list 3]
                     set path_len_w_coefs [lindex $path_idx_dur_cost_len_list 4]
                     set act_count_on_cp 0
-                    set a_sig_path_p 0
+
                     set term 1
                     set multiple_act_p [regexp {^([^\*]+)[\*]([^\*]+)} $act scratch term base_act]
                     if { !$multiple_act_p } {
@@ -2750,12 +2753,11 @@ ad_proc -public acc_fin::scenario_prettify {
                     }
                     foreach act $path_list {
                         incr act_count_on_cp $count_on_cp_arr($act)
+                        set a_sig_path_p 0
                         set sig_idx [lsearch -exact $path_sig_list $act]
                         if { $sig_idx > -1 } {
                             set a_sig_path_p 1
-                        } else {
-                            set a_sig_path_p 0
-                        }
+                        } 
                         set pop_idx [lsearch -exact $path_list $base_act]
                         if { $pop_idx > -1 } {
                             incr popularity_arr(${base_act})
