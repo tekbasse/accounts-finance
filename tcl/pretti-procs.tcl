@@ -859,12 +859,17 @@ ad_proc -public acc_fin::pretti_table_to_html {
         set cell [lindex $row 0]
         if { $cell ne "" } {
             # activity is not Title of activity, but activity_ref
-            if {  [regexp -- {^([^\ ]+) t:} $cell scratch activity_ref ] } {
-                lappend cp_list $activity_ref
+            set first_space [string first " " $cell]
+            incr first_space -1
+            set activity [string range $cell 0 $first_space]
+            if { $first_space > -1 } {
+                lappend cp_list $activity
             }
         }
     }
-    
+    if { [llength $cp_list] == 0 } {
+        ns_log Warning "acc_fin::pretti_table_to_html.868: cp_list is blank. Not a valid p4 table, or regexp needs revising."
+    }
     # Coloring and formating will be interpreted 
     # based on values provided in comments, 
     # data from path_1 and table type (p4) for maximum flexibility.   
@@ -889,102 +894,108 @@ ad_proc -public acc_fin::pretti_table_to_html {
     set color_oth_mask [lindex $bin_list $color_oth_mask_idx]
     set color_oth_mask_list [split $color_oth_mask ""]
 
-    set row_nbr 1
-    set k1 [expr { $max_act_count_per_track / $cp_duration_at_pm } ]
-    set k2 [expr {  16. / $max_act_count_per_track } ]
+    set k1 [expr { $row_count / $cp_duration_at_pm } ]
+    set k2 [expr {  7. / $max_act_count_per_track } ]
     ns_log Notice "acc_fin::pretti_table_to_html.845: k1 $k1 k2 $k2 color_sig_mask_list '${color_sig_mask_list}' color_oth_mask_list '${color_oth_mask_list}'"
     # add title column
     set pretti4html_lol [lrange $pretti_lol 0 0]
-
-    foreach row [lrange $pretti_lol 1 end] {
+    
+    # CP in highest contrast (yellow ff9) for the column: ff9 ee9 ff9 ee9 ff9
+    # CP-alt means on_a_sig_path_p
+    # CP-alt in alternating lt magenta to lt green: 99f .. 9f9 of lowering contrast to f77
+    # others in alternating medium green/blue:   66f .. 6f6
+    # contrast decreases on up to 50%
+    # f becomes e for even rows..
+    
+    # to build cell color:
+    # contrast_adj
+    # color_mask_idx
+    # 
+    # c(0) is other
+    # c(1) is primary
+    
+    # cell_nbr eq 0  is CP
+    
+    #set on_a_sig_path_p [expr { $on_a_sig_path_p || $on_cp_p } ]
+    # 15 - 1 (leave 1 for contrast adjustment)
+    #regexp -- {^([^\ ]+) t:} $cell scratch activity 
+    
+    # significant, base color pink f0f
+    # see color_sig_mask
+    # set color1 and color2 based on activity count, blue lots of count, green is less count
+    # max $popularity is column_count
+    # create 2 values to be used with masks, 1 is most significant, 0 less significant
+    
+    # other, base color green 0f0
+    # see color_oth_mask
+    
+    # constrast_step is number from 1 to 7, with 7 being most popular, 1 least popular
+    # create 2 values to be used with masks, 1 is most sig, 0 less significant
+    set row_nbr 1
+    foreach row_list [lrange $pretti_lol 1 end] {
         set row4html_list [list ]
         set row_formatting_list [list ]
         set odd_row_p [expr { ( $row_nbr / 2. ) != int( $row_nbr / 2 ) } ]
 
         set cell_nbr 0
-        foreach cell $row {
-            set activity_time_expected ""
-            set on_a_sig_path_p 0
-            set popularity 0
-            set row_size 1
-            set first_space [string first $cell " "]
-            incr first_space -1
-            set activity [string range $cell 0 $first_space]
-            set on_cp_p [expr { $cell_nbr == 0 || ( [lsearch $cp_list $activity] > -1 ) } ]
+        foreach cell $row_list {
+            #set activity ""
+            if { $cell ne "" } {
+                set activity_time_expected ""
+                set on_a_sig_path_p 0
+                set popularity 0
 
-            if { [regexp -- {t:([0-9\.]+)[^0-9]} $cell scratch activity_time_expected ] } {
-                set row_size [f::max [expr { int( $activity_time_expected * $k1 ) } ] 1 ]
-            } 
-            if { [regexp -- {<!--[^0-9]([0-9\.]+)[^0-9]([0-9\.]+)[^0-9]-->} $cell scratch on_a_sig_path_p popularity ] } {
-                # on_a_sig_path_p specified
-                # popularity specified
-            } 
-            ns_log Notice "acc_fin::pretti_table_to_html.913: activity '$activity' on_cp_p $on_cp_p row_size $row_size popularity $popularity on_a_sig_path_p $on_a_sig_path_p first_space $first_space"
-            # CP in highest contrast (yellow ff9) for the column: ff9 ee9 ff9 ee9 ff9
-            # CP-alt means on_a_sig_path_p
-            # CP-alt in alternating lt magenta to lt green: 99f .. 9f9 of lowering contrast to f77
-            # others in alternating medium green/blue:   66f .. 6f6
-            # contrast decreases on up to 50%
-            # f becomes e for even rows..
-
-            # to build cell color:
-            # contrast_adj
-            # color_mask_idx
-            # 
-            # c(0) is other
-            # c(1) is primary
-
-            # cell_nbr eq 0  is CP
-            set on_a_sig_path_p [expr { $on_a_sig_path_p || $on_cp_p } ]
-            if { $on_a_sig_path_p } {
-                # significant, base color pink f0f
-                # see color_sig_mask
-
-                # set color1 and color2 based on activity count, blue lots of count, green is less count
-                # max $popularity is column_count
-                # create 2 values to be used with masks, 1 is most significant, 0 less significant
-                set color_mask_list $color_sig_mask_list
-                if { $on_cp_p } {
-                    set dec_nbr_val 16
-                } else {
-                    set dec_nbr_val [expr { int( $popularity * $k2 ) } ]
+                set row_size 1
+                set first_space [string first " " $cell]
+                incr first_space -1
+                set activity [string range $cell 0 $first_space]
+                if { $activity eq "" } {
+                    ns_log Warning "acc_fin::pretti_table_to_html.916: activity '$activity' cell '$cell' bad code. activity not extracted."
                 }
-                set c(1) $dec_nbr_val
-                set c(0) [f::max 0 [f::min 9 [expr { $dec_nbr_val - 6 } ]]]
+
+                set act_on_cp [expr { [lsearch -exact $cp_list $activity] > -1 } ]
+                set on_cp_p [expr { $cell_nbr == 0 || $act_on_cp } ]
                 
-            } else {
-                # other, base color green 0f0
-                # see color_oth_mask
+                if { [regexp -- {t:([0-9\.]+)[^0-9]} $cell scratch activity_time_expected ] } {
+                    set row_size [f::max [expr { int( $activity_time_expected * $k1 ) } ] 1 ]
+                } 
 
-                # constrast_step is number from 1 to 7, with 7 being most popular, 1 least popular
-                # create 2 values to be used with masks, 1 is most sig, 0 less significant
-                set color_mask_list $color_oth_mask_list
-                set dec_nbr_val [f::max 7 [f::min 1 [expr { int( $popularity * $k2 / 2. ) } ] ]]
-                set c(0) $dec_nbr_val
-                set c(1) [expr { int( ( 8 - $dec_nbr_val ) / 2. ) + 4 } ]
-            }
+                # set on_a_sig_path_p and popularity
+                if { ![regexp -- {<!--[^0-9]([0-9\.]+)[^0-9]([0-9\.]+)[^0-9]-->} $cell scratch on_a_sig_path_p popularity ] } {
+                    ns_log Notice "acc_fin::pretti_table_to_html.928: regexp broken for row $row_nbr column $cell_nbr $row_cell cell '$cell'"
+                } 
 
-            set colorhex ""
-
-            if { $odd_row_p } {
-                incr c(1) -1
-            }
-            incr c(1) -1
-            incr c(0) -1
-
-            foreach digit $color_mask_list {
-                append colorhex [lindex $hex_list $c($digit)]
-                append colorhex "f"
-            }
-            if { [string length $colorhex] != 6 } {
-                ns_log Notice "acc_fin::pretti_table_to_html.914: row_nbr '${row_nbr}' cell_nbr '${cell_nbr}' odd_row_p '${odd_row_p}' row_size '${row_size}' activity_time_expected '${activity_time_expected}'"
-                ns_log Notice "acc_fin::pretti_table_to_html.915: issue colorhex '$colorhex' on_a_sig_path_p ${on_a_sig_path_p} popularity $popularity dec_nbr_val ${dec_nbr_val} c(0) '$c(0)' c(1) '$c(1)' color_mask_list '${color_mask_list}'"
-            }
-
-            set cell_formatting [list style "vertical-align: top; background-color: #${colorhex};"]
+                set c(1) [f::max 1 [f::min 15 [expr { int( ( 1 - $on_cp_p ) * ( $on_a_sig_path_p * 7. + $popularity * $k2 ) + ( $on_cp_p * 14. ) ) + 1 } ]]]
+                set c(0) [expr { 15 - $c(1) } ]
+                ns_log Notice "acc_fin::pretti_table_to_html.949: row $row_nbr col $cell_nbr on_cp_p $on_cp_p act_on_cp $act_on_cp popularity $popularity on_a_sig_path_p $on_a_sig_path_p c(0) $c(0) c(1) $c(1)"
+                if { $on_cp_p } {
+                    set color_mask_list $color_sig_mask_list
+                } elseif { $on_a_sig_path_p } {
+                    set color_mask_list $color_sig_mask_list
+                } else {
+                    set color_mask_list $color_oth_mask_list
+                }
+                
+                set colorhex ""
+                
+                if { $odd_row_p } {
+                    incr c(1) -1
+                }
+                
+                foreach digit $color_mask_list {
+                    append colorhex [lindex $hex_list $c($digit) ]
+                    append colorhex "f"
+                }
+                if { [string length $colorhex] != 6 } {
+                    ns_log Notice "acc_fin::pretti_table_to_html.914: row_nbr '${row_nbr}' cell_nbr '${cell_nbr}' odd_row_p '${odd_row_p}' row_size '${row_size}' activity_time_expected '${activity_time_expected}'"
+                    ns_log Notice "acc_fin::pretti_table_to_html.915: issue colorhex '$colorhex' on_a_sig_path_p ${on_a_sig_path_p} popularity $popularity on_cp_p $on_cp_p c(0) '$c(0)' c(1) '$c(1)' color_mask_list '${color_mask_list}'"
+                }
+            } 
             if { $cell eq "" } {
                 set cell "&nbsp;"
+                set colorhex "999999"
             }
+            set cell_formatting [list style "vertical-align: top; background-color: #${colorhex};"]
             lappend row4html_list $cell
             lappend row_formatting_list $cell_formatting
             incr cell_nbr
@@ -3009,7 +3020,8 @@ ad_proc -public acc_fin::scenario_prettify {
                         if { $activity ne "" } {
                             # cell should contain this info: "$act t:${time_expected} T:${branches_duration_max} D:${dependencies} "
                             lappend ptrack_list $activity
-                            set cell "${activity} "
+                            set cell $activity
+                            append cell " "
                             append cell "t:"
                             if { $act_time_expected_arr($activity) ne "" } {
                                 if { $precision eq "" } {
