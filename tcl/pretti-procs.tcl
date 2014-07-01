@@ -900,7 +900,7 @@ ad_proc -public acc_fin::pretti_table_to_html {
 
     set k1 [expr { $row_count / $cp_duration_at_pm } ]
     set k2 [expr {  7. / $max_act_count_per_track } ]
-    ns_log Notice "acc_fin::pretti_table_to_html.845: k1 $k1 k2 $k2 color_sig_mask_list '${color_sig_mask_list}' color_oth_mask_list '${color_oth_mask_list}'"
+    ns_log Notice "acc_fin::pretti_table_to_html.845: k1 $k1 k2 $k2 color_sig_mask_list '${color_sig_mask_list}' color_cp_mask_list '${color_cp_mask_list}'"
     # add title column
     set row4html_list [list ]
     set row_formatting_list [list ]
@@ -983,14 +983,11 @@ ad_proc -public acc_fin::pretti_table_to_html {
                 } 
                 #ns_log Notice "acc_fin::pretti_table_to_html.930: cell $cell on_a_sig_path_p $on_a_sig_path_p popularity $popularity"
                 if { $on_cp_p || $act_on_cp_p } {
-                    set color_mask_list $color_sig_mask_list
+                    set color_mask_list $color_cp_mask_list
                     set c(1) 15
-                } elseif { $on_a_sig_path_p } {
-                    set color_mask_list $color_sig_mask_list
-                    set c(1) [f::max 1 [f::min 15 [expr { 6 + $popularity * $k2 } ]]]
                 } else {
-                    set color_mask_list $color_oth_mask_list
-                    set c(1) [f::max 1 [f::min 15 [expr { $popularity * $k2 } ]]]
+                    set color_mask_list $color_sig_mask_list
+                    set c(1) [f::max 1 [f::min 15 [expr { int( ( 9 * $on_a_sig_path_p ) + $popularity * $k2 ) } ]]]
                 }
                 set c(0) [expr { 15 - $c(1) } ]
                 #ns_log Notice "acc_fin::pretti_table_to_html.949: row $row_nbr col $cell_nbr on_cp_p $on_cp_p act_on_cp $act_on_cp_p popularity $popularity on_a_sig_path_p $on_a_sig_path_p c(0) $c(0) c(1) $c(1)"
@@ -2904,12 +2901,12 @@ ad_proc -public acc_fin::scenario_prettify {
                 set p5_lists [list ]
                 set p5_titles_list [acc_fin::pretti_columns_list p5 1]
                 lappend p5_lists $p5_titles_list
-                set path_act_counter 0
+                set activity_counter 0
                 foreach act $activities_list {
                     #set tree_act_cost_arr($act) $trunk_cost_arr($act)
-                    incr path_act_counter
+                    incr activity_counter
                     incr act_count_on_cp $count_on_cp_arr($act)
-                    set has_direct_dependency_p [expr { $path_act_counter > 1 } ]
+                    set has_direct_dependency_p [expr { $activity_counter > 1 } ]
                     set on_a_sig_path_p [expr { $act_freq_in_load_cp_alts_arr($act) > $act_count_median } ]
                     
                     # base for p5
