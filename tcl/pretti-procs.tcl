@@ -1475,7 +1475,7 @@ ad_proc -private acc_fin::p_load_tid {
                 ns_log Warning "acc_fin::p_load_tid.1356: for ${p_larr_name} i $i type $type _cCurveRef is blank for curve_list '${curve_list}'."
             }
             lappend p_larr(_cCurveRef) $ccurvenum
-            lappend p_larr(_tDcSource) $curve_source
+            lappend p_larr(_cDcSource) $curve_source
             # add default coefficient
             lappend p_larr(_coef) 1
         }
@@ -2233,11 +2233,11 @@ ad_proc -public acc_fin::scenario_prettify {
                             set ccurvenum [acc_fin::larr_set cost_clarr $curve_lol]
                             # save new reference
                             lappend p2_larr(_cCurveRef) $ccurvenum
-                            lappend p2_larr(_tDcSource) 7
+                            lappend p2_larr(_cDcSource) 7
                             ns_log Notice "acc_fin::scenario_prettify.1694: scenario '$scenario_tid' new c curve: cost_clarr($ccurvenum) '$curve_lol'"
                         } else {
                             lappend p2_larr(_cCurveRef) ""
-                            lappend p2_larr(_tDcSource) ""
+                            lappend p2_larr(_cDcSource) ""
                         }
                         ns_log Notice "acc_fin::scenario_prettify.1700: scenario '$scenario_tid' term '$term' tcurvenum '$tcurvenum' ccurvenum '$ccurvenum'"
                     } else {
