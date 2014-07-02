@@ -24,11 +24,11 @@ ad_proc -private acc_fin::example_table {
     switch -exact $table_ref {
         p10a {
             # goes with p20a
-            set ret_list [list [list name value] [activity_table_name "WikipediaPERT"] [list time_est_short 5 ] [list time_est_median 8] [list time_est_long 12] [time_probability_moment 0.5]]
+            set ret_list [list [list name value] [list activity_table_name "WikipediaPERT"] [list time_est_short 5 ] [list time_est_median 8] [list time_est_long 12] [list time_probability_moment 0.5]]
         }
         p11b {
             # goes with p20b
-            set ret_list [list [list name value] [activity_table_name "WikipediaPERTchart"]]
+            set ret_list [list [list name value] [list activity_table_name "WikipediaPERTchart"]]
         }
         p20a {
             set ret_list [list "Wikipedia PERT" "This is an example from PERT entry of Wikipedia. See entry for details: http://en.wikipedia.org/wiki/Program_Evaluation_and_Review_Technique" "activity_ref,time_est_short,time_est_med,time_est_long,time_ext,dependent_tasks\n
@@ -587,7 +587,7 @@ ad_proc -private acc_fin::pretti_example_maker {
                 }
                 dependent_tasks {
                     set row_arr($title) ""
-                    set count [expr { int( pow( [random] * 2. , [random] * 3. ) ) } ]
+                    set count [expr { int( pow( [random] * 2.2 , [random] * 3.5 ) ) } ]
                     set ii 1
                     set delim ""
                     while { $ii < $count } {
