@@ -25,3 +25,6 @@ if { $read_p } {
 if { $admin_p } {
     acc_fin::pretti_example_maker 
 }
+set url [ad_conn package_url]
+append url "/pretti"
+ad_returnredirect $url
