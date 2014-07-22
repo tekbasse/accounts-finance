@@ -120,10 +120,11 @@ if { $read_p } {
 #            qf_close form_id $form_id
 #            set active_link [qf_read form_id $form_id]
 
-            #set stats_list [lreplace $stats_list 1 1 $name_link]
-            set stats_list [linsert $stats_list 3 $active_link]
-        } 
-
+        } else {
+	    set active_link ""
+	}
+	#set stats_list [lreplace $stats_list 1 1 $name_link]
+	set stats_list [linsert $stats_list 3 $active_link]
 
         lappend stats_list $table_flags $last_modified
         if { $trashed_p == 1 } {
