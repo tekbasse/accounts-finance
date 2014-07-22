@@ -16,6 +16,9 @@
         <maturity>0</maturity>
 
         <provides url="accounts-finance" version="0.1d"/>
+	<requires url="acs-datetime" version="4.0"/>
+	<requires url="q-forms" version="5.0"/>
+	<requires url="spreadsheet" version="0.1"/>
 
         <callbacks>
         </callbacks>
