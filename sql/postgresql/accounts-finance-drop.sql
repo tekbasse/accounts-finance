@@ -18,7 +18,7 @@ DROP index qaf_process_log_id_idx;
 DROP index qaf_process_log_instance_id_idx;
 DROP index qaf_process_log_user_id_idx;
 DROP index qaf_process_log_table_tid_idx;
-DROP index qaf_process_log_trashed_idx;
+DROP index qaf_process_log_trashed_p_idx;
 DROP index qaf_process_log_viewed_id_idx;
 DROP index qaf_process_log_viewed_instance_id_idx;
 DROP index qaf_process_log_viewed_user_id_idx;

@@ -25,7 +25,7 @@ create index qaf_process_log_id_idx on qaf_process_log (id);
 create index qaf_process_log_instance_id_idx on qaf_process_log (instance_id);
 create index qaf_process_log_user_id_idx on qaf_process_log (user_id);
 create index qaf_process_log_table_tid_idx on qaf_process_log (table_tid);
-create index qaf_process_log_trashed_idx on qaf_process_log (trashed);
+create index qaf_process_log_trashed_p_idx on qaf_process_log (trashed_p);
 
 CREATE TABLE qaf_process_log_viewed (
      id integer not null,
@@ -70,7 +70,7 @@ CREATE TABLE qaf_initial_conditions (
     title varchar(30),
     user_id integer not null,
     time_created timestamptz not null DEFAULT now(),
-    trashed_p boolean default 'f',
+    trashed_p varchar(1) default '0',
     description text
 );
 
@@ -80,7 +80,7 @@ CREATE TABLE qaf_model (
     title varchar(30),
     user_id integer not null,
     time_created timestamptz not null DEFAULT now(),
-    trashed_p boolean default 'f',
+    trashed_p varchar(1) default '0',
     description text,
     program text
 );
@@ -92,7 +92,7 @@ CREATE TABLE qaf_log_points (
     title varchar(30),
     user_id integer not null,
     time_created timestamptz not null DEFAULT now(),
-    trashed_p boolean default 'f',
+    trashed_p varchar(1) default '0',
     description text
 );
 
@@ -104,7 +104,7 @@ CREATE TABLE qaf_post_calcs (
     title varchar(30),
     user_id integer not null,
     time_created timestamptz not null DEFAULT now(),
-    trashed_p boolean default 'f',
+    trashed_p varchar(1) default '0',
     calculations text
 );
 
@@ -130,7 +130,7 @@ CREATE TABLE qaf_case (
     user_id integer not null,
     time_created timestamptz not null DEFAULT now(),
     last_modified timestamptz not null DEFAULT now(),
-    trashed_p boolean default 'f',
+    trashed_p varchar(1) default '0',
     time_closed timestamptz not null DEFAULT now()
 );
 
@@ -146,7 +146,7 @@ CREATE TABLE qaf_log (
     time_created timestamptz not null DEFAULT now(),
     iterations_requested integer,
     iterations_completed integer,
-    trashed_p boolean default 'f',
+    trashed_p varchar(1) default '0',
     description text,
     compute_log text,
     notes text
@@ -162,7 +162,7 @@ CREATE TABLE qaf_post_calc_log (
     title varchar(30),
     user_id integer not null,
     time_created timestamptz not null DEFAULT now(),
-    trashed_p boolean default 'f',
+    trashed_p varchar(1) default '0',
     description text,
     compute_log text,
     notes text
