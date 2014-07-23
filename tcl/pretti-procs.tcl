@@ -2387,6 +2387,8 @@ ad_proc -public acc_fin::scenario_prettify {
                     set act_seq_num_arr($act) $sequence_1
                     ## act_coef(act) is the coefficient of an activity. If activity is defined as a multiple of another activity, it is an integer greater than 1 otherwise 1.
                     set act_coef($act) [lindex $p2_larr(_coef) $i]
+		    set act_tcref($act) [lindex $p2_larr(_tCurveRef) $i]
+		    set act_ccref($act) [lindex $p2_larr(_cCurveRef) $i]
                     incr i
                 }
                 
@@ -2909,6 +2911,9 @@ ad_proc -public acc_fin::scenario_prettify {
                 # p5 are activities, and p6 are paths. a path key is shared between p5 and p6 tables
                 set p5_lists [list ]
                 set p5_titles_list [acc_fin::pretti_columns_list p5 1]
+		# *_dc_ref references cache reference
+		lappend p5_titles_list "t_dc"
+		lappend p5_titles_list "c_dc"
                 lappend p5_lists $p5_titles_list
                 set activity_counter 0
                 foreach act $activities_list {
@@ -2919,7 +2924,7 @@ ad_proc -public acc_fin::scenario_prettify {
                     set on_a_sig_path_p [expr { $act_freq_in_load_cp_alts_arr($act) > $act_count_median } ]
                     
                     # base for p5
-                    set activity_list [list $act $activity_counter $has_direct_dependency_p [join $dependencies_larr($act) " "] [llength $dependencies_larr($act)] $on_critical_path_p_arr($act) $on_a_sig_path_p $act_freq_in_load_cp_alts_arr($act) $popularity_arr($act) $act_time_expected_arr($act) $trunk_duration_arr($act) $t_dc_source_arr($act) $act_cost_expected_arr($act) $trunk_cost_arr($act) $c_dc_source_arr($act) $act_coef($act) ]
+                    set activity_list [list $act $activity_counter $has_direct_dependency_p [join $dependencies_larr($act) " "] [llength $dependencies_larr($act)] $on_critical_path_p_arr($act) $on_a_sig_path_p $act_freq_in_load_cp_alts_arr($act) $popularity_arr($act) $act_time_expected_arr($act) $trunk_duration_arr($act) $t_dc_source_arr($act) $act_cost_expected_arr($act) $trunk_cost_arr($act) $c_dc_source_arr($act) $act_coef($act) $act_tcref($act) $act_ccref($act) ]
                     lappend p5_lists $activity_list
                 }
 
