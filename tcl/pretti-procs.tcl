@@ -2562,6 +2562,7 @@ ad_proc -public acc_fin::scenario_prettify {
                 #   paths_lists is a list of (full paths, subtotal duration, subtotal cost)
                 set paths_lists [list ]
                 set path_idx 0
+		set act_count_max 0
                 foreach act $activities_list {
                     # Remove partial tracks from subtrees by placing only paths in paths_lists
                     ns_log Notice "acc_fin::scenario_prettify.2485: scenario '$scenario_tid' path_tree_p_arr($act) '$path_tree_p_arr($act)' "
@@ -2624,6 +2625,11 @@ ad_proc -public acc_fin::scenario_prettify {
                             ## path_len_arr(path_idx) is length of path list
                             set path_len_arr(${path_idx}) $path_len
                             lappend row_list $path_len
+
+			    # max of path_len is same as act_count_max
+			    if { $path_len > $act_count_max } {
+				set act_count_max $path_len
+			    }
 
                             set path_len_w_coef 0
                             foreach pa $path_list {
@@ -2711,7 +2717,8 @@ ad_proc -public acc_fin::scenario_prettify {
                 }
 
                 ## act_count_max is max count of unique activities on a path
-                set act_count_max [lindex [lindex $activities_popular_sort_list 0] 1]
+                # This doesn't work for all cases: set act_count_max [lindex [lindex $activities_popular_sort_list 0] 1]
+
                 ## act_count_median is median count of unique activities on a path
                 set act_count_median [lindex [lindex $activities_popular_sort_list $act_count_median_pos] 1]
 
@@ -2920,7 +2927,7 @@ ad_proc -public acc_fin::scenario_prettify {
                     #set tree_act_cost_arr($act) $trunk_cost_arr($act)
                     incr activity_counter
                     incr act_count_on_cp $count_on_cp_arr($act)
-                    set has_direct_dependency_p [expr { $activity_counter > 1 } ]
+                    set has_direct_dependency_p [expr { [llength $dependencies_larr($act)] > 0 } ]
                     set on_a_sig_path_p [expr { $act_freq_in_load_cp_alts_arr($act) > $act_count_median } ]
                     
                     # base for p5
@@ -2984,8 +2991,8 @@ ad_proc -public acc_fin::scenario_prettify {
                 # time_probability_moment, cost_probability_moment, 
                 # scenario_name, processing_time, time/date finished processing
                 set comments "Scenario report for ${scenario_title}: "
-                append comments "scenario_name ${scenario_name} , cp_duration_at_pm ${cp_duration} , cp_cost_pm ${cp_cost} ,"
-                append comments "max_act_count_per_track ${act_count_max} , time_probability_moment ${t_moment} , cost_probability_moment ${c_moment} ,"
+                append comments "scenario_name ${scenario_name} , cp_duration_at_pm ${cp_duration} , cp_cost_pm ${cp_cost} , "
+                append comments "max_act_count_per_track ${act_count_max} , time_probability_moment ${t_moment} , cost_probability_moment ${c_moment} , "
                 append comments "setup_time ${setup_diff_secs} , main_processing_time ${time_diff_secs} seconds , time/date finished processing $p1_arr(the_time) , "
                 append comments "_tDcSource $p1_arr(_tDcSource) , _cDcSource $p1_arr(_cDcSource)"
                 
