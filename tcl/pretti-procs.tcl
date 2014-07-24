@@ -160,7 +160,7 @@ ad_proc -public acc_fin::pert_omp_to_strict_dc {
     Te = ( o + 4 * m + p ) / 6 and o = optimistic time, m = most likely time, and p = pessimistic time.
     This 3 point curve has lower limit (o), upper limit (p) and median (m). 
 } {
-#    ns_log Notice "acc_fin::pert_omp_to_strict_dc.24: optimistic $optimistic most_likely $most_likely pessimistic $pessimistic"
+    #    ns_log Notice "acc_fin::pert_omp_to_strict_dc.24: optimistic $optimistic most_likely $most_likely pessimistic $pessimistic"
     # nomenclature of inputs  statistics:
     # set median $most_likely
     # set minimum $optimistic
@@ -225,20 +225,20 @@ ad_proc -public acc_fin::pert_omp_to_normal_dc {
     # which further reduces to:
 
     set std_dev(0) [expr { $sqrt_2 * abs( $most_likely - $optimistic ) } ]
-#    set variance(0) [expr { pow( $std_dev(0) , 2. ) } ]
-#    set precision(0) [expr { 1. / $std_dev(0) } ]
-#    set precision2(0) [expr { 1. / pow( $std_dev(0) , 2. ) } ]
+    #    set variance(0) [expr { pow( $std_dev(0) , 2. ) } ]
+    #    set precision(0) [expr { 1. / $std_dev(0) } ]
+    #    set precision2(0) [expr { 1. / pow( $std_dev(0) , 2. ) } ]
     set precision(0) 1.
     set precision2(0) [expr { pow( $precision(0) , 2. ) } ]
     # Right tail represents median to maximum.
     set std_dev(1) [expr { $sqrt_2 * abs( $pessimistic - $most_likely ) } ]
-#    set variance(1) [expr { 2. * pow( $std_dev(1) , 2. ) } ]
-#    set precision(1) [expr { 1. / $std_dev(1) } ]
-#    set precision2(1) [expr { 1. / pow( $std_dev(1) , 2. ) } ]
+    #    set variance(1) [expr { 2. * pow( $std_dev(1) , 2. ) } ]
+    #    set precision(1) [expr { 1. / $std_dev(1) } ]
+    #    set precision2(1) [expr { 1. / pow( $std_dev(1) , 2. ) } ]
     set precision(1) 1.
     set precision2(1) [expr { pow( $precision(1) , 2. ) } ]
 
-#    ns_log Notice "acc_fin::pert_omp_to_normal_dc.42: std_dev_left $std_dev(0) std_dev_right $std_dev(1)"
+    #    ns_log Notice "acc_fin::pert_omp_to_normal_dc.42: std_dev_left $std_dev(0) std_dev_right $std_dev(1)"
     # f(x) is the normal distribution function. x = 0 at $median
     
     # for each section of the curve divided into p_count() ie ($n_areas /2) sections of approximately equal area.
@@ -273,7 +273,7 @@ ad_proc -public acc_fin::pert_omp_to_normal_dc {
     }
     
     # create tails and their analogs
- #   ns_log Notice "acc_fin::pert_omp_to_normal_dc.83: n_areas $n_areas p_count(0) $p_count(0) p_count(1) $p_count(1)"
+    #   ns_log Notice "acc_fin::pert_omp_to_normal_dc.83: n_areas $n_areas p_count(0) $p_count(0) p_count(1) $p_count(1)"
     # from median to double standard deviation to approximate OMP calculations
 
     # left tail, assume symmetric, but calculate to reduce error
@@ -299,18 +299,18 @@ ad_proc -public acc_fin::pert_omp_to_normal_dc {
         
         set a 0.
         set a_prev $a
-    
+        
         set x1 0.
-#        set y1 [expr { exp( -0.5 * pow( $x1 , 2. ) ) / $sqrt_2pi } ] 
-#        set y1 [expr { exp( -0.5 * pow( $x1 , 2. ) / $variance($ii) ) / ( $std_dev($ii) * $sqrt_2pi ) } ] 
-#        set y1 [expr { exp( -0.5 * pow( $x1 , 2. ) / $variance($ii) ) / $sqrt_2pi } ] 
+        #        set y1 [expr { exp( -0.5 * pow( $x1 , 2. ) ) / $sqrt_2pi } ] 
+        #        set y1 [expr { exp( -0.5 * pow( $x1 , 2. ) / $variance($ii) ) / ( $std_dev($ii) * $sqrt_2pi ) } ] 
+        #        set y1 [expr { exp( -0.5 * pow( $x1 , 2. ) / $variance($ii) ) / $sqrt_2pi } ] 
         set y1 [expr { $precision($ii) * exp( -0.5 * $precision2($ii) * pow( $x1 , 2. ) ) / $sqrt_2pi } ] 
 
         # estimate delta_x and a:
         set block_count [lindex [qaf_triangular_numbers [expr { $p_count($ii) - 0 } ]] end]
         set numerator 0
 
-#        ns_log Notice "acc_fin::pert_omp_to_normal_dc.90: ii $ii p_count($ii) $p_count($ii) block_count $block_count numerator $numerator std_dev($ii) $std_dev($ii)" 
+        #        ns_log Notice "acc_fin::pert_omp_to_normal_dc.90: ii $ii p_count($ii) $p_count($ii) block_count $block_count numerator $numerator std_dev($ii) $std_dev($ii)" 
 
         # first point in tail:
         set step_021 [expr { $numerator / $block_count } ]
@@ -329,9 +329,9 @@ ad_proc -public acc_fin::pert_omp_to_normal_dc {
             set x2 [expr { $std_dev($ii) * $step_021 } ]
             set delta_x [expr { $x2 - $x1 } ]
             # Calculate y2 = f(x) = using the normal probability density function
-#            set y2 [expr { exp( -0.5 * pow( $x2 , 2. ) ) / $sqrt_2pi } ] 
-#            set y2 [expr { exp( -0.5 * pow( $x2 , 2. ) / $variance($ii) ) / ( $std_dev($ii) * $sqrt_2pi ) } ] 
-#            set y2 [expr { exp( -0.5 * pow( $x2 , 2. ) / $variance($ii) ) / $sqrt_2pi } ] 
+            #            set y2 [expr { exp( -0.5 * pow( $x2 , 2. ) ) / $sqrt_2pi } ] 
+            #            set y2 [expr { exp( -0.5 * pow( $x2 , 2. ) / $variance($ii) ) / ( $std_dev($ii) * $sqrt_2pi ) } ] 
+            #            set y2 [expr { exp( -0.5 * pow( $x2 , 2. ) / $variance($ii) ) / $sqrt_2pi } ] 
             set y2 [expr { $precision($ii) * exp( -0.5 * $precision2($ii) * pow( $x2 , 2. ) ) / $sqrt_2pi } ] 
 
             # Calculate area under normal distribution curve.
@@ -345,7 +345,7 @@ ad_proc -public acc_fin::pert_omp_to_normal_dc {
                 # Left tail
                 set f_x [expr { $most_likely - $y_range_arr(0) * $step_021 } ]
             }
-#            ns_log Notice "acc_fin::pert_omp_to_normal_dc.100: i $i x2 '$x2' x1 '$x1' delta_x '$delta_x' y2 '$y2' y1 '$y1' f_x '$f_x' numerator $numerator step_021 $step_021"
+            #            ns_log Notice "acc_fin::pert_omp_to_normal_dc.100: i $i x2 '$x2' x1 '$x1' delta_x '$delta_x' y2 '$y2' y1 '$y1' f_x '$f_x' numerator $numerator step_021 $step_021"
             lappend x_larr($ii) $x2
             lappend y_larr($ii) $y2
             lappend a_larr($ii) $a
@@ -374,15 +374,15 @@ ad_proc -public acc_fin::pert_omp_to_normal_dc {
     lappend curve_lists [list y x]
 
     # left tail, reverse order
-#### Here a point is subtracted, apparently because the last area is empty.. why??
+    #### Here a point is subtracted, apparently because the last area is empty.. why??
     # p_count() is point length. minus 1 to count from 0 to one less than p_count
     set i_count [expr { $p_count(0) - 1 } ]
     for {set i $i_count} { $i > -1 } {incr i -1} {
         set f_x [lindex $fx_larr(0) $i]
         set delta_a [lindex $da_larr(0) $i]
-#        set a [expr { $a + $delta_a } ]
+        #        set a [expr { $a + $delta_a } ]
         set a [lindex $a_larr(0) $i]
- #       ns_log Notice "acc_fin::pert_omp_to_normal_dc.234: i '$i' delta_a '$delta_a' a '$a' f_x '$f_x'"
+        #       ns_log Notice "acc_fin::pert_omp_to_normal_dc.234: i '$i' delta_a '$delta_a' a '$a' f_x '$f_x'"
         set point_list [list $f_x $delta_a]
         lappend curve_lists $point_list
     }
@@ -394,13 +394,13 @@ ad_proc -public acc_fin::pert_omp_to_normal_dc {
     # right tail, append
     # ref 1
 
-#    set i_count [expr { $p_count(1) - 1 } ]
+    #    set i_count [expr { $p_count(1) - 1 } ]
     for {set i 0} { $i < $p_count(1) } {incr i } {
         set f_x [lindex $fx_larr(1) $i]
         set delta_a [lindex $da_larr(1) $i]
-#        set a [expr { $a + $delta_a } ]
+        #        set a [expr { $a + $delta_a } ]
         set a [lindex $a_larr(1) $i]
- #       ns_log Notice "acc_fin::pert_omp_to_normal_dc.243: i '$i' delta_a '$delta_a' a '$a' f_x '$f_x'"
+        #       ns_log Notice "acc_fin::pert_omp_to_normal_dc.243: i '$i' delta_a '$delta_a' a '$a' f_x '$f_x'"
         set point_list [list $f_x $delta_a]
         lappend curve_lists $point_list
     }
@@ -426,21 +426,21 @@ ad_proc -public acc_fin::pert_omp_to_normal_dc {
     }
     set median_list [list $most_likely $a_new]
 
-#    set median_end_idx [expr { $median_range_idx } ]
-#    ns_log Notice "acc_fin::pert_omp_to_normal_dc.351: a0 $a0 a_curve $a_curve a0_test $a0_test a_new $a_new median_range_idx $median_range_idx median_end_idx $median_end_idx"
-#    set curve_lists [lreplace $curve_lists $median_range_idx $median_end_idx $median_list]
+    #    set median_end_idx [expr { $median_range_idx } ]
+    #    ns_log Notice "acc_fin::pert_omp_to_normal_dc.351: a0 $a0 a_curve $a_curve a0_test $a0_test a_new $a_new median_range_idx $median_range_idx median_end_idx $median_end_idx"
+    #    set curve_lists [lreplace $curve_lists $median_range_idx $median_end_idx $median_list]
     # extra point has already been removed,
     set curve_lists [lreplace $curve_lists $median_range_idx $median_range_idx $median_list]
 
 
-# 
+    # 
     #set f_x [lindex $fx_larr(1) $i]
-#    set f_x $pessimistic
-#    set delta_a [lindex $da_larr(1) $i_count]
-#    set a [expr { $a + $delta_a } ]
-#    ns_log Notice "acc_fin::pert_omp_to_normal_dc.246: i '$i' delta_a '$delta_a' a '$a' f_x '$f_x'"
-#    set point_list [list $f_x $delta_a]
-#    lappend curve_lists $point_list
+    #    set f_x $pessimistic
+    #    set delta_a [lindex $da_larr(1) $i_count]
+    #    set a [expr { $a + $delta_a } ]
+    #    ns_log Notice "acc_fin::pert_omp_to_normal_dc.246: i '$i' delta_a '$delta_a' a '$a' f_x '$f_x'"
+    #    set point_list [list $f_x $delta_a]
+    #    lappend curve_lists $point_list
 
     # remove header for point count
     # but add a point because each item is an area, and there are area_count + 1 points
@@ -448,7 +448,7 @@ ad_proc -public acc_fin::pert_omp_to_normal_dc {
     if { $points_count != $n_areas } {
         ns_log Warning "acc_fin::pert_omp_to_normal_dc.288: curve has $points_count areas instead of requested $n_areas areas (add one for points ie area boundaries). curve_lists $curve_lists"
     } else {
-  #      ns_log Notice "acc_fin::pert_omp_to_normal_dc.289: curve_lists $curve_lists"
+        #      ns_log Notice "acc_fin::pert_omp_to_normal_dc.289: curve_lists $curve_lists"
     }
     return $curve_lists
 }
@@ -521,41 +521,41 @@ ad_proc -public acc_fin::pretti_type_flag {
     set p(p1) 0
     set name_idx [lsearch -exact $title_list "name" ]
     set value_idx [lsearch -exact $title_list "value" ]
-#    ns_log Notice "acc_fin::pretti_columns_list.390 name_idx $name_idx value_idx $value_idx title_list '$title_list'"
+    #    ns_log Notice "acc_fin::pretti_columns_list.390 name_idx $name_idx value_idx $value_idx title_list '$title_list'"
     if { $name_idx > -1 && $value_idx > -1 } {
         # get name column
         set name_list [list ]
-#        ns_log Notice "acc_fin::pretti_columns_list.400 table_lists '$table_lists'"
+        #        ns_log Notice "acc_fin::pretti_columns_list.400 table_lists '$table_lists'"
         foreach row [lrange $table_lists 1 end] {
             lappend name_list [lindex $row $name_idx]
         }
-#        ns_log Notice "acc_fin::pretti_columns_list.401 name_list '$name_list'"
+        #        ns_log Notice "acc_fin::pretti_columns_list.401 name_list '$name_list'"
         # check name_list against p1 required names. 
         # All required names need to be in list, but not all list names are required.
         set p(p1) 1
         # required names in check_list
         set check_list [acc_fin::pretti_columns_list "p1" 1 ]
-#        ns_log Notice "acc_fin::pretti_columns_list.402 check_list $check_list"
+        #        ns_log Notice "acc_fin::pretti_columns_list.402 check_list $check_list"
         foreach check $check_list {
             set p(p1) [expr { $p(p1) && ( [lsearch -exact $name_list $check] > -1 ) } ]
-#            ns_log Notice "acc_fin::pretti_columns_list.404 check $check p(p1) $p(p1)"
+            #            ns_log Notice "acc_fin::pretti_columns_list.404 check $check p(p1) $p(p1)"
         }
 
     }
     if { $p(p1) } {
         set type_return "p1"
-#        ns_log Notice "acc_fin::pretti_columns_list.410 type = p1"
+        #        ns_log Notice "acc_fin::pretti_columns_list.410 type = p1"
     } else {
         # filter other p table types by required minimums first
         set type_list [list "p2" "p3" "p4" "p5" "dc"]
-#        ns_log Notice "acc_fin::pretti_columns_list.414 type not p1. check for $type_list"
+        #        ns_log Notice "acc_fin::pretti_columns_list.414 type not p1. check for $type_list"
         foreach type $type_list {
             set p($type) 1
             set check_list [acc_fin::pretti_columns_list $type 1]
-#            ns_log Notice "acc_fin::pretti_type_flag.58: type $type check_list $check_list"
+            #            ns_log Notice "acc_fin::pretti_type_flag.58: type $type check_list $check_list"
             foreach check $check_list {
                 set p($type) [expr { $p($type) && ( [lsearch -exact $title_list $check] > -1 ) } ]
-#                ns_log Notice "acc_fin::pretti_type_flag.60: check $check p($type) $p($type)"
+                #                ns_log Notice "acc_fin::pretti_type_flag.60: check $check p($type) $p($type)"
             }
         }
         
@@ -566,7 +566,7 @@ ad_proc -public acc_fin::pretti_type_flag {
                 lappend type1_p_list $type
             }
         }
-#        ns_log Notice "acc_fin::pretti_type_flag.69: type1_p_list '${type1_p_list}'"
+        #        ns_log Notice "acc_fin::pretti_type_flag.69: type1_p_list '${type1_p_list}'"
         set type_count [llength $type1_p_list]
         if { $type_count > 1 } {
             # choose one
@@ -594,8 +594,8 @@ ad_proc -public acc_fin::pretti_type_flag {
                     } 
                 }
                 set type3_list [lsort -real -index 1 -decreasing $type3_list]
-#                ns_log Notice "acc_fin::pretti_type_flag.450: type1_p_list '${type1_p_list}'"
-#                ns_log Notice "acc_fin::pretti_type_flag.453: type3_list '$type3_list'"
+                #                ns_log Notice "acc_fin::pretti_type_flag.450: type1_p_list '${type1_p_list}'"
+                #                ns_log Notice "acc_fin::pretti_type_flag.453: type3_list '$type3_list'"
                 set type_return [lindex [lindex $type3_list 0] 0]
             }
         } else {
@@ -603,7 +603,7 @@ ad_proc -public acc_fin::pretti_type_flag {
             append type_return [lindex $type1_p_list 0]
         }
     }
-            
+    
     return $type_return
 }
 
@@ -1051,7 +1051,7 @@ ad_proc -public acc_fin::larr_set {
     set icount [llength $indexes_list]
     # ns_log Notice "acc_fin::larr_ste.945: larr_name $larr_name indexes_list '$indexes_list' icount '$icount'"
     if { $icount > 0 } {
-	# larr already has names. Check against existing names
+        # larr already has names. Check against existing names
         set i 0
         set index [lindex $indexes_list $i]
         set larr_ne_data_p 0
@@ -1085,7 +1085,7 @@ ad_proc -public acc_fin::larr_set {
     if { [llength $data_list] == 0 } { 
         ns_log Warning "acc_fin::larr_set.956: empty data_list request in larr ${larr_name}."
     }
-#    ns_log Notice "acc_fin::larr_set.958: ${larr_name}\(${i}\) '$larr($i)' data_list '${data_list}'"
+    #    ns_log Notice "acc_fin::larr_set.958: ${larr_name}\(${i}\) '$larr($i)' data_list '${data_list}'"
     return $index
 }
 
@@ -1105,6 +1105,7 @@ ad_proc -private acc_fin::p_load_tid {
     upvar 1 cost_clarr cost_clarr
     upvar 1 type_t_curve_arr type_t_curve_arr
     upvar 1 type_c_curve_arr type_c_curve_arr
+    upvar 1 scenario_tid scenario_tid
     # need to pass p1_arr defaults for p2 dc processing
     upvar 1 p1_arr p1_arr
     # following are not upvar'd because the cache is mainly useless after proc ends
@@ -1120,6 +1121,7 @@ ad_proc -private acc_fin::p_load_tid {
     if { $user_id eq "" } {
         set user_id [ad_conn user_id]
     }
+    set success_p 1
     set table_type "p3"
     set type_tcurve_list [list ]
     set type_ccurve_list [list ]
@@ -1418,9 +1420,9 @@ ad_proc -private acc_fin::p_load_tid {
                 if { $aid_type ne "" } {
                     if { [info exists type_t_curve_arr(${aid_type}) ] } {
                         set type_tcurve_list $time_clarr($type_t_curve_arr(${aid_type}))
-########                    } else {
+                    } else {
                         set success_p 0
-                        acc_fin::pretti_log_create $scenario_tid "p_load_tid" "value" "error while loading activity_table.(ref1440)" $user_id $instance_id
+                        acc_fin::pretti_log_create $scenario_tid "p_load_tid" "value" "error. No time curve aid_type '${aid_type}' found while loading activity_table.(ref1440)" $user_id $instance_id
                     }
                 }
             }
@@ -1433,7 +1435,7 @@ ad_proc -private acc_fin::p_load_tid {
             
             lappend p_larr(_tCurveRef) $tcurvenum
             lappend p_larr(_tDcSource) $curve_source
- 
+            
             # cost curve
             set cost_dist_curve_tid ""
             set cost_dist_curve_name ""
@@ -1484,7 +1486,13 @@ ad_proc -private acc_fin::p_load_tid {
             if { $p2_types_exist_p && $p2_type_column_exists_p && $aid_type ne "" } {
                 # aid_type exists, so include option in curve_import                
                 set aid_type [lindex $p_larr(aid_type) $i]
-                set type_ccurve_list $cost_clarr($type_c_curve_arr(${aid_type}))
+                if { [info exists type_c_curve_arr(${aid_type}) ] } {
+                    set type_ccurve_list $cost_clarr($type_c_curve_arr(${aid_type}))
+                } else {
+                    set success_p 0
+                    acc_fin::pretti_log_create $scenario_tid "p_load_tid" "value" "error. No cost curve aid_type '${aid_type}' found while loading activity_table.(ref1540)" $user_id $instance_id
+                }
+
             }
             ns_log Notice "acc_fin::p_load_tid.1352: for ${p_larr_name} i $i cost_est_low '${cost_est_low}' cost_est_median '${cost_est_median}' cost_est_high '${cost_est_high}' type_ccurve_list '${type_ccurve_list}' cc_larr(x) '$cc_larr(x)' cc_larr(y) '$cc_larr(y)' cc_larr(label) '$cc_larr(label)'"
             set curve_list [acc_fin::curve_import $cc_larr(x) $cc_larr(y) $cc_larr(label) $type_ccurve_list $cost_est_low $cost_est_median $cost_est_high $cost_clarr($p1_arr(_cCurveRef)) curve_source]
@@ -1685,7 +1693,7 @@ ad_proc -private acc_fin::curve_import {
         }
         
     }
- 
+    
     # 3. If a minimum, median, and maximum is available, make a curve of it. 
     # or
     if { [llength $c_lists] == 0 && $minimum ne "" && $median ne "" && $maximum ne "" } {
@@ -1771,7 +1779,7 @@ ad_proc -private acc_fin::curve_import {
         ns_log Notice "acc_fin::curve_import.1312: default_lists $default_lists "
     }
     # Return an ordered list of lists representing a curve
-        ns_log Notice "acc_fin::curve_import.1639: c_lists '$c_lists'"
+    ns_log Notice "acc_fin::curve_import.1639: c_lists '$c_lists'"
     return $c_lists
 }
 
@@ -1988,10 +1996,10 @@ ad_proc -public acc_fin::scenario_prettify {
     # index 0 is default
     set p1_arr(_tCurveRef) [acc_fin::larr_set time_clarr $tc_lists]
     set p1_arr(_tDcSource) $tcurve_source
- #   set time_clarr(0) $tc_lists
+    #   set time_clarr(0) $tc_lists
     set p1_arr(_cCurveRef) [acc_fin::larr_set cost_clarr $cc_lists]
     set p1_arr(_cDcSource) $ccurve_source
-#    set cost_clarr(0) $cc_lists
+    #    set cost_clarr(0) $cc_lists
     ns_log Notice "acc_fin::scenario_prettify.1426: scenario '$scenario_tid' default t curve: time_clarr($p1_arr(_tCurveRef)) '$tc_lists'"
     ns_log Notice "acc_fin::scenario_prettify.1427: scenario '$scenario_tid' default c curve: cost_clarr($p1_arr(_cCurveRef)) '$cc_lists'"
     
@@ -2014,63 +2022,69 @@ ad_proc -public acc_fin::scenario_prettify {
         if { [llength $table_stats_list] > 1 && !$trashed_p } {
             set constants_required_list [acc_fin::pretti_columns_list p3 1]
             ns_log Notice "acc_fin::scenario_prettify.1459: scenario '$scenario_tid' import task_types from '$p1_arr(task_types_tid)'."
-            acc_fin::p_load_tid $constants_list $constants_required_list p3_larr $p1_arr(task_types_tid) "" $instance_id $user_id
-            ns_log Notice "acc_fin::scenario_prettify.1460: scenario '$scenario_tid' p3_larr '[array get p3_larr]'"
-
-            # validate decimal values before importing
-            set type_errors_count 0
-            set type_errors_p 0
-            set column_maybe_ck_list [list max_concurrent max_overlap_pct time_dist_curve_tid cost_dist_curve_tid time_est_short time_est_median time_est_long cost_est_low cost_est_median cost_est_high]
-            set column_ck_list [list ]
-            set titles_list [array names p3_larr]
-            # collect titles that are in p3_larr that should be checked
-            foreach col $column_maybe_ck_list {
-                if { [lsearch -exact $titles_list $col] > -1 } {
-                    lappend column_ck_list $col
-                }
-            }
-            # check data for each column
-            foreach col $column_ck_list {
-                if { [string range $col end-3 end] eq "_tid" } {
-                    set filtered_list [acc_fin::list_filter natnum $p3_larr($col) p3 $col]
+            if { $error_fail == 0 } {
+                if { [acc_fin::p_load_tid $constants_list $constants_required_list p3_larr $p1_arr(task_types_tid) "" $instance_id $user_id] } {
+                    ns_log Notice "acc_fin::scenario_prettify.1460: scenario '$scenario_tid' p3_larr '[array get p3_larr]'"
+                    
+                    # validate decimal values before importing
+                    set type_errors_count 0
+                    set type_errors_p 0
+                    set column_maybe_ck_list [list max_concurrent max_overlap_pct time_dist_curve_tid cost_dist_curve_tid time_est_short time_est_median time_est_long cost_est_low cost_est_median cost_est_high]
+                    set column_ck_list [list ]
+                    set titles_list [array names p3_larr]
+                    # collect titles that are in p3_larr that should be checked
+                    foreach col $column_maybe_ck_list {
+                        if { [lsearch -exact $titles_list $col] > -1 } {
+                            lappend column_ck_list $col
+                        }
+                    }
+                    # check data for each column
+                    foreach col $column_ck_list {
+                        if { [string range $col end-3 end] eq "_tid" } {
+                            set filtered_list [acc_fin::list_filter natnum $p3_larr($col) p3 $col]
+                        } else {
+                            set filtered_list [acc_fin::list_filter decimal $p3_larr($col) p3 $col]
+                        }
+                        if { $filtered_list ne $p3_larr($col) } {
+                            set type_errors_p 1
+                        }
+                    }
+                    set index_eq ""
+                    if { $p1_arr(index_equation) ne "" } {
+                        # validate equation or set empty
+                        # only allow + - / * $, logical comparisions > < == != and numbers.  $number converts to one of the available row numbers that returns a number from in p4 
+                        regsub -nocase -all -- {[^\$\/\+\-\*\(\)\.\<\>\=\!\ 0-9]+} $p1_arr(index_equation) "" index_eq
+                        # add extra spaces to help expr avoid misinterpretations, but can't assume that for negative numbers vs. minus sign
+                        regsub -nocase -all -- {([\/\+\*\(\)])} $index_eq " \1 " index_eq
+                        # get rid of extra spaces
+                        regsub -nocase -all -- {[ ]+} $index_eq " " index_eq
+                        set vars_list [list ]
+                        foreach {var0 var1 scratch} [acc_fin::pretti_equation_vars ] {
+                            set var2 " $"
+                            append var2 $var0
+                            set var3 " \[qaf_fp ${"
+                            append var3 $var1
+                            append var3 "} \] "
+                            regsub -nocase -all -- $var2 $index_eq $var3 index_eq
+                        }
+                        # unqoute the brackets
+                        regsub -nocase -all -- {[\\]} $index_eq {} index_eq
+                        
+                    }
+                    if { $type_errors_p } {
+                        # undo data expansion
+                        foreach title $titles_list {
+                            set p3_larr($title) [list ]
+                        }
+                    }
                 } else {
-                    set filtered_list [acc_fin::list_filter decimal $p3_larr($col) p3 $col]
-                }
-                if { $filtered_list ne $p3_larr($col) } {
-                    set type_errors_p 1
+                    set error_fail 1
+                    acc_fin::pretti_log_create $scenario_tid "p_load_tid" "operation" "error while loading type_table.(ref1390)" $user_id $instance_id
                 }
             }
-            set index_eq ""
-            if { $p1_arr(index_equation) ne "" } {
-                # validate equation or set empty
-                # only allow + - / * $, logical comparisions > < == != and numbers.  $number converts to one of the available row numbers that returns a number from in p4 
-                regsub -nocase -all -- {[^\$\/\+\-\*\(\)\.\<\>\=\!\ 0-9]+} $p1_arr(index_equation) "" index_eq
-                # add extra spaces to help expr avoid misinterpretations, but can't assume that for negative numbers vs. minus sign
-                regsub -nocase -all -- {([\/\+\*\(\)])} $index_eq " \1 " index_eq
-                # get rid of extra spaces
-                regsub -nocase -all -- {[ ]+} $index_eq " " index_eq
-                set vars_list [list ]
-                foreach {var0 var1 scratch} [acc_fin::pretti_equation_vars ] {
-                    set var2 " $"
-                    append var2 $var0
-                    set var3 " \[qaf_fp ${"
-                    append var3 $var1
-                    append var3 "} \] "
-                    regsub -nocase -all -- $var2 $index_eq $var3 index_eq
-                }
-                # unqoute the brackets
-                regsub -nocase -all -- {[\\]} $index_eq {} index_eq
-
-            }
-            if { $type_errors_p } {
-                # undo data expansion
-                foreach title $titles_list {
-                set p3_larr($title) [list ]
-                }
-            }
-
         } else {
             acc_fin::pretti_log_create $scenario_tid "task_types_tid" "value" "task_types_tid reference does not exist." $user_id $instance_id
+            set error_fail 1
         }
     }
     # The multi-layered aspect of curve data storage needs a double-pointer to be efficient for projects with large memory footprints
@@ -2082,212 +2096,218 @@ ad_proc -public acc_fin::scenario_prettify {
     # where curve_ref = 0 is default
     # so, add a p2_larr(_cCurveRef) and p2_larr(_tCurveRef) column which references curves_lol
     #  similarly, add a p3_larr(_cCurveRef) and p3_larr(_tCurveRef) column
-        
-    # # # import activity table p2
-    ns_log Notice "acc_fin::scenario_prettify.1465: scenario '$scenario_tid' import activity table p2 (required)."
+    if { $error_fail == 0 } {
+        # # # import activity table p2
+        ns_log Notice "acc_fin::scenario_prettify.1465: scenario '$scenario_tid' import activity table p2 (required)."
 
 
-    #### Use lsearch -glob or -regexp to screen alt columns and create list for custom summary feature. [a-z][0-9]
-    #### ..connected to cost_probability_moment.. so columns represent curve IDs..
-    #### Use [lsearch -regexp {[a-z][0-9]s} -all -inline $x_list] to screen alt time columns and create list for a scheduling feature.
+        #### Use lsearch -glob or -regexp to screen alt columns and create list for custom summary feature. [a-z][0-9]
+        #### ..connected to cost_probability_moment.. so columns represent curve IDs..
+        #### Use [lsearch -regexp {[a-z][0-9]s} -all -inline $x_list] to screen alt time columns and create list for a scheduling feature.
 
-    # set defaults
-    set constants_list [acc_fin::pretti_columns_list p2]
-    foreach constant $constants_list {
-        set p2_larr($constant) [list ]
-    }
-    if { $p1_arr(activity_table_tid) ne "" } {
-        set table_stats_list [qss_table_stats $p1_arr(activity_table_tid) $instance_id $user_id]
-        set trashed_p [lindex $table_stats_list 7]
-#        ns_log Notice "acc_fin::scenario_prettify.1443: llength table_stats_list [llength $table_stats_list] '$table_stats_list'"
-        if { [llength $table_stats_list] > 1 && !$trashed_p && !$error_fail } {
-            # load activity table
-            set constants_required_list [acc_fin::pretti_columns_list p2 1]
-            ns_log Notice "acc_fin::scenario_prettify.1495: scenario '$scenario_tid' import activity_table_tid from '$p1_arr(activity_table_tid)'."
-#### make others like this
-            set error_fail [acc_fin::p_load_tid $constants_list $constants_required_list p2_larr $p1_arr(activity_table_tid) p3_larr $instance_id $user_id]
-            if { $error_fail } {
-                acc_fin::pretti_log_create $scenario_tid "activity_table_tid" "value" "error while loading activity_table.(ref1440)" $user_id $instance_id
-            }
-            # filter user input
-            set p2_larr(activity_ref) [acc_fin::list_filter alphanum $p2_larr(activity_ref) "p2" "activity_ref"]
-            set p2_larr(dependent_tasks) [acc_fin::list_filter alphanumlist $p2_larr(dependent_tasks) "p2" "dependent_tasks"]
-            
-        } else {
-            acc_fin::pretti_log_create $scenario_tid "activity_table_tid" "value" "activity_table_tid reference does not exist, but is required.(ref1450)" $user_id $instance_id
-            set error_fail 1
+        # set defaults
+        set constants_list [acc_fin::pretti_columns_list p2]
+        foreach constant $constants_list {
+            set p2_larr($constant) [list ]
         }
-    } else {
+        if { $p1_arr(activity_table_tid) ne "" } {
+            set table_stats_list [qss_table_stats $p1_arr(activity_table_tid) $instance_id $user_id]
+            set trashed_p [lindex $table_stats_list 7]
+            #        ns_log Notice "acc_fin::scenario_prettify.1443: llength table_stats_list [llength $table_stats_list] '$table_stats_list'"
+            if { [llength $table_stats_list] > 1 && !$trashed_p && $error_fail == 0 } {
+                # load activity table
+                set constants_required_list [acc_fin::pretti_columns_list p2 1]
+                ns_log Notice "acc_fin::scenario_prettify.1495: scenario '$scenario_tid' import activity_table_tid from '$p1_arr(activity_table_tid)'."
+                if { $error_fail == 0 } {
+                    if { [acc_fin::p_load_tid $constants_list $constants_required_list p2_larr $p1_arr(activity_table_tid) p3_larr $instance_id $user_id] } {
+                        # filter user input
+                        set p2_larr(activity_ref) [acc_fin::list_filter alphanum $p2_larr(activity_ref) "p2" "activity_ref"]
+                        set p2_larr(dependent_tasks) [acc_fin::list_filter alphanumlist $p2_larr(dependent_tasks) "p2" "dependent_tasks"]
+                    } else {
+                        set error_fail 1
+                        acc_fin::pretti_log_create $scenario_tid "activity_table_tid" "value" "error while loading activity_table.(ref1490)" $user_id $instance_id
+                    }
+                }
+            } else {
+                acc_fin::pretti_log_create $scenario_tid "activity_table_tid" "value" "activity_table_tid reference does not exist, but is required.(ref1450)" $user_id $instance_id
+                set error_fail 1
+            }
+        } else {
             acc_fin::pretti_log_create $scenario_tid "activity_table_tid" "value" "activity_table_tid reference does not exist, but is required.(ref1453)" $user_id $instance_id
             set error_fail 1
-    }
-    
+        }
+    }    
     # Substitute task_type data (p3_larr) into activity data (p2_larr) when p2_larr data is less detailed or missing.
     # Curve data has already been substituted in p_load_tid
     # Other substitutions when a p2_larr field is blank.
-
-    # Effectively, p2 imports parts of p3 that are more detailed than p2, to build the final p2 activity table
-    # p3 includes default modifiers from p1 as well.
-
-    set constants_woc_list [list name description]
-    # _woc_ = without curve data (or columns)
-    # Removed dependent_tasks from task_type substitution, 
-    # because dependent_tasks creates a level of complexity significant enough to be avoided
-    # through program set-up at this time.
-    set p3_type_list $p3_larr(type)
-    set p2_task_type_list $p2_larr(aid_type)
-    ## activities_list  list of activities to process
-    set activities_list $p2_larr(activity_ref)
-    ns_log Notice "acc_fin::scenario_prettify.1500: scenario '$scenario_tid' activities_list '${activities_list}'"     
-    foreach constant $constants_woc_list {
-        if { [llength $p2_larr(aid_type) ] > 0 && [llength $p3_larr($constant)] > 0 } {
-            set i 0
-            set p2_col_list $p2_larr($constant)
-            foreach act $activities_list {
-                set p2_value [lindex $p2_col_list $i]
-                if { $p2_value eq "" } {
-                    set ii [lsearch -exact $p3_type_list [lindex $p2_task_type_list $i]]
-                    set p2_col_list [lreplace $p2_col_list $i $i [lindex $p3_larr($constant) $ii] ]
+    
+    if { $error_fail == 0 } {
+        # Effectively, p2 imports parts of p3 that are more detailed than p2, to build the final p2 activity table
+        # p3 includes default modifiers from p1 as well.
+        
+        set constants_woc_list [list name description]
+        # _woc_ = without curve data (or columns)
+        # Removed dependent_tasks from task_type substitution, 
+        # because dependent_tasks creates a level of complexity significant enough to be avoided
+        # through program set-up at this time.
+        set p3_type_list $p3_larr(type)
+        set p2_task_type_list $p2_larr(aid_type)
+        ## activities_list  list of activities to process
+        set activities_list $p2_larr(activity_ref)
+        ns_log Notice "acc_fin::scenario_prettify.1500: scenario '$scenario_tid' activities_list '${activities_list}'"     
+        foreach constant $constants_woc_list {
+            if { [llength $p2_larr(aid_type) ] > 0 && [llength $p3_larr($constant)] > 0 } {
+                set i 0
+                set p2_col_list $p2_larr($constant)
+                foreach act $activities_list {
+                    set p2_value [lindex $p2_col_list $i]
+                    if { $p2_value eq "" } {
+                        set ii [lsearch -exact $p3_type_list [lindex $p2_task_type_list $i]]
+                        set p2_col_list [lreplace $p2_col_list $i $i [lindex $p3_larr($constant) $ii] ]
+                    }
+                    incr i
                 }
-                incr i
+                set p2_larr($constant) $p2_col_list
             }
-            set p2_larr($constant) $p2_col_list
+        }
+        
+        # # # Confirm that dependent activities exist as activities.
+        ns_log Notice "acc_fin::scenario_prettify.1527: scenario '$scenario_tid' Confirm p2 dependents exist as activities, expand dependents with coefficients."
+    }
+
+    
+    if { $error_fail == 0 } {
+        #  Expand p2_larr to include dependent activities with coefficients.
+        #  by appending new definitions of tasks that don't yet have defined coefficients.
+        
+        
+        ns_log Notice "acc_fin::scenario_prettify.1529: scenario '$scenario_tid' activities_list '${activities_list}'"     
+        ns_log Notice "acc_fin::scenario_prettify.1531: scenario '$scenario_tid' p2_larr(dependent_tasks) '$p2_larr(dependent_tasks)'"   
+        set row_nbr 0
+        foreach dependencies_list $p2_larr(dependent_tasks) {
+            ns_log Notice "acc_fin::scenario_prettify.1533: scenario '$scenario_tid' dependencies_list '${dependencies_list}'"     
+            set base_activity [lindex $activities_list $row_nbr]
+            foreach activity $dependencies_list {
+                ns_log Notice "acc_fin::scenario_prettify.1535: scenario '$scenario_tid' activity '${activity}'"
+                if { $activity eq $base_activity } {
+                    # activity is dependent on itself. Throw an error.
+                    set error_fail 1
+                    acc_fin::pretti_log_create $scenario_tid $activity "value" "Activity '${activity}' includes a dependent with same reference as itself. (ref2188)" $user_id $instance_id
+                }
+                if { [lsearch -exact $activities_list $activity] == -1 } {
+                    # A dependent activity doesn't exist..
+                    ns_log Notice "acc_fin::scenario_prettify.1619: scenario '$scenario_tid' activity '$activity' doesn't exist on direct search."
+                    set term ""
+                    set coefficient ""
+                    # Is $activity an existing activity, but referenced with a coeffient?
+                    set scratch ""
+                    
+                    if { [regexp -- {^([0-9]+)[\*]([^\*]+)} $activity scratch coefficient term] } {
+                        ns_log Notice "acc_fin::scenario_prettify.1624: scenario '$scenario_tid' activity '$activity' is part coefficient '$coefficient' and part term '$term'"
+                        # If $term is a defined activity, get index
+                        set term_idx [lsearch -exact $activities_list $term]
+                        if { $term_idx > -1 } {
+                            # Requirements met: There is a coefficient and an existing activity.
+                            ns_log Notice "acc_fin::scenario_prettify.1632: scenario '$scenario_tid' term '$term' exists as an activity, so creating new activity with coefficient."
+                            # Generate a new activity with coeffient for this run.
+                            foreach constant $constants_list {
+                                lappend p2_larr($constant) [lindex $p2_larr($constant) $term_idx]
+                            }
+                            lappend p2_larr(_coef) $coefficient
+                            # create new tCurves and cCurves and references to them.
+                            set tcurvenum [lindex $p2_larr(_tCurveRef) $term_idx]
+                            if { $tcurvenum ne "" } {
+                                # create new curve based on the one referenced 
+                                # parameters: max_concurrent max_overlap_pct021
+                                #      max_overlap_pct  (as a percentage from 0 to 1, blank = 1)
+                                #      max_concurrent       (as an integer, blank = no limit)
+                                # activity curve @tcurvenum
+                                # for each point t(pm) in curve time_clarr($_tCurveRef), max_overlap_pct, max_concurrent, coeffient c
+                                if { [ad_var_type_check_number_p $max_overlap_pct ] && $max_overlap_pct < 2 && $max_overlap_pct > -1 } {
+                                    # validated
+                                } else {
+                                    acc_fin::pretti_log_create $scenario_tid "max_overlap_pct" "value" "max_overlap_pct '$max_overlap_pct' is out of range. Set to 1 (100%). (ref1520)" $user_id $instance_id
+                                    set max_overlap_pct 1.
+                                }
+                                # coef_p1 * max_concurrent + coef_p2 = $coefficient
+                                set coef_p1 [expr { int( $coeffcient / $max_concurrent ) } ]
+                                set coef_p2 [expr { $coefficient - $coef_p1 * $max_concurrent } ]
+                                # coef_p2 should be at most 1 less than max_concurrent
+                                # max_trailing_pct = 1. - max_overlap_pct
+                                # k3 calculates length of a full block max_concurrent wide
+                                set k3 [expr { 1. + ( $coef_p1 - 1 ) * ( 1. - $max_overlap_pct ) } ]
+                                # k4 calculates length of partial blocks (one more activity than full block activity count, but maybe not overlapped as far)
+                                set k4 [expr { 1. + ( $coef_p2 - 1 ) * ( 1. - $max_overlap_pct ) } ]
+                                # Choose the longer of the two blocks:
+                                set k5 [f::max $k3 $k4]
+                                set curve_lol [list ]
+                                foreach point $time_clarr($tcurvenum) {
+                                    # point: x y label
+                                    set x [lindex $point 0]
+                                    set y [lindex $point 1]
+                                    set label [lindex $point 2]
+                                    set y_new [expr { $y * $k5 } ]
+                                    set point_new [list $y_new $x $label]
+                                    lappend curve_lol $point_new
+                                }
+                                # save new curve
+                                
+                                set tcurvenum [acc_fin::larr_set time_clarr $curve_lol]
+                                # save new reference
+                                lappend p2_larr(_tCurveRef) $tcurvenum
+                                lappend p2_larr(_tDcSource) 7
+                                ns_log Notice "acc_fin::scenario_prettify.1674: scenario '$scenario_tid' new t curve: time_clarr($tcurvenum) '$curve_lol'"
+                            } else {
+                                lappend p2_larr(_tCurveRef) ""
+                                lappend p2_larr(_tDcSource) ""
+                                ns_log Warning "acc_fin::scenario_prettify.1676: scenario '$scenario_tid' NO tcurvenum for '$curve_lol'"
+                            }
+                            if { [lindex $p2_larr(_cCurveRef) $term_idx] ne "" } {
+                                # New curve is isn't affected by overlap or max_concurrent. 
+                                # New curve is simple multiplication of old and coefficient
+                                # create new curve
+                                set curve_lol [list ]
+                                foreach point $cost_clarr($ccurvenum) {
+                                    # point: y x label
+                                    set x [lindex $point 0]
+                                    set y [lindex $point 1]
+                                    set label [lindex $point 2]
+                                    set y_new [expr { $y * $coefficient } ]
+                                    set point_new [list $y_new $x $label]
+                                    lappend curve_lol $point_new
+                                }
+                                
+                                # save new curve
+                                set ccurvenum [acc_fin::larr_set cost_clarr $curve_lol]
+                                # save new reference
+                                lappend p2_larr(_cCurveRef) $ccurvenum
+                                lappend p2_larr(_cDcSource) 7
+                                ns_log Notice "acc_fin::scenario_prettify.1694: scenario '$scenario_tid' new c curve: cost_clarr($ccurvenum) '$curve_lol'"
+                            } else {
+                                lappend p2_larr(_cCurveRef) ""
+                                lappend p2_larr(_cDcSource) ""
+                            }
+                            ns_log Notice "acc_fin::scenario_prettify.1700: scenario '$scenario_tid' term '$term' tcurvenum '$tcurvenum' ccurvenum '$ccurvenum'"
+                        } else {
+                            # No activity defined for this factor (term with coefficient), flag an error --missing dependency.
+                            lappend compute_message_list "Dependency '${term}' is undefined, referenced in: '${activity}'."
+                            acc_fin::pretti_log_create $scenario_tid "${term}" "value" "Dependency '${term}' referenced in '${activity}' is undefined.(ref1576)" $user_id $instance_id
+                            set error_fail 1
+                        }
+                    } else {
+                        # No activity defined for this factor (term with coefficient), flag an error --missing dependency.
+                        lappend compute_message_list "Dependency '${activity}' is an undefined activity."
+                        acc_fin::pretti_log_create $scenario_tid "${activity}" "value" "Dependency '${activity}' is an undefined activity. (ref1582)" $user_id $instance_id
+                        set error_fail 1
+                    }
+                }
+                # else, an activity for the dependency exists. Do nothing.
+            }
+            incr row_nbr
         }
     }
     
-    # # # Confirm that dependent activities exist as activities.
-    ns_log Notice "acc_fin::scenario_prettify.1527: scenario '$scenario_tid' Confirm p2 dependents exist as activities, expand dependents with coefficients."
-
-
-    #  Expand p2_larr to include dependent activities with coefficients.
-    #  by appending new definitions of tasks that don't yet have defined coefficients.
-
-
-    ns_log Notice "acc_fin::scenario_prettify.1529: scenario '$scenario_tid' activities_list '${activities_list}'"     
-    ns_log Notice "acc_fin::scenario_prettify.1531: scenario '$scenario_tid' p2_larr(dependent_tasks) '$p2_larr(dependent_tasks)'"   
-    set row_nbr 0
-    foreach dependencies_list $p2_larr(dependent_tasks) {
-        ns_log Notice "acc_fin::scenario_prettify.1533: scenario '$scenario_tid' dependencies_list '${dependencies_list}'"     
-        set base_activity [lindex $activities_list $row_nbr]
-        foreach activity $dependencies_list {
-            ns_log Notice "acc_fin::scenario_prettify.1535: scenario '$scenario_tid' activity '${activity}'"
-            if { $activity eq $base_activity } {
-                # activity is dependent on itself. Throw an error.
-                set error_fail 1
-                acc_fin::pretti_log_create $scenario_tid $activity "value" "Activity '${activity}' includes a dependent with same reference as itself. (ref2188)" $user_id $instance_id
-            }
-            if { [lsearch -exact $activities_list $activity] == -1 } {
-                # A dependent activity doesn't exist..
-                ns_log Notice "acc_fin::scenario_prettify.1619: scenario '$scenario_tid' activity '$activity' doesn't exist on direct search."
-                set term ""
-                set coefficient ""
-                # Is $activity an existing activity, but referenced with a coeffient?
-                set scratch ""
-
-                if { [regexp -- {^([0-9]+)[\*]([^\*]+)} $activity scratch coefficient term] } {
-                    ns_log Notice "acc_fin::scenario_prettify.1624: scenario '$scenario_tid' activity '$activity' is part coefficient '$coefficient' and part term '$term'"
-                    # If $term is a defined activity, get index
-                    set term_idx [lsearch -exact $activities_list $term]
-                    if { $term_idx > -1 } {
-                        # Requirements met: There is a coefficient and an existing activity.
-                        ns_log Notice "acc_fin::scenario_prettify.1632: scenario '$scenario_tid' term '$term' exists as an activity, so creating new activity with coefficient."
-                        # Generate a new activity with coeffient for this run.
-                        foreach constant $constants_list {
-                            lappend p2_larr($constant) [lindex $p2_larr($constant) $term_idx]
-                        }
-                        lappend p2_larr(_coef) $coefficient
-                        # create new tCurves and cCurves and references to them.
-                        set tcurvenum [lindex $p2_larr(_tCurveRef) $term_idx]
-                        if { $tcurvenum ne "" } {
-                            # create new curve based on the one referenced 
-                            # parameters: max_concurrent max_overlap_pct021
-                            #      max_overlap_pct  (as a percentage from 0 to 1, blank = 1)
-                            #      max_concurrent       (as an integer, blank = no limit)
-                            # activity curve @tcurvenum
-                            # for each point t(pm) in curve time_clarr($_tCurveRef), max_overlap_pct, max_concurrent, coeffient c
-                            if { [ad_var_type_check_number_p $max_overlap_pct ] && $max_overlap_pct < 2 && $max_overlap_pct > -1 } {
-                                # validated
-                            } else {
-                                acc_fin::pretti_log_create $scenario_tid "max_overlap_pct" "value" "max_overlap_pct '$max_overlap_pct' is out of range. Set to 1 (100%). (ref1520)" $user_id $instance_id
-                                set max_overlap_pct 1.
-                            }
-                            # coef_p1 * max_concurrent + coef_p2 = $coefficient
-                            set coef_p1 [expr { int( $coeffcient / $max_concurrent ) } ]
-                            set coef_p2 [expr { $coefficient - $coef_p1 * $max_concurrent } ]
-                            # coef_p2 should be at most 1 less than max_concurrent
-                            # max_trailing_pct = 1. - max_overlap_pct
-                            # k3 calculates length of a full block max_concurrent wide
-                            set k3 [expr { 1. + ( $coef_p1 - 1 ) * ( 1. - $max_overlap_pct ) } ]
-                            # k4 calculates length of partial blocks (one more activity than full block activity count, but maybe not overlapped as far)
-                            set k4 [expr { 1. + ( $coef_p2 - 1 ) * ( 1. - $max_overlap_pct ) } ]
-                            # Choose the longer of the two blocks:
-                            set k5 [f::max $k3 $k4]
-                            set curve_lol [list ]
-                            foreach point $time_clarr($tcurvenum) {
-                                # point: x y label
-                                set x [lindex $point 0]
-                                set y [lindex $point 1]
-                                set label [lindex $point 2]
-                                set y_new [expr { $y * $k5 } ]
-                                set point_new [list $y_new $x $label]
-                                lappend curve_lol $point_new
-                            }
-                            # save new curve
-
-                            set tcurvenum [acc_fin::larr_set time_clarr $curve_lol]
-                            # save new reference
-                            lappend p2_larr(_tCurveRef) $tcurvenum
-                            lappend p2_larr(_tDcSource) 7
-                            ns_log Notice "acc_fin::scenario_prettify.1674: scenario '$scenario_tid' new t curve: time_clarr($tcurvenum) '$curve_lol'"
-                        } else {
-                            lappend p2_larr(_tCurveRef) ""
-                            lappend p2_larr(_tDcSource) ""
-                            ns_log Warning "acc_fin::scenario_prettify.1676: scenario '$scenario_tid' NO tcurvenum for '$curve_lol'"
-                        }
-                        if { [lindex $p2_larr(_cCurveRef) $term_idx] ne "" } {
-                            # New curve is isn't affected by overlap or max_concurrent. 
-                            # New curve is simple multiplication of old and coefficient
-                            # create new curve
-                            set curve_lol [list ]
-                            foreach point $cost_clarr($ccurvenum) {
-                                # point: y x label
-                                set x [lindex $point 0]
-                                set y [lindex $point 1]
-                                set label [lindex $point 2]
-                                set y_new [expr { $y * $coefficient } ]
-                                set point_new [list $y_new $x $label]
-                                lappend curve_lol $point_new
-                            }
-                            
-                            # save new curve
-                            set ccurvenum [acc_fin::larr_set cost_clarr $curve_lol]
-                            # save new reference
-                            lappend p2_larr(_cCurveRef) $ccurvenum
-                            lappend p2_larr(_cDcSource) 7
-                            ns_log Notice "acc_fin::scenario_prettify.1694: scenario '$scenario_tid' new c curve: cost_clarr($ccurvenum) '$curve_lol'"
-                        } else {
-                            lappend p2_larr(_cCurveRef) ""
-                            lappend p2_larr(_cDcSource) ""
-                        }
-                        ns_log Notice "acc_fin::scenario_prettify.1700: scenario '$scenario_tid' term '$term' tcurvenum '$tcurvenum' ccurvenum '$ccurvenum'"
-                    } else {
-                        # No activity defined for this factor (term with coefficient), flag an error --missing dependency.
-                        lappend compute_message_list "Dependency '${term}' is undefined, referenced in: '${activity}'."
-                        acc_fin::pretti_log_create $scenario_tid "${term}" "value" "Dependency '${term}' referenced in '${activity}' is undefined.(ref1576)" $user_id $instance_id
-                        set error_fail 1
-                    }
-                } else {
-                    # No activity defined for this factor (term with coefficient), flag an error --missing dependency.
-                    lappend compute_message_list "Dependency '${activity}' is an undefined activity."
-                    acc_fin::pretti_log_create $scenario_tid "${activity}" "value" "Dependency '${activity}' is an undefined activity. (ref1582)" $user_id $instance_id
-                    set error_fail 1
-                }
-            }
-            # else, an activity for the dependency exists. Do nothing.
-        }
-        incr row_nbr
-    }
-    if { !$error_fail } {
+    if { $error_fail == 0 } {
         # # # Multiple probability_moments allowed
         set t_moment_list [split $p1_arr(time_probability_moment)]
         if { $p1_arr(cost_probability_moment) ne "" } {
@@ -2298,8 +2318,8 @@ ad_proc -public acc_fin::scenario_prettify {
             set c_moment_blank_p 1
         }
         ns_log Notice "acc_fin::scenario_prettify.1750: scenario '$scenario_tid' prepare p1 time '${t_moment_list}'and c_moment_blank_p ${c_moment_blank_p}."
-
-
+        
+        
         # Be sure any new values are nullified between each loop
         set setup_end [clock seconds]
         set time_start [clock seconds]
@@ -2362,10 +2382,6 @@ ad_proc -public acc_fin::scenario_prettify {
                     }
                     incr i
                 }
-                if { $error_cost && $error_time } {
-                    set error_fail 1
-                    return $error_fail
-                }
                 
                 # handy api ref
                 # util_commify_number
@@ -2384,7 +2400,7 @@ ad_proc -public acc_fin::scenario_prettify {
                 array unset act_seq_num_arr
                 array unset dependencies_larr
                 array unset act_calculated_p_larr
-
+                
                 foreach act $activities_list {
                     #   depnc: comma list of activity's dependencies
                     set depnc [lindex $p2_larr(dependent_tasks) $i]
@@ -2392,7 +2408,7 @@ ad_proc -public acc_fin::scenario_prettify {
                     set t_dc_source_arr($act) [lindex $p2_larr(_tDcSource) $i ]
                     ## c_dc_source_arr(act) answers Q: what is source of cost distribution curve?
                     set c_dc_source_arr($act) [lindex $p2_larr(_cDcSource) $i ]
-
+                    
                     # Filter out any blanks
                     set scratch_list [split $depnc ";, "]
                     set scratch2_list [list ]
@@ -2409,8 +2425,8 @@ ad_proc -public acc_fin::scenario_prettify {
                     set act_seq_num_arr($act) $sequence_1
                     ## act_coef(act) is the coefficient of an activity. If activity is defined as a multiple of another activity, it is an integer greater than 1 otherwise 1.
                     set act_coef($act) [lindex $p2_larr(_coef) $i]
-		    set act_tcref($act) [lindex $p2_larr(_tCurveRef) $i]
-		    set act_ccref($act) [lindex $p2_larr(_cCurveRef) $i]
+                    set act_tcref($act) [lindex $p2_larr(_tCurveRef) $i]
+                    set act_ccref($act) [lindex $p2_larr(_cCurveRef) $i]
                     incr i
                 }
                 
@@ -2421,7 +2437,7 @@ ad_proc -public acc_fin::scenario_prettify {
                 #  so future segments can quickly reference it to build theirs.
                 
                 # a ptrack (partial track) is an incomplete path
-
+                
                 # This keeps path making nearly linear. There are up to as many path tree references as there are activities..
                 
                 # Since some activities depend on others, some of the references are ptracks.
@@ -2456,12 +2472,12 @@ ad_proc -public acc_fin::scenario_prettify {
                 ##   act_count_of_seq_arr( sequence_number) is the count of activities at this sequence number across all paths, 0 is first sequence number
                 set act_count_of_seq_arr(${sequence_1}) 0
                 set tree_seg_dur_lists [list ]
-
+                
                 
                 while { !$all_paths_calculated_p && $activity_count > $i } {
                     set all_paths_calculated_p 1
                     foreach act $activities_list {
-
+                        
                         set dependencies_met_p 1
                         foreach dep $dependencies_larr($act) {
                             ns_log Notice "acc_fin::scenario_prettify.2308: dep $dep act_calculated_p_larr($dep) '$act_calculated_p_larr($dep)' len \$dep [string length $dep]"
@@ -2469,7 +2485,7 @@ ad_proc -public acc_fin::scenario_prettify {
                         }
                         ##   act_seq_max is the maximum path length in context of sequence_number
                         set act_seq_max $sequence_1
-
+                        
                         ns_log Notice "acc_fin::scenario_prettify.2314: scenario '$scenario_tid' act $act act_seq_max ${act_seq_max}"
                         if { $dependencies_met_p } {
                             # Calc max_num: maximum relative sequence number for activity dependencies
@@ -2484,7 +2500,7 @@ ad_proc -public acc_fin::scenario_prettify {
                             # Add activity's relative sequence number: act_seq_num_arr
                             set act_seq_nbr [expr { $max_num + 1 } ]
                             set act_seq_num_arr($act) $act_seq_nbr
-
+                            
                             set act_calculated_p_larr($act) 1
                             # increment act_seq_max and set defaults for a new max seq number?
                             if { $act_seq_nbr > $act_seq_max } {
@@ -2495,8 +2511,8 @@ ad_proc -public acc_fin::scenario_prettify {
                             # add activity to the network for this sequence number
                             lappend act_seq_list_arr(${act_seq_nbr}) $act
                             incr act_count_of_seq_arr(${act_seq_nbr})
-
-
+                            
+                            
                             # Analyze prior path segments and branches
                             
                             if { !$error_time } {
@@ -2511,7 +2527,7 @@ ad_proc -public acc_fin::scenario_prettify {
                                 ##   trunk_duration_arr(act) is duration of ptrack up to (and including) activity.
                                 set trunk_duration_arr($act) [expr { $branches_duration_max + $act_time_expected_arr($act) } ]
                             }
-
+                            
                             if { !$error_cost } {
                                 set paths_cost_sum 0.
                                 foreach dep_act $dependencies_larr($act) {
@@ -2521,7 +2537,7 @@ ad_proc -public acc_fin::scenario_prettify {
                                 ##   trunk_cost_arr is cost of all dependent ptrack plus cost of activity
                                 set trunk_cost_arr($act) [expr { $paths_cost_sum + $act_cost_expected_arr($act) } ]
                             }
-
+                            
                             # subtrees_larr(activity) is an array of list of ptracks ending with trunk activity
                             #   paths (or ptracks) represented as a list of activity lists in chronological order (last acitivty last).
                             #   For example, if A depends on B and C, and C depends on D, and A depends on F then:
@@ -2547,7 +2563,7 @@ ad_proc -public acc_fin::scenario_prettify {
                                 set path_tree_p_arr($act) 1
                             }
                         }
-
+                        
                         set dependencies_met_p 1
                         foreach dep $dependencies_larr($act) {
                             ns_log Notice "acc_fin::scenario_prettify.2392: dep $dep act_calculated_p_larr($dep) '$act_calculated_p_larr($dep)' len \$dep [string length $dep]"
@@ -2576,15 +2592,15 @@ ad_proc -public acc_fin::scenario_prettify {
                 }
                 ns_log Notice "acc_fin::scenario_prettify.2416: scenario '$scenario_tid' All dependencies met? 1 = yes. all_deps_met_p $all_deps_met_p"
                 
-            
+                
                 # # # compile results for report
                 ns_log Notice "acc_fin::scenario_prettify.2431: scenario '$scenario_tid' compile results for report."
-
-
+                
+                
                 #   paths_lists is a list of (full paths, subtotal duration, subtotal cost)
                 set paths_lists [list ]
                 set path_idx 0
-		set act_count_max 0
+                set act_count_max 0
                 foreach act $activities_list {
                     # Remove partial tracks from subtrees by placing only paths in paths_lists
                     ns_log Notice "acc_fin::scenario_prettify.2485: scenario '$scenario_tid' path_tree_p_arr($act) '$path_tree_p_arr($act)' "
@@ -2594,12 +2610,12 @@ ad_proc -public acc_fin::scenario_prettify {
                         foreach path_list $subtrees_larr($act) {
                             # build a sortable list
                             set row_list [list ]
-
+                            
                             # paths_lists 0
                             lappend row_list $path_idx
-
+                            
                             set paths_arr(${path_idx}) $path_list
-                           
+                            
                             if { !$error_time } {
                                 # calculate no-float, no-lag duration for each path
                                 set path_duration  0.
@@ -2619,7 +2635,7 @@ ad_proc -public acc_fin::scenario_prettify {
                             # paths_lists 1
                             set path_duration_arr(${path_idx}) $path_duration
                             lappend row_list $path_duration
-
+                            
                             if { !$error_cost } {
                                 # calculate cost for each path. 
                                 set path_cost 0.
@@ -2640,19 +2656,19 @@ ad_proc -public acc_fin::scenario_prettify {
                             # paths_lists 2
                             set path_cost_arr(${path_idx}) $path_cost
                             lappend row_list $path_cost
-
+                            
                             # if duration and cost are unavailable, list will be sorted by longest path..
                             # paths_lists 3
                             set path_len [llength $path_list ]
                             ## path_len_arr(path_idx) is length of path list
                             set path_len_arr(${path_idx}) $path_len
                             lappend row_list $path_len
-
-			    # max of path_len is same as act_count_max
-			    if { $path_len > $act_count_max } {
-				set act_count_max $path_len
-			    }
-
+                            
+                            # max of path_len is same as act_count_max
+                            if { $path_len > $act_count_max } {
+                                set act_count_max $path_len
+                            }
+                            
                             set path_len_w_coef 0
                             foreach pa $path_list {
                                 incr path_len_w_coef $act_coef($pa)
@@ -2671,16 +2687,16 @@ ad_proc -public acc_fin::scenario_prettify {
                 ## paths_count is the number of paths ie length of paths_list
                 set paths_count [expr { $path_idx - 1 } ]
                 ## paths_list: (list path_arr_idx duration cost length length_w_coefs )
-
+                
                 if { !$error_time } {
                     # sort by path duration
                     # critical path is the longest path. Float is the difference between CP and next longest CP.
                     # create an array of paths from longest to shortest duration to help build base table
                     set paths_sort1_lists [lsort -decreasing -real -index 1 $paths_lists]
-                             
-
+                    
+                    
                 } elseif { !$error_cost } {
-
+                    
                     # make something useful for cost biased table, critical_path is most costly.. etc.
                     # sort by path cost
                     # critical path is the longest path. Float is the difference between CP and next longest CP.
@@ -2688,7 +2704,7 @@ ad_proc -public acc_fin::scenario_prettify {
                     set paths_sort1_lists [lsort -decreasing -real -index 2 $paths_lists]
                     
                 } else {
-
+                    
                     # make something that doesn't break the final table build. critical_path is largest count of activities..
                     # sort by number of activities per path
                     # critical path is the longest path. 
@@ -2698,7 +2714,7 @@ ad_proc -public acc_fin::scenario_prettify {
                 }
                 ns_log Notice "acc_fin::scenario_prettify.2588: scenario '$scenario_tid' paths_lists '${paths_lists}' paths_sort1_lists '${paths_sort1_lists}' "
                 ## paths_sort1_lists is paths_list sorted by index used to calc CP
-
+                
                 # Extract most significant CP alternates for a focused table
                 # by counting the number of times an act is used in the largest proportion (first half) of paths in path_set_dur_sort1_list
                 
@@ -2722,7 +2738,7 @@ ad_proc -public acc_fin::scenario_prettify {
                     set act [string range $coef $act_idx end]
                     incr act_freq_in_load_cp_alts_arr($act) $act_coef($coef)
                 }
-
+                
                 # Make a list of activities sorted by popularity (appearing in the most paths)
                 set act_count_list [list ]
                 foreach act $activities_list {
@@ -2737,23 +2753,23 @@ ad_proc -public acc_fin::scenario_prettify {
                 for {set i 0} {$i < $act_count_median_pos} {incr i} {
                     lappend path_sig_list [lindex [lindex $activities_popular_sort_list $i] 0]
                 }
-
+                
                 ## act_count_max is max count of unique activities on a path
                 # This doesn't work for all cases: set act_count_max [lindex [lindex $activities_popular_sort_list 0] 1]
-
+                
                 ## act_count_median is median count of unique activities on a path
                 set act_count_median [lindex [lindex $activities_popular_sort_list $act_count_median_pos] 1]
-
+                
                 # Critical Path (CP) is: 
                 set cp_row_list [lindex $paths_sort1_lists 0]
-
+                
                 set cp_path_idx [lindex $cp_row_list 0]
                 ns_log Notice "acc_fin::scenario_prettify.2636: scenario '$scenario_tid' cp_path_idx '$cp_path_idx' cp_row_list '$cp_row_list' "
                 set cp_list $paths_arr(${cp_path_idx})
                 set cp_duration [lindex $cp_row_list 1]
                 set cp_cost [lindex $cp_row_list 2]
                 set cp_len [lindex $cp_row_list 3]
-
+                
                 foreach act $activities_list {
                     set on_critical_path_p_arr($act) [expr { [lsearch -exact $cp_list $act] > -1 } ]
                     set count_on_cp_arr($act) [llength [lsearch -exact -all $cp_list $act]]
@@ -2773,7 +2789,7 @@ ad_proc -public acc_fin::scenario_prettify {
                     set popularity_arr($act) 0
                 }
                 ## count_on_cp_p_arr(act) is the count of this activity on the critical path. coef activities are also accumulated as activity to handle expansions either way
-
+                
                 # path comparison calculations
                 set path_counter 0
                 foreach path_idx_dur_cost_len_list $paths_sort1_lists {
@@ -2782,7 +2798,7 @@ ad_proc -public acc_fin::scenario_prettify {
                     set path_len [lindex $path_idx_dur_cost_len_list 3]
                     set path_len_w_coefs [lindex $path_idx_dur_cost_len_list 4]
                     set act_count_on_cp 0
-
+                    
                     set term 1
                     set multiple_act_p [regexp {^([^\*]+)[\*]([^\*]+)} $act scratch term base_act]
                     if { !$multiple_act_p } {
@@ -2805,10 +2821,10 @@ ad_proc -public acc_fin::scenario_prettify {
                         }
                     }
                     set a_sig_path_p_arr(${path_idx}) $a_sig_path_p
-
+                    
                     set act_cp_ratio [expr { $act_count_on_cp / ( $cp_len + 0. ) } ]
                     set act_cp_ratio_arr(${path_idx}) $act_cp_ratio
-
+                    
                     if { !$error_time } {
                         set duration_ratio_arr(${path_idx}) [expr { $path_duration_arr(${path_idx}) / ( $cp_duration + 0. ) } ]
                     } 
@@ -2818,14 +2834,14 @@ ad_proc -public acc_fin::scenario_prettify {
                     set path_counter_arr(${path_idx}) $path_counter
                     incr path_counter
                 }
-
-
-                if { !$error_fail && $index_eq ne "" } {
+                
+                
+                if { $error_fail == 0 && $index_eq ne "" } {
                     # resort paths_sort1_lists using index_custom
                     # calculate custom equation for custom sort?
                     ## index_custom is value of custom index equation index_eq, or empty string
                     set path2_lists [list ]
-
+                    
                     foreach path_idx_dur_cost_len_list $paths_sort1_lists {
                         # variables available for use with custom index equation:
                         #  activity_count                    is length activities_list ie count of all activities
@@ -2839,7 +2855,7 @@ ad_proc -public acc_fin::scenario_prettify {
                         #  act_cp_ratio
                         #  cost_ratio
                         #  duration_ratio
-
+                        
                         set path_idx [lindex $path_idx_dur_cost_len_list 0]
                         set path_list $paths_arr(${path_idx})
                         set row_list [lrange $path_list 0 4]
@@ -2860,23 +2876,23 @@ ad_proc -public acc_fin::scenario_prettify {
                         set index_custom ""
                         if { [catch {
                             set index_custom [expr { $index_eq } ]
-                        } _error_text]} {
+                        } _error_text] } {
                             set error_fail 1
                             ns_log Warning "acc_fin::scenario_prettify.2646: scenario '$scenario_tid' act '$act' index_eq '${index_eq}'"
                             acc_fin::pretti_log_create $scenario_tid "${act}" "calculation" "There was an error in calculation '${index_eq}' of custom equation for PRETTI index (ref2646). Error text is '${_error_text}'" $user_id $instance_id
                         }
-                    
+                        
                         # paths_lists 5
                         # set index_custom_arr(${path_idx})
                         lappend row_list $index_custom
                     }
-                    if { !$error_fail } {
+                    if { $error_fail == 0 } {
                         # sort by custom created index
                         set paths_sort1_lists [lsort -decreasing -real -index 5 $path2_lists]
                     }
                     unset path2_lists
                 }
-
+                
                 # # # build base table
                 ns_log Notice "acc_fin::scenario_prettify.2468: scenario '$scenario_tid' Build base report table."
                 
@@ -2885,11 +2901,11 @@ ad_proc -public acc_fin::scenario_prettify {
                 #   activity_time_expected, time_start (branches_duration_max - time_expected),time_finish (branches_duration_max)
                 #   activity_cost_expected, path_costs to complete activity
                 #   direct dependencies
-
+                
                 # variables available at this point include:
-
+                
                 # constant per project or run:
-
+                
                 ## activities_list                   list of activities to process
                 ## activity_count                    is length activities_list
                 ## paths_count                   is the number of paths ie length of paths_list
@@ -2897,9 +2913,9 @@ ad_proc -public acc_fin::scenario_prettify {
                 ## error_cost                        is set to 1 if there has been an error that prevents continued processing of costing aspects
                 ## error_time                        is set to 1 if there has been an error that prevents continued processing of time aspects
                 ## paths_sort1_lists                 is paths_list sorted by index used to calc CP
-
+                
                 # constant per path:
-
+                
                 ## path_len_arr(path_idx)            is length of a path in paths_lists with path_idx
                 ## path_len_w_coef_arr(path_idx)     is total number of activities in a path (with coefficients)
                 ## paths_list:                       (list path_arr_idx duration cost length length_w_coefs index_custom)
@@ -2907,9 +2923,9 @@ ad_proc -public acc_fin::scenario_prettify {
                 ## path_counter_arr(path_idx)
                 ## a_sig_path_p_arr(path_idx)
                 ## act_cp_ratio(path_idx)
-
+                
                 # constant per activity: activity_ref from activities_list
-
+                
                 ## act_seq_num_arr(act)              is relative sequence number of an activity in it's path. First activity is 0
                 ## dependencies_larr(act)            is a list of direct dependencies for each activity
                 ## dependents_count_arr(act)         is count number of activities in each subtree, not including the activity itself.
@@ -2923,26 +2939,26 @@ ad_proc -public acc_fin::scenario_prettify {
                 ## c_dc_source_arr(act)              answers Q: what is source of cost distribution curve?
                 ## act_coef(act)                     is the coefficient of an activity. If activity is defined as a multiple of another activity, it is an integer greater than 1 otherwise 1.
                 ## popularity_arr(act)                   is the count of paths that an activity is in.
-
+                
                 ## path_tree_p_arr(act)              answers question: is this tree of ptracks complete (ie not a subset of another track or tree)?
                 ## trunk_duration_arr(act_tree_list) is the time expected to complete an activity and its dependents
                 ## path_cost_arr(act_tree_list)      is the cost expected to complete an activity and its dependents
-
-
+                
+                
                 # other
-
+                
                 ## act_count_of_seq_arr(sequence no) is the count of activities at this sequence number across all paths, 0 is first sequence number
                 ## act_seq_max                       is the maximum path length in context of sequence_number
-
-
+                
+                
                 # # # PRETTI p5_lists built 
                 # Build an audit/feedback table list of lists, where each row is an activity
                 # p5 are activities, and p6 are paths. a path key is shared between p5 and p6 tables
                 set p5_lists [list ]
                 set p5_titles_list [acc_fin::pretti_columns_list p5 1]
-		# *_dc_ref references cache reference
-		lappend p5_titles_list "t_dc"
-		lappend p5_titles_list "c_dc"
+                # *_dc_ref references cache reference
+                lappend p5_titles_list "t_dc"
+                lappend p5_titles_list "c_dc"
                 lappend p5_lists $p5_titles_list
                 set activity_counter 0
                 foreach act $activities_list {
@@ -2956,20 +2972,20 @@ ad_proc -public acc_fin::scenario_prettify {
                     set activity_list [list $act $activity_counter $has_direct_dependency_p [join $dependencies_larr($act) " "] [llength $dependencies_larr($act)] $on_critical_path_p_arr($act) $on_a_sig_path_p $act_freq_in_load_cp_alts_arr($act) $popularity_arr($act) $act_time_expected_arr($act) $trunk_duration_arr($act) $t_dc_source_arr($act) $act_cost_expected_arr($act) $trunk_cost_arr($act) $c_dc_source_arr($act) $act_coef($act) $act_tcref($act) $act_ccref($act) ]
                     lappend p5_lists $activity_list
                 }
-
+                
                 set p6_lists [list ]
                 set p6_titles_list [acc_fin::pretti_columns_list p6 1]
-		lappend p6_titles_list "path_len"
-		lappend p6_titles_list "path_len_w_coefs"
+                lappend p6_titles_list "path_len"
+                lappend p6_titles_list "path_len_w_coefs"
                 lappend p6_lists $p6_titles_list
-
+                
                 foreach path_idx_dur_cost_len_list $paths_sort1_lists {
                     set path_idx [lindex $path_idx_dur_cost_len_list 0]
                     set path_list $paths_arr(${path_idx})
                     set path_counter $path_counter_arr(${path_idx})
                     set a_sig_path_p $a_sig_path_p_arr(${path_idx})
                     set act_cp_ratio $act_cp_ratio_arr(${path_idx})
-#                    set index_custom $index_custom_arr(${path_idx})
+                    #                    set index_custom $index_custom_arr(${path_idx})
                     set path_duration [lindex $path_idx_dur_cost_len_list 1]
                     set path_cost [lindex $path_idx_dur_cost_len_list 2]
                     set path_len [lindex $path_idx_dur_cost_len_list 3]
@@ -2983,7 +2999,7 @@ ad_proc -public acc_fin::scenario_prettify {
                     set path_list [list $path_idx [join $path_list "."] $path_counter $cp_q $a_sig_path_p $path_duration $path_cost $index_custom $path_len $path_len_w_coefs ]
                     lappend p6_lists $path_list
                 }                
-
+                
                 set scenario_stats_list [qss_table_stats $scenario_tid]
                 set scenario_name [lindex $scenario_stats_list 0]
                 if { [llength $t_moment_list ] > 1 } {
@@ -3033,7 +3049,7 @@ ad_proc -public acc_fin::scenario_prettify {
                 
                 # save as a new table of type p4
                 append comments "color_mask_sig_idx 3 , color_mask_oth_idx 5 , colorswap_p 0"
-                        
+                
                 # p4_lol consists of first row (a list item):
                 # (list path_1 path_2 path_3 ... path_N )
                 # subsequent rows (list items):
@@ -3069,14 +3085,14 @@ ad_proc -public acc_fin::scenario_prettify {
                 for {set i 0} {$i < $act_count_max} {incr i} {
                     set row_larr($i) [list ]
                 }
-                    
+                
                 foreach path_idx_dur_cost_len_list $paths_sort1_lists {
                     set path_idx [lindex $path_idx_dur_cost_len_list 0]
                     set path_list $paths_arr(${path_idx})
                     set path_counter $path_counter_arr(${path_idx})
                     set a_sig_path_p $a_sig_path_p_arr(${path_idx})
                     set act_cp_ratio $act_cp_ratio_arr(${path_idx})
-#                    set index_custom $index_custom_arr(${path_idx})
+                    #                    set index_custom $index_custom_arr(${path_idx})
                     set path_duration [lindex $path_idx_dur_cost_len_list 1]
                     set path_cost [lindex $path_idx_dur_cost_len_list 2]
                     set path_len [lindex $path_idx_dur_cost_len_list 3]
@@ -3133,7 +3149,7 @@ ad_proc -public acc_fin::scenario_prettify {
                             append cell "d:("
                             append cell [join $dependencies_larr(${activity}) " "]
                             append cell ") <br> "
-#                            set popularity $popularity_arr($activity)
+                            #                            set popularity $popularity_arr($activity)
                             set popularity $act_freq_in_load_cp_alts_arr($activity)
                             set on_a_sig_path_p [expr { $act_freq_in_load_cp_alts_arr($activity) > $act_count_median } ]
                             # this calced in p4 html generator: set on_cp_p [expr { $count_on_cp_p_arr($activity) > 0 } ]
@@ -3144,12 +3160,13 @@ ad_proc -public acc_fin::scenario_prettify {
                         }
                     }
                     incr path_num
-                }
+                }                    
                 # combine the rows
                 lappend p4_lists $title_row_list
                 for {set i 0} {$i < $act_count_max} {incr i} {
                     lappend p4_lists $row_larr($i)
                 }
+
                 qss_table_create $p4_lists "${scenario_name}.p4" "${scenario_title}.p4" $comments "" p4 $instance_id $user_id
                 # Comments data will be interpreted for determining standard deviation for determining cell highlighting
             }
@@ -3160,6 +3177,7 @@ ad_proc -public acc_fin::scenario_prettify {
     ns_log Notice "acc_fin::scenario_prettify.2639: scenario '$scenario_tid' done."
     return !${error_fail}
 }
+
 
 ad_proc -public acc_fin::table_sort_y_asc {
     table_tid
