@@ -803,7 +803,8 @@ ad_proc -public acc_fin::pretti_table_to_html {
     set column_count [llength [lindex $pretti_lol 0]]
     set row_count [llength $pretti_lol]
     incr row_count -1
-    
+    set success_p 1
+
     # values to be extracted from comments:
     # max_act_count_per_track and cp_duration_at_pm 
     # Other parameters could be added to comments for changing color scheme/bias
@@ -1415,7 +1416,12 @@ ad_proc -private acc_fin::p_load_tid {
                 # load aid_type referenced curves here.              
                 set aid_type [lindex $p_larr(aid_type) $i]
                 if { $aid_type ne "" } {
-                    set type_tcurve_list $time_clarr($type_t_curve_arr(${aid_type}))
+                    if { [info exists type_t_curve_arr(${aid_type}) ] } {
+                        set type_tcurve_list $time_clarr($type_t_curve_arr(${aid_type}))
+########                    } else {
+                        set success_p 0
+                        acc_fin::pretti_log_create $scenario_tid "p_load_tid" "value" "error while loading activity_table.(ref1440)" $user_id $instance_id
+                    }
                 }
             }
             ns_log Notice "acc_fin::p_load_tid.1280: for ${p_larr_name} i $i time_est_short '${time_est_short}' time_est_median '${time_est_median}' time_est_long '${time_est_long}' type_tcurve_list '${type_tcurve_list}' tc_larr(x) '$tc_larr(x)' tc_larr(y) '$tc_larr(y)' tc_larr(label) '$tc_larr(label)'"
@@ -1495,7 +1501,7 @@ ad_proc -private acc_fin::p_load_tid {
     } else {
         ns_log Warning "acc_fin::p_load_tid.1361: for ${p_larr_name} not processed as either p2 or p3 table."
     }
-    return 1
+    return $success_p
 }
 
 ad_proc -private acc_fin::list_filter {
@@ -2094,11 +2100,15 @@ ad_proc -public acc_fin::scenario_prettify {
         set table_stats_list [qss_table_stats $p1_arr(activity_table_tid) $instance_id $user_id]
         set trashed_p [lindex $table_stats_list 7]
 #        ns_log Notice "acc_fin::scenario_prettify.1443: llength table_stats_list [llength $table_stats_list] '$table_stats_list'"
-        if { [llength $table_stats_list] > 1 && !$trashed_p} {
+        if { [llength $table_stats_list] > 1 && !$trashed_p && !$error_fail } {
             # load activity table
             set constants_required_list [acc_fin::pretti_columns_list p2 1]
             ns_log Notice "acc_fin::scenario_prettify.1495: scenario '$scenario_tid' import activity_table_tid from '$p1_arr(activity_table_tid)'."
-            acc_fin::p_load_tid $constants_list $constants_required_list p2_larr $p1_arr(activity_table_tid) p3_larr $instance_id $user_id
+#### make others like this
+            set error_fail [acc_fin::p_load_tid $constants_list $constants_required_list p2_larr $p1_arr(activity_table_tid) p3_larr $instance_id $user_id]
+            if { $error_fail } {
+                acc_fin::pretti_log_create $scenario_tid "activity_table_tid" "value" "error while loading activity_table.(ref1440)" $user_id $instance_id
+            }
             # filter user input
             set p2_larr(activity_ref) [acc_fin::list_filter alphanum $p2_larr(activity_ref) "p2" "activity_ref"]
             set p2_larr(dependent_tasks) [acc_fin::list_filter alphanumlist $p2_larr(dependent_tasks) "p2" "dependent_tasks"]
