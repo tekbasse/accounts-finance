@@ -1,4 +1,3 @@
-
 ad_library {
 
     PRETTI routines used for Project Reporting Evaluation and Track Task Interpretation
@@ -1049,31 +1048,44 @@ ad_proc -public acc_fin::larr_set {
     # hmm. Initial tests suggest this array(list) works, but might not be practical to store references..
     set indexes_list [array names larr]
     set icount [llength $indexes_list]
-    set idx_last [expr { $icount - 1 } ]
-#    ns_log Notice "acc_fin::larr_ste.945: larr_name $larr_name indexes_list '$indexes_list' icount '$icount'"
+    # ns_log Notice "acc_fin::larr_ste.945: larr_name $larr_name indexes_list '$indexes_list' icount '$icount'"
     if { $icount > 0 } {
+	# larr already has names. Check against existing names
         set i 0
         set index [lindex $indexes_list $i]
-#        ns_log Notice "acc_fin::larr_ste.949: index '$index' i $i"
-        while { $i < $idx_last && $larr($index) ne $data_list } {
+        set larr_ne_data_p 0
+        # ns_log Notice "acc_fin::larr_ste.949: index '$index' i $i"
+	    if { $larr($index) ne $data_list } {
+            set larr_ne_data_p 1
+	    }
+
+	    while { $larr_ne_data_p } {
             incr i
             set index [lindex $indexes_list $i]
-#            ns_log Notice "acc_fin::larr_ste.953: index '$index' i $i"
-        }
-#        ns_log Notice "acc_fin::larr_ste.955: index '$index' i $i"
-        if { $larr($index) ne $data_list } {
-            set i $icount
+            # ns_log Notice "acc_fin::larr_ste.953: index '$index' i $i"
+            set larr_ne_data_p 0
+            if { $index ne "" } {
+                if { $larr($index) ne $data_list } {
+                    set larr_ne_data_p 1
+                }
+            }
+	    }
+        # ended because i == icount (ie out of range) or !larr_ne_data_p
+        # ns_log Notice "acc_fin::larr_ste.955: index '$index' i $i"
+        if { $index eq "" } {
+            set index $icount
             set larr($icount) $data_list
-        } 
+        }
+        # otherwise !larr_ne_data_p, so use index as return list
     } else {
-        set i $icount
+        set index $icount
         set larr($icount) $data_list
     }
     if { [llength $data_list] == 0 } { 
         ns_log Warning "acc_fin::larr_set.956: empty data_list request in larr ${larr_name}."
-    } 
+    }
 #    ns_log Notice "acc_fin::larr_set.958: ${larr_name}\(${i}\) '$larr($i)' data_list '${data_list}'"
-    return $i
+    return $index
 }
 
 ad_proc -private acc_fin::p_load_tid {
@@ -2937,6 +2949,8 @@ ad_proc -public acc_fin::scenario_prettify {
 
                 set p6_lists [list ]
                 set p6_titles_list [acc_fin::pretti_columns_list p6 1]
+		lappend p6_titles_list "path_len"
+		lappend p6_titles_list "path_len_w_coefs"
                 lappend p6_lists $p6_titles_list
 
                 foreach path_idx_dur_cost_len_list $paths_sort1_lists {
@@ -2956,7 +2970,7 @@ ad_proc -public acc_fin::scenario_prettify {
                     # base for p6
                     #            set ret_list [list path_idx path path_counter cp_q significant_q path_duration path_cost index_custom]
                     set cp_q [expr { $path_counter == 0 } ]
-                    set path_list [list $path_idx [join $path_list "."] $path_counter $cp_q $a_sig_path_p $path_duration $path_cost $index_custom ]
+                    set path_list [list $path_idx [join $path_list "."] $path_counter $cp_q $a_sig_path_p $path_duration $path_cost $index_custom $path_len $path_len_w_coefs ]
                     lappend p6_lists $path_list
                 }                
 
