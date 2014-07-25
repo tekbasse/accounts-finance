@@ -25,6 +25,10 @@ if { [qf_is_natural_number $table_tid] } {
             set x_idx [lsearch -exact $table_titles_list "x"]
             set y_idx [lsearch -exact $table_titles_list "y"]
             if { $x_idx > -1 && $y_idx > -1 && [llength $table_data_list] > 0 } {
+                # set alternating colors
+
+                # verify images exist. if not, make them.
+
                 if { 1 } {
                     # style cobbler (square pie) chart
                     # make chart using html
