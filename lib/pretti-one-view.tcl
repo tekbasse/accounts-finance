@@ -19,6 +19,22 @@ if { [qf_is_natural_number $table_tid] } {
     if { $table_flags eq "p4" } {
         set table_html [acc_fin::pretti_table_to_html $table_lists $table_comments]
     } else {
+        if { $table_flags eq "dc" } {
+            set table_titles_list [lindex $table_lists 0]
+            set table_data_list [lrange $table_lists 1 end]
+            set x_idx [lsearch -exact $table_titles_list "x"]
+            set y_idx [lsearch -exact $table_titles_list "y"]
+            if { $x_idx > -1 && $y_idx > -1 && [llength $table_data_list] > 0 } {
+                if { 1 } {
+                    # style cobbler (square pie) chart
+                    # make chart using html
+                    # acs-subsite/www/resources/spacer.gif is a transparent 1 pixel image available by default.
+                } else {
+                    # style pie chart
+                    # use gm draw elipse ( 100,100 100,150 0,360) <- from unseen example
+                }
+            }
+        }
         set table_html [qss_list_of_lists_to_html_table $table_lists $table_tag_atts_list]
         #    append table_html "<p>${table_comments}</p>"
         set table_log_messages_list [acc_fin::pretti_log_read $table_tid 3 $user_id $instance_id]
