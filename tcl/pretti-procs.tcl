@@ -1160,6 +1160,10 @@ ad_proc -private acc_fin::p_load_tid {
         set p2_type_column_exists_p [info exists p_larr(aid_type)]
         if { $p2_type_column_exists_p } {
             set p2_types_exist_p [expr { [llength $p_larr(aid_type)] > 0 } ]
+            if { $p1_arr(task_types_tid) eq "" && $p2_types_exist_p } {
+                set success_p 0
+                acc_fin::pretti_log_create $scenario_tid "p_load_tid" "value" "error. task_types_tid is required in p1 when p2 has nonempty aid_type column.(ref1441)" $user_id $instance_id
+            }
         } 
     }
 
@@ -1340,7 +1344,7 @@ ad_proc -private acc_fin::p_load_tid {
         }
         # end for i, $i < $i_max
         
-    } elseif { $table_type eq "p2" } {
+    } elseif { $table_type eq "p2" && $success_p } {
         # table_type is p2 
         # p2 defined curves are loaded in context of higher level of complexity
         
