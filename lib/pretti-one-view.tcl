@@ -35,11 +35,14 @@ if { [qf_is_natural_number $table_tid] } {
                 set y_min [lindex $row $y_idx]
                 set x_max $x_min
                 set y_max $y_min
+                set x_sum $x
+                set y_sum $y
                 foreach row [lrange $table_data_list 1 end]  {
                     set x [lindex $row $x_idx]
                     set y [lindex $row $y_idx]
                     if { [ad_var_type_check_number_p $x] && [ad_var_type_check_number_p $y] } {
                         set x_sum [expr { $x_sum + abs( $x ) } ]
+#                        set y_sum [expr { $y_sum + abs( $y ) } ]
                         if { $y > $y_max } {
                             set y_max $y
                         }
@@ -56,6 +59,14 @@ if { [qf_is_natural_number $table_tid] } {
                         set graph_it_p 0
                     }
                 }
+#                set y_avg [expr { $y_sum / $row_count } ]
+#                set y_low_test [expr { ( $y_avg - $y_min ) / $y_min } ]
+#                set y_high_test [expr { ( $y_max - $y_avg ) / $y_max } ]
+#                if { $y_low_test < .1 || $y_high_test < .1 } {
+                    # consider exagerating by graphing y exponentially etc
+
+#                }
+
                 if { $graph_it_p } {
                     # set alternating colors
                     
@@ -75,7 +86,7 @@ if { [qf_is_natural_number $table_tid] } {
                         set 2pi [expr { 2. * $pi } ]
                         # if delta y = 100%, r is circa 100
                         set case1 [expr { $row_count / $2pi } ]
-                        set case2 [expr { } ]
+                        set case2 [expr { $y_max - $y_min } ]
                         
                         # given origin: x0,y0 arc from x1,y1 to x2,y2 with radius r1, color c1
                         # exec gm convert -size "200x200" -fill $c1 -stroke $c1 -draw "ellipse $x0,$y0 $r1,$r1 0,90" "xc:#ffffff" test19.png
