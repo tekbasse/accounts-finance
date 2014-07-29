@@ -81,21 +81,22 @@ if { [qf_is_natural_number $table_tid] } {
                         # Image 0 point should be at twelve oclock. (subtract 90 from angle)
                         # split any angle over 180 degrees into two angles < 180.
                         # Try to provide image resolution at least one pixel per degree and/or 1% of range of y.
-                        # if C = 360, && c = 2*pi*r, r = C / (2 * pi) or circa 57.295779513
                         set pi [expr { atan2( 0. , -1. ) } ]
                         set 2pi [expr { 2. * $pi } ]
+                        # if C = 360, && c = 2*pi*r, r = C / (2 * pi) or circa 57.295779513
                         # if delta y = 100%, r is circa 100
-                        set case1 [expr { $row_count / $2pi } ]
-                        set case2 [expr { $y_max - $y_min } ]
-                        
+                        #set deg_min [expr { 360. * $x_min / $x_sum } ]
+                        #set r_case1 [expr { 360. / ( $2pi * $deg_min ) } ]
+                        # r_case1 is resolution along circumference (x)
+                        set r_case1 [f::max 100 [f::min 1000 [expr { $x_sum / ( $2pi * $x_min ) } ]]]
+                        # r_case2 is resolution along range of y.
+                        set r_case2 [f::max 100 [f::min 1000 [expr { $y_max - $y_min } ]]]
+                        set r [f::max $r_case1 $r_case2 ]
                         # given origin: x0,y0 arc from x1,y1 to x2,y2 with radius r1, color c1
                         # exec gm convert -size "200x200" -fill $c1 -stroke $c1 -draw "ellipse $x0,$y0 $r1,$r1 0,90" "xc:#ffffff" test19.png
                         # exec gm convert -size "200x200" -fill $c1 -stroke $c1 -draw "path 'M $x0 $y0 L $x1 $y1 L $x2 $y2 L $x0 $y0'" test19.png test19.png
-                        
-                        set width_px [expr { $x2 + 2 * $x1 } ]
-                        set height_px [expr { $y2 + 2 * $y1 } ]
-                        puts "Creating ${width_px}x${height_px} image: $filename"
-                        exec gm convert -size ${width_px}x${height_px} "xc:#ffffff" $filename
+                        set dim_px [expr { 2 * round( $r + .99 )  } ]
+                        exec gm convert -size ${dim_px}x${dim_px} "xc:#ffffff" $filename
                     }
                 }
 

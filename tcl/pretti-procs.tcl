@@ -3124,8 +3124,8 @@ ad_proc -public acc_fin::scenario_prettify {
                             # cell should contain this info: "$act t:${time_expected} T:${branches_duration_max} D:${dependencies} "
                             lappend ptrack_list $activity
                             set cell $activity
-                            append cell " <pre> "
-                            append cell "t:"
+                            append cell " <br> "
+                            append cell " t:"
                             if { $act_time_expected_arr($activity) ne "" } {
                                 if { $precision eq "" } {
                                     append cell $act_time_expected_arr($activity)
@@ -3186,7 +3186,7 @@ ad_proc -public acc_fin::scenario_prettify {
                             set popularity $act_freq_in_load_cp_alts_arr($activity)
                             set on_a_sig_path_p [expr { $act_freq_in_load_cp_alts_arr($activity) > $act_count_median } ]
                             # this calced in p4 html generator: set on_cp_p [expr { $count_on_cp_p_arr($activity) > 0 } ]
-                            append cell "<!-- ${on_a_sig_path_p} ${popularity} --> </pre>"
+                            append cell "<!-- ${on_a_sig_path_p} ${popularity} --> "
                             lappend row_larr($i) $cell
                         } else {
                             lappend row_larr($i) ""
