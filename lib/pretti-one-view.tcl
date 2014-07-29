@@ -12,7 +12,7 @@ if { [qf_is_natural_number $table_tid] } {
     set table_title [lindex $table_stats_list 1]
     set table_comments [lindex $table_stats_list 2]
     set table_flags [lindex $table_stats_list 6]
-#    set table_html "<h3>${table_title} (${table_name})</h3>\n"
+    #    set table_html "<h3>${table_title} (${table_name})</h3>\n"
     set table_lists [qss_table_read $table_tid]
     set table_text [qss_lists_to_text $table_lists]
     set table_tag_atts_list [list border 1 cellpadding 3 cellspacing 0]
@@ -27,22 +27,27 @@ if { [qf_is_natural_number $table_tid] } {
             set y_idx [lsearch -exact $table_titles_list "y"]
             set row_count [llength $table_data_list]
             if { $x_idx > -1 && $y_idx > -1 && $row_count > 0 } {
-                set style $user_id
-                set filename "dc-${table_tid}-${style}.png"
-                set filepathname [file join [apm_package_url_from_id [ad_conn package_id]] pretti resources $filename]
+                set style pie
+                set filename "pretti-dc-${table_tid}-${style}.png"
+                set filepathname [acs_root_dir]
+                append filepathname "/www/resources/$filename"
+                append webpathname "/resources/$filename"
+                #append filepathname [file join [apm_package_url_from_id [ad_conn package_id]] pretti resources]
+
                 # find min max x and y values and other preparations
+                set row [lindex $table_data_list 0]
                 set x_min [lindex $row $x_idx]
                 set y_min [lindex $row $y_idx]
                 set x_max $x_min
                 set y_max $y_min
-                set x_sum $x
-                set y_sum $y
+                set x_sum $x_min
+                set y_sum $y_min
                 foreach row [lrange $table_data_list 1 end]  {
                     set x [lindex $row $x_idx]
                     set y [lindex $row $y_idx]
                     if { [ad_var_type_check_number_p $x] && [ad_var_type_check_number_p $y] } {
                         set x_sum [expr { $x_sum + abs( $x ) } ]
-#                        set y_sum [expr { $y_sum + abs( $y ) } ]
+                        #                        set y_sum [expr { $y_sum + abs( $y ) } ]
                         if { $y > $y_max } {
                             set y_max $y
                         }
@@ -59,54 +64,81 @@ if { [qf_is_natural_number $table_tid] } {
                         set graph_it_p 0
                     }
                 }
-#                set y_avg [expr { $y_sum / $row_count } ]
-#                set y_low_test [expr { ( $y_avg - $y_min ) / $y_min } ]
-#                set y_high_test [expr { ( $y_max - $y_avg ) / $y_max } ]
-#                if { $y_low_test < .1 || $y_high_test < .1 } {
-                    # consider exagerating by graphing y exponentially etc
+                #                set y_avg [expr { $y_sum / $row_count } ]
+                #                set y_low_test [expr { ( $y_avg - $y_min ) / $y_min } ]
+                #                set y_high_test [expr { ( $y_max - $y_avg ) / $y_max } ]
+                #                if { $y_low_test < .1 || $y_high_test < .1 } {
+                # consider exagerating by graphing y exponentially etc
 
-#                }
+                #                }
 
                 if { $graph_it_p } {
                     # set alternating colors
-                    
-                    # verify images exist. if not, make them.
-                    # from mad-lab-lib
-                    if { ![file exists $filepathname] } {
-                        # Create canvas image 
-                        # to create a solid red canvas image:                                                                                              
-                        # gm convert -size 640x480 "xc:#f00" canvas.png                                                                                    
-                        # from: www.graphicsmagick.org/FAQ.html                                                                                           
-                        # Assume the same border for the farsides. It may be easier for a user to clip than to add margin.
-                        # Image 0 point should be at twelve oclock. (subtract 90 from angle)
-                        # split any angle over 180 degrees into two angles < 180.
-                        # Try to provide image resolution at least one pixel per degree and/or 1% of range of y.
-                        set pi [expr { atan2( 0. , -1. ) } ]
-                        set 2pi [expr { 2. * $pi } ]
-                        # if C = 360, && c = 2*pi*r, r = C / (2 * pi) or circa 57.295779513
-                        # if delta y = 100%, r is circa 100
-                        #set deg_min [expr { 360. * $x_min / $x_sum } ]
-                        #set r_case1 [expr { 360. / ( $2pi * $deg_min ) } ]
-                        # r_case1 is resolution along circumference (x)
-                        set r_case1 [f::max 100 [f::min 1000 [expr { $x_sum / ( $2pi * $x_min ) } ]]]
-                        # r_case2 is resolution along range of y.
-                        set r_case2 [f::max 100 [f::min 1000 [expr { $y_max - $y_min } ]]]
-                        set r [f::max $r_case1 $r_case2 ]
-                        # given origin: x0,y0 arc from x1,y1 to x2,y2 with radius r1, color c1
-                        # exec gm convert -size "200x200" -fill $c1 -stroke $c1 -draw "ellipse $x0,$y0 $r1,$r1 0,90" "xc:#ffffff" test19.png
-                        # exec gm convert -size "200x200" -fill $c1 -stroke $c1 -draw "path 'M $x0 $y0 L $x1 $y1 L $x2 $y2 L $x0 $y0'" test19.png test19.png
-                        set dim_px [expr { 2 * round( $r + .99 )  } ]
-                        exec gm convert -size ${dim_px}x${dim_px} "xc:#ffffff" $filename
-                    }
-                }
+                    set fill_arr(0) "#999999"
+                    set fill_arr(1) "#66cc66"
 
-                if { 1 } {
-                    # style cobbler (square pie) chart
-                    # make chart using html
-                    # acs-subsite/www/resources/spacer.gif is a transparent 1 pixel image available by default.
-                } else {
-                    # style pie chart
-                    # use gm draw elipse ( 100,100 100,150 0,360) <- from unseen example
+                    if { $style eq "cobbler" } {
+                        # style cobbler (square pie) chart
+                        # make chart using html
+                        # acs-subsite/www/resources/spacer.gif is a transparent 1 pixel image available by default.
+                    } else {
+                        # style pie chart
+                        # use gm draw elipse ( 100,100 100,150 0,360) <- from unseen example
+
+
+                        # verify images exist. if not, make them.
+                        # from mad-lab-lib
+                        if { ![file exists $filepathname] } {
+                            # Create canvas image 
+                            # to create a solid red canvas image:                                                                                              
+                            # gm convert -size 640x480 "xc:#f00" canvas.png                                                                                    
+                            # from: www.graphicsmagick.org/FAQ.html                                                                                           
+                            # Assume the same border for the farsides. It may be easier for a user to clip than to add margin.
+                            # Image 0 point should be at twelve oclock. (subtract 90 from angle)
+                            # split any angle over 180 degrees into two angles < 180.
+                            # Try to provide image resolution at least one pixel per degree and/or 1% of range of y.
+                            set pi [expr { atan2( 0. , -1. ) } ]
+                            set 2pi [expr { 2. * $pi } ]
+                            # if C = 360, && c = 2*pi*r, r = C / (2 * pi) or circa 57.295779513
+                            # if delta y = 100%, r is circa 100
+                            #set deg_min [expr { 360. * $x_min / $x_sum } ]
+                            #set r_case1 [expr { 360. / ( $2pi * $deg_min ) } ]
+                            # r_case1 is resolution along circumference (x)
+                            set r_case1 [f::max 100 [f::min 1000 [expr { $x_sum / ( $2pi * $x_min ) } ]]]
+                            # r_case2 is resolution along range of y.
+                            set r_case2 [f::max 100 [f::min 1000 [expr { $y_max - $y_min } ]]]
+                            set r [f::max $r_case1 $r_case2 ]
+                            # given origin: x0,y0 arc from x1,y1 to x2,y2 with radius r1, color c1
+                            # exec gm convert -size "200x200" -fill $c1 -stroke $c1 -draw "ellipse $x0,$y0 $r1,$r1 0,90" "xc:#ffffff" test19.png
+                            # exec gm convert -size "200x200" -fill $c1 -stroke $c1 -draw "path 'M $x0 $y0 L $x1 $y1 L $x2 $y2 L $x0 $y0'" test19.png test19.png
+                            set dim_px [expr { 2 * round( $r + .99 )  } ]
+                            exec gm convert -size ${dim_px}x${dim_px} "xc:#ffffff" $filepathname
+                            set x0 $dim_px
+                            incr x0
+                            set y0 $dim_px
+                            incr y0
+                            set i 0
+                            set theta_i2 -90.
+                            set x2 $x0
+                            set y2 [expr { $y0 + $dim_px } ]
+                            set k1 [expr { 360. / $x_sum } ]
+                            foreach row $table_data_list {
+                                incr i
+                                set odd_p [expr { $i - int( $i / 2 ) * 2 } ]
+                                set x [lindex $row $x_idx]
+                                set y [lindex $row $y_idx]
+                                set angle_arc [expr { $k1 * $x } ]
+                                set theta_i1 $theta_i2
+                                set x1 $x2
+                                set y1 $y2
+                                set theta_i2 [expr { $theta_i2 + $angle_arc } ]
+                                set x2 [expr { $r * cos( $theta_i2 ) + $x0 } ]
+                                set y2 [expr { $r * sin( $theta_i2 ) + $y0 } ]
+                                # triangle + ellipse
+                                exec gm convert -size ${dim_px}x${dim_px} -fill $color_arr($odd_p) -stroke $color_arr($odd_p) -draw "path 'M $x0 $y0 L $x1 $y1 L $x2 $y2 L $x0 $y0' ellipse $x0,$y0 $r,$r ${theta_i1},${theta_i2}" $filepathname $filepathname
+                            }
+                        }
+                    }
                 }
             }
         }
