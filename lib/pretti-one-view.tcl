@@ -74,8 +74,8 @@ if { [qf_is_natural_number $table_tid] } {
 
                 if { $graph_it_p } {
                     # set alternating colors
-                    set fill_arr(0) "#999999"
-                    set fill_arr(1) "#66cc66"
+                    set color_arr(0) "#999999"
+                    set color_arr(1) "#cccccc"
 
                     if { $style eq "cobbler" } {
                         # style cobbler (square pie) chart
@@ -113,30 +113,57 @@ if { [qf_is_natural_number $table_tid] } {
                             # exec gm convert -size "200x200" -fill $c1 -stroke $c1 -draw "path 'M $x0 $y0 L $x1 $y1 L $x2 $y2 L $x0 $y0'" test19.png test19.png
                             set dim_px [expr { 2 * round( $r + .99 )  } ]
                             exec gm convert -size ${dim_px}x${dim_px} "xc:#ffffff" $filepathname
-                            set x0 $dim_px
+                            set x0 [expr { int( $r ) + 1 } ]
                             incr x0
-                            set y0 $dim_px
-                            incr y0
+                            set y0 $x0
                             set i 0
-                            set theta_i2 -90.
+                            # set theta_d degrees
+                            # set theta_r radians
+                            set theta_d2 -90.
+                            set theta_r2 [expr { -1. * $pi / 2. } ]
                             set x2 $x0
-                            set y2 [expr { $y0 + $dim_px } ]
+                            set y2 [expr { round( $y0 + $r ) } ]
                             set k1 [expr { 360. / $x_sum } ]
+                            set k2 [expr { ( $y_max - $y_min ) } ]
+                            set k3 [expr { $k2 * 2. } ]
+                            set k4 [expr { $2pi / $x_sum } ]
+                            # convert rads to degs:
+                            set k0 [expr { 360. / $2pi } ]
+                            # ns_log Notice "accounts-finance/lib/pretti-one-view.tcl k0 $k0 k1 $k1 k2 $k2 k3 $k3"
                             foreach row $table_data_list {
                                 incr i
                                 set odd_p [expr { $i - int( $i / 2 ) * 2 } ]
                                 set x [lindex $row $x_idx]
                                 set y [lindex $row $y_idx]
-                                set angle_arc [expr { $k1 * $x } ]
-                                set theta_i1 $theta_i2
-                                set x1 $x2
-                                set y1 $y2
-                                set theta_i2 [expr { $theta_i2 + $angle_arc } ]
-                                set x2 [expr { $r * cos( $theta_i2 ) + $x0 } ]
-                                set y2 [expr { $r * sin( $theta_i2 ) + $y0 } ]
-                                # triangle + ellipse
-                                exec gm convert -size ${dim_px}x${dim_px} -fill $color_arr($odd_p) -stroke $color_arr($odd_p) -draw "path 'M $x0 $y0 L $x1 $y1 L $x2 $y2 L $x0 $y0' ellipse $x0,$y0 $r,$r ${theta_i1},${theta_i2}" $filepathname $filepathname
+                                set arc_degs [expr { $k1 * $x } ]
+                                set arc_rads [expr { $k4 * $x } ]
+                                set ry [expr { ( ( $y - $y_min ) / $k3 + .5 ) * $r } ]
+
+                                if { $arc_degs > 180. } {
+                                    set arc_rads [expr { $arc_rads / 2. } ]
+                                    set angle_list [list $arc_rads $arc_rads]
+                                } else {
+                                    set angle_list [list $arc_rads ]
+                                }
+                                foreach angle $angle_list {
+                                    set theta_d1 $theta_d2
+                                    set theta_r1 $theta_r2
+                                    set theta_d2 [expr { $theta_d2 + $arc_rads * $k0 } ]
+                                    set theta_r2 [expr { $theta_r2 + $arc_rads } ]
+                                    set x1 [expr { round( $ry * cos( $theta_r1 ) + $x0 ) } ]
+                                    set y1 [expr { round( $ry * sin( $theta_r1 ) + $y0 ) } ]
+                                    set x2 [expr { round( $ry * cos( $theta_r2 ) + $x0 ) } ]
+                                    set y2 [expr { round( $ry * sin( $theta_r2 ) + $y0 ) } ]
+#                                    ns_log Notice "accounts-finance/lib/pretti-one-view.tcl theta_d2 $theta_d2 ry $ry arc_degs $arc_degs x $x y $y"
+#                                    ns_log Notice "accounts-finance/lib/pretti-one-view.tcl x0 $x0 y0 $y0 x1 $x1 y1 $y1 x2 $x2 y2 $y2"
+                                    # triangle + ellipse
+                                    exec gm convert -size ${dim_px}x${dim_px} -fill $color_arr($odd_p) -stroke $color_arr($odd_p) -draw "path 'M $x0 $y0 L $x1 $y1 L $x2 $y2 L $x0 $y0'" $filepathname $filepathname
+                                    exec gm convert -size ${dim_px}x${dim_px} -fill $color_arr($odd_p) -stroke $color_arr($odd_p) -draw "ellipse $x0,$y0 $ry,$ry ${theta_d1},${theta_d2}" $filepathname $filepathname
+                                }
                             }
+                            set y3 [expr { round( $y0 - $ry ) } ]
+                            exec gm convert -size ${dim_px}x${dim_px} -strokewidth 1 -stroke $color_arr(0) -draw "path 'M $x0 $y0 L $x0 $y3'" $filepathname $filepathname
+
                         }
                     }
                 }
