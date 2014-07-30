@@ -27,11 +27,17 @@ if { [qf_is_natural_number $table_tid] } {
             set y_idx [lsearch -exact $table_titles_list "y"]
             set row_count [llength $table_data_list]
             if { $x_idx > -1 && $y_idx > -1 && $row_count > 0 } {
-                set style pie
-                set filename "pretti-dc-${table_tid}-${style}.png"
+                # pie chart
+                set pie_filename "pretti-dc-${table_tid}-[clock seconds]pie.png"
+                # cobbler chart
+                set cob_filename "pretti-dc-${table_tid}-[clock seconds]cob.png"
                 set filepathname [acs_root_dir]
-                append filepathname "/www/resources/$filename"
-                append webpathname "/resources/$filename"
+                append filepathname "/www/resources/"
+                set pie_pathname "${filepathname}/${pie_filename}"
+                set pie_webpathname "/resources/${pie_filename}"
+                set cob_pathname "${filepathname}/${cob_filename}"
+                set cob_webpathname "/resources/${cob_filename}"
+
                 #append filepathname [file join [apm_package_url_from_id [ad_conn package_id]] pretti resources]
 
                 # find min max x and y values and other preparations
@@ -76,19 +82,66 @@ if { [qf_is_natural_number $table_tid] } {
                     # set alternating colors
                     set color_arr(0) "#999999"
                     set color_arr(1) "#cccccc"
-
-                    if { $style eq "cobbler" } {
+                    if { ![info exists cobbler_p ] } { 
+                        set cobbler_p 1
+                    }
+                    if { ![info exists pie_p ] } {
+                        set pie_p 1
+                    }
+                    if { $cobbler_p } {
                         # style cobbler (square pie) chart
-                        # make chart using html
+                        # make chart
                         # acs-subsite/www/resources/spacer.gif is a transparent 1 pixel image available by default.
-                    } else {
+                        # verify images exist. if not, make them.
+                        # from mad-lab-lib
+                        if { ![file exists $cob_pathname] } {
+                            # Create canvas image 
+                            # to create a solid red canvas image:                                                                                              
+                            # gm convert -size 640x480 "xc:#f00" canvas.png                                                                                    
+                            # from: www.graphicsmagick.org/FAQ.html                                                                                           
+                            # Assume the same border for the farsides. It may be easier for a user to clip than to add margin.
+                            # Image 0 point should be at twelve oclock. (subtract 90 from angle)
+                            # split any angle over 180 degrees into two angles < 180.
+                            # Try to provide image resolution at least one pixel per degree and/or 1% of range of y.
+
+                            # r_case1 is resolution along min size of (x) 1 pixel for min width
+                            set r_case1 [f::max 100 [f::min 1000 [expr { $x_sum / $x_min } ]]]
+                            # r_case2 is resolution along range of y.
+                            set r_case2 [f::max 100 [f::min 1000 [expr { $y_max - $y_min } ]]]
+                            set r [f::max $r_case1 $r_case2 ]
+                            set dim_px [expr { round( $r + .99 )  } ]
+                            set dim_py [expr { round( $r / 3.6 ) } ]
+                            exec gm convert -size ${dim_px}x${dim_py} "xc:#ffffff" $cob_pathname
+                            set x0 1
+                            set y0 [expr { $dim_py } ]
+                            set i 0
+                            set x2 $x0
+                            set y2 $y0
+                            set k1 [expr { 360. / $x_sum } ]
+                            set k2 [expr { $dim_py / $y_max } ]
+                            foreach row $table_data_list {
+                                incr i
+                                set odd_p [expr { $i - int( $i / 2 ) * 2 } ]
+                                set x [lindex $row $x_idx]
+                                set y [lindex $row $y_idx]
+                                set bar_width [expr { $x * $k1 } ]
+                                set bar_height [expr { $y * $k2 } ]
+                                set x1 $x2
+                                set y1 $y0
+                                set x2 [expr { round( $x1 + $bar_width ) } ]
+                                set y2 [expr { round( $y0 - $bar_height ) } ]
+                                ns_log Notice "accounts-finance/lib/pretti-one-view.tcl x0 $x0 y0 $y0 x1 $x1 y1 $y1 x2 $x2 y2 $y2"
+                                exec gm convert -size ${dim_px}x${dim_py} -fill $color_arr($odd_p) -stroke $color_arr($odd_p) -draw "rectangle $x1,$y1 $x2,$y2" $cob_pathname $cob_pathname
+                            }
+                        }
+                    } elseif { $pie_p } {
                         # style pie chart
                         # use gm draw elipse ( 100,100 100,150 0,360) <- from unseen example
 
 
                         # verify images exist. if not, make them.
                         # from mad-lab-lib
-                        if { ![file exists $filepathname] } {
+                        if { ![file exists $pie_pathname] } {
                             # Create canvas image 
                             # to create a solid red canvas image:                                                                                              
                             # gm convert -size 640x480 "xc:#f00" canvas.png                                                                                    
@@ -112,7 +165,7 @@ if { [qf_is_natural_number $table_tid] } {
                             # exec gm convert -size "200x200" -fill $c1 -stroke $c1 -draw "ellipse $x0,$y0 $r1,$r1 0,90" "xc:#ffffff" test19.png
                             # exec gm convert -size "200x200" -fill $c1 -stroke $c1 -draw "path 'M $x0 $y0 L $x1 $y1 L $x2 $y2 L $x0 $y0'" test19.png test19.png
                             set dim_px [expr { 2 * round( $r + .99 )  } ]
-                            exec gm convert -size ${dim_px}x${dim_px} "xc:#ffffff" $filepathname
+                            exec gm convert -size ${dim_px}x${dim_px} "xc:#ffffff" $pie_pathname
                             set x0 [expr { int( $r ) + 1 } ]
                             incr x0
                             set y0 $x0
@@ -157,12 +210,12 @@ if { [qf_is_natural_number $table_tid] } {
 #                                    ns_log Notice "accounts-finance/lib/pretti-one-view.tcl theta_d2 $theta_d2 ry $ry arc_degs $arc_degs x $x y $y"
 #                                    ns_log Notice "accounts-finance/lib/pretti-one-view.tcl x0 $x0 y0 $y0 x1 $x1 y1 $y1 x2 $x2 y2 $y2"
                                     # triangle + ellipse
-                                    exec gm convert -size ${dim_px}x${dim_px} -fill $color_arr($odd_p) -stroke $color_arr($odd_p) -draw "path 'M $x0 $y0 L $x1 $y1 L $x2 $y2 L $x0 $y0'" $filepathname $filepathname
-                                    exec gm convert -size ${dim_px}x${dim_px} -fill $color_arr($odd_p) -stroke $color_arr($odd_p) -draw "ellipse $x0,$y0 $ry,$ry ${theta_d1},${theta_d2}" $filepathname $filepathname
+                                    exec gm convert -size ${dim_px}x${dim_px} -fill $color_arr($odd_p) -stroke $color_arr($odd_p) -draw "path 'M $x0 $y0 L $x1 $y1 L $x2 $y2 L $x0 $y0'" $pie_pathname $pie_pathname
+                                    exec gm convert -size ${dim_px}x${dim_px} -fill $color_arr($odd_p) -stroke $color_arr($odd_p) -draw "ellipse $x0,$y0 $ry,$ry ${theta_d1},${theta_d2}" $pie_pathname $pie_pathname
                                 }
                             }
                             set y3 [expr { round( $y0 - $ry ) } ]
-                            exec gm convert -size ${dim_px}x${dim_px} -strokewidth 1 -stroke $color_arr(0) -draw "path 'M $x0 $y0 L $x0 $y3'" $filepathname $filepathname
+                            exec gm convert -size ${dim_px}x${dim_px} -strokewidth 1 -stroke $color_arr(0) -draw "path 'M $x0 $y0 L $x0 $y3'" $pie_pathname $pie_pathname
 
                         }
                     }
