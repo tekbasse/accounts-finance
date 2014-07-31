@@ -58,8 +58,6 @@
 <msg key="cp_q">In Critical Path?</msg>
 <msg key="cp_q_def">Answers question about an activity. 1 is yes, 0 is no.</msg>
 <msg key="curve">Curve</msg>
-<msg key="custom_equation_variables">Custom Equation Variables</msg>
-<msg key="custom_equation_variables_def">Variables used in creating a custom PRETTI index for path sorting.</msg>
 <msg key="db_format">Database Format</msg>
 <msg key="db_format_def">A format to use for a report.</msg>
 <msg key="delete">Delete</msg>
@@ -80,8 +78,10 @@
 <msg key="distribution_curve_dc">Distribution_Curve (dc)</msg>
 <msg key="distribution_curve_dc_def">A table representing a discrete distribution curve.</msg>
 <msg key="edit">Edit</msg>
-<msg key="index_custom">Index Custom</msg>
-<msg key="index_custom_def">A value assigned to path from a user defined function for purposes of prioritizing paths differently than PRETTI.</msg>
+<msg key="index_equation">Index Equation</msg>
+<msg key="index_equation_def">A user defined function for purposes of prioritizing paths differently than PRETTI.</msg>
+<msg key="index_equation_variables">Index Equation Variables</msg>
+<msg key="index_equation_variables_def">Variables used in creating a custom PRETTI index for path sorting.</msg>
 <msg key="label">Label</msg>
 <msg key="label_def">A tag reference or short phrase that identifies a data point.</msg>
 <msg key="last_modified">Last Modified</msg>
@@ -108,6 +108,8 @@
 <msg key="path_idx_def">An internally fixed path reference number for this report.</msg>
 <msg key="popularity">Popularity</msg>
 <msg key="popularity_def">An indication to the relative use of item compared to others.</msg>
+<msg key="precision">Precision</msg>
+<msg key="precision_def">A number specifying the count of digits to the right of the decimal.</msg>
 <msg key="process">Process</msg>
 <msg key="report_table_p4">Report Table (p4)</msg>
 <msg key="report_table_p4_def">A tabular report with one path per column.</msg>

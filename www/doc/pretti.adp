@@ -43,7 +43,7 @@
 <p>* = #accounts-finance.required#</p>
 <p>#accounts-finance.unrecognized_refs#</p>
 
-<h2>#accounts-finance.custom_equation_variables#</h2>
-<p>#accounts-finance.custom_equation_variables_def#</p>
+<h2>#accounts-finance.index_equation_variables#</h2>
+<p>#accounts-finance.index_equation_variables_def#</p>
 @eq_vars_html;noquote@
 

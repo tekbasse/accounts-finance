@@ -28,9 +28,9 @@ if { [qf_is_natural_number $table_tid] } {
             set row_count [llength $table_data_list]
             if { $x_idx > -1 && $y_idx > -1 && $row_count > 0 } {
                 # pie chart
-                set pie_filename "pretti-dc-${table_tid}-[clock seconds]pie.png"
+                set pie_filename "pretti-dc-${table_tid}-pie.png"
                 # cobbler chart
-                set cob_filename "pretti-dc-${table_tid}-[clock seconds]cob.png"
+                set cob_filename "pretti-dc-${table_tid}-cob.png"
                 set filepathname [acs_root_dir]
                 append filepathname "/www/resources/"
                 set pie_pathname "${filepathname}/${pie_filename}"
@@ -112,7 +112,7 @@ if { [qf_is_natural_number $table_tid] } {
                             set dim_px [expr { round( $r + .99 )  } ]
                             set dim_py [expr { round( $r / 3.6 ) } ]
                             exec gm convert -size ${dim_px}x${dim_py} "xc:#ffffff" $cob_pathname
-                            set x0 1
+                            set x0 0
                             set y0 [expr { $dim_py } ]
                             set i 0
                             set x2 $x0
