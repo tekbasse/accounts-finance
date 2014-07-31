@@ -2479,7 +2479,6 @@ ad_proc -public acc_fin::scenario_prettify {
                 set act_count_of_seq_arr(${sequence_1}) 0
                 set tree_seg_dur_lists [list ]
                 
-#######                
                 while { $all_paths_calculated_p == 0 && $i < $activity_count } {
                     ns_log Notice "acc_fin::scenario_prettify.2300: scenario '$scenario_tid' new calc loop"
                     set all_paths_calculated_p 1
@@ -2498,7 +2497,7 @@ ad_proc -public acc_fin::scenario_prettify {
                         }
 
                         if { $dependencies_met_p && $act_calculated_p_larr($act) == 0 } {
-                           # Calc max_num: maximum relative sequence number for activity dependencies
+                            # Calc max_num: maximum relative sequence number for activity dependencies
                             set max_num 0
                             foreach test_act $dependencies_larr($act) {
                                 set test $act_seq_num_arr(${test_act})
@@ -2605,251 +2604,266 @@ ad_proc -public acc_fin::scenario_prettify {
                     # ns_log Notice "acc_fin::scenario_prettify: act_seq_list_arr '$act_seq_list_arr($act_seq_num_arr($act))' $act_count_of_seq_arr($act_seq_num_arr($act))"
                 }
                 ns_log Notice "acc_fin::scenario_prettify.2416: scenario '$scenario_tid' All dependencies met? 1 = yes. all_deps_met_p $all_deps_met_p"
-                
+                if { $all_deps_met_p == 0 } {
+                    set hint "Hint: activities "
+                    set separator ""
+                    foreach act $activities_list {
+                        # act_seq_num_arr in next check may be redundant.
+                        if { $act_calculated_p_larr($act) == 0 && $act_seq_num_arr($act) == 0 } {
+                            append hint $separator $act
+                            set separator ", "
+                        }
+                    }
+                    append hint "."
+                    set error_fail 1
+                    acc_fin::pretti_log_create $scenario_tid "all_deps_met_p" "value" "All dependencies could not be met. Possible circular reference in dependencies.(ref2609) $hint" $user_id $instance_id
+                    
+                }
+
                 
                 # # # compile results for report
                 ns_log Notice "acc_fin::scenario_prettify.2431: scenario '$scenario_tid' compile results for report."
-                
-                
-                #   paths_lists is a list of (full paths, subtotal duration, subtotal cost)
-                set paths_lists [list ]
-                set path_idx 0
-                set act_count_max 0
-                foreach act $activities_list {
-                    # Remove partial tracks from subtrees by placing only paths in paths_lists
-                    ns_log Notice "acc_fin::scenario_prettify.2485: scenario '$scenario_tid' path_tree_p_arr($act) '$path_tree_p_arr($act)' "
-                    if { $path_tree_p_arr($act) } {
-                        # subtrees_larr($act) is a tree of full paths here.
-                        # Expand path trees to a list of paths
-                        foreach path_list $subtrees_larr($act) {
-                            # build a sortable list
-                            set row_list [list ]
-                            
-                            # paths_lists 0
-                            lappend row_list $path_idx
-                            
-                            set paths_arr(${path_idx}) $path_list
-                            
-                            if { !$error_time } {
-                                # calculate no-float, no-lag duration for each path
-                                set path_duration  0.
-                                set ptrack_list [list ]
-                                foreach pa $path_list {
-                                    lappend ptrack_list $pa
-                                    # subtotal
-                                    set path_duration [expr { $path_duration + $act_time_expected_arr($pa) } ]
-                                    set ptrack_dur_arr($ptrack_list) $path_duration
-                                    set tw_arr(${path_idx},$pa) $path_duration
+                if { $error_fail == 0 } {
+                    
+                    #   paths_lists is a list of (full paths, subtotal duration, subtotal cost)
+                    set paths_lists [list ]
+                    set path_idx 0
+                    set act_count_max 0
+                    foreach act $activities_list {
+                        # Remove partial tracks from subtrees by placing only paths in paths_lists
+                        ns_log Notice "acc_fin::scenario_prettify.2485: scenario '$scenario_tid' path_tree_p_arr($act) '$path_tree_p_arr($act)' "
+                        if { $path_tree_p_arr($act) } {
+                            # subtrees_larr($act) is a tree of full paths here.
+                            # Expand path trees to a list of paths
+                            foreach path_list $subtrees_larr($act) {
+                                # build a sortable list
+                                set row_list [list ]
+                                
+                                # paths_lists 0
+                                lappend row_list $path_idx
+                                
+                                set paths_arr(${path_idx}) $path_list
+                                
+                                if { !$error_time } {
+                                    # calculate no-float, no-lag duration for each path
+                                    set path_duration  0.
+                                    set ptrack_list [list ]
+                                    foreach pa $path_list {
+                                        lappend ptrack_list $pa
+                                        # subtotal
+                                        set path_duration [expr { $path_duration + $act_time_expected_arr($pa) } ]
+                                        set ptrack_dur_arr($ptrack_list) $path_duration
+                                        set tw_arr(${path_idx},$pa) $path_duration
+                                    }
+                                    # save this for later reporting
+                                    # set path_dur_arr($path_list) $path_duration
+                                    # duplicative. ptrack_dur_arr($ptrack_list) = path_dur_arr($path_list) here
+                                } else {
+                                    set path_duration ""
                                 }
-                                # save this for later reporting
-                                # set path_dur_arr($path_list) $path_duration
-                                # duplicative. ptrack_dur_arr($ptrack_list) = path_dur_arr($path_list) here
-                            } else {
-                                set path_duration ""
-                            }
-                            # paths_lists 1
-                            set path_duration_arr(${path_idx}) $path_duration
-                            lappend row_list $path_duration
-                            
-                            if { !$error_cost } {
-                                # calculate cost for each path. 
-                                set path_cost 0.
-                                set ptrack_list [list ]
-                                # Since paths share activities, some costs are duplicative and so do not total these between paths
-                                foreach pa $path_list {
-                                    lappend ptrack_list $pa
-                                    # subtotal
-                                    set path_cost [expr { $path_cost + $act_cost_expected_arr($pa) } ]
-                                    set cw_arr(${path_idx},$pa) $path_cost
+                                # paths_lists 1
+                                set path_duration_arr(${path_idx}) $path_duration
+                                lappend row_list $path_duration
+                                
+                                if { !$error_cost } {
+                                    # calculate cost for each path. 
+                                    set path_cost 0.
+                                    set ptrack_list [list ]
+                                    # Since paths share activities, some costs are duplicative and so do not total these between paths
+                                    foreach pa $path_list {
+                                        lappend ptrack_list $pa
+                                        # subtotal
+                                        set path_cost [expr { $path_cost + $act_cost_expected_arr($pa) } ]
+                                        set cw_arr(${path_idx},$pa) $path_cost
+                                    }
+                                    # save this for later reporting
+                                    ###set cn_arr($path_list) $path_cost
+                                    #### duplicative. see above.
+                                } else {
+                                    set path_cost ""
                                 }
-                                # save this for later reporting
-                                ###set cn_arr($path_list) $path_cost
-                                #### duplicative. see above.
-                            } else {
-                                set path_cost ""
-                            }
-                            # paths_lists 2
-                            set cw_arr(${path_idx}) $path_cost
-                            lappend row_list $path_cost
-                            
-                            # if duration and cost are unavailable, list will be sorted by longest path..
-                            # paths_lists 3
-                            set path_len [llength $path_list ]
-                            ## path_len_arr(path_idx) is length of path list
-                            set path_len_arr(${path_idx}) $path_len
-                            lappend row_list $path_len
-                            
-                            # max of path_len is same as act_count_max
-                            if { $path_len > $act_count_max } {
-                                set act_count_max $path_len
-                            }
-                            
-                            set path_len_w_coef 0
-                            foreach pa $path_list {
-                                incr path_len_w_coef $act_coef($pa)
-                            }
-                            # paths_lists 4
-                            ## path_len_w_coef_arr is total number of activities in a path (with coefficients)
-                            set path_len_w_coef_arr(${path_idx}) $path_len_w_coef
-                            lappend row_list $path_len_w_coef
-                            # adding empty list incase of index_custom later
-                            lappend row_list ""
-                            lappend paths_lists $row_list
-                            incr path_idx
-                        }
-                    }
-                }
-                ## paths_count is the number of paths ie length of paths_list
-                set paths_count [expr { $path_idx - 1 } ]
-                ## paths_list: (list path_arr_idx duration cost length length_w_coefs )
-                
-                if { !$error_time } {
-                    # sort by path duration
-                    # critical path is the longest path. Float is the difference between CP and next longest CP.
-                    # create an array of paths from longest to shortest duration to help build base table
-                    set paths_sort1_lists [lsort -decreasing -real -index 1 $paths_lists]
-                    
-                    
-                } elseif { !$error_cost } {
-                    
-                    # make something useful for cost biased table, critical_path is most costly.. etc.
-                    # sort by path cost
-                    # critical path is the longest path. Float is the difference between CP and next longest CP.
-                    # create an array of paths from longest to shortest duration to help build base table
-                    set paths_sort1_lists [lsort -decreasing -real -index 2 $paths_lists]
-                    
-                } else {
-                    
-                    # make something that doesn't break the final table build. critical_path is largest count of activities..
-                    # sort by number of activities per path
-                    # critical path is the longest path. 
-                    # create an array of paths from longest to shortest number of activities
-                    set paths_sort1_lists [lsort -decreasing -integer -index 4 $paths_lists]
-                    
-                }
-                ns_log Notice "acc_fin::scenario_prettify.2588: scenario '$scenario_tid' paths_lists '${paths_lists}' paths_sort1_lists '${paths_sort1_lists}' "
-                ## paths_sort1_lists is paths_list sorted by index used to calc CP
-                
-                # Extract most significant CP alternates for a focused table
-                # by counting the number of times an act is used in the largest proportion (first half) of paths in path_set_dur_sort1_list
-                
-                ## act_freq_in_load_cp_alts_arr(act) counts number of times an activity appears in all paths combined (including coefficients)
-                # determine act_freq_in_load_cp_alts_arr(activity)
-                foreach act $activities_list {
-                    set act_freq_in_load_cp_alts_arr($act) 0
-                }
-                foreach path_list $paths_lists {
-                    set path_idx [lindex $path_list 0]
-                    foreach act $paths_arr($path_idx) {
-                        incr act_freq_in_load_cp_alts_arr($act) $act_coef($act)
-                    }
-                }
-                # Still need to include activity with coefficients into ones without coefficients.
-                # For example, 8*a in a. If a were 5 and 8*a were 16 (2 times 8), a should be 16 + 5 = 21
-                set coefs_list [lsearch -regex -all -inline $activities_list {[^\*]+[\*][^\*]+} ]
-                foreach coef $coefs_list {
-                    set act_idx [string first "*" $coef]
-                    incr act_idx
-                    set act [string range $coef $act_idx end]
-                    incr act_freq_in_load_cp_alts_arr($act) $act_coef($coef)
-                }
-                
-                # Make a list of activities sorted by popularity (appearing in the most paths)
-                set act_count_list [list ]
-                foreach act $activities_list {
-                    lappend act_count_list [list $act $act_freq_in_load_cp_alts_arr($act)]
-                    # initialize this variable where values defined in the next loop using activities_list
-                    set count_on_cp_p_arr($act) 0
-                }
-                set activities_popular_sort_list [lsort -decreasing -integer -index 1 $act_count_list]
-                set act_count_median_pos [expr { int( $paths_count / 2. } + 1. ) ]
-                ## path_sig_list is a list of activities that are above the median count
-                set path_sig_list [list ]
-                for {set i 0} {$i < $act_count_median_pos} {incr i} {
-                    lappend path_sig_list [lindex [lindex $activities_popular_sort_list $i] 0]
-                }
-                
-                ## act_count_max is max count of unique activities on a path
-                # This doesn't work for all cases: set act_count_max [lindex [lindex $activities_popular_sort_list 0] 1]
-                
-                ## act_count_median is median count of unique activities on a path
-                set act_count_median [lindex [lindex $activities_popular_sort_list $act_count_median_pos] 1]
-                
-                # Critical Path (CP) is: 
-                set cp_row_list [lindex $paths_sort1_lists 0]
-                
-                set cp_path_idx [lindex $cp_row_list 0]
-                ns_log Notice "acc_fin::scenario_prettify.2636: scenario '$scenario_tid' cp_path_idx '$cp_path_idx' cp_row_list '$cp_row_list' "
-                set cp_list $paths_arr(${cp_path_idx})
-                set cp_duration [lindex $cp_row_list 1]
-                set cp_cost [lindex $cp_row_list 2]
-                set cp_len [lindex $cp_row_list 3]
-                
-                foreach act $activities_list {
-                    set on_critical_path_p_arr($act) [expr { [lsearch -exact $cp_list $act] > -1 } ]
-                    set count_on_cp_arr($act) [llength [lsearch -exact -all $cp_list $act]]
-                    # adjustment required for count_on_cp_p_arr, if this activity has a coefficient
-                    set ac_idx [string first "*" $act]
-                    if { $ac_idx > 1 } {
-                        incr ac_idx -1
-                        set ac [string range $act $ac_idx end]
-                        # if activity has a coefficient, then root activity gets coefs, but activity counts 1 ie. swap coef values for this case
-                        set count_on_cp_p_arr($ac) [expr { $on_critical_path_p_arr($ac) * $act_coef($act) + $count_on_cp_p_arr($ac) } ]
-                        set count_on_cp_p_arr($act) [expr { $on_critical_path_p_arr($act) * $act_coef($ac) + $count_on_cp_p_arr($act) } ]
-                    } else {
-                        set count_on_cp_p_arr($act) [expr { $on_critical_path_p_arr($act) * $act_coef($act) + $count_on_cp_p_arr($act) } ]
-                    }
-                    # set defaults for popularity_arr()
-                    ## popularity_arr(act) is the count of paths that an activity is in.
-                    set popularity_arr($act) 0
-                }
-                ## count_on_cp_p_arr(act) is the count of this activity on the critical path. coef activities are also accumulated as activity to handle expansions either way
-                
-                # path comparison calculations
-                set path_counter 0
-                foreach path_idx_dur_cost_len_list $paths_sort1_lists {
-                    set path_idx [lindex $path_idx_dur_cost_len_list 0]
-                    set path_list $paths_arr(${path_idx})
-                    set path_len [lindex $path_idx_dur_cost_len_list 3]
-                    set path_len_w_coefs [lindex $path_idx_dur_cost_len_list 4]
-                    set act_count_on_cp 0
-                    
-                    set term 1
-                    set multiple_act_p [regexp {^([^\*]+)[\*]([^\*]+)} $act scratch term base_act]
-                    if { !$multiple_act_p } {
-                        set base_act $act
-                    }
-                    foreach act $path_list {
-                        incr act_count_on_cp $count_on_cp_arr($act)
-                        set a_sig_path_p 0
-                        set sig_idx [lsearch -exact $path_sig_list $act]
-                        if { $sig_idx > -1 } {
-                            set a_sig_path_p 1
-                        } 
-                        set pop_idx [lsearch -exact $path_list $base_act]
-                        if { $pop_idx > -1 } {
-                            incr popularity_arr(${base_act})
-                            if { $multiple_act_p } {
-                                # increment the case with coeffient as well
-                                incr popularity_arr($act)
+                                # paths_lists 2
+                                set cw_arr(${path_idx}) $path_cost
+                                lappend row_list $path_cost
+                                
+                                # if duration and cost are unavailable, list will be sorted by longest path..
+                                # paths_lists 3
+                                set path_len [llength $path_list ]
+                                ## path_len_arr(path_idx) is length of path list
+                                set path_len_arr(${path_idx}) $path_len
+                                lappend row_list $path_len
+                                
+                                # max of path_len is same as act_count_max
+                                if { $path_len > $act_count_max } {
+                                    set act_count_max $path_len
+                                }
+                                
+                                set path_len_w_coef 0
+                                foreach pa $path_list {
+                                    incr path_len_w_coef $act_coef($pa)
+                                }
+                                # paths_lists 4
+                                ## path_len_w_coef_arr is total number of activities in a path (with coefficients)
+                                set path_len_w_coef_arr(${path_idx}) $path_len_w_coef
+                                lappend row_list $path_len_w_coef
+                                # adding empty list incase of index_custom later
+                                lappend row_list ""
+                                lappend paths_lists $row_list
+                                incr path_idx
                             }
                         }
                     }
-                    set a_sig_path_p_arr(${path_idx}) $a_sig_path_p
-                    
-                    set act_cp_ratio [expr { $act_count_on_cp / ( $cp_len + 0. ) } ]
-                    set act_cp_ratio_arr(${path_idx}) $act_cp_ratio
+                    ## paths_count is the number of paths ie length of paths_list
+                    set paths_count [expr { $path_idx - 1 } ]
+                    ## paths_list: (list path_arr_idx duration cost length length_w_coefs )
                     
                     if { !$error_time } {
-                        set duration_ratio_arr(${path_idx}) [expr { $path_duration_arr(${path_idx}) / ( $cp_duration + 0. ) } ]
-                    } 
-                    if { !$error_cost } {
-                        set cost_ratio_arr(${path_idx}) [expr { $cw_arr(${path_idx}) / ( $cp_cost + 0. ) } ]
+                        # sort by path duration
+                        # critical path is the longest path. Float is the difference between CP and next longest CP.
+                        # create an array of paths from longest to shortest duration to help build base table
+                        set paths_sort1_lists [lsort -decreasing -real -index 1 $paths_lists]
+                        
+                        
+                    } elseif { !$error_cost } {
+                        
+                        # make something useful for cost biased table, critical_path is most costly.. etc.
+                        # sort by path cost
+                        # critical path is the longest path. Float is the difference between CP and next longest CP.
+                        # create an array of paths from longest to shortest duration to help build base table
+                        set paths_sort1_lists [lsort -decreasing -real -index 2 $paths_lists]
+                        
+                    } else {
+                        
+                        # make something that doesn't break the final table build. critical_path is largest count of activities..
+                        # sort by number of activities per path
+                        # critical path is the longest path. 
+                        # create an array of paths from longest to shortest number of activities
+                        set paths_sort1_lists [lsort -decreasing -integer -index 4 $paths_lists]
+                        
                     }
-                    set path_counter_arr(${path_idx}) $path_counter
-                    incr path_counter
+                    ns_log Notice "acc_fin::scenario_prettify.2588: scenario '$scenario_tid' paths_lists '${paths_lists}' paths_sort1_lists '${paths_sort1_lists}' "
+                    ## paths_sort1_lists is paths_list sorted by index used to calc CP
+                    
+                    # Extract most significant CP alternates for a focused table
+                    # by counting the number of times an act is used in the largest proportion (first half) of paths in path_set_dur_sort1_list
+                    
+                    ## act_freq_in_load_cp_alts_arr(act) counts number of times an activity appears in all paths combined (including coefficients)
+                    # determine act_freq_in_load_cp_alts_arr(activity)
+                    foreach act $activities_list {
+                        set act_freq_in_load_cp_alts_arr($act) 0
+                    }
+                    foreach path_list $paths_lists {
+                        set path_idx [lindex $path_list 0]
+                        foreach act $paths_arr($path_idx) {
+                            incr act_freq_in_load_cp_alts_arr($act) $act_coef($act)
+                        }
+                    }
+                    # Still need to include activity with coefficients into ones without coefficients.
+                    # For example, 8*a in a. If a were 5 and 8*a were 16 (2 times 8), a should be 16 + 5 = 21
+                    set coefs_list [lsearch -regex -all -inline $activities_list {[^\*]+[\*][^\*]+} ]
+                    foreach coef $coefs_list {
+                        set act_idx [string first "*" $coef]
+                        incr act_idx
+                        set act [string range $coef $act_idx end]
+                        incr act_freq_in_load_cp_alts_arr($act) $act_coef($coef)
+                    }
+                    
+                    # Make a list of activities sorted by popularity (appearing in the most paths)
+                    set act_count_list [list ]
+                    foreach act $activities_list {
+                        lappend act_count_list [list $act $act_freq_in_load_cp_alts_arr($act)]
+                        # initialize this variable where values defined in the next loop using activities_list
+                        set count_on_cp_p_arr($act) 0
+                    }
+                    set activities_popular_sort_list [lsort -decreasing -integer -index 1 $act_count_list]
+                    set act_count_median_pos [expr { int( $paths_count / 2. } + 1. ) ]
+                    ## path_sig_list is a list of activities that are above the median count
+                    set path_sig_list [list ]
+                    for {set i 0} {$i < $act_count_median_pos} {incr i} {
+                        lappend path_sig_list [lindex [lindex $activities_popular_sort_list $i] 0]
+                    }
+                    
+                    ## act_count_max is max count of unique activities on a path
+                    # This doesn't work for all cases: set act_count_max [lindex [lindex $activities_popular_sort_list 0] 1]
+                    
+                    ## act_count_median is median count of unique activities on a path
+                    set act_count_median [lindex [lindex $activities_popular_sort_list $act_count_median_pos] 1]
+                    
+                    # Critical Path (CP) is: 
+                    set cp_row_list [lindex $paths_sort1_lists 0]
+                    
+                    set cp_path_idx [lindex $cp_row_list 0]
+                    ns_log Notice "acc_fin::scenario_prettify.2636: scenario '$scenario_tid' cp_path_idx '$cp_path_idx' cp_row_list '$cp_row_list' "
+                    set cp_list $paths_arr(${cp_path_idx})
+                    set cp_duration [lindex $cp_row_list 1]
+                    set cp_cost [lindex $cp_row_list 2]
+                    set cp_len [lindex $cp_row_list 3]
+                    
+                    foreach act $activities_list {
+                        set on_critical_path_p_arr($act) [expr { [lsearch -exact $cp_list $act] > -1 } ]
+                        set count_on_cp_arr($act) [llength [lsearch -exact -all $cp_list $act]]
+                        # adjustment required for count_on_cp_p_arr, if this activity has a coefficient
+                        set ac_idx [string first "*" $act]
+                        if { $ac_idx > 1 } {
+                            incr ac_idx -1
+                            set ac [string range $act $ac_idx end]
+                            # if activity has a coefficient, then root activity gets coefs, but activity counts 1 ie. swap coef values for this case
+                            set count_on_cp_p_arr($ac) [expr { $on_critical_path_p_arr($ac) * $act_coef($act) + $count_on_cp_p_arr($ac) } ]
+                            set count_on_cp_p_arr($act) [expr { $on_critical_path_p_arr($act) * $act_coef($ac) + $count_on_cp_p_arr($act) } ]
+                        } else {
+                            set count_on_cp_p_arr($act) [expr { $on_critical_path_p_arr($act) * $act_coef($act) + $count_on_cp_p_arr($act) } ]
+                        }
+                        # set defaults for popularity_arr()
+                        ## popularity_arr(act) is the count of paths that an activity is in.
+                        set popularity_arr($act) 0
+                    }
+                    ## count_on_cp_p_arr(act) is the count of this activity on the critical path. coef activities are also accumulated as activity to handle expansions either way
+                    
+                    # path comparison calculations
+                    set path_counter 0
+                    foreach path_idx_dur_cost_len_list $paths_sort1_lists {
+                        set path_idx [lindex $path_idx_dur_cost_len_list 0]
+                        set path_list $paths_arr(${path_idx})
+                        set path_len [lindex $path_idx_dur_cost_len_list 3]
+                        set path_len_w_coefs [lindex $path_idx_dur_cost_len_list 4]
+                        set act_count_on_cp 0
+                        
+                        set term 1
+                        set multiple_act_p [regexp {^([^\*]+)[\*]([^\*]+)} $act scratch term base_act]
+                        if { !$multiple_act_p } {
+                            set base_act $act
+                        }
+                        foreach act $path_list {
+                            incr act_count_on_cp $count_on_cp_arr($act)
+                            set a_sig_path_p 0
+                            set sig_idx [lsearch -exact $path_sig_list $act]
+                            if { $sig_idx > -1 } {
+                                set a_sig_path_p 1
+                            } 
+                            set pop_idx [lsearch -exact $path_list $base_act]
+                            if { $pop_idx > -1 } {
+                                incr popularity_arr(${base_act})
+                                if { $multiple_act_p } {
+                                    # increment the case with coeffient as well
+                                    incr popularity_arr($act)
+                                }
+                            }
+                        }
+                        set a_sig_path_p_arr(${path_idx}) $a_sig_path_p
+                        
+                        set act_cp_ratio [expr { $act_count_on_cp / ( $cp_len + 0. ) } ]
+                        set act_cp_ratio_arr(${path_idx}) $act_cp_ratio
+                        
+                        if { !$error_time } {
+                            set duration_ratio_arr(${path_idx}) [expr { $path_duration_arr(${path_idx}) / ( $cp_duration + 0. ) } ]
+                        } 
+                        if { !$error_cost } {
+                            set cost_ratio_arr(${path_idx}) [expr { $cw_arr(${path_idx}) / ( $cp_cost + 0. ) } ]
+                        }
+                        set path_counter_arr(${path_idx}) $path_counter
+                        incr path_counter
+                    }
                 }
-                
                 
                 if { $error_fail == 0 && $index_eq ne "" } {
                     # resort paths_sort1_lists using index_custom
@@ -2907,301 +2921,302 @@ ad_proc -public acc_fin::scenario_prettify {
                     }
                     unset path2_lists
                 }
-                
-                # # # build base table
-                ns_log Notice "acc_fin::scenario_prettify.2468: scenario '$scenario_tid' Build base report table."
-                
-                
-                # Cells need this info for presentation: 
-                #   activity_time_expected, time_start (branches_duration_max - time_expected),time_finish (branches_duration_max)
-                #   activity_cost_expected, path_costs to complete activity
-                #   direct dependencies
-                
-                # variables available at this point include:
-                
-                # constant per project or run:
-                
-                ## activities_list                   list of activities to process
-                ## activity_count                    is length activities_list
-                ## paths_count                   is the number of paths ie length of paths_list
-                ## error_fail                        is set to 1 if there has been an error that prevents continued processing
-                ## error_cost                        is set to 1 if there has been an error that prevents continued processing of costing aspects
-                ## error_time                        is set to 1 if there has been an error that prevents continued processing of time aspects
-                ## paths_sort1_lists                 is paths_list sorted by index used to calc CP
-                
-                # constant per path:
-                
-                ## path_len_arr(path_idx)            is length of a path in paths_lists with path_idx
-                ## path_len_w_coef_arr(path_idx)     is total number of activities in a path (with coefficients)
-                ## paths_list:                       (list path_arr_idx duration cost length length_w_coefs index_custom)
-                ## index_custom                      is value of custom index equation index_eq, or empty string
-                ## path_counter_arr(path_idx)
-                ## a_sig_path_p_arr(path_idx)
-                ## act_cp_ratio(path_idx)
-                
-                # constant per activity: activity_ref from activities_list
-                
-                ## act_seq_num_arr(act)              is relative sequence number of an activity in it's path. First activity is 0
-                ## dependencies_larr(act)            is a list of direct dependencies for each activity
-                ## dependents_count_arr(act)         is count number of activities in each subtree, not including the activity itself.
-                ## count_on_cp_p_arr(act)            Answers Q: How many of this activity is on the critical path. coef activities are also accumulated as activity to handle expansions either way
-                ## act_freq_in_load_cp_alts_arr(act) counts number of times an activity appears in all paths (including coefficients)
-                ## act_time_expected_arr(act)        is the time expected to complete an activity
-                ## tw_arr(path_idx,act)           is duration of ptrack up to (and including) activity.
-                ## t_dc_source_arr(act)              answers Q: what is source of time distribution curve?
-                ## act_cost_expected_arr(act)        is the cost expected to complete an activity
-                ## cw_arr(path_idx,act)               is cost of all dependent ptrack plus cost of activity
-                ## c_dc_source_arr(act)              answers Q: what is source of cost distribution curve?
-                ## act_coef(act)                     is the coefficient of an activity. If activity is defined as a multiple of another activity, it is an integer greater than 1 otherwise 1.
-                ## popularity_arr(act)                   is the count of paths that an activity is in.
-                
-                ## path_tree_p_arr(act)              answers question: is this tree of ptracks complete (ie not a subset of another track or tree)?
-                ## tn_arr(activity) is the time expected to complete an activity and its dependents
-                ## cn_arr(activity)      is the cost expected to complete an activity and its dependents
-                
-                
-                # other
-                
-                ## act_count_of_seq_arr(sequence no) is the count of activities at this sequence number across all paths, 0 is first sequence number
-                ## act_seq_max                       is the maximum path length in context of sequence_number
-                
-                
-                # # # PRETTI p5_lists built 
-                # Build an audit/feedback table list of lists, where each row is an activity
-                # p5 are activities, and p6 are paths. a path key is shared between p5 and p6 tables
-                set p5_lists [list ]
-                set p5_titles_list [acc_fin::pretti_columns_list p5 1]
-                # *_dc_ref references cache reference
-                lappend p5_titles_list "t_dc"
-                lappend p5_titles_list "c_dc"
-                lappend p5_lists $p5_titles_list
-                set activity_counter 0
-                foreach act $activities_list {
-                    #set tree_act_cost_arr($act) $cn_arr($act)
-                    incr activity_counter
-                    incr act_count_on_cp $count_on_cp_arr($act)
-                    set has_direct_dependency_p [expr { [llength $dependencies_larr($act)] > 0 } ]
-                    set on_a_sig_path_p [expr { $act_freq_in_load_cp_alts_arr($act) > $act_count_median } ]
+                if { $error_fail == 0 } {
+                    # # # build base table
+                    ns_log Notice "acc_fin::scenario_prettify.2468: scenario '$scenario_tid' Build base report table."
                     
-                    # base for p5
-                    set activity_list [list $act $activity_counter $has_direct_dependency_p [join $dependencies_larr($act) " "] [llength $dependencies_larr($act)] $on_critical_path_p_arr($act) $on_a_sig_path_p $act_freq_in_load_cp_alts_arr($act) $popularity_arr($act) $act_time_expected_arr($act) $tn_arr($act) $t_dc_source_arr($act) $act_cost_expected_arr($act) $cn_arr($act) $c_dc_source_arr($act) $act_coef($act) $act_tcref($act) $act_ccref($act) ]
-                    lappend p5_lists $activity_list
-                }
-                
-                set p6_lists [list ]
-                set p6_titles_list [acc_fin::pretti_columns_list p6 1]
-                lappend p6_titles_list "path_len"
-                lappend p6_titles_list "path_len_w_coefs"
-                lappend p6_lists $p6_titles_list
-                
-                foreach path_idx_dur_cost_len_list $paths_sort1_lists {
-                    set path_idx [lindex $path_idx_dur_cost_len_list 0]
-                    set path_list $paths_arr(${path_idx})
-                    set path_counter $path_counter_arr(${path_idx})
-                    set a_sig_path_p $a_sig_path_p_arr(${path_idx})
-                    set act_cp_ratio $act_cp_ratio_arr(${path_idx})
-                    #                    set index_custom $index_custom_arr(${path_idx})
-                    set path_duration [lindex $path_idx_dur_cost_len_list 1]
-                    set path_cost [lindex $path_idx_dur_cost_len_list 2]
-                    set path_len [lindex $path_idx_dur_cost_len_list 3]
-                    set path_len_w_coefs [lindex $path_idx_dur_cost_len_list 4]
-                    set index_custom [lindex $path_idx_dur_cost_len_list 5]
+                    
+                    # Cells need this info for presentation: 
+                    #   activity_time_expected, time_start (branches_duration_max - time_expected),time_finish (branches_duration_max)
+                    #   activity_cost_expected, path_costs to complete activity
+                    #   direct dependencies
+                    
+                    # variables available at this point include:
+                    
+                    # constant per project or run:
+                    
+                    ## activities_list                   list of activities to process
+                    ## activity_count                    is length activities_list
+                    ## paths_count                   is the number of paths ie length of paths_list
+                    ## error_fail                        is set to 1 if there has been an error that prevents continued processing
+                    ## error_cost                        is set to 1 if there has been an error that prevents continued processing of costing aspects
+                    ## error_time                        is set to 1 if there has been an error that prevents continued processing of time aspects
+                    ## paths_sort1_lists                 is paths_list sorted by index used to calc CP
+                    
+                    # constant per path:
+                    
+                    ## path_len_arr(path_idx)            is length of a path in paths_lists with path_idx
+                    ## path_len_w_coef_arr(path_idx)     is total number of activities in a path (with coefficients)
+                    ## paths_list:                       (list path_arr_idx duration cost length length_w_coefs index_custom)
+                    ## index_custom                      is value of custom index equation index_eq, or empty string
+                    ## path_counter_arr(path_idx)
+                    ## a_sig_path_p_arr(path_idx)
+                    ## act_cp_ratio(path_idx)
+                    
+                    # constant per activity: activity_ref from activities_list
+                    
+                    ## act_seq_num_arr(act)              is relative sequence number of an activity in it's path. First activity is 0
+                    ## dependencies_larr(act)            is a list of direct dependencies for each activity
+                    ## dependents_count_arr(act)         is count number of activities in each subtree, not including the activity itself.
+                    ## count_on_cp_p_arr(act)            Answers Q: How many of this activity is on the critical path. coef activities are also accumulated as activity to handle expansions either way
+                    ## act_freq_in_load_cp_alts_arr(act) counts number of times an activity appears in all paths (including coefficients)
+                    ## act_time_expected_arr(act)        is the time expected to complete an activity
+                    ## tw_arr(path_idx,act)           is duration of ptrack up to (and including) activity.
+                    ## t_dc_source_arr(act)              answers Q: what is source of time distribution curve?
+                    ## act_cost_expected_arr(act)        is the cost expected to complete an activity
+                    ## cw_arr(path_idx,act)               is cost of all dependent ptrack plus cost of activity
+                    ## c_dc_source_arr(act)              answers Q: what is source of cost distribution curve?
+                    ## act_coef(act)                     is the coefficient of an activity. If activity is defined as a multiple of another activity, it is an integer greater than 1 otherwise 1.
+                    ## popularity_arr(act)                   is the count of paths that an activity is in.
+                    
+                    ## path_tree_p_arr(act)              answers question: is this tree of ptracks complete (ie not a subset of another track or tree)?
+                    ## tn_arr(activity) is the time expected to complete an activity and its dependents
+                    ## cn_arr(activity)      is the cost expected to complete an activity and its dependents
+                    
+                    
+                    # other
+                    
+                    ## act_count_of_seq_arr(sequence no) is the count of activities at this sequence number across all paths, 0 is first sequence number
+                    ## act_seq_max                       is the maximum path length in context of sequence_number
+                    
+                    
+                    # # # PRETTI p5_lists built 
+                    # Build an audit/feedback table list of lists, where each row is an activity
+                    # p5 are activities, and p6 are paths. a path key is shared between p5 and p6 tables
+                    set p5_lists [list ]
+                    set p5_titles_list [acc_fin::pretti_columns_list p5 1]
+                    # *_dc_ref references cache reference
+                    lappend p5_titles_list "t_dc"
+                    lappend p5_titles_list "c_dc"
+                    lappend p5_lists $p5_titles_list
                     set activity_counter 0
-                    set act_count_on_cp 0
-                    # base for p6
-                    #            set ret_list [list path_idx path path_counter cp_q significant_q path_duration path_cost index_custom]
-                    set cp_q [expr { $path_counter == 0 } ]
-                    set path_list [list $path_idx [join $path_list "."] $path_counter $cp_q $a_sig_path_p $path_duration $path_cost $index_custom $path_len $path_len_w_coefs ]
-                    lappend p6_lists $path_list
-                }                
-                
-                set scenario_stats_list [qss_table_stats $scenario_tid]
-                set scenario_name [lindex $scenario_stats_list 0]
-                if { [llength $t_moment_list ] > 1 } {
-                    set t_moment_len_list [list ]
-                    foreach moment $t_moment_list {
-                        lappend t_moment_len_list [string length $moment]
+                    foreach act $activities_list {
+                        #set tree_act_cost_arr($act) $cn_arr($act)
+                        incr activity_counter
+                        incr act_count_on_cp $count_on_cp_arr($act)
+                        set has_direct_dependency_p [expr { [llength $dependencies_larr($act)] > 0 } ]
+                        set on_a_sig_path_p [expr { $act_freq_in_load_cp_alts_arr($act) > $act_count_median } ]
+                        
+                        # base for p5
+                        set activity_list [list $act $activity_counter $has_direct_dependency_p [join $dependencies_larr($act) " "] [llength $dependencies_larr($act)] $on_critical_path_p_arr($act) $on_a_sig_path_p $act_freq_in_load_cp_alts_arr($act) $popularity_arr($act) $act_time_expected_arr($act) $tn_arr($act) $t_dc_source_arr($act) $act_cost_expected_arr($act) $cn_arr($act) $c_dc_source_arr($act) $act_coef($act) $act_tcref($act) $act_ccref($act) ]
+                        lappend p5_lists $activity_list
                     }
-                    set t_moment_format "%1.f"
-                    append t_moment_format [expr { [f::max $t_moment_len_list] - 2 } ]
-                    lappend " t=[format ${t_moment_format} ${t_moment}]"
-                }
-                if { [llength $c_moment_list ] > 1 } {
-                    set c_moment_len_list [list ]
-                    foreach moment $c_moment_list {
-                        lappend c_moment_len_list [string length $moment]
-                    }
-                    set c_moment_format "%1.f"
-                    append c_moment_format [expr { [f::max $t_moment_len_list] - 2 } ]
-                    lappend " c=[format ${c_moment_format} ${c_moment}]"
-                }
-                set scenario_title [lindex $scenario_stats_list 1]
-                
-                set time_end [clock seconds]
-                set time_diff_secs [expr { $time_end - $time_start } ]
-                set setup_diff_secs [expr { $setup_end - $setup_start } ]
-                # the_time Time calculation completed
-                set p1_arr(the_time) [clock format [clock seconds] -format "%Y %b %d %H:%M:%S"]
-                # comments should include cp_duration, cp_cost, max_act_count_per_track 
-                # time_probability_moment, cost_probability_moment, 
-                # scenario_name, processing_time, time/date finished processing
-                set comments "Scenario report for ${scenario_title}: "
-                append comments "scenario_name ${scenario_name} , cp_duration_at_pm ${cp_duration} , cp_cost_pm ${cp_cost} , "
-                append comments "max_act_count_per_track ${act_count_max} , time_probability_moment ${t_moment} , cost_probability_moment ${c_moment} , "
-                append comments "setup_time ${setup_diff_secs} , main_processing_time ${time_diff_secs} seconds , time/date finished processing $p1_arr(the_time) , "
-                append comments "_tDcSource $p1_arr(_tDcSource) , _cDcSource $p1_arr(_cDcSource)"
-                
-                
-                if { $p1_arr(db_format) ne "" } {
-                    qss_table_create $p5_lists "${scenario_name}.p5" "${scenario_title}.p5" $comments "" p5 $instance_id $user_id
-                    qss_table_create $p6_lists "${scenario_name}.p6" "${scenario_title}.p6" $comments "" p6 $instance_id $user_id
-                }
-                set precision ""
-                if { [qf_is_decimal $p1_arr(precision) ] } {
-                    set precision $p1_arr(precision)
-                } 
-                # # # build p4
-                
-                # save as a new table of type p4
-                append comments "color_mask_sig_idx 3 , color_mask_oth_idx 5 , colorswap_p 0"
-                
-                # p4_lol consists of first row (a list item):
-                # (list path_1 path_2 path_3 ... path_N )
-                # subsequent rows (list items):
-                # (list cell_r1c1 cell_r1c2 cell_r1c3 ... cellr1cN )
-                # ...
-                # (list cell_rMc1 cell_rMc2 cell_rMc3 ... cellrMcN )
-                # for N paths of a maximum of M rows.
-                # Each cell is an activity.
-                # Each column is a path
-                # Path_1 is CP
-                
-                # empty cells have empty string value.
-                # other cells will contain comment format from acc_fin::scenario_prettify
-                # "$activity "
-                # "t:[lindex $path_list 7] "
-                # "ts:[lindex $path_list 6] " s is for sequence or plural
-                # "c:[lindex $path_list 9] "
-                # "cs:[lindex $path_list 10] " s is for sequence or plural
-                # "d:($depnc_larr(${activity})) "
-                # "<!-- [lindex $path_list 4] [lindex $path_list 5] --> "
-                #####################        
-
-
-                # Need to convert into rows ie.. transpose rows of each column to a path with column names: path_(1..N). path_1 is CP
-                # trac_1 path_2 path_3 ... path_N
-                
-                set p4_lists [list ]
-                set title_row_list [list ]
-                set path_num 1
-
-                # in p4 PRETTI table, each path is a column, so each row is built from each column, each column lappends each row..
-                # store each row in: row_larr()
-                for {set i 0} {$i < $act_count_max} {incr i} {
-                    set row_larr($i) [list ]
-                }
-                
-                foreach path_idx_dur_cost_len_list $paths_sort1_lists {
-                    set path_idx [lindex $path_idx_dur_cost_len_list 0]
-                    set path_list $paths_arr(${path_idx})
-                    set path_counter $path_counter_arr(${path_idx})
-                    set a_sig_path_p $a_sig_path_p_arr(${path_idx})
-                    set act_cp_ratio $act_cp_ratio_arr(${path_idx})
-                    #                    set index_custom $index_custom_arr(${path_idx})
-                    set path_duration [lindex $path_idx_dur_cost_len_list 1]
-                    set path_cost [lindex $path_idx_dur_cost_len_list 2]
-                    set path_len [lindex $path_idx_dur_cost_len_list 3]
-                    set path_len_w_coefs [lindex $path_idx_dur_cost_len_list 4]
-                    set index_custom [lindex $path_idx_dur_cost_len_list 5]
-
-                    set path_name "path_${path_num}"
-                    lappend title_row_list $path_name
-                    set ptrack_list [list ]
-                    # fill in rows for this column
-                    for {set i 0} {$i < $act_count_max} {incr i} {
-                        set activity [lindex $path_list $i]
-                        if { $activity ne "" } {
-                            # cell should contain this info: "$act t:${time_expected} T:${branches_duration_max} D:${dependencies} "
-                            lappend ptrack_list $activity
-                            set cell $activity
-                            append cell " <br> "
-                            append cell " t:"
-                            if { $act_time_expected_arr($activity) ne "" } {
-                                if { $precision eq "" } {
-                                    append cell $act_time_expected_arr($activity)
-                                } else {
-                                    append cell [qaf_round_to_precision $act_time_expected_arr($activity) $precision ]
-                                }
-                            } 
-                            append cell " <br> "
-                            append cell "tw:"
-                            if { $tw_arr(${path_idx},$activity) ne "" } {
-                                if { $precision eq "" } {
-                                    append cell $tw_arr(${path_idx},$activity)
-                                } else {
-                                    append cell [qaf_round_to_precision $tw_arr(${path_idx},$activity) $precision ]
-                                }
-                            }
-                            append cell " <br> "
-                            append cell "tn:"
-                            if { $tn_arr($activity) ne "" } {
-                                if { $precision eq "" } {
-                                    append cell $tn_arr($activity) 
-                                } else {
-                                    append cell [qaf_round_to_precision $tn_arr($activity) $precision ]
-                                }
-                            }
-                            append cell " <br> "
-                            append cell "&nbsp;c:"
-                            if { $act_cost_expected_arr($activity) ne "" } {
-                                if { $precision eq "" } {
-                                    append cell $act_cost_expected_arr($activity)
-                                } else {
-                                    append cell [qaf_round_to_precision $act_cost_expected_arr($activity) $precision ]
-                                }
-                            }
-                            append cell " <br> "
-                            append cell "cw:"
-                            if { $cw_arr(${path_idx},$activity) ne "" } {
-                                if { $precision eq "" } {
-                                    append cell $cw_arr(${path_idx},$activity)
-                                } else {
-                                    append cell [qaf_round_to_precision $cw_arr(${path_idx},$activity) $precision ]
-                                }
-                            }
-                            append cell " <br> "
-                            append cell "cn:"
-                            if { $cn_arr($activity) ne "" } {
-                                if { $precision eq "" } {
-                                    append cell $cn_arr($activity)
-                                } else {
-                                    append cell [qaf_round_to_precision $cn_arr($activity) $precision ]
-                                }
-                            }
-                            append cell " <br> "
-                            append cell "d:("
-                            append cell [join $dependencies_larr(${activity}) " "]
-                            append cell ") <br> "
-                            #                            set popularity $popularity_arr($activity)
-                            set popularity $act_freq_in_load_cp_alts_arr($activity)
-                            set on_a_sig_path_p [expr { $act_freq_in_load_cp_alts_arr($activity) > $act_count_median } ]
-                            # this calced in p4 html generator: set on_cp_p [expr { $count_on_cp_p_arr($activity) > 0 } ]
-                            append cell "<!-- ${on_a_sig_path_p} ${popularity} --> "
-                            lappend row_larr($i) $cell
-                        } else {
-                            lappend row_larr($i) ""
+                    
+                    set p6_lists [list ]
+                    set p6_titles_list [acc_fin::pretti_columns_list p6 1]
+                    lappend p6_titles_list "path_len"
+                    lappend p6_titles_list "path_len_w_coefs"
+                    lappend p6_lists $p6_titles_list
+                    
+                    foreach path_idx_dur_cost_len_list $paths_sort1_lists {
+                        set path_idx [lindex $path_idx_dur_cost_len_list 0]
+                        set path_list $paths_arr(${path_idx})
+                        set path_counter $path_counter_arr(${path_idx})
+                        set a_sig_path_p $a_sig_path_p_arr(${path_idx})
+                        set act_cp_ratio $act_cp_ratio_arr(${path_idx})
+                        #                    set index_custom $index_custom_arr(${path_idx})
+                        set path_duration [lindex $path_idx_dur_cost_len_list 1]
+                        set path_cost [lindex $path_idx_dur_cost_len_list 2]
+                        set path_len [lindex $path_idx_dur_cost_len_list 3]
+                        set path_len_w_coefs [lindex $path_idx_dur_cost_len_list 4]
+                        set index_custom [lindex $path_idx_dur_cost_len_list 5]
+                        set activity_counter 0
+                        set act_count_on_cp 0
+                        # base for p6
+                        #            set ret_list [list path_idx path path_counter cp_q significant_q path_duration path_cost index_custom]
+                        set cp_q [expr { $path_counter == 0 } ]
+                        set path_list [list $path_idx [join $path_list "."] $path_counter $cp_q $a_sig_path_p $path_duration $path_cost $index_custom $path_len $path_len_w_coefs ]
+                        lappend p6_lists $path_list
+                    }                
+                    
+                    set scenario_stats_list [qss_table_stats $scenario_tid]
+                    set scenario_name [lindex $scenario_stats_list 0]
+                    if { [llength $t_moment_list ] > 1 } {
+                        set t_moment_len_list [list ]
+                        foreach moment $t_moment_list {
+                            lappend t_moment_len_list [string length $moment]
                         }
+                        set t_moment_format "%1.f"
+                        append t_moment_format [expr { [f::max $t_moment_len_list] - 2 } ]
+                        lappend " t=[format ${t_moment_format} ${t_moment}]"
                     }
-                    incr path_num
-                }                    
-                # combine the rows
-                lappend p4_lists $title_row_list
-                for {set i 0} {$i < $act_count_max} {incr i} {
-                    lappend p4_lists $row_larr($i)
-                }
+                    if { [llength $c_moment_list ] > 1 } {
+                        set c_moment_len_list [list ]
+                        foreach moment $c_moment_list {
+                            lappend c_moment_len_list [string length $moment]
+                        }
+                        set c_moment_format "%1.f"
+                        append c_moment_format [expr { [f::max $t_moment_len_list] - 2 } ]
+                        lappend " c=[format ${c_moment_format} ${c_moment}]"
+                    }
+                    set scenario_title [lindex $scenario_stats_list 1]
+                    
+                    set time_end [clock seconds]
+                    set time_diff_secs [expr { $time_end - $time_start } ]
+                    set setup_diff_secs [expr { $setup_end - $setup_start } ]
+                    # the_time Time calculation completed
+                    set p1_arr(the_time) [clock format [clock seconds] -format "%Y %b %d %H:%M:%S"]
+                    # comments should include cp_duration, cp_cost, max_act_count_per_track 
+                    # time_probability_moment, cost_probability_moment, 
+                    # scenario_name, processing_time, time/date finished processing
+                    set comments "Scenario report for ${scenario_title}: "
+                    append comments "scenario_name ${scenario_name} , cp_duration_at_pm ${cp_duration} , cp_cost_pm ${cp_cost} , "
+                    append comments "max_act_count_per_track ${act_count_max} , time_probability_moment ${t_moment} , cost_probability_moment ${c_moment} , "
+                    append comments "setup_time ${setup_diff_secs} , main_processing_time ${time_diff_secs} seconds , time/date finished processing $p1_arr(the_time) , "
+                    append comments "_tDcSource $p1_arr(_tDcSource) , _cDcSource $p1_arr(_cDcSource)"
+                    
+                    
+                    if { $p1_arr(db_format) ne "" } {
+                        qss_table_create $p5_lists "${scenario_name}.p5" "${scenario_title}.p5" $comments "" p5 $instance_id $user_id
+                        qss_table_create $p6_lists "${scenario_name}.p6" "${scenario_title}.p6" $comments "" p6 $instance_id $user_id
+                    }
+                    set precision ""
+                    if { [qf_is_decimal $p1_arr(precision) ] } {
+                        set precision $p1_arr(precision)
+                    } 
+                    # # # build p4
+                    
+                    # save as a new table of type p4
+                    append comments "color_mask_sig_idx 3 , color_mask_oth_idx 5 , colorswap_p 0"
+                    
+                    # p4_lol consists of first row (a list item):
+                    # (list path_1 path_2 path_3 ... path_N )
+                    # subsequent rows (list items):
+                    # (list cell_r1c1 cell_r1c2 cell_r1c3 ... cellr1cN )
+                    # ...
+                    # (list cell_rMc1 cell_rMc2 cell_rMc3 ... cellrMcN )
+                    # for N paths of a maximum of M rows.
+                    # Each cell is an activity.
+                    # Each column is a path
+                    # Path_1 is CP
+                    
+                    # empty cells have empty string value.
+                    # other cells will contain comment format from acc_fin::scenario_prettify
+                    # "$activity "
+                    # "t:[lindex $path_list 7] "
+                    # "ts:[lindex $path_list 6] " s is for sequence or plural
+                    # "c:[lindex $path_list 9] "
+                    # "cs:[lindex $path_list 10] " s is for sequence or plural
+                    # "d:($depnc_larr(${activity})) "
+                    # "<!-- [lindex $path_list 4] [lindex $path_list 5] --> "
+                    #####################        
 
-                qss_table_create $p4_lists "${scenario_name}.p4" "${scenario_title}.p4" $comments "" p4 $instance_id $user_id
-                # Comments data will be interpreted for determining standard deviation for determining cell highlighting
+
+                    # Need to convert into rows ie.. transpose rows of each column to a path with column names: path_(1..N). path_1 is CP
+                    # trac_1 path_2 path_3 ... path_N
+                    
+                    set p4_lists [list ]
+                    set title_row_list [list ]
+                    set path_num 1
+
+                    # in p4 PRETTI table, each path is a column, so each row is built from each column, each column lappends each row..
+                    # store each row in: row_larr()
+                    for {set i 0} {$i < $act_count_max} {incr i} {
+                        set row_larr($i) [list ]
+                    }
+                    
+                    foreach path_idx_dur_cost_len_list $paths_sort1_lists {
+                        set path_idx [lindex $path_idx_dur_cost_len_list 0]
+                        set path_list $paths_arr(${path_idx})
+                        set path_counter $path_counter_arr(${path_idx})
+                        set a_sig_path_p $a_sig_path_p_arr(${path_idx})
+                        set act_cp_ratio $act_cp_ratio_arr(${path_idx})
+                        #                    set index_custom $index_custom_arr(${path_idx})
+                        set path_duration [lindex $path_idx_dur_cost_len_list 1]
+                        set path_cost [lindex $path_idx_dur_cost_len_list 2]
+                        set path_len [lindex $path_idx_dur_cost_len_list 3]
+                        set path_len_w_coefs [lindex $path_idx_dur_cost_len_list 4]
+                        set index_custom [lindex $path_idx_dur_cost_len_list 5]
+
+                        set path_name "path_${path_num}"
+                        lappend title_row_list $path_name
+                        set ptrack_list [list ]
+                        # fill in rows for this column
+                        for {set i 0} {$i < $act_count_max} {incr i} {
+                            set activity [lindex $path_list $i]
+                            if { $activity ne "" } {
+                                # cell should contain this info: "$act t:${time_expected} T:${branches_duration_max} D:${dependencies} "
+                                lappend ptrack_list $activity
+                                set cell $activity
+                                append cell " <br> "
+                                append cell " t:"
+                                if { $act_time_expected_arr($activity) ne "" } {
+                                    if { $precision eq "" } {
+                                        append cell $act_time_expected_arr($activity)
+                                    } else {
+                                        append cell [qaf_round_to_precision $act_time_expected_arr($activity) $precision ]
+                                    }
+                                } 
+                                append cell " <br> "
+                                append cell "tw:"
+                                if { $tw_arr(${path_idx},$activity) ne "" } {
+                                    if { $precision eq "" } {
+                                        append cell $tw_arr(${path_idx},$activity)
+                                    } else {
+                                        append cell [qaf_round_to_precision $tw_arr(${path_idx},$activity) $precision ]
+                                    }
+                                }
+                                append cell " <br> "
+                                append cell "tn:"
+                                if { $tn_arr($activity) ne "" } {
+                                    if { $precision eq "" } {
+                                        append cell $tn_arr($activity) 
+                                    } else {
+                                        append cell [qaf_round_to_precision $tn_arr($activity) $precision ]
+                                    }
+                                }
+                                append cell " <br> "
+                                append cell "&nbsp;c:"
+                                if { $act_cost_expected_arr($activity) ne "" } {
+                                    if { $precision eq "" } {
+                                        append cell $act_cost_expected_arr($activity)
+                                    } else {
+                                        append cell [qaf_round_to_precision $act_cost_expected_arr($activity) $precision ]
+                                    }
+                                }
+                                append cell " <br> "
+                                append cell "cw:"
+                                if { $cw_arr(${path_idx},$activity) ne "" } {
+                                    if { $precision eq "" } {
+                                        append cell $cw_arr(${path_idx},$activity)
+                                    } else {
+                                        append cell [qaf_round_to_precision $cw_arr(${path_idx},$activity) $precision ]
+                                    }
+                                }
+                                append cell " <br> "
+                                append cell "cn:"
+                                if { $cn_arr($activity) ne "" } {
+                                    if { $precision eq "" } {
+                                        append cell $cn_arr($activity)
+                                    } else {
+                                        append cell [qaf_round_to_precision $cn_arr($activity) $precision ]
+                                    }
+                                }
+                                append cell " <br> "
+                                append cell "d:("
+                                append cell [join $dependencies_larr(${activity}) " "]
+                                append cell ") <br> "
+                                #                            set popularity $popularity_arr($activity)
+                                set popularity $act_freq_in_load_cp_alts_arr($activity)
+                                set on_a_sig_path_p [expr { $act_freq_in_load_cp_alts_arr($activity) > $act_count_median } ]
+                                # this calced in p4 html generator: set on_cp_p [expr { $count_on_cp_p_arr($activity) > 0 } ]
+                                append cell "<!-- ${on_a_sig_path_p} ${popularity} --> "
+                                lappend row_larr($i) $cell
+                            } else {
+                                lappend row_larr($i) ""
+                            }
+                        }
+                        incr path_num
+                    }                    
+                    # combine the rows
+                    lappend p4_lists $title_row_list
+                    for {set i 0} {$i < $act_count_max} {incr i} {
+                        lappend p4_lists $row_larr($i)
+                    }
+
+                    qss_table_create $p4_lists "${scenario_name}.p4" "${scenario_title}.p4" $comments "" p4 $instance_id $user_id
+                    # Comments data will be interpreted for determining standard deviation for determining cell highlighting
+                }
             }
             # next c_moment
         }
