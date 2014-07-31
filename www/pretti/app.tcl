@@ -290,7 +290,15 @@ if { $form_posted } {
                     if { $table_name eq $name_old && $table_title eq $title_old && $table_comments eq $comments_old && $table_lists eq $table_old_lists } {
                         # Don't create a new table. The new one is exactly like the old one..
                     } else {
-                        qss_table_create $table_lists $table_name $table_title $table_comments $table_template_id $table_flags $instance_id $user_id
+                        set created_tid [qss_table_create $table_lists $table_name $table_title $table_comments $table_template_id $table_flags $instance_id $user_id ]
+                        if { $created_tid > 0 } {
+                            # trash the old one if it's made by the same user
+                            # set table_stats_list [qss_table_stats $table_tid]
+                            set user_id_prev [lindex $table_stats 11]
+                            if { $user_id eq $user_id_prev } {
+                                qss_table_trash 1 $table_tid $instance_id $user_id
+                            }
+                        }
                     }
 
                 } else {
@@ -371,7 +379,15 @@ if { $form_posted } {
             lappend tid_list $table_tid
         }
         foreach table_tid $tid_list {
-            acc_fin::table_sort_y_asc $table_tid $instance_id $user_id
+            set success_p [acc_fin::table_sort_y_asc $table_tid $instance_id $user_id]
+            if { $success_p } {
+                # trash the old one if it's made by the same user
+                set table_stats_list [qss_table_stats $table_tid]
+                set user_id_prev [lindex $table_stats_list 11]
+                if { $user_id eq $user_id_prev } {
+                    qss_table_trash 1 $table_tid $instance_id $user_id
+                }
+            }
         }
         set mode "p"
         set next_mode ""
