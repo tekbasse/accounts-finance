@@ -117,7 +117,7 @@ if { [qf_is_natural_number $table_tid] } {
                             set i 0
                             set x2 $x0
                             set y2 $y0
-                            set k1 [expr { 360. / $x_sum } ]
+                            set k1 [expr { $r / $x_sum } ]
                             set k2 [expr { $dim_py / $y_max } ]
                             foreach row $table_data_list {
                                 incr i
@@ -134,7 +134,8 @@ if { [qf_is_natural_number $table_tid] } {
                                 exec gm convert -size ${dim_px}x${dim_py} -fill $color_arr($odd_p) -stroke $color_arr($odd_p) -draw "rectangle $x1,$y1 $x2,$y2" $cob_pathname $cob_pathname
                             }
                         }
-                    } elseif { $pie_p } {
+                    } 
+                    if { $pie_p } {
                         # style pie chart
                         # use gm draw elipse ( 100,100 100,150 0,360) <- from unseen example
 
@@ -180,6 +181,7 @@ if { [qf_is_natural_number $table_tid] } {
                             set k2 [expr { ( $y_max - $y_min ) } ]
                             set k3 [expr { $k2 * 2. } ]
                             set k4 [expr { $2pi / $x_sum } ]
+                            set k5 [expr { $r / $y_max } ]
                             # convert rads to degs:
                             set k0 [expr { 360. / $2pi } ]
                             # ns_log Notice "accounts-finance/lib/pretti-one-view.tcl k0 $k0 k1 $k1 k2 $k2 k3 $k3"
@@ -190,7 +192,8 @@ if { [qf_is_natural_number $table_tid] } {
                                 set y [lindex $row $y_idx]
                                 set arc_degs [expr { $k1 * $x } ]
                                 set arc_rads [expr { $k4 * $x } ]
-                                set ry [expr { ( ( $y - $y_min ) / $k3 + .5 ) * $r } ]
+                                #set ry [expr { ( ( $y - $y_min ) / $k3 + .5 ) * $r } ]
+                                set ry [expr { $y * $k5 } ]
 
                                 if { $arc_degs > 180. } {
                                     set arc_rads [expr { $arc_rads / 2. } ]
@@ -207,8 +210,8 @@ if { [qf_is_natural_number $table_tid] } {
                                     set y1 [expr { round( $ry * sin( $theta_r1 ) + $y0 ) } ]
                                     set x2 [expr { round( $ry * cos( $theta_r2 ) + $x0 ) } ]
                                     set y2 [expr { round( $ry * sin( $theta_r2 ) + $y0 ) } ]
-#                                    ns_log Notice "accounts-finance/lib/pretti-one-view.tcl theta_d2 $theta_d2 ry $ry arc_degs $arc_degs x $x y $y"
-#                                    ns_log Notice "accounts-finance/lib/pretti-one-view.tcl x0 $x0 y0 $y0 x1 $x1 y1 $y1 x2 $x2 y2 $y2"
+                                    #                                    ns_log Notice "accounts-finance/lib/pretti-one-view.tcl theta_d2 $theta_d2 ry $ry arc_degs $arc_degs x $x y $y"
+                                    #                                    ns_log Notice "accounts-finance/lib/pretti-one-view.tcl x0 $x0 y0 $y0 x1 $x1 y1 $y1 x2 $x2 y2 $y2"
                                     # triangle + ellipse
                                     exec gm convert -size ${dim_px}x${dim_px} -fill $color_arr($odd_p) -stroke $color_arr($odd_p) -draw "path 'M $x0 $y0 L $x1 $y1 L $x2 $y2 L $x0 $y0'" $pie_pathname $pie_pathname
                                     exec gm convert -size ${dim_px}x${dim_px} -fill $color_arr($odd_p) -stroke $color_arr($odd_p) -draw "ellipse $x0,$y0 $ry,$ry ${theta_d1},${theta_d2}" $pie_pathname $pie_pathname
