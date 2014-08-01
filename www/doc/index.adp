@@ -48,7 +48,7 @@ A local copy is available at accounts-finance/www/doc/<a href="LICENSE.html">LIC
 </li><li>
 <a href="pretti-specs">PRETTI Specifications</a>
 </li><li>
-<a href="pretti">PRETTI Table definitions</a>
+<a href="pretti-tables">PRETTI Table definitions</a>
 </li><li>
 <a href="pretti-example-1">PRETTI Example 1</a> Using example from PERT Wikipedia entry retrieved from <a href="http://en.wikipedia.org/wiki/Program_Evaluation_and_Review_Technique">http://en.wikipedia.org/wiki/Program_Evaluation_and_Review_Technique</a> on 8 May 2014.
 </li></ul>
