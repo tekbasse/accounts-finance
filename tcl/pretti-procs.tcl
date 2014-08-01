@@ -534,15 +534,20 @@ ad_proc -public acc_fin::pretti_type_flag {
         # All required names need to be in list, but not all list names are required.
         set p(p1) 1
         # required names in check_list
-        set check_list [acc_fin::pretti_columns_list "p1" 1 ]
+        # p1 is special because it requires either activity_table_tid *or* activity_table_name
+        #set check_list [acc_fin::pretti_columns_list "p1" 1 ]
         #        ns_log Notice "acc_fin::pretti_columns_list.402 check_list $check_list"
-        foreach check $check_list {
-            if { [lsearch -exact $name_list $check] < 0 } {
-                set p(p1) 0
-            }
+        # foreach check $check_list {
+        #    if { [lsearch -exact $name_list $check] < 0 } {
+        #        set p(p1) 0
+        #    }
             #            ns_log Notice "acc_fin::pretti_columns_list.404 check $check p(p1) $p(p1)"
+        #}
+        set name_idx [lsearch -exact $name_list activity_table_name]
+        set tid_idx [lsearch -exact $name_list activity_table_tid]
+        if { $name_idx < 0 && $tid_idx < 0 } {
+            set p(p1) 0
         }
-
     }
     if { $p(p1) } {
         set type_return "p1"
