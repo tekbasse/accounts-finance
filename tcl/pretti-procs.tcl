@@ -1623,6 +1623,7 @@ ad_proc -private acc_fin::curve_import {
     5. if an ordered list of lists x,y,label exists, use it as a fallback default, otherwise 
     6. return a representation of a normalized curve as a list of lists similar to curve_lists 
 } {
+    upvar 1 p1_arr p1_arr
     if { $case_var_name ne "" } {
         upvar 1 $case_var_name case_var
     }
@@ -1716,9 +1717,15 @@ ad_proc -private acc_fin::curve_import {
         
         # time_expected = ( time_optimistic + 4 * time_most_likely + time_pessimistic ) / 6.
         # per http://en.wikipedia.org/wiki/Program_Evaluation_and_Review_Technique
+        if { $p1_arr(pert_omp) eq "strict" } {
+            set c_lists [acc_fin::pert_omp_to_strict_dc $minimum $median $maximum ]
+            set case_var 3.1
 
-        set c_lists [acc_fin::pert_omp_to_normal_dc $minimum $median $maximum ]
-        set case_var 3
+        } else {
+            set c_lists [acc_fin::pert_omp_to_normal_dc $minimum $median $maximum ]
+            set case_var 3.0
+        }
+
     }
 
     # 4. if an median value is available, make a curve of it, 
@@ -1746,9 +1753,14 @@ ad_proc -private acc_fin::curve_import {
         
         # time_expected = ( time_optimistic + 4 * time_most_likely + time_pessimistic ) / 6.
         # per http://en.wikipedia.org/wiki/Program_Evaluation_and_Review_Technique
+        if { $p1_arr(pert_omp) eq "strict" } {
+            set c_lists [acc_fin::pert_omp_to_strict_dc $minimum $median $maximum ]
+            set case_var 4.1
 
-        set c_lists [acc_fin::pert_omp_to_normal_dc $minimum $median $maximum ]
-        set case_var 4
+        } else {
+            set c_lists [acc_fin::pert_omp_to_normal_dc $minimum $median $maximum ]
+            set case_var 4.0
+        }
     }
     
     # 5. if an ordered list of lists x,y,label exists, use it as a fallback default
