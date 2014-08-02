@@ -642,7 +642,7 @@ ad_proc -private acc_fin::pretti_columns_list {
             #      cost_probability_moment A percentage (0..1) along the (cumulative) distribution curve. defaults to "", which defaults to same as time_probability_moment
             #set ret_list \[list name value\]
             ### adding max_concurrent and max_overlap_pct but not sure if these have been coded for use yet..
-            set ret_list [list activity_table_tid activity_table_name task_types_tid task_types_name time_dist_curve_name time_dist_curve_tid cost_dist_curve_name cost_dist_curve_tid time_est_short time_est_median time_est_long time_probability_moment cost_est_low cost_est_median cost_est_high cost_probability_moment db_format index_equation precision]
+            set ret_list [list activity_table_tid activity_table_name task_types_tid task_types_name time_dist_curve_name time_dist_curve_tid cost_dist_curve_name cost_dist_curve_tid time_est_short time_est_median time_est_long time_probability_moment cost_est_low cost_est_median cost_est_high cost_probability_moment db_format index_equation precision tprecision cprecision pert_omp]
         }
         p11 {
             #set ret_list \[list name value\]
@@ -3079,6 +3079,17 @@ ad_proc -public acc_fin::scenario_prettify {
                     if { [qf_is_decimal $p1_arr(precision) ] } {
                         set precision $p1_arr(precision)
                     } 
+                    set tprecision ""
+                    if { [qf_is_decimal $p1_arr(tprecision) ] } {
+                        set tprecision $p1_arr(tprecision)
+                    } else {
+                        set tprecision $precision
+                    }
+                    if { [qf_is_decimal $p1_arr(cprecision) ] } {
+                        set cprecision $p1_arr(cprecision)
+                    } else {
+                        set cprecision $precision
+                    }
                     # # # build p4
                     
                     # save as a new table of type p4
@@ -3146,55 +3157,64 @@ ad_proc -public acc_fin::scenario_prettify {
                                 append cell " <br> "
                                 append cell " t:"
                                 if { $act_time_expected_arr($activity) ne "" } {
-                                    if { $precision eq "" } {
+                                    if { $tprecision eq "" } {
                                         append cell $act_time_expected_arr($activity)
                                     } else {
-                                        append cell [qaf_round_to_precision $act_time_expected_arr($activity) $precision ]
+                                        append cell [qaf_round_to_precision $act_time_expected_arr($activity) $tprecision ]
                                     }
                                 } 
                                 append cell " <br> "
                                 append cell "tw:"
                                 if { $tw_arr(${path_idx},$activity) ne "" } {
-                                    if { $precision eq "" } {
+                                    if { $tprecision eq "" } {
                                         append cell $tw_arr(${path_idx},$activity)
                                     } else {
-                                        append cell [qaf_round_to_precision $tw_arr(${path_idx},$activity) $precision ]
+                                        append cell [qaf_round_to_precision $tw_arr(${path_idx},$activity) $tprecision ]
                                     }
                                 }
                                 append cell " <br> "
                                 append cell "tn:"
                                 if { $tn_arr($activity) ne "" } {
-                                    if { $precision eq "" } {
+                                    if { $tprecision eq "" } {
                                         append cell $tn_arr($activity) 
                                     } else {
-                                        append cell [qaf_round_to_precision $tn_arr($activity) $precision ]
+                                        append cell [qaf_round_to_precision $tn_arr($activity) $tprecision ]
+                                    }
+                                }
+                                append cell " <br> "
+                                append cell "fw:"
+                                if { $tn_arr($activity) ne "" && $tw_arr($path_idx,$activity) ne "" } {
+                                    if { $tprecision eq "" } {
+                                        append cell [expr { $tn_arr($activity) - $tw_arr(${path_idx},$activity) } ]
+                                    } else {
+                                        append cell [qaf_round_to_precision [expr { $tn_arr($activity) - $tw_arr(${path_idx},$activity) } ] $tprecision ]
                                     }
                                 }
                                 append cell " <br> "
                                 append cell "&nbsp;c:"
                                 if { $act_cost_expected_arr($activity) ne "" } {
-                                    if { $precision eq "" } {
+                                    if { $cprecision eq "" } {
                                         append cell $act_cost_expected_arr($activity)
                                     } else {
-                                        append cell [qaf_round_to_precision $act_cost_expected_arr($activity) $precision ]
+                                        append cell [qaf_round_to_precision $act_cost_expected_arr($activity) $cprecision ]
                                     }
                                 }
                                 append cell " <br> "
                                 append cell "cw:"
                                 if { $cw_arr(${path_idx},$activity) ne "" } {
-                                    if { $precision eq "" } {
+                                    if { $cprecision eq "" } {
                                         append cell $cw_arr(${path_idx},$activity)
                                     } else {
-                                        append cell [qaf_round_to_precision $cw_arr(${path_idx},$activity) $precision ]
+                                        append cell [qaf_round_to_precision $cw_arr(${path_idx},$activity) $cprecision ]
                                     }
                                 }
                                 append cell " <br> "
                                 append cell "cn:"
                                 if { $cn_arr($activity) ne "" } {
-                                    if { $precision eq "" } {
+                                    if { $cprecision eq "" } {
                                         append cell $cn_arr($activity)
                                     } else {
-                                        append cell [qaf_round_to_precision $cn_arr($activity) $precision ]
+                                        append cell [qaf_round_to_precision $cn_arr($activity) $cprecision ]
                                     }
                                 }
                                 append cell " <br> "
