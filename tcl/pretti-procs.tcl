@@ -3102,7 +3102,6 @@ ad_proc -public acc_fin::scenario_prettify {
                     if { [qf_is_decimal $p1_arr(precision) ] } {
                         set precision $p1_arr(precision)
                     } 
-                    set tprecision ""
                     if { [qf_is_decimal $p1_arr(tprecision) ] } {
                         set tprecision $p1_arr(tprecision)
                     } else {
@@ -3113,7 +3112,7 @@ ad_proc -public acc_fin::scenario_prettify {
                     } else {
                         set cprecision $precision
                     }
-                    append comments "tprecision $tprecison , cprecision $cprecision"
+                    append comments "precision $precision , tprecision $tprecision , cprecision $cprecision , "
                     # # # build p4
                     
                     # save as a new table of type p4
