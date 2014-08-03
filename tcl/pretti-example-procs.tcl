@@ -24,7 +24,7 @@ ad_proc -private acc_fin::example_table {
     switch -exact $table_ref {
         p10a {
             # goes with p20a
-            set ret_list [list [list name value] [list activity_table_name "WikipediaPERT"] [list time_est_short 5 ] [list time_est_median 8] [list time_est_long 12] [list time_probability_moment 0.5]]
+            set ret_list [list [list name value] [list activity_table_name "PRETTI Example 1"] [list time_est_short 5 ] [list time_est_median 8] [list time_est_long 12] [list time_probability_moment 0.5]]
         }
         p11b {
             # goes with p20b

@@ -15,13 +15,13 @@ append p2_html "</pre>"
 
 set p3_html "<p>* not used<p>"
 
-set p1b_html {<pre>name: PRETTI example 1
+set p1b_html {<pre>name: PRETTI example scenario 1
  tid: 10412
 </pre>
 
 <table border="1" cellpadding="3" cellspacing="0">
 <tr><td>name</td><td>value</td></tr>
-<tr><td>activity_table_name</td><td>p2 wiki ex</td></tr>
+<tr><td>activity_table_name</td><td>PRETTI Example 1</td></tr>
 <tr><td>activity_table_tid</td><td>10352</td></tr>
 <tr><td>time_est_short</td><td>5</td></tr>
 <tr><td>time_est_median</td><td>8</td></tr>
@@ -34,9 +34,9 @@ set p1b_html {<pre>name: PRETTI example 1
 </table>
 }
 
-set p4_html {<h3>PRETTI example 1.p4</h3>
+set p4_html {<h3>PRETTI Example 1.p4</h3>
 
-<pre>name: PRETTI example 1.p4
+<pre>name: PRETTI Example 1.p4
  tid: 10415
 </pre>
 
@@ -50,5 +50,5 @@ set p4_html {<h3>PRETTI example 1.p4</h3>
 
 
 <p>
-Scenario report for p1 wikipedia ex: scenario_name PRETTI example 1 , cp_duration_at_pm 19.500000000000004 , cp_cost_pm 4.0 , max_act_count_per_track 4 , time_probability_moment 0.5 , cost_probability_moment 0.5 , setup_time 0 , main_processing_time 0 seconds , time/date finished processing 2014 Aug 02 21:30:17 , _tDcSource 3.1 , _cDcSource 6 , precision 0.001 , tprecision 0.01 , cprecision 0.001 , color_mask_sig_idx 3 , color_mask_oth_idx 5 , colorswap_p 0
+Scenario report for PRETTI example scenario 1: scenario_name PRETTI Example 1 , cp_duration_at_pm 19.500000000000004 , cp_cost_pm 4.0 , max_act_count_per_track 4 , time_probability_moment 0.5 , cost_probability_moment 0.5 , setup_time 0 , main_processing_time 0 seconds , time/date finished processing 2014 Aug 02 21:30:17 , _tDcSource 3.1 , _cDcSource 6 , precision 0.001 , tprecision 0.01 , cprecision 0.001 , color_mask_sig_idx 3 , color_mask_oth_idx 5 , colorswap_p 0
 </p>}
