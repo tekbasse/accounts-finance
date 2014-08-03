@@ -12,7 +12,7 @@ set g_list [list "t  : (crash) duration" \
                 "cw : cost at waypoing " \
                 "cn : cost at node" \
                 "d : dependents" \
-                "float at task : tn - tw "]
+                "fw : float at waypoint (tn - tw) "]
 set g_list [lsort $g_list]
 append glossary_html "<ul>\n"
 foreach gl $g_list {
