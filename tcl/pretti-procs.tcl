@@ -2352,9 +2352,20 @@ ad_proc -public acc_fin::scenario_prettify {
             
             # Calculate base durations for time_probability_moment. These work for activities and task types.
             array unset t_est_arr
-            foreach tCurve [array names time_clarr] {
-                set t_est_arr($tCurve) [qaf_y_of_x_dist_curve $t_moment $time_clarr($tCurve) ]
-                ns_log Notice "acc_fin::scenario_prettify.1756: scenario '$scenario_tid' tCurve '$tCurve' t_est_arr($tCurve) '$t_est_arr($tCurve)' ."
+            if { $p1_arr(pert_omp) eq "strict" && $t_moment == .5 } {
+                # use PERT expected value (O + 4M + P )/6/
+                foreach tCurve [array names time_clarr] {
+                    set o [qaf_y_of_x_dist_curve 0. $time_clarr($tCurve) ]
+                    set m [qaf_y_of_x_dist_curve .5 $time_clarr($tCurve) ]
+                    set p [qaf_y_of_x_dist_curve 1. $time_clarr($tCurve) ]
+                    set t_est_arr($tCurve) [expr { ( $o + 4. * $m + $p ) / 6. } ]
+                    ns_log Notice "acc_fin::scenario_prettify.1754: scenario '$scenario_tid' tCurve '$tCurve' t_est_arr($tCurve) '$t_est_arr($tCurve)' ."
+                }
+            } else {
+                foreach tCurve [array names time_clarr] {
+                    set t_est_arr($tCurve) [qaf_y_of_x_dist_curve $t_moment $time_clarr($tCurve) ]
+                    ns_log Notice "acc_fin::scenario_prettify.1756: scenario '$scenario_tid' tCurve '$tCurve' t_est_arr($tCurve) '$t_est_arr($tCurve)' ."
+                }
             }
             if { $c_moment_blank_p } {
                 # if cost_probability_moment is blank, loop 1:1 using time_probability_moment values
@@ -3080,7 +3091,7 @@ ad_proc -public acc_fin::scenario_prettify {
                     append comments "scenario_name ${scenario_name} , cp_duration_at_pm ${cp_duration} , cp_cost_pm ${cp_cost} , "
                     append comments "max_act_count_per_track ${act_count_max} , time_probability_moment ${t_moment} , cost_probability_moment ${c_moment} , "
                     append comments "setup_time ${setup_diff_secs} , main_processing_time ${time_diff_secs} seconds , time/date finished processing $p1_arr(the_time) , "
-                    append comments "_tDcSource $p1_arr(_tDcSource) , _cDcSource $p1_arr(_cDcSource)"
+                    append comments "_tDcSource $p1_arr(_tDcSource) , _cDcSource $p1_arr(_cDcSource) , "
                     
                     
                     if { $p1_arr(db_format) ne "" } {
@@ -3102,6 +3113,7 @@ ad_proc -public acc_fin::scenario_prettify {
                     } else {
                         set cprecision $precision
                     }
+                    append comments "tprecision $tprecison , cprecision $cprecision"
                     # # # build p4
                     
                     # save as a new table of type p4
