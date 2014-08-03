@@ -9,7 +9,7 @@ set g_list [list "t  : (crash) duration" \
                 "node : A task and all its direct and indirect dependents" \
                 "tn : (crash) duration at node" \
                 "c : cost" \
-                "cw : cost at waypoing " \
+                "cw : cost at waypoint " \
                 "cn : cost at node" \
                 "d : dependents" \
                 "fw : float at waypoint (tn - tw) "]
