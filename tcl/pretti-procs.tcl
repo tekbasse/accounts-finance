@@ -2187,8 +2187,14 @@ ad_proc -public acc_fin::scenario_prettify {
                 foreach act $activities_list {
                     set p2_value [lindex $p2_col_list $i]
                     if { $p2_value eq "" } {
+                        # if p2 value is blank, try to get value from p3 table
                         set ii [lsearch -exact $p3_type_list [lindex $p2_task_type_list $i]]
-                        set p2_col_list [lreplace $p2_col_list $i $i [lindex $p3_larr($constant) $ii] ]
+                        if { $ii > -1 } {
+                            set p2_col_list [lreplace $p2_col_list $i $i [lindex $p3_larr($constant) $ii] ]
+                        } 
+                        # else..
+                        # warn that value is blank in p2 and p3 tables?  No.
+                        # Just "name" or "description" so no need to warn..
                     }
                     incr i
                 }
