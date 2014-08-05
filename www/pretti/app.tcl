@@ -378,6 +378,8 @@ if { $form_posted } {
         if { [qf_is_natural_number $table_tid] } {
             lappend tid_list $table_tid
         }
+        set table_flags ""
+        set trashed_p 0
         foreach table_tid $tid_list {
             set success_p [acc_fin::table_sort_y_asc $table_tid $instance_id $user_id]
             if { $success_p } {
