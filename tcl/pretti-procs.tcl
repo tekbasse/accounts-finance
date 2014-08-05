@@ -3071,7 +3071,7 @@ ad_proc -public acc_fin::scenario_prettify {
                             lappend t_moment_len_list [string length $moment]
                         }
                         set t_moment_format "%1.f"
-                        append t_moment_format [expr { [f::max $t_moment_len_list] - 2 } ]
+                        append t_moment_format [expr { [f::lmax $t_moment_len_list] - 2 } ]
                         lappend " t=[format ${t_moment_format} ${t_moment}]"
                     }
                     if { [llength $c_moment_list ] > 1 } {
@@ -3080,7 +3080,7 @@ ad_proc -public acc_fin::scenario_prettify {
                             lappend c_moment_len_list [string length $moment]
                         }
                         set c_moment_format "%1.f"
-                        append c_moment_format [expr { [f::max $t_moment_len_list] - 2 } ]
+                        append c_moment_format [expr { [f::lmax $t_moment_len_list] - 2 } ]
                         lappend " c=[format ${c_moment_format} ${c_moment}]"
                     }
                     set scenario_title [lindex $scenario_stats_list 1]
@@ -3267,8 +3267,17 @@ ad_proc -public acc_fin::scenario_prettify {
                     for {set i 0} {$i < $act_count_max} {incr i} {
                         lappend p4_lists $row_larr($i)
                     }
-
-                    qss_table_create $p4_lists "${scenario_name}.p4" "${scenario_title}.p4" $comments "" p4 $instance_id $user_id
+                    set sname "${scenario_name}.p4"
+                    set stitle "${scenario_title}.p4"
+                    if { $t_moment ne "" } {
+                        append sname "t${t_moment}"
+                        append stitle " t=${t_moment}"
+                    }
+                    if { $c_moment ne "" } {
+                        append sname "c${c_moment}"
+                        append stitle " t=${t_moment}"
+                    }
+                    qss_table_create $p4_lists $sname $stitle $comments "" p4 $instance_id $user_id
                     # Comments data will be interpreted for determining standard deviation for determining cell highlighting
                 }
             }
