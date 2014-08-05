@@ -3275,7 +3275,7 @@ ad_proc -public acc_fin::scenario_prettify {
                     }
                     if { $c_moment ne "" } {
                         append sname "c${c_moment}"
-                        append stitle " t=${t_moment}"
+                        append stitle " c=${t_moment}"
                     }
                     qss_table_create $p4_lists $sname $stitle $comments "" p4 $instance_id $user_id
                     # Comments data will be interpreted for determining standard deviation for determining cell highlighting
