@@ -684,7 +684,7 @@ ad_proc -private acc_fin::pretti_columns_list {
             #      _coef                  integer coefficient for use with calculations that require remembering the coefficient when multiple of an activity is referenced.
             #      _tDcSource             source of time curve used from acc_fin::curve_import
             #      _cDcSource             source of cost curve used from acc_fin::curve_import
-            set ret_list [list activity_ref dependent_tasks aid_type name description max_concurrent max_overlap_pct time_est_short time_est_median time_est_long time_dist_curve_tid time_dist_curve_name time_probability_moment cost_est_low cost_est_median cost_est_high cost_dist_curve_tid cost_dist_curve_name cost_probability_moment]
+            set ret_list [list activity_ref dependent_tasks aid_type name description max_concurrent max_overlap_pct time_est_short time_est_median time_est_long time_dist_curve_tid time_dist_curve_name time_probability_moment cost_est_low cost_est_median cost_est_high cost_dist_curve_tid cost_dist_curve_name cost_probability_moment time_actual cost_actual]
 
         }
         p21 {
@@ -2035,7 +2035,7 @@ ad_proc -public acc_fin::scenario_prettify {
     #### Use [lsearch -regexp {[a-z][0-9]+} -all -inline $x_list] to screen alt debit/credit/"cost/revenue" columns and create list for custom summary feature.
     #### Use [lsearch -regexp {[a-z][0-9]+s} -all -inline $x_list] to screen alt time columns and create list for a scheduling feature
     #### with parameters defined in scenario or as a separate compilation of pretti output
-    
+    #### also ta=time_actual and ca=cost_actual
     # set defaults
     set constants_list [acc_fin::pretti_columns_list p3]
     foreach constant $constants_list {
@@ -2129,7 +2129,7 @@ ad_proc -public acc_fin::scenario_prettify {
         #### Use lsearch -glob or -regexp to screen alt columns and create list for custom summary feature. [a-z][0-9]
         #### ..connected to cost_probability_moment.. so columns represent curve IDs..
         #### Use [lsearch -regexp {[a-z][0-9]s} -all -inline $x_list] to screen alt time columns and create list for a scheduling feature.
-
+        #### also ta,twa,tna for time_actual, tw..a etc.
         # set defaults
         set constants_list [acc_fin::pretti_columns_list p2]
         foreach constant $constants_list {
@@ -2184,17 +2184,18 @@ ad_proc -public acc_fin::scenario_prettify {
             if { [llength $p2_larr(aid_type) ] > 0 && [llength $p3_larr($constant)] > 0 } {
                 set i 0
                 set p2_col_list $p2_larr($constant)
+                set p2_col_list_len [llength $p2_larr($constant) ]
                 foreach act $activities_list {
                     set p2_value [lindex $p2_col_list $i]
                     if { $p2_value eq "" } {
                         # if p2 value is blank, try to get value from p3 table
                         set ii [lsearch -exact $p3_type_list [lindex $p2_task_type_list $i]]
-                        if { $ii > -1 } {
+                        if { $ii > -1 && $i < $p2_col_list_len } {
                             set p2_col_list [lreplace $p2_col_list $i $i [lindex $p3_larr($constant) $ii] ]
-                        } 
-                        # else..
-                        # warn that value is blank in p2 and p3 tables?  No.
-                        # Just "name" or "description" so no need to warn..
+                        }  else {
+                            # warn that value is blank in p2 and p3 tables?  No.
+                            # Just "name" or "description" so no need to warn..
+                        }
                     }
                     incr i
                 }
