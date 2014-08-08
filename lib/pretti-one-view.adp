@@ -18,6 +18,10 @@
 
 @table_html;noquote@
 
+<if p4_legend_p not nil>
+   <include src="/packages/accounts-finance/lib/pretti-p4-legend">
+</if>
+
 <p>
 @table_comments;noquote@
 </p>
