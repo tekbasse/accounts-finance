@@ -1,4 +1,4 @@
-set legent_html ""
+set legend_html ""
 
 # create a list of cells from highest priority to lowest.
      set on_cp_list [list  1  0  0  0  0  0  0 0 0 0 0 0 0 0 0 0 -1]
@@ -23,6 +23,10 @@ set color_sig_mask_list [split $color_sig_mask ""]
 set k2 [expr {  7. / $max_act_count_per_track } ]
 
 # ..
+set legend_color0_list [list ]
+set legend_color1_list [list ]
+set legend_grey0_list [list ]
+set legend_grey1_list [list ]
 
 for {set odd_row_p 1} {$odd_row_p > -1} {incr odd_row_p -1} {
 
@@ -63,6 +67,13 @@ for {set odd_row_p 1} {$odd_row_p > -1} {incr odd_row_p -1} {
             set cell "&nbsp;"
             set colorhex "999999"
         }
-        append legend_html " $colorhex "
+        lappend legend_color${odd_row_p}_list $colorhex
+        if { [info exists grey($colorhex) ] } {
+             lappend legend_grey${odd_row_p}_list $grey($colorhex)
+        } else {
+            set grey($colorhex) [acc_fin::gray_from_color $colorhex]
+            lappend legend_grey${odd_row_p}_list $grey($colorhex)
+        }
     }
 }
+set legend_html [qss_list_of_lists_to_html_table [list $legend_color1_list $legend_color0_list $legend_grey1_list $legend_grey0_list] "" ""]
