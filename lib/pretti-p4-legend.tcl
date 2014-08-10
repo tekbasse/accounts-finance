@@ -57,4 +57,4 @@ foreach legend_row_list $legend_table_list {
     lappend css_list $css_row_list
 }
 lappend legend_content_list [lindex $legend_content_list 0] [lindex $legend_content_list 1] 
-set legend_html [qss_list_of_lists_to_html_table $legend_table_list [list style "border-style: solid; border-width: 1px; border-color: #999999;"] $css_list]
+set legend_html [qss_list_of_lists_to_html_table $legend_content_list [list style "border-style: solid; border-width: 1px; border-color: #999999;"] $css_list]
