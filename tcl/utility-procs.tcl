@@ -34,7 +34,7 @@ ad_proc -public acc_fin::gray_from_color {
             set dec_sum [expr { $dec_sum + $exp1 * 16 } ]
         }
     } else {
-        # don't understand. Return average grey
+        # don't understand. Return average grey 3 * 127
         set dec_sum 381
     }
 

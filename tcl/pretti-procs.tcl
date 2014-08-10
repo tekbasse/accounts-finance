@@ -1124,34 +1124,10 @@ ad_proc -public acc_fin::pretti_table_to_html {
                 
                 set colorhex [acc_fin::pretti_color_chooser $on_cp_p $on_a_sig_path_p $odd_row_p $popularity $max_act_count_per_track]
 
-                #ns_log Notice "acc_fin::pretti_table_to_html.930: cell $cell on_a_sig_path_p $on_a_sig_path_p popularity $popularity"
-                if { $on_cp_p || $act_on_cp_p } {
-                    set color_mask_list $color_cp_mask_list
-                    set c(1) 15
-                } else {
-                    set color_mask_list $color_sig_mask_list
-                    set c(1) [f::max 1 [f::min 15 [expr { int( ( 9 * $on_a_sig_path_p ) + $popularity * $k2 ) } ]]]
-                }
-                set c(0) [expr { 15 - $c(1) } ]
-                #ns_log Notice "acc_fin::pretti_table_to_html.949: row $row_nbr col $cell_nbr on_cp_p $on_cp_p act_on_cp $act_on_cp_p popularity $popularity on_a_sig_path_p $on_a_sig_path_p c(0) $c(0) c(1) $c(1)"
-                
-                set colorhex ""
-                
-                if { $odd_row_p } {
-                    incr c(1) -1
-                }
-                
-                foreach digit $color_mask_list {
-                    append colorhex [lindex $hex_list $c($digit) ]
-                    append colorhex "f"
-                }
-                if { [string length $colorhex] != 6 } {
-                    ns_log Notice "acc_fin::pretti_table_to_html.914: row_nbr '${row_nbr}' cell_nbr '${cell_nbr}' odd_row_p '${odd_row_p}' row_size '${row_size}' activity_time_expected '${activity_time_expected}'"
-                    ns_log Notice "acc_fin::pretti_table_to_html.915: issue colorhex '$colorhex' on_a_sig_path_p ${on_a_sig_path_p} popularity $popularity on_cp_p $on_cp_p c(0) '$c(0)' c(1) '$c(1)' color_mask_list '${color_mask_list}'"
-                }
             } else {
                 set cell "&nbsp;"
-                set colorhex "999999"
+                # pass on_cp_p as -1 when cell is inactive
+                set colorhex [acc_fin::pretti_color_chooser -1 $on_a_sig_path_p $odd_row_p $popularity $max_act_count_per_track]
             }
             #append cell "row $row_nbr col $cell_nbr on_cp $on_cp_p on_sig $on_a_sig_path_p act_on_cp_p $act_on_cp_p <br>"
             set cell_formatting [list style "vertical-align: top; background-color: #${colorhex};"]
