@@ -52,11 +52,15 @@ foreach legend_row_list $legend_table_list {
     set css_row_list [list ]
     foreach color $legend_row_list {
         set css "background-color: #$color;"
+        set greycol [acc_fin::gray_from_color $color]
+        if { [string range $greycol 0 0] < 6 } {
+            append css " color: #ffffff;"
+        }
         set attr_list [list style $css]
         lappend css_row_list $attr_list
     }
     lappend css_list $css_row_list
 }
 lappend legend_content_list [lindex $legend_content_list 0] [lindex $legend_content_list 1] 
-set legend_html [qss_list_of_lists_to_html_table $legend_table_list [list style "border-style: solid; border-width: 1px; border-color: #999999;"] $css_list]
-#set legend_html [qss_list_of_lists_to_html_table $legend_content_list [list style "border-style: solid; border-width: 1px; border-color: #999999;"] $css_list]
+#set legend_html [qss_list_of_lists_to_html_table $legend_table_list [list style "border-style: solid; border-width: 1px; border-color: #999999;"] $css_list]
+set legend_html [qss_list_of_lists_to_html_table $legend_content_list [list style "border-style: solid; border-width: 1px; border-color: #999999;"] $css_list]
