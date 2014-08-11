@@ -201,8 +201,17 @@ if { $write_p || ( $user_created_p && $create_p ) } {
                     qf_choice form_id $form_id type select name column_name value $col_qf_list
                     qf_append html ") &nbsp; "
                 }
-            } else {
+            } else  {
                 qf_input form_id $form_id type submit value $value name $name class btn 
+                if { $name1 eq "n" && $mode eq "p" } {
+                    qf_append html " &nbsp; (DC "
+                    qf_input form_id $form_id type input value "" name table_name label "Name" title "new distribution curve table name" size 6
+                    qf_input form_id $form_id type input value "" name minimum label "O" title "optimistic" size 3
+                    qf_input form_id $form_id type input value "" name median label "M" title "most likely" size 3
+                    qf_input form_id $form_id type input value "" name maximum label "P" title "pessimistic" size 3
+                    qf_input form_id $form_id type input value "" name count label "N" title "number of points" size 2
+                    qf_append html ") &nbsp; "
+                }
             }
         }
         #    append menu_html "<a href=\"app?${url}\">${label}</a>&nbsp;"

@@ -40,6 +40,10 @@ array set input_array [list \
     table_text ""\
     trash_folder_p "0"\
     column_name "" \
+    minimum "" \
+    median "" \
+    maximum "" \
+    count "" \
     submit "" \
     reset "" \
     mode "p" \
@@ -73,7 +77,9 @@ if { $form_posted } {
 
     # following is part of dynamic menu processing using form tags instead of url/GET.. and lib/pretti-menu1
     set input_array_idx_list [array names input_array]
-    set modes_idx [lsearch -regexp $input_array_idx_list {z[vyprnwctdes][vc]?}]
+
+    # existing modes screned here:
+    set modes_idx [lsearch -regexp $input_array_idx_list {z[cdenprstvwy][cv]?}]
     if { $modes_idx > -1 && $mode eq "p" } {
         set modes [lindex $input_array_idx_list $modes_idx]
         # modes 0 0 is z
@@ -161,11 +167,65 @@ if { $form_posted } {
             ns_log Notice "accounts-finance/www/pretti/app.tcl.105:  validated for w"
         }
         n {
+            set validated 0
             if { [info exists table_tid] } {
                 unset table_tid
             }
-            set validated 1
-            ns_log Notice "accounts-finance/www/pretti/app.tcl.109:  validated for n"
+
+            # new might be a general new table, or a specified type dc
+            # check for dc inputs?
+            set dc_new_p 0
+            if { $input_array(minimum) ne "" || $input_array(maximum) ne "" || $input_array(median) ne "" || $input_array(count) ne "" } {
+                # has a new dc been specified?
+                set dc_new_p 1
+                set input_array(minimum) [string trim $input_array(minimum) ]
+                if { [qf_is_decimal $input_array(minimum)] } {
+                    set minimum $input_array(minimum)
+                    set input_array(maximum) [string trim $input_array(maximum) ]
+                    if { [qf_is_decimal $input_array(maximum)] } {
+                        set maximum $input_array(maximum)
+                        set input_array(median) [string trim $input_array(median) ]
+                        if { [qf_is_decimal $input_array(median)] } {
+                            set median $input_array(median)
+                            set input_array(count) [string trim $input_array(count) ]
+                            # point count, or PERT_omp strict specified with "s"
+                            if { $input_array(count) eq "" || [string match -nocase "s" $input_array(count) ] || [qf_is_natural_number $input_array(count) ] } {
+                                set count [string tolower $input_array(count) ]
+                                set validated 1
+                                ns_log Notice "accounts-finance/www/pretti/app.tcl.217:  validated for m"
+                            } else {
+                                ns_log Notice "accounts-finance/www/pretti/app.tcl.197: input_array(count) '$input_array(count)' is not valid."
+                                lappend user_message_list "'Number of Points' should be greater than 5 or blank. Leave blank for the default number used by the system."
+                            } 
+                        } else {
+                            ns_log Notice "accounts-finance/www/pretti/app.tcl.202: input_array(median) '$input_array(median)' is not a number."
+                            lappend user_message_list "'Median' value of '$input_array(median)' is not a recognized number."
+                        }
+                    } else {
+                            ns_log Notice "accounts-finance/www/pretti/app.tcl.205: input_array(maximum) '$input_array(maximum)' is not a number."
+                        lappend user_message_list "'Maximum' value of '$input_array(maximum)' is not a recognized number."
+                    }
+                } else {
+                    ns_log Notice "accounts-finance/www/pretti/app.tcl.209: input_array(minimum) '$input_array(minimum)' is not a number."
+                    lappend user_message_list "'Minimum' value of '$input_array(minimum)' is not a recognized number."
+                }
+            }
+            if { $validated } {
+                ns_log Notice "accounts-finance/www/pretti/app.tcl.105:  validated for n as m, switching mode to m"
+                set mode "m"
+                set next_mode "v"
+            } else {
+                if { $dc_new_p == 0 } {
+                    # a new, unspecified table
+                    set mode "n"
+                    set validated 1
+                    ns_log Notice "accounts-finance/www/pretti/app.tcl.109:  validated for n"
+                } else {
+                    ns_log Notice "accounts-finance/www/pretti/app.tcl.111:  not validated for m. switching mode to v"
+                    set mode "v"
+                    set next_mode ""
+                }
+            } 
         }
         r {
             set validated 1
@@ -417,6 +477,26 @@ if { $form_posted } {
             # given table_tid 
             #set table_lists [qss_table_read $table_tid]
             acc_fin::scenario_prettify $table_tid $instance_id $user_id
+        }
+        set mode "p"
+        set next_mode ""
+    }
+    if { $mode eq "m" } {
+        ns_log Notice "accounts-finance/www/pretti/app.tcl.479:  mode = m new, user specified dc"
+        if { $count eq "s" } {
+            set curve_lol [acc_fin::pert_omp_to_strict_dc $minimum $median $maximum]
+        } else {
+            set curve_lol [acc_fin::pert_omp_to_normal_dc $minimum $median $maximum $count]
+        }
+        set table_flags "dc"
+        set table_comments ""
+        if { $input_array(table_name) eq "" } {
+            set input_array(table_name) "DC o $minimum m $median p $maximum p $count"
+        } 
+        set table_name [string range [string trim $input_array(table_name)] 0 30]
+        set status [qss_table_create $curve_lol $table_name $table_name $table_comments  "" "dc" $instance_id $user_id]
+        if { $status == 0 } {
+           lappend user_message_list "An internal error occured while attempting to create the table. Please contact an administrator."
         }
         set mode "p"
         set next_mode ""

@@ -363,26 +363,41 @@ ad_proc -public acc_fin::pert_omp_to_strict_dc {
     optimistic
     most_likely
     pessimistic
+    {labels_p "0"}
 } {
     Creates a curve in PRETTI table format representing strict characteristics of 
     a PERT expected time function (Te), where 
     Te = ( o + 4 * m + p ) / 6 and o = optimistic time, m = most likely time, and p = pessimistic time.
-    This 3 point curve has lower limit (o), upper limit (p) and median (m). 
+    This 3 point curve has lower limit (o), upper limit (p) and median (m). If labels_p is true, adds a labels column; Labels describe a little about each point.
 } {
+    if { $labels_p ne "0" && $labels_p ne "1" } {
+        set labels_p "0"
+    }
     #    ns_log Notice "acc_fin::pert_omp_to_strict_dc.24: optimistic $optimistic most_likely $most_likely pessimistic $pessimistic"
     # nomenclature of inputs  statistics:
     # set median $most_likely
     # set minimum $optimistic
     # set maximum $pessimistic
     set curve_lists [list ]
-    lappend curve_lists [list y x]
-    set one_sixth [expr { 1. / 6. } ]
-    set point_list [list $optimistic $one_sixth]
-    lappend curve_lists $point_list
-    set point_list [list $most_likely [expr { 4. / 6. } ] ]
-    lappend curve_lists $point_list
-    set point_list [list $pessimistic $one_sixth]
-    lappend curve_lists $point_list
+    if { $labels_p } {
+        lappend curve_lists [list y x label]
+        set one_sixth [expr { 1. / 6. } ]
+        set point_list [list $optimistic $one_sixth "optimistic 1/6 probability"]
+        lappend curve_lists $point_list
+        set point_list [list $most_likely [expr { 4. / 6. } ] "most likely 4/6 probability"]
+        lappend curve_lists $point_list
+        set point_list [list $pessimistic $one_sixth "pessimistic 1/6 probability"]
+        lappend curve_lists $point_list
+    } else {
+        lappend curve_lists [list y x]
+        set one_sixth [expr { 1. / 6. } ]
+        set point_list [list $optimistic $one_sixth]
+        lappend curve_lists $point_list
+        set point_list [list $most_likely [expr { 4. / 6. } ] ]
+        lappend curve_lists $point_list
+        set point_list [list $pessimistic $one_sixth]
+        lappend curve_lists $point_list
+    }
     return $curve_lists
 }
 
@@ -391,6 +406,7 @@ ad_proc -public acc_fin::pert_omp_to_normal_dc {
     most_likely
     pessimistic
     {n_points "24"}
+    {labels_p "0"}
 } {
     Creates a normal distribution curve in PRETTI table format representing characteristics of 
     a PERT expected time function (Te), where 
@@ -400,6 +416,13 @@ ad_proc -public acc_fin::pert_omp_to_normal_dc {
     18 point is about the absolute minimum practical amount for passing a clear majority of regression tests to within 1%. 5 is lowest number of points accepted.
     See also acc_fin::pert_omp_to_stric_dc for a 3 point curve that matches project management representation of the Time expected curve.
 } {
+    if { $n_points eq "" } {
+        set n_points "24"
+    }
+    if { $labels_p ne "0" && $labels_p ne "1" } {
+        set labels_p "0"
+    }
+
     ns_log Notice "acc_fin::pert_omp_to_normal_dc.23: starting"
     ns_log Notice "acc_fin::pert_omp_to_normal_dc.24: optimistic $optimistic most_likely $most_likely pessimistic $pessimistic n_points $n_points"
     # nomenclature of inputs  statistics:
@@ -408,7 +431,7 @@ ad_proc -public acc_fin::pert_omp_to_normal_dc {
     # set maximum $pessimistic
     set n_points [f::max [expr { int( $n_points ) } ] 5]
     set n_areas  [expr { int( $n_points - 1 ) } ]
-
+    # eps = 2.22044604925e-016 = Smallest number such that 1+eps != 1  from: http://wiki.tcl.tk/15256
     #set pi 3.14159265358979
     set pi [expr { atan2( 0. , -1. ) } ]
     #set e 2.718281828459  see exp()
