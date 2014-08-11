@@ -24,6 +24,85 @@ ad_proc -public acc_fin::pretti_color_chooser {
     max_act_count_per_track
     {color_cp_mask_idx "3"}
     {color_sig_mask_idx "5"}
+    {row_contrast "-8"}
+} {
+    Returns an html color in hex value based on parameters. popularity is 0..1.
+} {
+    # create a list of cells from highest priority to lowest.
+    # from acc_fin::pretti_table_to_html
+
+    # build formatting colors
+
+    set hex_list [list 0 1 2 3 4 5 6 7 8 9 a b c d e f]
+    set bin_list [list 000 100 010 110 001 101 011 111]
+    #set row_contrast -7
+    set color_cp_mask [lindex $bin_list $color_cp_mask_idx]
+    set color_cp_mask_list [split $color_cp_mask ""]
+    set color_sig_mask [lindex $bin_list $color_sig_mask_idx]
+    set color_sig_mask_list [split $color_sig_mask ""]
+
+    set k2 [expr { 127. / ( $max_act_count_per_track + 0. ) } ]
+
+    if { $on_cp_p > -1 } {
+        # ..from acc_fin::pretti_table_to_html
+        # intensity is 0 to 15.
+        # subtract 1 for contrast variance
+        # which leaves color variance 0 to 14
+        if { $on_cp_p } {
+            set color_mask_list $color_cp_mask_list
+            set c1 255
+            set c0 127
+        } else {
+            set color_mask_list $color_sig_mask_list
+            if { $on_a_sig_path_p } {
+                set c1 [f::max 0 [f::min 255 [expr { 127 + int( $popularity * $k2 + 1. ) } ] ]]
+                set c0 127
+
+            } else {
+                set c0 127
+                set c1 [f::max 0 [f::min 255 [expr { int( $popularity * $k2 + 1. ) } ] ]]
+            }
+        }
+#        set c0 [expr { 255 - $c1 } ]
+        if { $odd_row_p } {
+            incr c1 $row_contrast 
+            # incr c0 [f::sum $color_mask_list]
+        }
+        # convert rgb to hexidecimal
+        set c0e1 [expr { int( $c0 / 16. ) } ]
+        set c0e0 [expr { $c0 - $c0e1 * 16 } ]
+        set h(0) [lindex $hex_list [f::max 0 [f::min 15 $c0e1 ]]]
+        append h(0) [lindex $hex_list [f::max 0 [f::min 15 $c0e0 ]]]
+        set hex_arr($c0) $h(0)
+
+        set c1e1 [expr { int( $c1 / 16. ) } ]
+        set c1e0 [expr { $c1 - $c1e1 * 16 } ]
+        set h(1) [lindex $hex_list [f::max 0 [f::min 15 $c1e1 ]]]
+        append h(1) [lindex $hex_list [f::max 0 [f::min 15 $c1e0 ]]]
+        set hex_arr($c1) $h(1)
+
+        set colorhex ""
+        foreach mask $color_mask_list {
+            append colorhex $h($mask)
+        }
+        if { [string length $colorhex] != 6 } {
+            ns_log Notice "acc_fin::pretti_color_chooser.914: issue colorhex '$colorhex' on_a_sig_path_p ${on_a_sig_path_p} popularity $popularity on_cp_p $on_cp_p c0 '$c0' c1 '$c1' h(0) $h(0) h(1) $h(1) color_mask_list '${color_mask_list}' odd_row_p '${odd_row_p}"
+            set colorhex "ffffff"
+        }
+    } else {
+        set colorhex "4f4f4f"
+    }
+    return $colorhex
+}
+
+ad_proc -public acc_fin::pretti_color_chooser_old2 {
+    on_cp_p
+    on_a_sig_path_p
+    odd_row_p
+    popularity
+    max_act_count_per_track
+    {color_cp_mask_idx "3"}
+    {color_sig_mask_idx "5"}
     {row_contrast "-7"}
 } {
     Returns an html color in hex value based on parameters. popularity is 0..1.
