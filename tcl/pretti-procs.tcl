@@ -877,6 +877,7 @@ ad_proc -private acc_fin::pretti_columns_list {
             #      time_est_short         estimated shortest duration. (Lowest statistical deviation value)
             #      time_est_median        estimated median duration. (Statistically, half of deviations are more or less than this.) 
             #      time_est_long          esimated longest duration. (Highest statistical deviation value.)
+            #      time_actual            the acutal duration (time) once complete.
             #      time_dist_curve_tid Use this distribution curve instead of the time_est short, median and long values
             #                             Consider using a variation of task_type as a reference
             #      time_dist_curv_eq  Use this distribution curve equation instead.
@@ -884,6 +885,7 @@ ad_proc -private acc_fin::pretti_columns_list {
             #      cost_est_low           estimated lowest cost. (Lowest statistical deviation value.)
             #      cost_est_median        estimated median cost. (Statistically, half of deviations are more or less than this.)
             #      cost_est_high          esimage highest cost. (Highest statistical deviation value.)
+            #      cost_actual            the actual cost once complete.
             #      cost_dist_curve_tid Use this distribution curve instead of equation and value defaults
             #      cost_dist_curv_eq  Use this distribution curve equation. 
             #
