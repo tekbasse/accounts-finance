@@ -382,11 +382,11 @@ ad_proc -public acc_fin::pert_omp_to_strict_dc {
     if { $labels_p } {
         lappend curve_lists [list y x label]
         set one_sixth [expr { 1. / 6. } ]
-        set point_list [list $optimistic $one_sixth "optimistic 1/6 probability"]
+        set point_list [list $optimistic $one_sixth "optimistic / minimum"]
         lappend curve_lists $point_list
-        set point_list [list $most_likely [expr { 4. / 6. } ] "most likely 4/6 probability"]
+        set point_list [list $most_likely [expr { 4. / 6. } ] "most likely / median"]
         lappend curve_lists $point_list
-        set point_list [list $pessimistic $one_sixth "pessimistic 1/6 probability"]
+        set point_list [list $pessimistic $one_sixth "pessimistic / maximum"]
         lappend curve_lists $point_list
     } else {
         lappend curve_lists [list y x]
@@ -432,6 +432,7 @@ ad_proc -public acc_fin::pert_omp_to_normal_dc {
     set n_points [f::max [expr { int( $n_points ) } ] 5]
     set n_areas  [expr { int( $n_points - 1 ) } ]
     # eps = 2.22044604925e-016 = Smallest number such that 1+eps != 1  from: http://wiki.tcl.tk/15256
+    set eps 2.22044604925e-016
     #set pi 3.14159265358979
     set pi [expr { atan2( 0. , -1. ) } ]
     #set e 2.718281828459  see exp()
@@ -603,19 +604,31 @@ ad_proc -public acc_fin::pert_omp_to_normal_dc {
 
     # column titles
     set curve_lists [list ]
-    lappend curve_lists [list y x]
-
+    if { $labels_p } {
+        lappend curve_lists [list y x label]
+    } else {
+        lappend curve_lists [list y x]
+    }
     # left tail, reverse order
     #### Here a point is subtracted, apparently because the last area is empty.. why??
     # p_count() is point length. minus 1 to count from 0 to one less than p_count
     set i_count [expr { $p_count(0) - 1 } ]
+    set label "optimistic / minimum"
     for {set i $i_count} { $i > -1 } {incr i -1} {
         set f_x [lindex $fx_larr(0) $i]
-        set delta_a [lindex $da_larr(0) $i]
+
+        # Adjust for cases where x is too close to 0 to be fully recognized as nonzero by the system ie $eps.
+        set delta_a [f::max $eps [lindex $da_larr(0) $i]]
         #        set a [expr { $a + $delta_a } ]
+
         set a [lindex $a_larr(0) $i]
         #       ns_log Notice "acc_fin::pert_omp_to_normal_dc.234: i '$i' delta_a '$delta_a' a '$a' f_x '$f_x'"
+
         set point_list [list $f_x $delta_a]
+        if { $labels_p } {
+            lappend point_list $label
+            set label ""
+        }
         lappend curve_lists $point_list
     }
     # last item this tail
@@ -626,14 +639,24 @@ ad_proc -public acc_fin::pert_omp_to_normal_dc {
     # right tail, append
     # ref 1
 
-    #    set i_count [expr { $p_count(1) - 1 } ]
+    set i_next2last [expr { $p_count(1) - 2 } ]
     for {set i 0} { $i < $p_count(1) } {incr i } {
         set f_x [lindex $fx_larr(1) $i]
-        set delta_a [lindex $da_larr(1) $i]
+
+        # Adjust for cases where x is too close to 0 to be fully recognized as nonzero by the system ie $eps.
+        set delta_a [f::max $eps [lindex $da_larr(1) $i]]
         #        set a [expr { $a + $delta_a } ]
         set a [lindex $a_larr(1) $i]
         #       ns_log Notice "acc_fin::pert_omp_to_normal_dc.243: i '$i' delta_a '$delta_a' a '$a' f_x '$f_x'"
         set point_list [list $f_x $delta_a]
+        if { $labels_p } {
+            lappend point_list $label
+            if { $i == $i_next2last } {
+                set label "pessimistic / maximum"
+            } else {
+                set label ""
+            }
+        }
         lappend curve_lists $point_list
     }
 
@@ -657,7 +680,9 @@ ad_proc -public acc_fin::pert_omp_to_normal_dc {
         set a_new [expr { abs($a0) * $a_curve } ]
     }
     set median_list [list $most_likely $a_new]
-
+    if { $labels_p } {
+        lappend median_list "most likely / median"
+    }
     #    set median_end_idx [expr { $median_range_idx } ]
     #    ns_log Notice "acc_fin::pert_omp_to_normal_dc.351: a0 $a0 a_curve $a_curve a0_test $a0_test a_new $a_new median_range_idx $median_range_idx median_end_idx $median_end_idx"
     #    set curve_lists [lreplace $curve_lists $median_range_idx $median_end_idx $median_list]
