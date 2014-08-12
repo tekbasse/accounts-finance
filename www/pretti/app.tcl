@@ -489,7 +489,8 @@ if { $form_posted } {
             set curve_lol [acc_fin::pert_omp_to_normal_dc $minimum $median $maximum $count 1]
         }
         set table_flags "dc"
-        set table_comments ""
+        set pert_omp_expected [expr { ( $minimum + 4. * $median + $maximum ) / 6. } ]
+        set table_comments "PERT OMP expected value: ${pert_omp_expected}"
         if { $input_array(table_name) eq "" } {
             set input_array(table_name) "DC o $minimum m $median p $maximum p $count"
         } 
