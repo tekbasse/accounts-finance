@@ -484,9 +484,9 @@ if { $form_posted } {
     if { $mode eq "m" } {
         ns_log Notice "accounts-finance/www/pretti/app.tcl.479:  mode = m new, user specified dc"
         if { $count eq "s" } {
-            set curve_lol [acc_fin::pert_omp_to_strict_dc $minimum $median $maximum]
+            set curve_lol [acc_fin::pert_omp_to_strict_dc $minimum $median $maximum 1]
         } else {
-            set curve_lol [acc_fin::pert_omp_to_normal_dc $minimum $median $maximum $count]
+            set curve_lol [acc_fin::pert_omp_to_normal_dc $minimum $median $maximum $count 1]
         }
         set table_flags "dc"
         set table_comments ""
