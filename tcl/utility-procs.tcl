@@ -223,7 +223,7 @@ ad_proc -public acc_fin::cobbler_html_create {
     set error 0
     set package_id [ad_conn package_id]
     set user_id [ad_conn user_id]
-    
+    set cob_html ""
     # set alternating colors
     if { [regexp {[\#]?([0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f])} $color1 ] } {
         set color_arr(1) "#$color1"
@@ -248,10 +248,9 @@ ad_proc -public acc_fin::cobbler_html_create {
         set y_max_min_px 500
     }
 
-###########33
     if { $error == 0 } {
-        set cob_pathname "${cob_path}/${cob_filename}"
-        set cob_webpathname "${cob_webpath/${cob_filename}"
+        #set cob_pathname "${cob_path}/${cob_filename}"
+        #set cob_webpathname "${cob_webpath/${cob_filename}"
 
         set maybe_x_list_len [llength $maybe_x_list_len ]
         set maybe_y_list_len [llength $maybe_y_list_len ]
@@ -349,7 +348,9 @@ ad_proc -public acc_fin::cobbler_html_create {
                 set r [f::max $r_case1 $r_case2 ]
                 set dim_px [expr { round( $r + .99 )  } ]
                 set dim_py [expr { round( $r / 3.6 ) } ]
-                exec gm convert -size ${dim_px}x${dim_py} "xc:#ffffff" $cob_pathname
+                #exec gm convert -size ${dim_px}x${dim_py} "xc:#ffffff" $cob_pathname
+                set cob_html "<div style=\"margin: 3px; padding-bottom: 0; width: ${dim_px}px ; height: ${dim_py}px; display: inline-block; border-style: solid; border-width: 1px; border-color: #000000; \">\n"
+                
                 set x0 0
                 set y0 [expr { $dim_py } ]
                 set x2 $x0
@@ -364,11 +365,15 @@ ad_proc -public acc_fin::cobbler_html_create {
                     set bar_height [expr { $y * $k2 } ]
                     set x1 $x2
                     set y1 $y0
-                    set x2 [expr { round( $x1 + $bar_width ) } ]
-                    set y2 [expr { round( $y0 - $bar_height ) } ]
+                    set x2_pct [expr { round( $bar_width / $dim_px ) } ]
+                    set y2_pct [expr { round( $bar_height / $dim_py ) } ]
+                    #set x2 [expr { round( $x1 + $bar_width ) } ]
+                    #set y2 [expr { round( $y0 - $bar_height ) } ]
                     #ns_log Notice "accounts-finance/lib/pretti-one-view.tcl x0 $x0 y0 $y0 x1 $x1 y1 $y1 x2 $x2 y2 $y2"
-                    exec gm convert -size ${dim_px}x${dim_py} -fill $color_arr($odd_p) -stroke $color_arr($odd_p) -draw "rectangle $x1,$y1 $x2,$y2" $cob_pathname $cob_pathname
+                    #exec gm convert -size ${dim_px}x${dim_py} -fill $color_arr($odd_p) -stroke $color_arr($odd_p) -draw "rectangle $x1,$y1 $x2,$y2" $cob_pathname $cob_pathname
+                    append cob_html "<img border=\"0\" src=\"../resources/pixel-[string range $color_arr($odd_p) 1 end].png\" width=\"${bar_width}\" height=\"${bar_height}\" alt=\"y=$y @ x=$x\" title=\"y=$y @ x=$x\">\n"
                 }
+                append cob_html "</div>\n"
             }
         }
     }
