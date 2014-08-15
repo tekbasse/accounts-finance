@@ -336,41 +336,80 @@ ad_proc -public acc_fin::cobbler_html_create {
             # Try to provide image resolution at least one pixel per degree and/or 1% of range of y.
 
             # r_case1 is resolution along min size of (x) 1 pixel for min width
-            set r_case1 [f::max $x_max_min_px [f::min $x_max_max_px [expr { $x_sum / $x_min } ]]]
+            set rx [f::max $x_max_min_px [f::min $x_max_max_px [expr { $x_sum / ( $x_min + 0. )} ]]]
             # r_case2 is resolution along range of y.
-            set r_case2 [f::max $y_max_min_px [f::min $y_max_max_px [expr { $y_max - $y_min } ]]]
-            set r [f::max $r_case1 $r_case2 ]
-            set dim_px [expr { round( $r + .99 )  } ]
-            set dim_py [expr { round( $r / 3.6 ) } ]
+            set ry [f::max $y_max_min_px [f::min $y_max_max_px [expr { $y_max - $y_min + 0. } ]]]
+            set dim_px [expr { round( $rx + .99 )  } ]
+            set dim_py [expr { round( $ry / 3.6 ) } ]
             #exec gm convert -size ${dim_px}x${dim_py} "xc:#ffffff" $cob_pathname
-            set cob_html "<div style=\"margin: 3px; padding-bottom: 0; width: ${dim_px}px ; height: ${dim_py}px; display: inline-block; border-style: solid; border-width: 1px; border-color: #000000; \">\n"
+            set cob_html "<div style=\"margin: 3px; padding-bottom: 0; width: ${dim_px} px ; height: ${dim_py} px ; display: inline-block; border-style: solid; border-width: 1 px ; border-color: #000000; \">\n"
             
             set x0 0
-            set y0 [expr { $dim_py } ]
+            set y0 $dim_py
             set x2 $x0
             set y2 $y0
-            set k1 [expr { $r / ( $x_sum + 0. ) } ]
+            set k1 [expr { $dim_px / ( $x_sum + 0. ) } ]
             set k2 [expr { $dim_py / ( $y_max + 0. ) } ]
+            set bar_width 0.
+            set xy_list [list x y]
+            set comb_bar_curv_lol [list $xy_list]
+            set xy_delim ""
+            set xy_html ""
+
             for {set j 0} { $j < $maybe_x_list_len } {incr j } {
                 set odd_p [expr { 1 + $j - int( ( $j + 1 ) / 2 ) * 2 } ]
                 set x [lindex $maybe_x_list $j]
                 set y [lindex $maybe_y_list $j]
-                set bar_width [expr { $x * $k1 } ]
+                set bar_width [expr { round( $x * $k1 ) } ]
+                set bar_height [expr { round( $y * $k2 ) } ]
+
+                set bar_width [expr { $x * $k1 + $bar_width } ]
                 set bar_height [expr { $y * $k2 } ]
-                set x1 $x2
-                set y1 $y0
-                set x2_pct [expr { round( $bar_width / $dim_px ) } ]
-                set y2_pct [expr { round( $bar_height / $dim_py ) } ]
-                #set x2 [expr { round( $x1 + $bar_width ) } ]
-                #set y2 [expr { round( $y0 - $bar_height ) } ]
-                #ns_log Notice "accounts-finance/lib/pretti-one-view.tcl x0 $x0 y0 $y0 x1 $x1 y1 $y1 x2 $x2 y2 $y2"
-                #exec gm convert -size ${dim_px}x${dim_py} -fill $color_arr($odd_p) -stroke $color_arr($odd_p) -draw "rectangle $x1,$y1 $x2,$y2" $cob_pathname $cob_pathname
-                #append cob_html "<img border=\"0\" src=\"../resources/pixel-[string range $color_arr($odd_p) 1 end].png\" width=\"${bar_width}\" height=\"${bar_height}\" alt=\"y=$y @ x=$x\" title=\"y=$y @ x=$x\">\n"
-                append cob_html "<div style=\"margin: 0; padding: 0; width: ${bar_width} px; height: ${bar_height} px; display: inline-block; vertical-align: bottom; border-style: none; background-color: $color_arr($odd_p); \"><img src=\"/resources/spacer.gif\" width=\"${bar_width}\" height=\"${bar_height}\"></div>"
-
+                if { $bar_width >= 1. } {
+                    if { $bar_width > 3 } {
+                        set bar_width [expr { int( $bar_width ) } ]
+                    } else {
+                        set bar_width [expr { round( $bar_width ) } ]
+                    }
+                    set bars_count [llength $comb_bar_curv_lol]
+                    if { $bars_count > 1 } {
+                        set bar_list [list $x $y]
+                        lappend comb_bar_curv_lol $bar_list 
+                        set bar_height [expr { round([acc_fin::pretti_geom_avg_of_curve $comb_bar_curv_lol]) } ]
+                    } else {
+                        set bar_height [expr { round( $bar_height ) } ]
+                    }
+                    append xy_html $xy_delim
+                    append xy_html "y=$y x=$x"
+                    append cob_html "<div style=\"margin: 0; padding: 0; width: ${bar_width} px; height: ${bar_height} px; display: inline-block; vertical-align: bottom; border-style: none; background-color: $color_arr($odd_p); \"><img src=\"/resources/spacer.gif\" style=\"margin: 0; padding: 0; border-style: none;\" width=\"${bar_width}\" height=\"${bar_height}\" alt=\"${xy_html}\" title=\"${xy_html} \"></div>"
+                    set bar_width 0.
+                    set comb_bar_curv_lol [list $xy_list]
+                    set batch_y_list [list ]
+                    set xy_delim ""
+                    set xy_html ""
+                } else {
+                    # keep info to combine bars to match resolution
+                    set bar_list [list $bar_width $bar_height]
+                    lappend comb_bar_curv_lol $bar_list 
+                    lappend batch_y_list $bar_height
+                    append xy_html $xy_delim
+                    append xy_html "y=$y x=$x"
+                    set xy_delim ", \n"
+                }
             }
-            append cob_html "</div>\n"
+            set bars_count [llength $comb_bar_curv_lol]
+            if { $bars_count > 1 } {
+                set bar_width [f::max 1 [expr { round( $bar_width ) } ]]
+                # catch tail bars
 
+                set odd_p [expr { $i - int( $i / 2 ) * 2 } ]
+                set bar_list [list $bar_width $bar_height]
+                lappend comb_bar_curv_lol $bar_list 
+                lappend batch_y_list $bar_height
+                set bar_height [f::max [f::lmin $batch_y_list] [expr { round([acc_fin::pretti_geom_avg_of_curve $comb_bar_curv_lol]) } ]]
+                append cob_html "<div style=\"margin: 0; padding: 0; width: ${bar_width} px; height: ${bar_height} px; display: inline-block; vertical-align: bottom; border-style: none; background-color: $color_arr($odd_p); \"><img src=\"/resources/spacer.gif\" style=\"margin: 0; padding: 0; border-style: none;\" width=\"${bar_width}\" height=\"${bar_height}\" alt=\"${xy_html}\" title=\"${xy_html} \"></div>"
+            }
+            append cob_html "</div>"
         }
     }
     if { $error } {
