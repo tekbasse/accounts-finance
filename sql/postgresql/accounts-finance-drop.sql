@@ -3,6 +3,11 @@
 -- @author Dekka Corp.
 -- @cvs-id
 --
+DROP index qaf_sched_proc_stack_started_time_key;
+DROP index qaf_sched_proc_stack_priority_key;
+DROP index qaf_sched_proc_stack_id_key;
+
+DROP TABLE qaf_sched_proc_stack;
 
 DROP index qaf_file_id_key;
 DROP index qaf_case_id_key;
