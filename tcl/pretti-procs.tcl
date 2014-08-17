@@ -443,14 +443,15 @@ ad_proc -public acc_fin::pert_omp_to_normal_dc {
     set optimistic [expr { $optimistic + 0. } ]
     set most_likely [expr { $most_likely + 0. } ]
     set pessimistic [expr { $pessimistic + 0. } ]
-    # Symetric calculations use indexed arrays to swap between tails.
-    # Index of:
-    # 0 = left tail
-    # 1 = right tail
 
     # Build a curve using Normal Distribution calculations as a base
 
     # Split the curve into two tails, in case med - min value does not equal max - med.
+
+    # Symetric calculations use indexed arrays to swap between tails.
+    # Index of:
+    # 0 = left tail
+    # 1 = right tail
 
     # Left tail represents minimum to median.
     # So, create a standard_deviation for left side by assuming curve is symmetric:
@@ -465,6 +466,7 @@ ad_proc -public acc_fin::pert_omp_to_normal_dc {
     #    set precision2(0) [expr { 1. / pow( $std_dev(0) , 2. ) } ]
     set precision(0) 1.
     set precision2(0) [expr { pow( $precision(0) , 2. ) } ]
+
     # Right tail represents median to maximum.
     set std_dev(1) [expr { $sqrt_2 * abs( $pessimistic - $most_likely ) } ]
     #    set variance(1) [expr { 2. * pow( $std_dev(1) , 2. ) } ]
@@ -477,7 +479,7 @@ ad_proc -public acc_fin::pert_omp_to_normal_dc {
     # f(x) is the normal distribution function. x = 0 at $median
     
     # for each section of the curve divided into p_count() ie ($n_areas /2) sections of approximately equal area.
-    # since each tail has area circa 0.5, delta_area is circa 0.5 / p_count()
+    # since each tail has working area of circa 0.5 (std*2 = 0.4772 actually), delta_area is circa 0.5 / p_count()
     # given 2 points on curve f(x) = y, (x0,y0), (x1,y1) defines an approximate area, where 
     # delta_area = 0.5 * ( y0 + y1 ) ( x1 - x0 )   and
     # delta_area = 0.5 / p_count
