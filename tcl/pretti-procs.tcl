@@ -433,14 +433,16 @@ ad_proc -public acc_fin::pert_omp_to_normal_dc {
     set n_areas  [expr { int( $n_points - 1 ) } ]
     # eps = 2.22044604925e-016 = Smallest number such that 1+eps != 1  from: http://wiki.tcl.tk/15256
     set eps 2.22044604925e-016
+    # Create a limit of largest single step area could possibly be, to avoid binary calc tangents
+    set largest_a [expr { 0.5 - ( $eps * $n_areas ) } ]
     #set pi 3.14159265358979
     set pi [expr { atan2( 0. , -1. ) } ]
     #set e 2.718281828459  see exp()
     set sqrt_2pi [expr { sqrt( 2. * $pi ) } ]
     set sqrt_2 [expr { sqrt( 2. ) } ]
-    set optimistic [expr { $optimistic * 1. } ]
-    set most_likely [expr { $most_likely * 1. } ]
-    set pessimistic [expr { $pessimistic * 1. } ]
+    set optimistic [expr { $optimistic + 0. } ]
+    set most_likely [expr { $most_likely + 0. } ]
+    set pessimistic [expr { $pessimistic + 0. } ]
     # Symetric calculations use indexed arrays to swap between tails.
     # Index of:
     # 0 = left tail
@@ -537,7 +539,7 @@ ad_proc -public acc_fin::pert_omp_to_normal_dc {
         #        set y1 [expr { exp( -0.5 * pow( $x1 , 2. ) ) / $sqrt_2pi } ] 
         #        set y1 [expr { exp( -0.5 * pow( $x1 , 2. ) / $variance($ii) ) / ( $std_dev($ii) * $sqrt_2pi ) } ] 
         #        set y1 [expr { exp( -0.5 * pow( $x1 , 2. ) / $variance($ii) ) / $sqrt_2pi } ] 
-        set y1 [expr { $precision($ii) * exp( -0.5 * $precision2($ii) * pow( $x1 , 2. ) ) / $sqrt_2pi } ] 
+        set y1 [f::max $eps [expr { $precision($ii) * exp( -0.5 * $precision2($ii) * pow( $x1 , 2. ) ) / $sqrt_2pi } ]]
 
         # estimate delta_x and a:
         set block_count [lindex [qaf_triangular_numbers [expr { $p_count($ii) - 0 } ]] end]
@@ -546,7 +548,7 @@ ad_proc -public acc_fin::pert_omp_to_normal_dc {
         #        ns_log Notice "acc_fin::pert_omp_to_normal_dc.90: ii $ii p_count($ii) $p_count($ii) block_count $block_count numerator $numerator std_dev($ii) $std_dev($ii)" 
 
         # first point in tail:
-        set step_021 [expr { $numerator / $block_count } ]
+        set step_021 [f::max $eps [expr { $numerator / $block_count } ]]
         lappend y_larr($ii) $y1
         lappend x_larr($ii) $x1
 
@@ -559,17 +561,17 @@ ad_proc -public acc_fin::pert_omp_to_normal_dc {
             set numerator [expr { $numerator + 1. } ]
 
             set step_021 [expr { $numerator / $block_count + $step_021 } ]            
-            set x2 [expr { $std_dev($ii) * $step_021 } ]
-            set delta_x [expr { $x2 - $x1 } ]
+            set x2 [f::max $eps [expr { $std_dev($ii) * $step_021 } ]]
+            set delta_x [f::max $eps [expr { $x2 - $x1 } ]]
             # Calculate y2 = f(x) = using the normal probability density function
             #            set y2 [expr { exp( -0.5 * pow( $x2 , 2. ) ) / $sqrt_2pi } ] 
             #            set y2 [expr { exp( -0.5 * pow( $x2 , 2. ) / $variance($ii) ) / ( $std_dev($ii) * $sqrt_2pi ) } ] 
             #            set y2 [expr { exp( -0.5 * pow( $x2 , 2. ) / $variance($ii) ) / $sqrt_2pi } ] 
-            set y2 [expr { $precision($ii) * exp( -0.5 * $precision2($ii) * pow( $x2 , 2. ) ) / $sqrt_2pi } ] 
+            set y2 [f::max $eps [expr { $precision($ii) * exp( -0.5 * $precision2($ii) * pow( $x2 , 2. ) ) / $sqrt_2pi } ]]
 
             # Calculate area under normal distribution curve.
-            set a [expr { $a + $delta_x * ( $y2 + $y1 ) / 2. } ]
-            set delta_a [expr { $a - $a_prev } ]
+            set a [f::min $largest_a [expr { $a + $delta_x * ( $y2 + $y1 ) / 2. } ]]
+            set delta_a [f::max $eps [expr { $a - $a_prev } ]]
 
             if { $ii } {
                 # Right tail
@@ -578,7 +580,7 @@ ad_proc -public acc_fin::pert_omp_to_normal_dc {
                 # Left tail
                 set f_x [expr { $most_likely - $y_range_arr(0) * $step_021 } ]
             }
-            #            ns_log Notice "acc_fin::pert_omp_to_normal_dc.100: i $i x2 '$x2' x1 '$x1' delta_x '$delta_x' y2 '$y2' y1 '$y1' f_x '$f_x' numerator $numerator step_021 $step_021"
+            # ns_log Notice "acc_fin::pert_omp_to_normal_dc.100: i $i x2 '$x2' x1 '$x1' delta_x '$delta_x' y2 '$y2' y1 '$y1' f_x '$f_x' numerator $numerator step_021 $step_021 a $a delta_a $delta_a"
             lappend x_larr($ii) $x2
             lappend y_larr($ii) $y2
             lappend a_larr($ii) $a
@@ -661,23 +663,33 @@ ad_proc -public acc_fin::pert_omp_to_normal_dc {
     }
 
     # combine the tails at x = 0
-    # combining these areas reduces curve area count by one too many. 
+    # a0 is median area
     #set a0 [expr { [lindex $a_larr(0) 0] + [lindex $a_larr(1) 0] } ]
-    set a0 [lindex $a_larr(1) 0]
-
+    # combining these areas reduces curve area count by one too many. 
+    set a0 [lindex $a_larr(0) 0]
+    set a1 [lindex $a_larr(1) 0]
+    # a_curve is area under curve
     set a_curve [expr { $a_arr(0) + $a_arr(1) } ]
-    set a0_test [expr { 1. - $a_curve + $a0 } ]
 
+    # Instead of adding the extra area from prior calculations,
+    # create a more balanced a0 so area under each tail is as close as possible to 0.5
+    # a0_test is guess at best, new a0. ie 1 - area_under_curve (ideally 1) + a0
+    # this way, if 1 - a_curve  is greater than 0, the extra is added to a0
+    set a0_test [expr { 1. - $a_curve + $a0 } ]
     if { $a0_test > 0. } {
-        # straightforward adjustments work
+        # straightforward adjustment
         set a_new $a0_test
 
     } else {
         # $a0_test is negative, apparently because a_curve > 1
-        # renormalize a0 to compensate and keep a0 in meridian area:
-        # $a_curve / 1.  = $a_curve = a_curve ratio:
-        # if a0 is negative, make it positive and expand a0 by a ratio of the curve area to 1
-        set a_new [expr { abs($a0) * $a_curve } ]
+        # Renormalize a0 to compensate and keep a0 in meridian area:
+        # Determine which tail is larger..
+        if { $a0 > $a1 } {
+            set a_new [expr { $a0 - $a1 + $eps } ]
+        } else {
+            set a_new [expr { $a1 - $a0 + $eps } ]
+        }
+
     }
     set median_list [list $most_likely $a_new]
     if { $labels_p } {
