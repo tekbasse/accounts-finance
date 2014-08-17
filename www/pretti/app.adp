@@ -31,7 +31,7 @@
 </if>
 
 <if @mode@ eq "v">
-  <include src="/packages/accounts-finance/lib/pretti-one-view" instance_id="@instance_id@" table_tid="@table_tid@" table_flags="@table_flags@">
+  <include src="/packages/accounts-finance/lib/pretti-one-view3" instance_id="@instance_id@" table_tid="@table_tid@" table_flags="@table_flags@">
 </if><else>
  <if @table_html@ not nil>
   @table_html;noquote@

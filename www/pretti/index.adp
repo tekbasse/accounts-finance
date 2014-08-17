@@ -22,6 +22,6 @@
 </form> <!-- from pretti-menu2 -->
 
 <if @mode@ eq "v">
-  <include src="/packages/accounts-finance/lib/pretti-one-view" instance_id="@instance_id@" table_tid="@table_tid@" table_flags="@table_flags@" trash_folder_p="@trash_folder_p@">
+  <include src="/packages/accounts-finance/lib/pretti-one-view3" instance_id="@instance_id@" table_tid="@table_tid@" table_flags="@table_flags@" trash_folder_p="@trash_folder_p@">
 </if>
 
