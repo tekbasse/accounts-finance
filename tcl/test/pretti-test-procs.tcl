@@ -84,14 +84,15 @@ ns_log Notice "aa_register_case.14: Begin test
 
 
                         aa_log "testing acc_fin::pretti_geom_avg_of_curve"
-                        set curv_geo_avg [acc_fin::pretti_geom_avg_of_curve $curve2_lol -1]
-                        set curv_avg_fmt [qaf_round_to_decimals $curv_geo_avg $expected_decimals]
-                        set test5_p [expr { $curv_geo_avg >= $expected_time } ]                        
+                        #set curv_geo_avg [acc_fin::pretti_geom_avg_of_curve $curve2_lol -1]
+                        set curve_t_expected [expr { ( $optimistic2 + 4. * $median2 + $pessimistic2 ) / 6. } ]
+                        set curv_avg_fmt [qaf_round_to_decimals $curve_t_expected $expected_decimals]
+                        set test5_p [expr { $curv_avg_fmt >= $expected_time } ]
                         aa_true "Test5N for Te of ${activity} w/ ${n_points}-point normal curve ${curv_avg_fmt} not less than pre-calced Te ${expected_time}" $test5_p
 
                         set curv_geo_avg2 [acc_fin::pretti_geom_avg_of_curve $curve3_lol]
                         set curv_avg_fmt2 [qaf_round_to_decimals $curv_geo_avg2 $expected_decimals]
-                        aa_equals "Test5S for Te of ${activity}'s Strict Curve matches pre-calced Te" $curv_avg_fmt2 $expected_time
+                        aa_equals "Test5S for median of ${activity}'s Strict Curve matches pre-calced median" $curv_avg_fmt2 $expected_time
 
                         foreach tolerance $tolerance_list {
                             set t_pct [expr { int( $tolerance * 100. ) } ]
