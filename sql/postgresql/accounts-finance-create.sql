@@ -184,7 +184,8 @@ CREATE TABLE qaf_sched_proc_stack (
        id integer primary key,
        -- assumes procedure is only scheduled/called once
        proc_name varchar(40),
-       args text,
+       proc_args text,
+       proc_out text,
        user_id integer,
        instance_id integer,
        priority integer,
