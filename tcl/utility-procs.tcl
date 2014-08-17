@@ -422,20 +422,33 @@ ad_proc -public acc_fin::cobbler_html_view {
                 set xy_delim ""
                 set xy_html ""
                 set bars_count 1
+                set bar_width_accum 0.
                 #ns_log Notice "acc_fin::cobbler_html_view.432 maybe_x_list_len $maybe_x_list_len "
+                set odd_p 1
                 for {set j 0} { $j < $maybe_x_list_len } {incr j } {
-                    set odd_p [expr { 1 + $j - int( ( $j + 1 ) / 2 ) * 2 } ]
                     set x [lindex $maybe_x_list $j]
                     set y [lindex $maybe_y_list $j]
                     set bar_width [expr { round( $x * $k1 ) } ]
                     set bar_height [expr { round( $y * $k2 ) } ]
 
-                    set bar_width [expr { $x * $k1 + $bar_width } ]
+                    set bar_width_accum [expr { $bar_width_accum + $bar_width } ]
                     set bar_height [expr { $y * $k2 } ]
                     #ns_log Notice "acc_fin::cobbler_html_view.433 j $j x $x y $y bar_width $bar_width bar_height $bar_height"
-                    if { $bar_width >= 1. } {
+                    if { $bar_width_accum >= 1. } {
                         if { $bar_width > 3 } {
-                            set bar_width [expr { int( $bar_width ) } ]
+                            set bars_count [llength $comb_bar_curv_lol]
+                            if { $bars_count > 1 } {
+                                # split this into two bars for presentation purposes. First bar is the fractional ones
+                                incr bars_count -1
+                                set bar_height [expr { round( [f::lmax [lrange $batch_y_list 0 end-1]] / $bars_count ) } ]
+                                append cob_html "<div style=\"margin: 0; padding: 0; width: 1 px; height: ${bar_height} px; display: inline-block; vertical-align: bottom; border-style: none; background-color: $color_arr($odd_p); \"><img src=\"/resources/acs-subsite/spacer.gif\" style=\"margin: 0; padding: 0; border-style: none;\" width=\"1\" height=\"${bar_height}\" alt=\"${xy_html}\" title=\"${xy_html} \"></div>"
+                                # reset values to print last bar in set
+                                set xy_html ""
+                                set xy_delim ""
+                                set batch_y_list [list ]
+                                set comb_bar_curv_lol [list $xy_list]
+                                set odd_p [expr { 1 + $odd_p - int( ( $odd_p + 1 ) / 2 ) * 2 } ]
+                            }
                         } else {
                             set bar_width [expr { round( $bar_width ) } ]
                         }
@@ -453,10 +466,12 @@ ad_proc -public acc_fin::cobbler_html_view {
                         #ns_log Notice "acc_fin::cobbler_html_view.452 j $j x $x y $y bar_width $bar_width bar_height $bar_height xy_html $xy_html"
                         append cob_html "<div style=\"margin: 0; padding: 0; width: ${bar_width} px; height: ${bar_height} px; display: inline-block; vertical-align: bottom; border-style: none; background-color: $color_arr($odd_p); \"><img src=\"/resources/acs-subsite/spacer.gif\" style=\"margin: 0; padding: 0; border-style: none;\" width=\"${bar_width}\" height=\"${bar_height}\" alt=\"${xy_html}\" title=\"${xy_html} \"></div>"
                         set bar_width 0.
+                        set bar_width_accum 0.
                         set comb_bar_curv_lol [list $xy_list]
                         set batch_y_list [list ]
                         set xy_delim ""
                         set xy_html ""
+                        set odd_p [expr { 1 + $odd_p - int( ( $odd_p + 1 ) / 2 ) * 2 } ]
                     } else {
                         # keep info to combine bars to match resolution
                         set bar_list [list $bar_width $bar_height]
