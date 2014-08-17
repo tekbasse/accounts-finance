@@ -911,7 +911,7 @@ ad_proc -private acc_fin::pretti_columns_list {
             #      cost_probability_moment A percentage (0..1) along the (cumulative) distribution curve. defaults to "", which defaults to same as time_probability_moment
             #set ret_list \[list name value\]
             ### adding max_concurrent and max_overlap_pct but not sure if these have been coded for use yet..
-            set ret_list [list activity_table_tid activity_table_name task_types_tid task_types_name time_dist_curve_name time_dist_curve_tid cost_dist_curve_name cost_dist_curve_tid time_est_short time_est_median time_est_long time_probability_moment cost_est_low cost_est_median cost_est_high cost_probability_moment db_format index_equation precision tprecision cprecision pert_omp]
+            set ret_list [list activity_table_tid activity_table_name task_types_tid task_types_name time_dist_curve_name time_dist_curve_tid cost_dist_curve_name cost_dist_curve_tid time_est_short time_est_median time_est_long time_probability_moment cost_est_low cost_est_median cost_est_high cost_probability_moment db_format index_equation precision tprecision cprecision pert_omp ]
         }
         p11 {
             #set ret_list \[list name value\]
@@ -1967,10 +1967,9 @@ ad_proc -private acc_fin::curve_import {
         
         # time_expected = ( time_optimistic + 4 * time_most_likely + time_pessimistic ) / 6.
         # per http://en.wikipedia.org/wiki/Program_Evaluation_and_Review_Technique
-        if { $p1_arr(pert_omp) eq "strict" } {
+        if { [info exists p1_arr(pert_omp) ] && $p1_arr(pert_omp) eq "strict" } {
             set c_lists [acc_fin::pert_omp_to_strict_dc $minimum $median $maximum ]
             set case_var 3.1
-
         } else {
             set c_lists [acc_fin::pert_omp_to_normal_dc $minimum $median $maximum ]
             set case_var 3.0
@@ -2003,7 +2002,7 @@ ad_proc -private acc_fin::curve_import {
         
         # time_expected = ( time_optimistic + 4 * time_most_likely + time_pessimistic ) / 6.
         # per http://en.wikipedia.org/wiki/Program_Evaluation_and_Review_Technique
-        if { $p1_arr(pert_omp) eq "strict" } {
+        if { [info exists p1_arr(pert_omp) ] && $p1_arr(pert_omp) eq "strict" } {
             set c_lists [acc_fin::pert_omp_to_strict_dc $minimum $median $maximum ]
             set case_var 4.1
 
