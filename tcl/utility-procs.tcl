@@ -18,13 +18,15 @@ ad_proc -public acc_fin::cobbler_file_create {
     {y_max_max_px "1000"}
     {color1 ""}
     {color2 ""}
+    {url "web"}
 } {
     returns filepathname or empty string if error. depends on graphicsmagick.
     resolution adjusts automatically to fit smallest slice for pixel range of x_max_* by y_max_* 
     defaults: 
-    x_max_min_px 100, x_max_max_px 1000, y_max_min_px 100, y_max_max_px 1000, color1 #999999, color2 #cccccc
+    x_max_min_px 100, x_max_max_px 1000, y_max_min_px 100, y_max_max_px 1000, color1 #999999, color2 #cccccc, url web
+    If url is anything other than web, then a filesystem pathname is returned.
 } {
-    set error 0
+    set error_p 0
     set package_id [ad_conn package_id]
     set user_id [ad_conn user_id]
     
@@ -58,24 +60,30 @@ ad_proc -public acc_fin::cobbler_file_create {
     if { ![string match -nocase "*.png" $cob_filename] } {
         append cob_filename ".png"
     }
-    set fileroot [file join [acs_root_dir] "www"]
-    set webroot [file join resources [apm_package_url_from_id $package_id]] 
-    set cob_webpath "/{$webroot}"
+    set acsroot [acs_root_dir]
+    set fileroot [file join $acsroot "www"]
+    set tempdir [file join $acsroot "tmp"]
+    set pkg_url [apm_package_url_from_id $package_id]
+    if { [string range $pkg_url 0 0] eq "/" } {
+        set pkg_url [string range $pkg_url 1 end]
+    }
+    set cob_webpath [file join "/resources" $pkg_url]
     set cob_path "${fileroot}${cob_webpath}"
+    #ns_log Notice "acc_fin::cobbler_file_create.67: cob_webpath $cob_webpath cob_path $cob_path"
     #append filepathname [file join [apm_package_url_from_id [ad_conn package_id]] pretti resources]
     if { [file exists $cob_path] } {
         if { ![file isdirectory $cob_path] } {
             ns_log Warning "acc_fin::cobbler_file_create.68: unable to create filename, because '${cob_path}' is not a directory"
-            set error 1
+            set error_p 1
         }
     } else {
         file mkdir -p $cob_path
     }
 
-    if { $error == 0 } {
+    if { $error_p == 0 } {
         set cob_pathname "${cob_path}/${cob_filename}"
         set cob_webpathname "${cob_webpath}/${cob_filename}"
-
+        set cob_tmppathname "${tempdir}/${cob_filename}"
         set maybe_x_list_len [llength $maybe_x_list ]
         set maybe_y_list_len [llength $maybe_y_list ]
 
@@ -118,11 +126,11 @@ ad_proc -public acc_fin::cobbler_file_create {
                             set x_min $x
                         }
                     } else {
-                        set error 1
+                        set error_p 1
                     }
                 }
             } else {
-                set error 1
+                set error_p 1
             }
         } elseif { $maybe_x_list_len > 0 && $maybe_y_list_len > 0 && $maybe_x_list_len == $maybe_y_list_len } {
             set y_p 1
@@ -130,16 +138,16 @@ ad_proc -public acc_fin::cobbler_file_create {
             foreach x $maybe_x_list {
                 if { ![qf_is_decimal $x] } {
                     set x_p 0
-                    set error 1
+                    set error_p 1
                 }
             }
             foreach y $maybe_y_list {
                 if { ![qf_is_decimal $y] } {
                     set y_p 0
-                    set error 1
+                    set error_p 1
                 }
             }
-            if { $error == 0 } {
+            if { $error_p == 0 } {
                 set row_count $maybe_x_list_len
                 set x_max [f::lmax $maybe_x_list]
                 set y_max [f::lmax $maybe_y_list]
@@ -149,10 +157,10 @@ ad_proc -public acc_fin::cobbler_file_create {
                 set y_sum [f::sum $maybe_y_list]
             }
         } else {
-            set error 1
+            set error_p 1
         }
         
-        if { $error == 0 } {
+        if { $error_p == 0 } {
             # style cobbler (square pie) chart
             # make chart as png image?
             if { ![file exists $cob_pathname] } {
@@ -172,7 +180,7 @@ ad_proc -public acc_fin::cobbler_file_create {
                 set r [f::max $r_case1 $r_case2 ]
                 set dim_px [expr { round( $r + .99 )  } ]
                 set dim_py [expr { round( $r / 3.6 ) } ]
-                exec gm convert -size ${dim_px}x${dim_py} "xc:#ffffff" $cob_pathname
+                exec gm convert -size ${dim_px}x${dim_py} "xc:#ffffff" $cob_tmppathname
                 set x0 0
                 set y0 [expr { $dim_py } ]
                 set x2 $x0
@@ -190,15 +198,25 @@ ad_proc -public acc_fin::cobbler_file_create {
                     set x2 [expr { round( $x1 + $bar_width ) } ]
                     set y2 [expr { round( $y0 - $bar_height ) } ]
                     #ns_log Notice "accounts-finance/lib/pretti-one-view.tcl x0 $x0 y0 $y0 x1 $x1 y1 $y1 x2 $x2 y2 $y2"
-                    exec gm convert -size ${dim_px}x${dim_py} -fill $color_arr($odd_p) -stroke $color_arr($odd_p) -draw "rectangle $x1,$y1 $x2,$y2" $cob_pathname $cob_pathname
+                    exec gm convert -size ${dim_px}x${dim_py} -fill $color_arr($odd_p) -stroke $color_arr($odd_p) -draw "rectangle $x1,$y1 $x2,$y2" $cob_tmppathname $cob_tmppathname
+                    # some OSes are less buggy with copy/delete instead of move on busy VMs apparently due to server/OS file memory hooks.
+                    file copy $cob_tmppathname $cob_pathname
+                    file delete $cob_tmppathname
+
                 }
             }
         }
     }
-    if { $error } {
-        set cob_pathname ""
+    if { $error_p } {
+        set return_name ""
+    } else {
+        if { $url eq "web" } {
+            set return_name $cob_pathname
+        } else {
+            set return_name $cob_webpathname
+        }
     }
-    return $cob_pathname
+    return $return_name
 }
 
 
@@ -220,7 +238,7 @@ ad_proc -public acc_fin::cobbler_html_create {
     defaults: 
     x_max_min_px 100, x_max_max_px 500, y_max_min_px 100, y_max_max_px 500, color1 #999999, color2 #cccccc
 } {
-    set error 0
+    set error_p 0
     set package_id [ad_conn package_id]
     set user_id [ad_conn user_id]
     set cob_html ""
@@ -250,7 +268,7 @@ ad_proc -public acc_fin::cobbler_html_create {
         set y_max_min_px 500
     }
 
-    if { $error == 0 } {
+    if { $error_p == 0 } {
         #set cob_pathname "${cob_path}/${cob_filename}"
         #set cob_webpathname "${cob_webpath}/${cob_filename}"
 
@@ -296,11 +314,11 @@ ad_proc -public acc_fin::cobbler_html_create {
                             set x_min $x
                         }
                     } else {
-                        set error 1
+                        set error_p 1
                     }
                 }
             } else {
-                set error 1
+                set error_p 1
             }
         } elseif { $maybe_x_list_len > 0 && $maybe_y_list_len > 0 && $maybe_x_list_len == $maybe_y_list_len } {
             set y_p 1
@@ -308,16 +326,16 @@ ad_proc -public acc_fin::cobbler_html_create {
             foreach x $maybe_x_list {
                 if { ![qf_is_decimal $x] } {
                     set x_p 0
-                    set error 1
+                    set error_p 1
                 }
             }
             foreach y $maybe_y_list {
                 if { ![qf_is_decimal $y] } {
                     set y_p 0
-                    set error 1
+                    set error_p 1
                 }
             }
-            if { $error == 0 } {
+            if { $error_p == 0 } {
                 set row_count $maybe_x_list_len
                 set x_max [f::lmax $maybe_x_list]
                 set y_max [f::lmax $maybe_y_list]
@@ -327,10 +345,10 @@ ad_proc -public acc_fin::cobbler_html_create {
                 set y_sum [f::sum $maybe_y_list]
             }
         } else {
-            set error 1
+            set error_p 1
         }
         
-        if { $error == 0 } {
+        if { $error_p == 0 } {
             # style cobbler (square pie) chart
 
             # Try to provide image resolution at least one pixel per degree and/or 1% of range of y.
@@ -412,7 +430,7 @@ ad_proc -public acc_fin::cobbler_html_create {
             append cob_html "</div>"
         }
     }
-    if { $error } {
+    if { $error_p } {
         set cob_html ""
     }
     return $cob_html
@@ -430,13 +448,15 @@ ad_proc -public acc_fin::pie_file_create {
     {y_max_max_px "1000"}
     {color1 ""}
     {color2 ""}
+    {url "web"}
 } {
     returns filepathname or empty string if error. depends on graphicsmagick.
     resolution adjusts automatically to fit smallest slice for pixel range of x_max_* by y_max_* where x is angle theta, y is radius.
     defaults: 
     x_max_min_px 100, x_max_max_px 1000, y_max_min_px 100, y_max_max_px 1000, color1 #999999, color2 #cccccc
+    If url is anything other than web, then a filesystem pathname is returned.
 } {
-    set error 0
+    set error_p 0
     set package_id [ad_conn package_id]
     set user_id [ad_conn user_id]
     
@@ -470,24 +490,37 @@ ad_proc -public acc_fin::pie_file_create {
     if { ![string match -nocase "*.png" $pie_filename] } {
         append pie_filename ".png"
     }
-    set fileroot [file join [acs_root_dir] "www"]
-    set webroot [file join resources [apm_package_url_from_id $package_id]] 
-    set pie_webpath "/{$webroot}"
+    set acsroot [acs_root_dir]
+    set fileroot [file join $acsroot "www"]
+    set tempdir [file join $acsroot "tmp"]
+    set pkg_url [apm_package_url_from_id $package_id]
+    if { [string range $pkg_url 0 0] eq "/" } {
+        set pkg_url [string range $pkg_url 1 end]
+    }
+    set pie_webpath [file join "/resources" $pkg_url]
     set pie_path "${fileroot}${pie_webpath}"
+    
     #append filepathname [file join [apm_package_url_from_id [ad_conn package_id]] pretti resources]
     if { [file exists $pie_path] } {
         if { ![file isdirectory $pie_path] } {
             ns_log Warning "acc_fin::pie_file_create.480: unable to create filename, because '${pie_path}' is not a directory"
-            set error 1
+            set error_p 1
         }
     } else {
         file mkdir -p $pie_path
     }
-
-    if { $error == 0 } {
+    if { [file exists $tempdir] } {
+        if { ![file isdirectory $tempdir] } {
+            ns_log Warning "acc_fin::pie_file_create.508: unable to create filename, because '${tempdir}' is not a directory"
+            set error_p 1
+        }
+    } else {
+        file mkdir -p $tempdir
+    }
+    if { $error_p == 0 } {
         set pie_pathname "${pie_path}/${pie_filename}"
         set pie_webpathname "${pie_webpath}/${pie_filename}"
-
+        set pie_tmppathname "${tempdir}/${pie_filename}"
         set maybe_x_list_len [llength $maybe_x_list ]
         set maybe_y_list_len [llength $maybe_y_list ]
 
@@ -530,11 +563,11 @@ ad_proc -public acc_fin::pie_file_create {
                             set x_min $x
                         }
                     } else {
-                        set error 1
+                        set error_p 1
                     }
                 }
             } else {
-                set error 1
+                set error_p 1
             }
         } elseif { $maybe_x_list_len > 0 && $maybe_y_list_len > 0 && $maybe_x_list_len == $maybe_y_list_len } {
             set y_p 1
@@ -542,16 +575,16 @@ ad_proc -public acc_fin::pie_file_create {
             foreach x $maybe_x_list {
                 if { ![qf_is_decimal $x] } {
                     set x_p 0
-                    set error 1
+                    set error_p 1
                 }
             }
             foreach y $maybe_y_list {
                 if { ![qf_is_decimal $y] } {
                     set y_p 0
-                    set error 1
+                    set error_p 1
                 }
             }
-            if { $error == 0 } {
+            if { $error_p == 0 } {
                 set row_count $maybe_x_list_len
                 set x_max [f::lmax $maybe_x_list]
                 set y_max [f::lmax $maybe_y_list]
@@ -561,10 +594,10 @@ ad_proc -public acc_fin::pie_file_create {
                 set y_sum [f::sum $maybe_y_list]
             }
         } else {
-            set error 1
+            set error_p 1
         }
         
-        if { $error == 0 } {
+        if { $error_p == 0 } {
             # style pie (square pie) chart
             # make chart as png image?
             if { ![file exists $pie_pathname] } {
@@ -586,7 +619,7 @@ ad_proc -public acc_fin::pie_file_create {
                 set r_case2 [f::max $y_max_min_px [f::min $y_max_max_px [expr { $y_max - $y_min } ]]]
                 set r [f::max $r_case1 $r_case2 ]
                 set dim_px [expr { 2 * round( $r + .99 )  } ]
-                exec gm convert -size ${dim_px}x${dim_px} "xc:#ffffff" $pie_pathname
+                exec gm convert -size ${dim_px}x${dim_px} "xc:#ffffff" $pie_tmppathname
                 set x0 [expr { int( $r ) + 1 } ]
                 incr x0
                 set y0 $x0
@@ -626,22 +659,30 @@ ad_proc -public acc_fin::pie_file_create {
                         set y1 [expr { round( $ry * sin( $theta_r1 ) + $y0 ) } ]
                         set x2 [expr { round( $ry * cos( $theta_r2 ) + $x0 ) } ]
                         set y2 [expr { round( $ry * sin( $theta_r2 ) + $y0 ) } ]
-                        exec gm convert -size ${dim_px}x${dim_px} -fill $color_arr($odd_p) -stroke $color_arr($odd_p) -draw "path 'M $x0 $y0 L $x1 $y1 L $x2 $y2 L $x0 $y0'" $pie_pathname $pie_pathname
-                        exec gm convert -size ${dim_px}x${dim_px} -fill $color_arr($odd_p) -stroke $color_arr($odd_p) -draw "ellipse $x0,$y0 $ry,$ry ${theta_d1},${theta_d2}" $pie_pathname $pie_pathname
+                        exec gm convert -size ${dim_px}x${dim_px} -fill $color_arr($odd_p) -stroke $color_arr($odd_p) -draw "path 'M $x0 $y0 L $x1 $y1 L $x2 $y2 L $x0 $y0'" $pie_tmppathname $pie_tmppathname
+                        exec gm convert -size ${dim_px}x${dim_px} -fill $color_arr($odd_p) -stroke $color_arr($odd_p) -draw "ellipse $x0,$y0 $ry,$ry ${theta_d1},${theta_d2}" $pie_tmppathname $pie_tmppathname
                     }
                 }
                 set y3 [expr { round( $y0 - $ry ) } ]
-                exec gm convert -size ${dim_px}x${dim_px} -strokewidth 1 -stroke $color_arr(0) -draw "path 'M $x0 $y0 L $x0 $y3'" $pie_pathname $pie_pathname
-
+                exec gm convert -size ${dim_px}x${dim_px} -strokewidth 1 -stroke $color_arr(0) -draw "path 'M $x0 $y0 L $x0 $y3'" $pie_tmppathname $pie_tmppathname
+                # some OSes are less buggy with copy/delete instead of move on busy VMs apparently due to server/OS file memory hooks.
+                file copy $pie_tmppathname $pie_pathname
+                file delete $pie_tmppathname
             } else {
                 ns_log Notice "acc_fin::pie_file_create.609 Filename already exists for ${pie_pathname}. exiting without processing or error."
             }
         }
     }
-    if { $error } {
-        set pie_pathname ""
+    if { $error_p } {
+        set return_name ""
+    } else {
+        if { $url eq "web" } {
+            set return_name $pie_pathname
+        } else {
+            set return_name $pie_webpathname
+        }
     }
-    return $pie_pathname
+    return $return_name
 }
 
 
@@ -651,7 +692,7 @@ ad_proc -public acc_fin::pie_html_view {
 } {
     returns html string if image exists, or an alternate "image not available try again shortly" if unavailable
 } {
-    set error 0
+    set error_p 0
     set package_id [ad_conn package_id]
     set user_id [ad_conn user_id]
     set pie_html ""
@@ -681,7 +722,7 @@ ad_proc -public acc_fin::pie_html_view {
         set y_max_min_px 500
     }
 
-    if { $error == 0 } {
+    if { $error_p == 0 } {
         #set pie_pathname "${pie_path}/${pie_filename}"
         #set pie_webpathname "${pie_webpath}/${pie_filename}"
 
@@ -727,11 +768,11 @@ ad_proc -public acc_fin::pie_html_view {
                             set x_min $x
                         }
                     } else {
-                        set error 1
+                        set error_p 1
                     }
                 }
             } else {
-                set error 1
+                set error_p 1
             }
         } elseif { $maybe_x_list_len > 0 && $maybe_y_list_len > 0 && $maybe_x_list_len == $maybe_y_list_len } {
             set y_p 1
@@ -739,16 +780,16 @@ ad_proc -public acc_fin::pie_html_view {
             foreach x $maybe_x_list {
                 if { ![qf_is_decimal $x] } {
                     set x_p 0
-                    set error 1
+                    set error_p 1
                 }
             }
             foreach y $maybe_y_list {
                 if { ![qf_is_decimal $y] } {
                     set y_p 0
-                    set error 1
+                    set error_p 1
                 }
             }
-            if { $error == 0 } {
+            if { $error_p == 0 } {
                 set row_count $maybe_x_list_len
                 set x_max [f::lmax $maybe_x_list]
                 set y_max [f::lmax $maybe_y_list]
@@ -758,10 +799,10 @@ ad_proc -public acc_fin::pie_html_view {
                 set y_sum [f::sum $maybe_y_list]
             }
         } else {
-            set error 1
+            set error_p 1
         }
         
-        if { $error == 0 } {
+        if { $error_p == 0 } {
             # style pie (square pie) chart
 
             # Try to provide image resolution at least one pixel per degree and/or 1% of range of y.
@@ -843,7 +884,7 @@ ad_proc -public acc_fin::pie_html_view {
             append pie_html "</div>"
         }
     }
-    if { $error } {
+    if { $error_p } {
         set pie_html ""
     }
     return $pie_html
