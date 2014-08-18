@@ -290,17 +290,15 @@ ad_proc -public qaf_discrete_dist_report {
 }
 
 ad_proc -public qaf_left_area_at_x_probability_density_curve {
-    {n_points "288"}
+    {n_points "24"}
 } {
-    Returns the approximate area at x, where total area = 1; 
+    Returns a the approximate area at x, where total area = 1; 
     Anything beyond 2 standard deviations is at limit p= 0 or p= 1.
 } {
     # remember the curve for future calls, to save having to build the curve each time, if this is buried in a loop etc.
     # the base curve is "standard normal distribution" per http://en.wikipedia.org/wiki/Normal_distribution#Standard_normal_distribution
-    upvar 1 __probability_dc_lists pdc_lists
-    set pdc_lists_exists_p [info exists pdc_lists]
-    set pdc_lists_len 0
-
+    upvar 1 __probability_dc_larr pdc_larr
+    
     # eps = 2.22044604925e-016 = Smallest number such that 1+eps != 1  from: http://wiki.tcl.tk/15256
     set eps 2.22044604925e-016
     #set pi 3.14159265358979
@@ -309,23 +307,31 @@ ad_proc -public qaf_left_area_at_x_probability_density_curve {
     set sqrt_2pi [expr { sqrt( 2. * $pi ) } ]
     set sqrt_2 [expr { sqrt( 2. ) } ]
 
-    if { $pdc_lists_exists_p } {
-        set pdc_lists_len [llength $pdc_lists]
+    set pdc_larr_exists_p [array exists pdc_larr]
+    set pdc_lists_len 0
+    set half_n_points [expr { int( $n_points / 2. ) } ]
+    if { [expr { $n_points / 2. } ] == $half_n_points } {
+        # npoints are even. Median is an important central point.
+        # Since there is an even number of points, add one
+        incr $n_points
+    }
+
+    if { $pdc_larr_exists_p } {
+        set pdc_lists_exists_p [info exists pdc_larr(${n_points}) ]
+        if { $pdc_lists_exists_p } {
+            set pdc_lists_len [llength $pdc_larr(${n_points}) ]
+        }
     }
     if { $pdc_lists_len < $n_points } {
-        if { [expr { $n_points / 2. } ] == [expr { int( $n_points / 2. ) } ] } {
-            # npoints are even. Median is an important central point.
-            # Since there is an even number of points, add one
-            incr $n_points
-        }
         # build or re-build list
         # x = deviation from normal. mean = 0, standard deviation = 1, where pow( std_dev, 2.) = variance, sigma = standard deviation
         #     http://en.wikipedia.org/wiki/Probability_density_function
         # p = 
         # y = f(x) = exp( -0.5 * pow( $x , 2.) ) ) / $sqrt_2pi
         # a = area left of x intersect
-        # since standard deviation = 1 and this curve starts at -2 sigma to 2 sigma:
-        set x_step [f::max $eps [expr { 12. / $n_points } ]]
+        # Since standard deviation = 1 and this curve starts at -2 sigma to 2 sigma:
+        # A tail has half_n_points over a range of 2.
+        set x_step [f::max $eps [expr { 2. / $half_n_points } ]]
 
         # Since left and right tail are symmetric, build one tail, alter to get other side
         set tail_point_count [expr { round( $n_points / 2. ) } ]
@@ -339,7 +345,7 @@ ad_proc -public qaf_left_area_at_x_probability_density_curve {
         set tail_delta_a_list [list 0.]
         set tail_a_from_median_list [list $tail_a_from_median]
 
-        # make a base tail
+        # make a base tail starting at median and extending outward
         for {set x [expr { 0. + $x_step } ] } {$x <= 2. } { set x [expr { $x + $x_step } ] } {
             set y [expr { exp( -0.5 * pow( ( $x , 2. ) ) ) / $sqrt_2pi } ]
             set a_delta [f::max $eps [expr { $x_step * $y } ] ]
@@ -360,13 +366,19 @@ ad_proc -public qaf_left_area_at_x_probability_density_curve {
             ns_log Warning "qaf_left_area_at_x_probability_density_curve.357: tail area exceeds 0.5. This shouldn't happen."
         }
 
-        set title_row [list x_dev y x a]
+        # for purposes of qaf DCs, x_dev is y, standard f(x) = 7 is used to calculate area
+        # Therefore titles do not match variables used with standard equation.
+
+        set title_row [list y f_of_x x a]
+        # was
+        #set title_row [list x_dev y x a]
+
         set pdc_lists [list ]
         lappend pdc_lists $title_row
 
         set tail_end [llength $tail_x_list]
         incr tail_end -1
-        set area2_left 0.
+        set area2_left $a_prev
         for { set i $tail_end } { $i > 0 } { incr i -1 } {
             # x_dev = deviation from median on x.
             set x_dev [expr { -1. * [lindex $tail_x_list $i] } ]
@@ -407,6 +419,8 @@ ad_proc -public qaf_left_area_at_x_probability_density_curve {
         set area2left 1.0 
         set curve_row [list $x_dev $y $x $a]
         lappend pdc_lists $curve_row
+
+        set pdc_larr(${n_points}) $pdc_lists
     }
     return tbd
 }
