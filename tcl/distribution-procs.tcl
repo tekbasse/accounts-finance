@@ -288,3 +288,125 @@ ad_proc -public qaf_discrete_dist_report {
 
     return $distribution_list
 }
+
+ad_proc -public qaf_left_area_at_x_probability_density_curve {
+    {n_points "288"}
+} {
+    Returns the approximate area at x, where total area = 1; 
+    Anything beyond 2 standard deviations is at limit p= 0 or p= 1.
+} {
+    # remember the curve for future calls, to save having to build the curve each time, if this is buried in a loop etc.
+    # the base curve is "standard normal distribution" per http://en.wikipedia.org/wiki/Normal_distribution#Standard_normal_distribution
+    upvar 1 __probability_dc_lists pdc_lists
+    set pdc_lists_exists_p [info exists pdc_lists]
+    set pdc_lists_len 0
+
+    # eps = 2.22044604925e-016 = Smallest number such that 1+eps != 1  from: http://wiki.tcl.tk/15256
+    set eps 2.22044604925e-016
+    #set pi 3.14159265358979
+    set pi [expr { atan2( 0. , -1. ) } ]
+    #set e 2.718281828459  see exp()
+    set sqrt_2pi [expr { sqrt( 2. * $pi ) } ]
+    set sqrt_2 [expr { sqrt( 2. ) } ]
+
+    if { $pdc_lists_exists_p } {
+        set pdc_lists_len [llength $pdc_lists]
+    }
+    if { $pdc_lists_len < $n_points } {
+        if { [expr { $n_points / 2. } ] == [expr { int( $n_points / 2. ) } ] } {
+            # npoints are even. Median is an important central point.
+            # Since there is an even number of points, add one
+            incr $n_points
+        }
+        # build or re-build list
+        # x = deviation from normal. mean = 0, standard deviation = 1, where pow( std_dev, 2.) = variance, sigma = standard deviation
+        #     http://en.wikipedia.org/wiki/Probability_density_function
+        # p = 
+        # y = f(x) = exp( -0.5 * pow( $x , 2.) ) ) / $sqrt_2pi
+        # a = area left of x intersect
+        # since standard deviation = 1 and this curve starts at -2 sigma to 2 sigma:
+        set x_step [f::max $eps [expr { 12. / $n_points } ]]
+
+        # Since left and right tail are symmetric, build one tail, alter to get other side
+        set tail_point_count [expr { round( $n_points / 2. ) } ]
+        set x_prev 0.
+        set y_at_median [expr { exp( -0.5 * pow( ( 0. , 2. ) ) ) / $sqrt_2pi } ]
+        set y_prev $y_at_median
+        # First step is a half step to calc y in middle of each segment.
+        set tail_a_from_median [expr { $y_prev * $x_step / 2. } ]
+        set tail_x_list [list $x_prev]
+        set tail_y_list [list $y_prev]
+        set tail_delta_a_list [list 0.]
+        set tail_a_from_median_list [list $tail_a_from_median]
+
+        # make a base tail
+        for {set x [expr { 0. + $x_step } ] } {$x <= 2. } { set x [expr { $x + $x_step } ] } {
+            set y [expr { exp( -0.5 * pow( ( $x , 2. ) ) ) / $sqrt_2pi } ]
+            set a_delta [f::max $eps [expr { $x_step * $y } ] ]
+            set tail_a_from_median [expr { $tail_a_from_median + $a_delta } ]
+            append tail_x_list $x            
+            append tail_y_list $y
+            append tail_delta_a_list $a_delta
+            append tail_a_from_median_list $a_from_median
+        }
+
+        # build curve from two tails.
+
+        # left tail, a = 0 to 0.5 (or whatever $a_from_median is), standard deviation= -2 to 0
+        # add any missing tail to the left tail end (minimum point)
+        set a_prev [expr { 0.5 - $a_from_median } ]
+        # math check
+        if { $a_prev < 0. } {
+            ns_log Warning "qaf_left_area_at_x_probability_density_curve.357: tail area exceeds 0.5. This shouldn't happen."
+        }
+
+        set title_row [list x_dev y x a]
+        set pdc_lists [list ]
+        lappend pdc_lists $title_row
+
+        set tail_end [llength $tail_x_list]
+        incr tail_end -1
+        set area2_left 0.
+        for { set i $tail_end } { $i > 0 } { incr i -1 } {
+            # x_dev = deviation from median on x.
+            set x_dev [expr { -1. * [lindex $tail_x_list $i] } ]
+            set y [lindex $tail_y_list $i]
+            set x [lindex $tail_delta_a_list $i]
+            set area2left [expr { $area2left + $x } ]
+            set curve_row [list $x_dev $y $x $a]
+            lappend pdc_lists $curve_row
+        }
+
+        # build the middle point
+        set median_x_dev 0.
+        set y $y_at_median
+        set x [f::max $eps [expr { $x_step * $y } ]]
+        set area2left [expr { $area2left + $x } ]
+        set curve_row [list $x_dev $y $x $a ]
+        lappend pdc_lists $curve_row
+
+        # build right tail
+
+        for { set i 0 } { $i < $tail_end } { incr i } {
+            # x_dev = deviation from median on x.
+            set x_dev [lindex $tail_x_list $i]
+            set y [lindex $tail_y_list $i]
+            set x [lindex $tail_delta_a_list $i]
+            set area2left [expr { $area2left + $x } ]
+            set curve_row [list $x_dev $y $x $a]
+            lappend pdc_lists $curve_row
+        }
+        
+        # build the last, rightmost point
+        set x_dev [lindex $tail_x_list $tail_end]
+        set y [lindex $tail_y_list $tail_end]
+        #set x [lindex $tail_delta_a_list $tail_end]
+        set x [f::max $eps [expr { 1.0 - $area2left } ]]
+        #set area2left [expr { $area2left + $x } ]
+        # increase tail area to normalize area under curve at 1
+        set area2left 1.0 
+        set curve_row [list $x_dev $y $x $a]
+        lappend pdc_lists $curve_row
+    }
+    return tbd
+}
