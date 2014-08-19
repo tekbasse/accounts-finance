@@ -490,9 +490,14 @@ if { $form_posted } {
         }
         set table_flags "dc"
         set pert_omp_expected [expr { ( $minimum + 4. * $median + $maximum ) / 6. } ]
-        set table_comments "PERT OMP expected value: ${pert_omp_expected}"
+        if { $count eq "" } {
+            set count [expr { [llength $curve_lol] - 1 } ]
+        }
+        set table_comments "PERT OMP \n
+DC optimum $minimum, median $median, pessimistic $maximum, Number of points: $count \n
+expected value: ${pert_omp_expected}"
         if { $input_array(table_name) eq "" } {
-            set input_array(table_name) "DC o $minimum m $median p $maximum p $count"
+            set input_array(table_name) "DC o $minimum m $median p $maximum N $count"
         } 
         set table_name [string range [string trim $input_array(table_name)] 0 30]
         set status [qss_table_create $curve_lol $table_name $table_name $table_comments  "" "dc" $instance_id $user_id]
