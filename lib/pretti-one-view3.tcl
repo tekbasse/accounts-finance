@@ -24,21 +24,13 @@ if { [qf_is_natural_number $table_tid] } {
         set table_html [acc_fin::pretti_table_to_html $table_lists $table_comments]
     } else {
         if { $table_flags eq "dc" } {
-            set graph_it_p 1
-            set table_titles_list [lindex $table_lists 0]
-            set table_data_list [lrange $table_lists 1 end]
-            set x_idx [lsearch -exact $table_titles_list "x"]
-            set y_idx [lsearch -exact $table_titles_list "y"]
-            set row_count [llength $table_data_list]
-            if { $x_idx > -1 && $y_idx > -1 && $row_count > 0 } {
-                # pie chart
-                set pie_filename "pretti-dc-${table_tid}-pie.png"
-                # cobbler chart
-                set cob_filename "pretti-dc-${table_tid}-cob.png"
-                set cob_html [acc_fin::cobbler_file_create $cob_filename $table_lists "" ""]
+            # pie chart
+            set pie_filename "pretti-dc-${table_tid}-pie.png"
+            # cobbler chart
+            set cob_filename "pretti-dc-${table_tid}-cob.png"
+            set cob_html [acc_fin::cobbler_html_view $cob_filename $table_lists "" ""]
+           # set pie_html [acc_fin::cobbler_html_view $cob_filename ]
 
-
-            }
         }
         set table_html [qss_list_of_lists_to_html_table $table_lists $table_tag_atts_list]
         #    append table_html "<p>${table_comments}</p>"
