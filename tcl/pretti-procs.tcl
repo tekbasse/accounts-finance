@@ -290,6 +290,59 @@ ad_proc -public acc_fin::pert_omp_to_normal_dc {
     if { $n_points eq "" } {
         set n_points "24"
     }
+    set n_points [f::max [expr { int( $n_points ) } ] 5]
+    if { $labels_p ne "0" && $labels_p ne "1" } {
+        set labels_p "0"
+    }
+
+    ns_log Notice "acc_fin::pert_omp_to_normal_dc.23: starting"
+    ns_log Notice "acc_fin::pert_omp_to_normal_dc.24: optimistic $optimistic most_likely $most_likely pessimistic $pessimistic n_points $n_points"
+    # nomenclature of inputs  statistics:
+    # set median $most_likely
+    # set minimum $optimistic
+    # set maximum $pessimistic
+    set curve_lists [qaf_std_normal_distribution $n_points 2 $labels_p]
+    ns_log Notice "acc_fin::pert_omp_to_normal_dc.305. llength $curve_lists $curve_lists] curve_lists $curve_lists"
+    # for purposes of qaf DCs, x_dev is y, standard f(x) = y is used to calculate area
+    # Therefore titles do not match variables used with standard equation.
+
+    # change title rows to:
+    #set title_row [list y f_of_x x a]
+    # was         set title_row [list x_dev y x a]
+    # except, y gets created/renamed in qaf_table_column_convert, so
+    # no need need to change title here.
+    #set curve_lists [lreplace $curve_lists $title_row 0 0]
+
+    set y_min [lindex [lindex $curve_lists 1] 0]
+    set y_max [lindex [lindex $curve_lists end] 0]
+    #set bars_count [expr { [llength $curve_lists] - 1 } ]
+    #set med_idx [expr { $bars_count / 2. + 1 } ]
+    #set y_med [lindex [lindex $cure_lists $med_idx] ]
+    # y_med is 0. for std_normal_distributions
+    set y_med 0.
+    set curve_lists [qaf_table_column_convert $curve_lists x_dev $y_min $y_med $y_max y $optimistic $most_likely $pessimistic]
+    return $curve_lists
+}
+
+
+ad_proc -public acc_fin::pert_omp_to_normal_dc_old {
+    optimistic
+    most_likely
+    pessimistic
+    {n_points "24"}
+    {labels_p "0"}
+} {
+    Creates a normal distribution curve in PRETTI table format representing characteristics of 
+    a PERT expected time function (Te), where 
+    Te = ( o + 4 * m + p ) / 6 and o = optimistic time, m = most likely time, and p = pessimistic time.
+    The normal distribution curve has lower limit (o), upper limit (p) and median (m). 
+    Regression tests at accounts-finance/tcl/test/pretti-test-procs.tcl suggests 24 points minimum for a practical representation of a curve.
+    18 point is about the absolute minimum practical amount for passing a clear majority of regression tests to within 1%. 5 is lowest number of points accepted.
+    See also acc_fin::pert_omp_to_stric_dc for a 3 point curve that matches project management representation of the Time expected curve.
+} {
+    if { $n_points eq "" } {
+        set n_points "24"
+    }
     if { $labels_p ne "0" && $labels_p ne "1" } {
         set labels_p "0"
     }

@@ -62,7 +62,7 @@ ad_proc -public qaf_distribution_normalize {
         } else {
             set d2_new_lol $d_new_lol
         }
-    
+        
     } else {
         set d2_new_lol $distribution_lol
     }
@@ -115,7 +115,7 @@ ad_proc -public qaf_y_of_x_dist_curve {
     set p_test 0.
     while { $p_test < $p_normalized && $i < $loop_limit } {
         set x [lindex $x_list $i]
-    #    ns_log Notice "qaf_y_of_x_dist_curve.117: i '$i' x '$x' p_test '$p_test'"
+        #    ns_log Notice "qaf_y_of_x_dist_curve.117: i '$i' x '$x' p_test '$p_test'"
         if { $x ne "" } {
             set p_test [expr { $p_test + $x } ]
             set p_idx $i
@@ -160,7 +160,7 @@ ad_proc -public qaf_distribution_points_create {
 } {
     set amount_p [expr { [string length $min_sum_of_outputs] > 0 } ]
     set count_p [expr { [string length $number_of_points] > 0 } ]
-        
+    
     # count_max is the number of discrete numbers
     set count_max [llength $distribution_p_list]
     set curve_error 0
@@ -168,19 +168,19 @@ ad_proc -public qaf_distribution_points_create {
     set area(-1) 0
     set count 0
     set total_pct 0
-#ns_log Notice "qaf_distribution_points_create: y_col '$y_col' x_col '$x_col'"
-#ns_log Notice "qaf_distribution_points_create: distribution_p_list $distribution_p_list"
+    #ns_log Notice "qaf_distribution_points_create: y_col '$y_col' x_col '$x_col'"
+    #ns_log Notice "qaf_distribution_points_create: distribution_p_list $distribution_p_list"
     foreach row $distribution_p_list {
         set yvalue [lindex $row $y_col]
         set frequency [lindex $row $x_col]
         # p_val(index) discrete values
         set p_val($count) $yvalue
         # area(index) is the area under the distribution curve to the left of the sale amt
-#ns_log Notice "qaf_distribution_points_create: yvalue '$yvalue' frequency '$frequency'"
+        #ns_log Notice "qaf_distribution_points_create: yvalue '$yvalue' frequency '$frequency'"
         # total_pct adds all the rcp amounts to confirm it is 100%
         # frequency must be a number
         if { [ad_var_type_check_number_p $frequency] } {
-#            ns_log Notice "qaf_distribution_points_create: frequency $frequency"
+            #            ns_log Notice "qaf_distribution_points_create: frequency $frequency"
             set area($count) [expr { $area([expr { $count - 1 } ]) + $frequency } ] 
             set total_pct [expr { $total_pct + $frequency } ]
         } else {
@@ -192,7 +192,7 @@ ad_proc -public qaf_distribution_points_create {
         # distribution is not 100% represented
         # recalculate distribution to 100% representation
         # ie. divide each frequency by the total
-#ns_log Notice "qaf_distribution_points_create: distribution_p_list $distribution_p_list"
+        #ns_log Notice "qaf_distribution_points_create: distribution_p_list $distribution_p_list"
         set area(-1) 0
         set count 0
         set total_check 0.
@@ -210,7 +210,7 @@ ad_proc -public qaf_distribution_points_create {
         }
         set total_pct $total_check
     }
-        
+    
     # initial set conditions
     set data_sum 0.
     set point_count 0
@@ -224,7 +224,7 @@ ad_proc -public qaf_distribution_points_create {
             set count 0
             # We have area under a normalized curve, let's find interval 
             while { $point_seed > $area($count) } {
-            incr count
+                incr count
             }
             
             if { $count > $count_max } {
@@ -291,7 +291,8 @@ ad_proc -public qaf_discrete_dist_report {
 
 ad_proc -public qaf_std_normal_distribution {
     {n_points "24"}
-    { std_dev_count "2"}
+    {std_dev_count "2"}
+    {labels_p "0"}
 } {
     Returns a standard normal distribution curve as a table list according to 
     http://en.wikipedia.org/wiki/Normal_distribution#Standard_normal_distribution
@@ -301,6 +302,7 @@ ad_proc -public qaf_std_normal_distribution {
     y refers to deviation along x-axis (x_dev)
     f_of_x refers to probability at any point y
     Anything beyond std_dev standard deviations is at limit p= 0 or p= 1.
+    if labels_p == 1, returns a column with notes for min, med, max
 } {
     # remember the curve for future calls, to save having to build the curve each time, if this is buried in a loop etc.
     # the base curve is "standard normal distribution" per http://en.wikipedia.org/wiki/Normal_distribution#Standard_normal_distribution
@@ -357,42 +359,46 @@ ad_proc -public qaf_std_normal_distribution {
             set y [expr { exp( -0.5 * pow( $x , 2. ) ) / $sqrt_2pi } ]
             set a_delta [f::max $eps [expr { $x_step * $y } ] ]
             set tail_a_from_median [expr { $tail_a_from_median + $a_delta } ]
-            append tail_x_list $x            
-            append tail_y_list $y
-            append tail_delta_a_list $a_delta
-            append tail_a_from_median_list $a_from_median
+            lappend tail_x_list $x
+            lappend tail_y_list $y
+            lappend tail_delta_a_list $a_delta
+            lappend tail_a_from_median_list $tail_a_from_median
         }
 
         # build curve from two tails.
 
         # left tail, a = 0 to 0.5 (or whatever $a_from_median is), standard deviation= -2 to 0
         # add any missing tail to the left tail end (minimum point)
-        set a_prev [expr { 0.5 - $a_from_median } ]
+        set a_prev [expr { 0.5 - $tail_a_from_median } ]
         # math check
         if { $a_prev < 0. } {
             ns_log Warning "qaf_left_area_at_x_probability_density_curve.357: tail area exceeds 0.5. This shouldn't happen."
         }
 
-        # for purposes of qaf DCs, x_dev is y, standard f(x) = 7 is used to calculate area
-        # Therefore titles do not match variables used with standard equation.
-
-        set title_row [list y f_of_x x a]
-        # was
-        #set title_row [list x_dev y x a]
-
+        
+        if { $labels_p } {
+            set title_row [list x_dev y x a label]
+        } else {
+            set title_row [list x_dev y x a]
+        }
         set pdc_lists [list ]
         lappend pdc_lists $title_row
 
         set tail_end [llength $tail_x_list]
         incr tail_end -1
-        set area2_left $a_prev
+        set area2left $a_prev
+        set label "optimistic / minimum"
         for { set i $tail_end } { $i > 0 } { incr i -1 } {
             # x_dev = deviation from median on x.
             set x_dev [expr { -1. * [lindex $tail_x_list $i] } ]
             set y [lindex $tail_y_list $i]
             set x [lindex $tail_delta_a_list $i]
             set area2left [expr { $area2left + $x } ]
-            set curve_row [list $x_dev $y $x $a]
+            set curve_row [list $x_dev $y $x $area2left]
+            if { $labels_p } {
+                lappend curve_row $label
+                set label ""
+            }
             lappend pdc_lists $curve_row
         }
 
@@ -401,7 +407,10 @@ ad_proc -public qaf_std_normal_distribution {
         set y $y_at_median
         set x [f::max $eps [expr { $x_step * $y } ]]
         set area2left [expr { $area2left + $x } ]
-        set curve_row [list $x_dev $y $x $a ]
+        if { $labels_p } {
+            lappend curve_row "most likely / median"
+        }
+        set curve_row [list $x_dev $y $x $area2left ]
         lappend pdc_lists $curve_row
 
         # build right tail
@@ -412,7 +421,10 @@ ad_proc -public qaf_std_normal_distribution {
             set y [lindex $tail_y_list $i]
             set x [lindex $tail_delta_a_list $i]
             set area2left [expr { $area2left + $x } ]
-            set curve_row [list $x_dev $y $x $a]
+            set curve_row [list $x_dev $y $x $area2left]
+            if { $labels_p } {
+                lappend curve_row ""
+            }
             lappend pdc_lists $curve_row
         }
         
@@ -424,7 +436,10 @@ ad_proc -public qaf_std_normal_distribution {
         #set area2left [expr { $area2left + $x } ]
         # increase tail area to normalize area under curve at 1
         set area2left 1.0 
-        set curve_row [list $x_dev $y $x $a]
+        set curve_row [list $x_dev $y $x $area2left]
+        if { $labels_p } {
+            lappend curve_row "pessimistic / maximum"
+        }
         lappend pdc_lists $curve_row
 
         set pdc_lol_arr(${n_points}) $pdc_lists
@@ -444,31 +459,31 @@ ad_proc -public qaf_table_column_convert {
     {max_point_to "212"}
 } {
     Converts column from one unit to another column in a different unit of a supplied list_of_lists table.
-    Default values convert from Celsius to Fahrenheit. If column doesn't exist, a new one is created.
-    Any existing values will be replaced. In case of error, returns an empty list. 
-    Conversion only requires 2 points. Median and either max or min. IF all three are supplied,
-    separate conversion calaculations occurr for the min to med range vs. med to max range in 
+    Default values convert from Celsius to Fahrenheit. Creates a new column.
+    An existing column col_ref_to name will have an underscore and number appended. In case of error, returns an empty list. 
+    Conversion only requires 2 points. Median and either max or min for both ranges. If all three points are supplied,
+    separate conversion calaculations occurr for the range below med vs. above med value in
     order to accomodate transformations of two different tail scales in statistical calculations.
 } {
     set return_table_lol [list ]
     regsub -nocase -all -- {[^a-z0-9\_\-]} $col_ref_from {_} col_ref_from
     regsub -nocase -all -- {[^a-z0-9\_\-]} $col_ref_to {_} col_ref_to
     if { $col_ref_from ne "" && $col_ref_to ne "" } {
-        set titles_row_list [lindex $table_list_of_Lists 0]
+        set titles_row_list [lindex $table_list_of_lists 0]
         set from_idx [lsearch -exact $titles_row_list $col_ref_from]
         set to_idx [lsearch -exact $titles_row_list $col_ref_to]
         if { $from_idx > -1 } {
             # "from" column exists
             set data_rows_lists [lrange $table_list_of_lists 1 end]
-            if { [qaf_is_decimal $med_from_point] && [qaf_is_decimal $med_to_point] } {
-                if { [qaf_is_decimal $min_from_point ] && [qaf_is_decimal $min_to_point ] } {
-                    set k1 [expr { ( $min_from_point + 0. ) / ( $min_to_point - $med_to_point ) } ]
+            if { [qf_is_decimal $med_point_from] && [qf_is_decimal $med_point_to] } {
+                if { [qf_is_decimal $min_point_from ] && [qf_is_decimal $min_point_to ] } {
+                    set k1 [expr { ( $min_point_from + 0. ) / ( $min_point_to - $med_point_to ) } ]
                     set case1_p 1
                 } else {
                     set case1_p 0
                 }
-                if { [qaf_is_decimal $max_from_point ] && [qaf_is_decimal $max_to_point] } {
-                    set k2 [expr { ( $max_from_point + 0. ) / ( $max_to_point - $med_to_point ) } ]
+                if { [qf_is_decimal $max_point_from ] && [qf_is_decimal $max_point_to] } {
+                    set k2 [expr { ( $max_point_from + 0. ) / ( $max_point_to - $med_point_to ) } ]
                     set case2_p 1
                 } else {
                     set case2_p 0
@@ -476,87 +491,56 @@ ad_proc -public qaf_table_column_convert {
                 
                 if { $to_idx > -1 && ( $case1_p || $case2_p) } {
                     # "to" column exists
-                    lappend return_table_lol $titles_row_list
-                    if { $case1_p && $case_2_p } {
-                        foreach row_list $data_rows_lists {
-                            set old [lindex $row_list $from_idx]
-                            set new ""
-                            if { [qaf_is_decimal $old ] } {
-                                if { $old < $med_from_point } {
-                                    # case 1
-                                    set new [expr { ( $old - $med_from_point ) * $k1 } ]
-                                } else {
-                                    # case 2
-                                    set new [expr { ( $old - $med_from_point ) * $k2 } ]
-                                }
-                            }
-                            set new_row_list [lreplace $row_list $to_idx $to_idx $new]
-                            lappend return_table_lol $new_row_list
-                        }
-                    } elseif { $case1_p } {
-                        foreach row_list $data_rows_lists {
-                            set old [lindex $row_list $from_idx]
-                            set new ""
-                            if { [qaf_is_decmial $old ] } {
-                                set new [expr { ( $old - $med_from_point ) * $k1 } ]
-                             }
-                            set new_row_list [lreplace $row_list $to_idx $to_idx $new]
-                            lappend return_table_lol $new_row_list
-                        }
-                    } elseif { $case2_p } {
-                        foreach row_list $data_rows_lists {
-                            set old [lindex $row_list $from_idx]
-                            set new ""
-                            if { [qaf_is_decmial $old ] } {
-                                set new [expr { ( $old - $med_from_point ) * $k2 } ]
-                             }
-                            set new_row_list [lreplace $row_list $to_idx $to_idx $new]
-                            lappend return_table_lol $new_row_list
-                        }
+                    set poss_prev_to_list [lsearch -all -regexp -inline $titles_row_list {*_[0-9]+$}]
+                    set last_to_title [lindex end [lsort [lsearch -all -glob -inline $poss_prev_to_list "${col_ref_to}_*"]]]
+                    set last_to_num 0
+                    if { $last_to_title ne "" } {
+                        set last_to_num [string range $last_to_title 2 end]
                     }
-                } else {
-                    # "to" column doesn't exist. append it
-                    lappend titles_row_list $col_ref_to
-                    lappend return_table_lol $titles_row_list
-                    if { $case1_p && $case_2_p } {
-                        foreach row_list $data_rows_lists {
-                            set old [lindex $row_list $from_idx]
-                            set new ""
-                            if { [qaf_is_decimal $old ] } {
-                                if { $old < $med_from_point } {
-                                    # case 1
-                                    set new [expr { ( $old - $med_from_point ) * $k1 } ]
-                                } else {
-                                    # case 2
-                                    set new [expr { ( $old - $med_from_point ) * $k2 } ]
-                                }
+                    incr last_to_num
+                    set prev_to_title "${col_ref_to}_${last_to_num}"
+                    set titles_row_list [lreplace $titles_row_list $prev_to_title $to_idx $to_idx]
+                }
+                lappend titles_row_list $col_ref_to
+                lappend return_table_lol $titles_row_list
+                if { $case1_p && $case_2_p } {
+                    foreach row_list $data_rows_lists {
+                        set old [lindex $row_list $from_idx]
+                        set new ""
+                        if { [qf_is_decimal $old ] } {
+                            if { $old < $med_point_from } {
+                                # case 1
+                                set new [expr { ( $old - $med_point_from ) * $k1 } ]
+                            } else {
+                                # case 2
+                                set new [expr { ( $old - $med_point_from ) * $k2 } ]
                             }
-                            set new_row_list $row_list
-                            lappend new_row_list $new
-                            lappend return_table_lol $new_row_list
                         }
-                    } elseif { $case1_p } {
-                        foreach row_list $data_rows_lists {
-                            set old [lindex $row_list $from_idx]
-                            set new ""
-                            if { [qaf_is_decmial $old ] } {
-                                set new [expr { ( $old - $med_from_point ) * $k1 } ]
-                             }
-                            set new_row_list $row_list
-                            lappend new_row_list $new
-                            lappend return_table_lol $new_row_list
+                        set new_row_list $row_list
+                        lappend new_row_list $new
+                        lappend return_table_lol $new_row_list
+                    }
+                } elseif { $case1_p } {
+                    foreach row_list $data_rows_lists {
+                        set old [lindex $row_list $from_idx]
+                        set new ""
+                        if { [qaf_is_decmial $old ] } {
+                            set new [expr { ( $old - $med_point_from ) * $k1 } ]
                         }
-                    } elseif { $case2_p } {
-                        foreach row_list $data_rows_lists {
-                            set old [lindex $row_list $from_idx]
-                            set new ""
-                            if { [qaf_is_decmial $old ] } {
-                                set new [expr { ( $old - $med_from_point ) * $k2 } ]
-                             }
-                            set new_row_list $row_list
-                            lappend new_row_list $new
-                            lappend return_table_lol $new_row_list
+                        set new_row_list $row_list
+                        lappend new_row_list $new
+                        lappend return_table_lol $new_row_list
+                    }
+                } elseif { $case2_p } {
+                    foreach row_list $data_rows_lists {
+                        set old [lindex $row_list $from_idx]
+                        set new ""
+                        if { [qaf_is_decmial $old ] } {
+                            set new [expr { ( $old - $med_point_from ) * $k2 } ]
                         }
+                        set new_row_list $row_list
+                        lappend new_row_list $new
+                        lappend return_table_lol $new_row_list
                     }
                 }
             }
