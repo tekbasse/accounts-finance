@@ -1197,7 +1197,14 @@ ad_proc -public acc_fin::pretti_table_to_html {
                 set colorhex [acc_fin::pretti_color_chooser -1 $on_a_sig_path_p $odd_row_p $popularity $max_act_count_per_track]
             }
             #append cell "row $row_nbr col $cell_nbr on_cp $on_cp_p on_sig $on_a_sig_path_p act_on_cp_p $act_on_cp_p <br>"
-            set cell_formatting [list style "vertical-align: top; background-color: #${colorhex};"]
+            set greycol [acc_fin::gray_from_color $colorhex]
+            if { [string range $greycol 0 0] < 6 } {
+                set reverse_color_css " color: #ffffff;"
+            } else {
+                set reverse_color_css ""
+            }
+            set cell_formatting [list style "vertical-align: top; background-color: #${colorhex};${reverse_color_css}"]
+ 
             lappend row4html_list $cell
             lappend row_formatting_list $cell_formatting
             incr cell_nbr
