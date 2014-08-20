@@ -47,9 +47,33 @@ ns_log Notice "aa_register_case.14: Begin test
                     }
                     
                     # test making a curve based on min/med/max values
-                    set optimistic [expr { [lindex $row_cells_list 1] + 0. } ]
+                    set optimistic [lindex $row_cells_list 1]
+                    set opti_dec [string first "." $optimistic]
+                    if { $opti_dec > -1 } {
+                        set opt_dec_count [expr { [string length $optimistic] - $opti_dec - 1 } ]
+                    } else {
+                        set opt_dec_count 0
+                    }
+                    set optimistic [expr { $optimistic + 0. } ]
+
+                    set median [lindex $row_cells_list 2]
+                    set med_dec [string first "." $median]
+                    if { $med_dec > -1 } {
+                        set med_dec_count [expr { [string length $median] - $med_dec - 1 } ]
+                    } else {
+                        set med_dec_count 0
+                    }
                     set median [expr { [lindex $row_cells_list 2] + 0. } ]
+
+                    set pessimistic [lindex $row_cells_list 3]
+                    set pes_dec [string first "." $pessimistic]
+                    if { $pes_dec > -1 } {
+                        set pes_dec_count [expr { [string length $pessimistic] - $pes_dec - 1 } ]
+                    } else {
+                        set pes_dec_count 0
+                    }
                     set pessimistic [expr { [lindex $row_cells_list 3] + 0. } ]
+
                     # test Time expected geometric average
                     
                     set geo_avg [expr { ( $optimistic + 4. * $median + $pessimistic ) / 6. } ] 
@@ -64,12 +88,13 @@ ns_log Notice "aa_register_case.14: Begin test
                         aa_log "testing OMP values to curve using acc_fin::pert_omp_to_normal_dc"
                         # confirm curve's representation at critical original parameters o,m,p:
                         set curve2_lol [acc_fin::pert_omp_to_normal_dc $optimistic $median $pessimistic $n_points]
+                        ns_log Notice "accounts-finance/tcl/test/pretti-test-procs.tcl: curve2_lol $curve2_lol"
                         set optimistic2 [qaf_y_of_x_dist_curve 0 $curve2_lol 0]
                         set median2 [qaf_y_of_x_dist_curve .5 $curve2_lol 0]
                         set pessimistic2 [qaf_y_of_x_dist_curve 1 $curve2_lol 0]
-                        set optimistic2 [qaf_round_to_decimals $optimistic2 5]
-                        set median2 [qaf_round_to_decimals $median2 5]
-                        set pessimistic2 [qaf_round_to_decimals $pessimistic2 5 ]
+                        set optimistic2 [qaf_round_to_decimals $optimistic2 $opt_dec_count]
+                        set median2 [qaf_round_to_decimals $median2 $med_dec_count]
+                        set pessimistic2 [qaf_round_to_decimals $pessimistic2 $pes_dec_count]
                         aa_equals "Test2N for '${activity}' w/ ${n_points}-point Normal curve matches @ optimistic" $optimistic2 $optimistic
                         aa_equals "Test3N for '${activity}' w/ ${n_points}-point Normal curve matches @ median" $median2 $median
                         aa_equals "Test4N for '${activity}' w/ ${n_points}-point Normal curve matches @ pessimistic" $pessimistic2 $pessimistic
