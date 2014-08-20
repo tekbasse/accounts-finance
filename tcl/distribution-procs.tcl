@@ -465,6 +465,8 @@ ad_proc -public qaf_table_column_convert {
     separate conversion calaculations occurr for the range below med vs. above med value in
     order to accomodate transformations of two different tail scales in statistical calculations.
 } {
+    ns_log Notice "qaf_table_column_convert.468: col_ref_from $col_ref_from min_point_from $min_point_from med_point_from $med_point_from max_point_from $max_point_from"
+    ns_log Notice "qaf_table_column_convert.469: col_ref_to $col_ref_to min_point_to $min_point_to med_point_to $med_point_to max_point_to $max_point_to"
     set return_table_lol [list ]
     regsub -nocase -all -- {[^a-z0-9\_\-]} $col_ref_from {_} col_ref_from
     regsub -nocase -all -- {[^a-z0-9\_\-]} $col_ref_to {_} col_ref_to
@@ -488,22 +490,23 @@ ad_proc -public qaf_table_column_convert {
                 } else {
                     set case2_p 0
                 }
-                
+                ns_log Notice "qaf_table_column_convert.493. case1_p ${case1_p} case2_p ${case2_p}"
                 if { $to_idx > -1 && ( $case1_p || $case2_p) } {
                     # "to" column exists
-                    set poss_prev_to_list [lsearch -all -regexp -inline $titles_row_list {*_[0-9]+$}]
+                    set poss_prev_to_list [lsearch -all -regexp -inline $titles_row_list {.+_[0-9]+$}]
                     set last_to_title [lindex end [lsort [lsearch -all -glob -inline $poss_prev_to_list "${col_ref_to}_*"]]]
                     set last_to_num 0
                     if { $last_to_title ne "" } {
-                        set last_to_num [string range $last_to_title 2 end]
+                        regexp {.+_([0-9]+)$} $last_to_title scratch last_to_num
                     }
                     incr last_to_num
                     set prev_to_title "${col_ref_to}_${last_to_num}"
-                    set titles_row_list [lreplace $titles_row_list $prev_to_title $to_idx $to_idx]
+                    ns_log Notice "qaf_table_column_convert.504: changing existing column name '${col_ref_to}' to '${prev_to_title}'"
+                    set titles_row_list [lreplace $titles_row_list $to_idx $to_idx $prev_to_title ]
                 }
                 lappend titles_row_list $col_ref_to
                 lappend return_table_lol $titles_row_list
-                if { $case1_p && $case_2_p } {
+                if { $case1_p && $case2_p } {
                     foreach row_list $data_rows_lists {
                         set old [lindex $row_list $from_idx]
                         set new ""
@@ -543,8 +546,15 @@ ad_proc -public qaf_table_column_convert {
                         lappend return_table_lol $new_row_list
                     }
                 }
+            } else {
+                ns_log Notice "qaf_table_column_convert.548. Either med_point_from '${med_point_from}' or med_point_to ${med_point_to}' is not a required number."
             }
+        } else {
+            ns_log Notice "qaf_table_column_convert.549. col_ref_from is not a reference in table. Returned empty table."
         }
+    } else {
+        ns_log Notice "qaf_table_column_convert.550. col_ref_from and col_ref_to are blank. Returned empty table."
     }
+    ns_log Notice "qaf_table_column_convert.551. return_table_lol $return_table_lol"
     return $return_table_lol
 }
