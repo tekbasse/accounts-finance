@@ -440,7 +440,12 @@ ad_proc -public acc_fin::cobbler_html_view {
                             if { $bars_count > 1 } {
                                 # split this into two bars for presentation purposes. First bar is the fractional ones
                                 incr bars_count -1
-                                set bar_height [expr { round( [f::lmax [lrange $batch_y_list 0 end-1]] / $bars_count ) } ]
+                                #ns_log Notice "acc_fin::cobbler_html_view.443 bars_count $bars_count [llength $batch_y_list] $batch_y_list"
+                                if { $bars_count > 1 } {
+                                    set bar_height [expr { round( [f::lmax [lrange $batch_y_list 0 end-1]] / $bars_count ) } ]
+                                } else {
+                                    set bar_height [lindex $batch_y_list 0]
+                                }
                                 append cob_html "<div style=\"margin: 0; padding: 0; width: 1 px; height: ${bar_height} px; display: inline-block; vertical-align: bottom; border-style: none; background-color: $color_arr($odd_p); \"><img src=\"/resources/acs-subsite/spacer.gif\" style=\"margin: 0; padding: 0; border-style: none;\" width=\"1\" height=\"${bar_height}\" alt=\"${xy_html}\" title=\"${xy_html} \"></div>"
                                 # reset values to print last bar in set
                                 set xy_html ""
