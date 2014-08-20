@@ -324,7 +324,7 @@ ad_proc -public qaf_std_normal_distribution {
         # Since there is an even number of points, add one
         incr $n_points
     }
-
+    set std_dev_count [expr { $std_dev_count + 0. } ]
     if { $pdc_lol_arr_exists_p } {
         set pdc_lists_exists_p [info exists pdc_lol_arr(${n_points}) ]
         if { $pdc_lists_exists_p } {
@@ -340,10 +340,10 @@ ad_proc -public qaf_std_normal_distribution {
         # a = area left of x intersect
         # Since standard deviation = 1 and this curve starts at -2 sigma to 2 sigma:
         # A tail has half_n_points over a range of 2.
-        set x_step [f::max $eps [expr { ( $std_dev_count + 0. ) / $half_n_points } ]]
+        set x_step [f::max $eps [expr { $std_dev_count / $half_n_points } ]]
 
         # Since left and right tail are symmetric, build one tail, alter to get other side
-        set tail_point_count [expr { int( $n_points / 2. ) } ]
+        set tail_bar_count [expr { $half_n_points - 1 } ]
         set x_prev 0.
         set y_at_median [expr { exp( -0.5 * pow( 0. , 2. ) ) / $sqrt_2pi } ]
         set y_prev $y_at_median
@@ -355,7 +355,7 @@ ad_proc -public qaf_std_normal_distribution {
         set tail_a_from_median_list [list $tail_a_from_median]
 
         # make a base tail starting at median and extending outward
-        for {set x [expr { 0. + $x_step } ] } {$x <= 2. } { set x [expr { $x + $x_step } ] } {
+        for {set x [expr { 0. + $x_step } ] } {$x <= $std_dev_count } { set x [expr { $x + $x_step } ] } {
             set y [expr { exp( -0.5 * pow( $x , 2. ) ) / $sqrt_2pi } ]
             set a_delta [f::max $eps [expr { $x_step * $y } ] ]
             set tail_a_from_median [expr { $tail_a_from_median + $a_delta } ]
@@ -364,7 +364,10 @@ ad_proc -public qaf_std_normal_distribution {
             lappend tail_delta_a_list $a_delta
             lappend tail_a_from_median_list $tail_a_from_median
         }
-
+        ns_log Notice "qaf_std_normal_distribution.347: llength [llength $tail_x_list] tail_x_list $tail_x_list"
+        ns_log Notice "qaf_std_normal_distribution.348: llength [llength $tail_y_list] tail_y_list $tail_y_list"
+        ns_log Notice "qaf_std_normal_distribution.349: llength [llength $tail_delta_a_list] tail_delta_a_list $tail_delta_a_list"
+        ns_log Notice "qaf_std_normal_distribution.350: llength [llength $tail_a_from_median_list] tail_a_from_median_list $tail_a_from_median_list"
         # build curve from two tails.
 
         # left tail, a = 0 to 0.5 (or whatever $a_from_median is), standard deviation= -2 to 0
@@ -372,7 +375,7 @@ ad_proc -public qaf_std_normal_distribution {
         set a_prev [expr { 0.5 - $tail_a_from_median } ]
         # math check
         if { $a_prev < 0. } {
-            ns_log Warning "qaf_left_area_at_x_probability_density_curve.357: tail area exceeds 0.5. This shouldn't happen."
+            ns_log Warning "qaf_std_normal_distribution.357: tail area exceeds 0.5. This shouldn't happen."
         }
 
         
@@ -387,6 +390,7 @@ ad_proc -public qaf_std_normal_distribution {
         set tail_end [llength $tail_x_list]
         incr tail_end -1
         set area2left $a_prev
+        #set label "optimistic / minimum i = ${tail_end}"
         set label "optimistic / minimum"
         for { set i $tail_end } { $i > 0 } { incr i -1 } {
             # x_dev = deviation from median on x.
@@ -397,25 +401,32 @@ ad_proc -public qaf_std_normal_distribution {
             set curve_row [list $x_dev $y $x $area2left]
             if { $labels_p } {
                 lappend curve_row $label
+                #set label "i+1 = $i"
                 set label ""
             }
             lappend pdc_lists $curve_row
         }
 
         # build the middle point
-        set median_x_dev 0.
+        set i 0
+        # some values hardcoded to i=1
+        # set median_x_dev 0.
+        set x_dev 0.
         set y $y_at_median
         set x [f::max $eps [expr { $x_step * $y } ]]
+       # set x_dev [expr { -1. * [lindex $tail_x_list 1] } ]
+       # set y [lindex $tail_y_list 1]
+       # set x [lindex $tail_delta_a_list 1]
         set area2left [expr { $area2left + $x } ]
-        if { $labels_p } {
-            lappend curve_row "most likely / median"
-        }
         set curve_row [list $x_dev $y $x $area2left ]
+        if { $labels_p } {
+            set label "most likely / median"
+            lappend curve_row $label
+        }
         lappend pdc_lists $curve_row
 
         # build right tail
-
-        for { set i 0 } { $i < $tail_end } { incr i } {
+        for { set i 1 } { $i < $tail_end } { incr i } {
             # x_dev = deviation from median on x.
             set x_dev [lindex $tail_x_list $i]
             set y [lindex $tail_y_list $i]
@@ -423,7 +434,9 @@ ad_proc -public qaf_std_normal_distribution {
             set area2left [expr { $area2left + $x } ]
             set curve_row [list $x_dev $y $x $area2left]
             if { $labels_p } {
-                lappend curve_row ""
+                #set label "i = $i"
+                set label ""
+                lappend curve_row $label
             }
             lappend pdc_lists $curve_row
         }
@@ -479,14 +492,16 @@ ad_proc -public qaf_table_column_convert {
             set data_rows_lists [lrange $table_list_of_lists 1 end]
             if { [qf_is_decimal $med_point_from] && [qf_is_decimal $med_point_to] } {
                 if { [qf_is_decimal $min_point_from ] && [qf_is_decimal $min_point_to ] } {
-                    set k1 [expr { ( $min_point_from + 0. ) / ( $min_point_to - $med_point_to ) } ]
+                    set k1 [expr { ( $med_point_to - $min_point_to ) / ( $med_point_from - $min_point_from ) } ]
                     set case1_p 1
+                    # low range
                 } else {
                     set case1_p 0
                 }
                 if { [qf_is_decimal $max_point_from ] && [qf_is_decimal $max_point_to] } {
-                    set k2 [expr { ( $max_point_from + 0. ) / ( $max_point_to - $med_point_to ) } ]
+                    set k2 [expr { ( $max_point_to - $med_point_to ) / ( $max_point_from - $med_point_from ) } ]
                     set case2_p 1
+                    # high range
                 } else {
                     set case2_p 0
                 }
@@ -513,10 +528,10 @@ ad_proc -public qaf_table_column_convert {
                         if { [qf_is_decimal $old ] } {
                             if { $old < $med_point_from } {
                                 # case 1
-                                set new [expr { ( $old - $med_point_from ) * $k1 } ]
+                                set new [expr { $old * $k1 + $med_point_to } ]
                             } else {
                                 # case 2
-                                set new [expr { ( $old - $med_point_from ) * $k2 } ]
+                                set new [expr { $old * $k2 + $med_point_to } ]
                             }
                         }
                         set new_row_list $row_list
@@ -528,7 +543,7 @@ ad_proc -public qaf_table_column_convert {
                         set old [lindex $row_list $from_idx]
                         set new ""
                         if { [qaf_is_decmial $old ] } {
-                            set new [expr { ( $old - $med_point_from ) * $k1 } ]
+                            set new [expr { $old * $k1 + $med_point_to } ]
                         }
                         set new_row_list $row_list
                         lappend new_row_list $new
@@ -539,7 +554,7 @@ ad_proc -public qaf_table_column_convert {
                         set old [lindex $row_list $from_idx]
                         set new ""
                         if { [qaf_is_decmial $old ] } {
-                            set new [expr { ( $old - $med_point_from ) * $k2 } ]
+                            set new [expr { $old * $k2 + $med_point_to } ]
                         }
                         set new_row_list $row_list
                         lappend new_row_list $new
