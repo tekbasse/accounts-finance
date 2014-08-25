@@ -837,7 +837,7 @@ ad_proc -private acc_fin::pretti_columns_list {
             #      cost_probability_moment A percentage (0..1) along the (cumulative) distribution curve. defaults to "", which defaults to same as time_probability_moment
             #set ret_list \[list name value\]
             ### adding max_concurrent and max_overlap_pct but not sure if these have been coded for use yet..
-            set ret_list [list activity_table_tid activity_table_name task_types_tid task_types_name time_dist_curve_name time_dist_curve_tid cost_dist_curve_name cost_dist_curve_tid time_est_short time_est_median time_est_long time_probability_moment cost_est_low cost_est_median cost_est_high cost_probability_moment db_format index_equation precision tprecision cprecision pert_omp ]
+            set ret_list [list activity_table_tid activity_table_name task_types_tid task_types_name time_dist_curve_name time_dist_curve_tid cost_dist_curve_name cost_dist_curve_tid time_est_short time_est_median time_est_long time_probability_moment cost_est_low cost_est_median cost_est_high cost_probability_moment db_format index_equation precision tprecision cprecision pert_omp max_concurrent max_overlap_pct ]
         }
         p11 {
             #set ret_list \[list name value\]
@@ -1370,7 +1370,7 @@ ad_proc -private acc_fin::p_load_tid {
     if { $p3_type_column_exists_p } {
         set p_larr(type) [acc_fin::list_filter alphanum $p_larr(type) $p_larr_name "type"]
         if { [info exists p_larr(dependent_tasks) ] } {
-            set p_larr(dependent_tasks) [acc_fin::list_filter alphanumlist $p_larr(dependent_tasks) $p_larr_name "dependent_tasks"]
+            set p_larr(dependent_tasks) [acc_fin::list_filter factorlist $p_larr(dependent_tasks) $p_larr_name "dependent_tasks"]
         }
     }
     if { $p2_type_column_exists_p } {
@@ -1714,7 +1714,7 @@ ad_proc -private acc_fin::list_filter {
     {table_name ""}
     {list_name ""}
 } {
-    filters input as a list to meet basic word or reference requirements. type can be alphanum decimal natnum. If decimal or natural number (natnum) does not pass filter, value is replaced with blank. if list_name is specified and an input value doesn't pass, procedure logs an error and notifies user of count of filtered changes via pretti_log_create
+    filters input as a list to meet basic word or reference requirements. type can be alphanum decimal natnum alphanumlist factorlist. If decimal or natural number (natnum) does not pass filter, value is replaced with blank. if list_name is specified and an input value doesn't pass, procedure logs an error and notifies user of count of filtered changes via pretti_log_create
 } {
     set type_errors_count 0
     switch -exact $type {
@@ -1724,17 +1724,28 @@ ad_proc -private acc_fin::list_filter {
             foreach input_row_unfiltered $user_input_list {
                 set filtered_row_list [list ]
                 foreach input_unfiltered $input_row_unfiltered {
-                    regsub -all -nocase -- {[^a-z0-9,]+} $input_unfiltered {} input_filtered
+                    regsub -all -nocase -- {[^a-z0-9,\.]+} $input_unfiltered {} input_filtered
                     lappend filtered_row_list $input_filtered
                 }
                 lappend filtered_list $filtered_row_list
             }
         }
-
+        factorlist {
+            # some table columns contain lists of items..
+            set filtered_list [list ]
+            foreach input_row_unfiltered $user_input_list {
+                set filtered_row_list [list ]
+                foreach input_unfiltered $input_row_unfiltered {
+                    regsub -all -nocase -- {[^a-z0-9,\.\*]+} $input_unfiltered {} input_filtered
+                    lappend filtered_row_list $input_filtered
+                }
+                lappend filtered_list $filtered_row_list
+            }
+        }
         alphanum {
             set filtered_list [list ]
             foreach input_unfiltered $user_input_list {
-                regsub -all -nocase -- {[^a-z0-9,]+} $input_unfiltered {} input_filtered
+                regsub -all -nocase -- {[^a-z0-9,\.]+} $input_unfiltered {} input_filtered
                 lappend filtered_list $input_filtered
             }
         }
@@ -2060,6 +2071,7 @@ ad_proc -public acc_fin::scenario_prettify {
     # # # identify table ids to process
     set constants_required_list [acc_fin::pretti_columns_list p1 1]
     qss_tid_scalars_to_array $scenario_tid p1_arr $constants_list $constants_required_list $instance_id $user_id
+
     if { $p1_arr(activity_table_name) ne "" } {
         # set activity_table_tid
         set p1_arr(activity_table_tid) [qss_tid_from_name $p1_arr(activity_table_name) ]
@@ -2329,7 +2341,7 @@ ad_proc -public acc_fin::scenario_prettify {
                     if { [acc_fin::p_load_tid $constants_list $constants_required_list p2_larr $p1_arr(activity_table_tid) p3_larr $instance_id $user_id] } {
                         # filter user input
                         set p2_larr(activity_ref) [acc_fin::list_filter alphanum $p2_larr(activity_ref) "p2" "activity_ref"]
-                        set p2_larr(dependent_tasks) [acc_fin::list_filter alphanumlist $p2_larr(dependent_tasks) "p2" "dependent_tasks"]
+                        set p2_larr(dependent_tasks) [acc_fin::list_filter factorlist $p2_larr(dependent_tasks) "p2" "dependent_tasks"]
                     } else {
                         set error_fail 1
                         acc_fin::pretti_log_create $scenario_tid "activity_table_tid" "value" "error while loading activity_table.(ref1490)" $user_id $instance_id
@@ -2422,46 +2434,93 @@ ad_proc -public acc_fin::scenario_prettify {
                         set term_idx [lsearch -exact $activities_list $term]
                         if { $term_idx > -1 } {
                             # Requirements met: There is a coefficient and an existing activity.
-                            ns_log Notice "acc_fin::scenario_prettify.1632: scenario '$scenario_tid' term '$term' exists as an activity, so creating new activity with coefficient."
+                            ns_log Notice "acc_fin::scenario_prettify.1632: scenario '$scenario_tid' term '$term' exists as an activity, so creating new activity with coefficient '${activity}'."
                             # Generate a new activity with coeffient for this run.
                             foreach constant $constants_list {
                                 lappend p2_larr($constant) [lindex $p2_larr($constant) $term_idx]
                             }
                             lappend p2_larr(_coef) $coefficient
+                            lappend activities_list $activity
                             # create new tCurves and cCurves and references to them.
                             set tcurvenum [lindex $p2_larr(_tCurveRef) $term_idx]
                             if { $tcurvenum ne "" } {
                                 # create new curve based on the one referenced 
-                                # parameters: max_concurrent max_overlap_pct021
+                                # parameters: max_concurrent max_overlap_pct
                                 #      max_overlap_pct  (as a percentage from 0 to 1, blank = 1)
                                 #      max_concurrent       (as an integer, blank = no limit)
+                                set max_overlap_pct_idx [lsearch -exact $constants_list "max_overlap_pct"]
+                                set max_overlap_pct $p1_arr(max_overlap_pct)
+                                if { $max_overlap_pct_idx > -1 && [llength $p2_larr(max_overlap_pct)] > 0 } {
+                                    set test [lindex $p2_larr(max_overlap_pct) $max_overlap_pct_idx]
+                                    if { $test ne "" } {
+                                        set max_overlap_pct $test
+                                    }
+                                }
+
+                                set max_concurrent_idx [lsearch -exact $constants_list "max_concurrent_idx"]
+                                set max_concurrent $p1_arr(max_concurrent)
+                                if { $max_concurrent_idx > -1 && [llength $p2_larr(max_concurrent)] > 0 } {
+                                    set test [lindex $p2_larr(max_concurrent) $max_concurrent_idx]
+                                    if { $test ne "" } {
+                                        set max_concurrent $test
+                                    }
+                                }
+
+                                ns_log Notice "acc_fin::scenario_prettify.1673: scenario '$scenario_tid' p1_arr(max_overlap_pct) '$p1_arr(max_overlap_pct)' max_overlap_pct_idx ${max_overlap_pct_idx}"
+                                ns_log Notice "acc_fin::scenario_prettify.1675: scenario '$scenario_tid' max_overlap_pct '${max_overlap_pct}' max_concurrent '${max_concurrent}' before validation"
                                 # activity curve @tcurvenum
                                 # for each point t(pm) in curve time_clarr($_tCurveRef), max_overlap_pct, max_concurrent, coeffient c
-                                if { [ad_var_type_check_number_p $max_overlap_pct ] && $max_overlap_pct < 2 && $max_overlap_pct > -1 } {
+                                if { [qf_is_decimal $max_overlap_pct ] && $max_overlap_pct <= 1. && $max_overlap_pct >= 0. } {
                                     # validated
                                 } else {
-                                    acc_fin::pretti_log_create $scenario_tid "max_overlap_pct" "value" "max_overlap_pct '$max_overlap_pct' is out of range. Set to 1 (100%). (ref1520)" $user_id $instance_id
+                                    acc_fin::pretti_log_create $scenario_tid "max_overlap_pct" "value" "max_overlap_pct '$max_overlap_pct' is out of range or blank. Set to 1 (100%). (ref1520)" $user_id $instance_id
                                     set max_overlap_pct 1.
                                 }
-                                # coef_p1 * max_concurrent + coef_p2 = $coefficient
-                                set coef_p1 [expr { int( $coeffcient / $max_concurrent ) } ]
-                                set coef_p2 [expr { $coefficient - $coef_p1 * $max_concurrent } ]
-                                # coef_p2 should be at most 1 less than max_concurrent
-                                # max_trailing_pct = 1. - max_overlap_pct
-                                # k3 calculates length of a full block max_concurrent wide
-                                set k3 [expr { 1. + ( $coef_p1 - 1 ) * ( 1. - $max_overlap_pct ) } ]
+                                if { [qf_is_natural_number $max_concurrent ] &&  $max_concurrent >= 1 } {
+                                    # validated
+                                    # coef_p1 * max_concurrent + coef_p2 = $coefficient
+                                    set coef_p1 [expr { int( $coefficient / $max_concurrent ) } ]
+                                    set coef_p2 [expr { $coefficient - $coef_p1 * $max_concurrent } ]
+                                    # coef_p2 should be at most 1 less than max_concurrent
+                                    # max_trailing_pct = 1. - max_overlap_pct
+                                } else {
+                                    acc_fin::pretti_log_create $scenario_tid "max_concurrent" "value" "max_concurrent '$max_concurrent' is out of range or blank. Set to no limit. (ref1525)" $user_id $instance_id
+                                    #set max_concurrent $coeffcient
+                                    # max_concurrent is coeffcient
+                                    set coef_p1 1.
+                                    set coef_p2 0.
+                                }
+                                
+                                # k3 calculates length of a full block max_concurrent wide as a decimal of block size, 1 = 1 block of maximum number of concurrent
+                                set k3 [expr { 1. + ( $coef_p1 - 1. ) * ( 1. - $max_overlap_pct ) } ]
                                 # k4 calculates length of partial blocks (one more activity than full block activity count, but maybe not overlapped as far)
-                                set k4 [expr { 1. + ( $coef_p2 - 1 ) * ( 1. - $max_overlap_pct ) } ]
+                                set k4 [expr { 1. + ( $coef_p2 - 1. ) * ( 1. - $max_overlap_pct ) } ]
                                 # Choose the longer of the two blocks:
                                 set k5 [f::max $k3 $k4]
+                                ns_log Notice "acc_fin::scenario_prettify.1699: scenario '$scenario_tid' coef_p1 ${coef_p1} coef_p2 ${coef_p2} k3 $k3 k4 $k4 k5 $k5"
                                 set curve_lol [list ]
-                                foreach point $time_clarr($tcurvenum) {
+                                # add titles
+                                set title_list [lindex $time_clarr($tcurvenum) 0]
+                                set x_idx [lsearch -exact $title_list "x"]
+                                set y_idx [lsearch -exact $title_list "y"]
+                                set label_idx [lsearch -exact $title_list "label"]
+                                set title_new_list [list "y" "x"]
+                                if { $label_idx > -1 } {
+                                    lappend title_new_list "label"
+                                }
+                                lappend curve_lol $title_new_list
+                                foreach point [lrange $time_clarr($tcurvenum) 1 end] {
                                     # point: x y label
-                                    set x [lindex $point 0]
-                                    set y [lindex $point 1]
-                                    set label [lindex $point 2]
+                                    set x [lindex $point $x_idx]
+                                    set y [lindex $point $y_idx]
+                                    if { $label_idx > -1 } {
+                                        set label [lindex $point $label_idx]
+                                    }
                                     set y_new [expr { $y * $k5 } ]
-                                    set point_new [list $y_new $x $label]
+                                    set point_new [list $y_new $x]
+                                    if { $label_idx > -1 } {
+                                        lappend point_new $label
+                                    }
                                     lappend curve_lol $point_new
                                 }
                                 # save new curve
@@ -2476,18 +2535,34 @@ ad_proc -public acc_fin::scenario_prettify {
                                 lappend p2_larr(_tDcSource) ""
                                 ns_log Warning "acc_fin::scenario_prettify.1676: scenario '$scenario_tid' NO tcurvenum for '$curve_lol'"
                             }
+                            set ccurvenum [lindex $p2_larr(_cCurveRef) $term_idx]
                             if { [lindex $p2_larr(_cCurveRef) $term_idx] ne "" } {
                                 # New curve is isn't affected by overlap or max_concurrent. 
                                 # New curve is simple multiplication of old and coefficient
                                 # create new curve
                                 set curve_lol [list ]
-                                foreach point $cost_clarr($ccurvenum) {
-                                    # point: y x label
-                                    set x [lindex $point 0]
-                                    set y [lindex $point 1]
-                                    set label [lindex $point 2]
-                                    set y_new [expr { $y * $coefficient } ]
-                                    set point_new [list $y_new $x $label]
+                                # add titles
+                                set title_list [lindex $cost_clarr($ccurvenum) 0]
+                                set x_idx [lsearch -exact $title_list "x"]
+                                set y_idx [lsearch -exact $title_list "y"]
+                                set label_idx [lsearch -exact $title_list "label"]
+                                set title_new_list [list "y" "x"]
+                                if { $label_idx > -1 } {
+                                    lappend title_new_list "label"
+                                }
+                                lappend curve_lol $title_new_list
+                                foreach point [lrange $cost_clarr($ccurvenum) 1 end] {
+                                    # point: x y label
+                                    set x [lindex $point $x_idx]
+                                    set y [lindex $point $y_idx]
+                                    if { $label_idx > -1 } {
+                                        set label [lindex $point $label_idx]
+                                    }
+                                    set y_new [expr { $y * $k5 } ]
+                                    set point_new [list $y_new $x]
+                                    if { $label_idx > -1 } {
+                                        lappend point_new $label
+                                    }
                                     lappend curve_lol $point_new
                                 }
                                 
@@ -2624,35 +2699,39 @@ ad_proc -public acc_fin::scenario_prettify {
                 array unset act_seq_num_arr
                 array unset dependencies_larr
                 array unset act_calculated_p_larr
-                
-                foreach act $activities_list {
-                    #   depnc: comma list of activity's dependencies
-                    set depnc [lindex $p2_larr(dependent_tasks) $i]
-                    ## t_dc_source_arr(act) answers Q: what is source of time distribution curve?
-                    set t_dc_source_arr($act) [lindex $p2_larr(_tDcSource) $i ]
-                    ## c_dc_source_arr(act) answers Q: what is source of cost distribution curve?
-                    set c_dc_source_arr($act) [lindex $p2_larr(_cDcSource) $i ]
-                    
-                    # Filter out any blanks
-                    set scratch_list [split $depnc ";, "]
-                    set scratch2_list [list ]
-                    foreach dep $scratch_list {
-                        if { $dep ne "" } {
-                            lappend scratch2_list $dep
+
+                if { $error_fail == 0 } {
+                    foreach act $activities_list {
+                        #   depnc: comma list of activity's dependencies
+                        set depnc [lindex $p2_larr(dependent_tasks) $i]
+                        ## t_dc_source_arr(act) answers Q: what is source of time distribution curve?
+                        set t_dc_source_arr($act) [lindex $p2_larr(_tDcSource) $i ]
+                        ## c_dc_source_arr(act) answers Q: what is source of cost distribution curve?
+                        set c_dc_source_arr($act) [lindex $p2_larr(_cDcSource) $i ]
+                        
+                        # Filter out any blanks
+                        set scratch_list [split $depnc ";, "]
+                        set scratch2_list [list ]
+                        foreach dep $scratch_list {
+                            if { $dep ne "" } {
+                                lappend scratch2_list $dep
+                            }
                         }
+                        ##   dependencies_larr() is a list of direct dependencies for each activity
+                        set dependencies_larr($act) $scratch2_list
+                        set act_calculated_p_larr($act) 0
+                        ns_log Notice "acc_fin::scenario_prettify.1793: scenario '$scenario_tid' set act_calculated_p_larr($act) 0 len \$act [string length $act]"
+
+                        ##   act_seq_num_arr is relative sequence number of an activity in it's path. 
+                        set act_seq_num_arr($act) $sequence_1
+                        ## act_coef(act) is the coefficient of an activity. If activity is defined as a multiple of another activity, it is an integer greater than 1 otherwise 1.
+                        set act_coef($act) [lindex $p2_larr(_coef) $i]
+                        set act_tcref($act) [lindex $p2_larr(_tCurveRef) $i]
+                        set act_ccref($act) [lindex $p2_larr(_cCurveRef) $i]
+                        incr i
                     }
-                    ##   dependencies_larr() is a list of direct dependencies for each activity
-                    set dependencies_larr($act) $scratch2_list
-                    set act_calculated_p_larr($act) 0
-                    ns_log Notice "acc_fin::scenario_prettify.1793: scenario '$scenario_tid' set act_calculated_p_larr($act) 0 len \$act [string length $act]"
-                    ##   act_seq_num_arr is relative sequence number of an activity in it's path. 
-                    set act_seq_num_arr($act) $sequence_1
-                    ## act_coef(act) is the coefficient of an activity. If activity is defined as a multiple of another activity, it is an integer greater than 1 otherwise 1.
-                    set act_coef($act) [lindex $p2_larr(_coef) $i]
-                    set act_tcref($act) [lindex $p2_larr(_tCurveRef) $i]
-                    set act_ccref($act) [lindex $p2_larr(_cCurveRef) $i]
-                    incr i
                 }
+
                 
                 # Calculate paths in the main loop to save resources.
                 #  Each path is a list of numbers referenced by array, where 
@@ -2674,7 +2753,7 @@ ad_proc -public acc_fin::scenario_prettify {
                 # For strict critical path, create a list of lists, where 
                 # each list is a list of activity and dependencies from start to finish (aka path). 
                 # The longest duration path is the strict defintion of critical path.
-                
+
                 # create dependency check equations
                 ns_log Notice "acc_fin::scenario_prettify.1797: scenario '$scenario_tid' create equations for checking if dependencies are met."
                 
@@ -2695,149 +2774,149 @@ ad_proc -public acc_fin::scenario_prettify {
                 ##   act_count_of_seq_arr( sequence_number) is the count of activities at this sequence number across all paths, 0 is first sequence number
                 set act_count_of_seq_arr(${sequence_1}) 0
                 set tree_seg_dur_lists [list ]
-                
-                while { $all_paths_calculated_p == 0 && $i < $activity_count } {
-                    ns_log Notice "acc_fin::scenario_prettify.2300: scenario '$scenario_tid' new calc loop"
-                    set all_paths_calculated_p 1
-                    foreach act $activities_list {
-                        ##   act_seq_max is the maximum path length in context of sequence_number
-                        set act_seq_max $sequence_1
-                        ns_log Notice "acc_fin::scenario_prettify.2304: scenario '$scenario_tid' act $act act_seq_max ${act_seq_max}"
+                if { $error_fail == 0 } {                    
+                    while { $all_paths_calculated_p == 0 && $i < $activity_count } {
+                        ns_log Notice "acc_fin::scenario_prettify.2300: scenario '$scenario_tid' new calc loop"
+                        set all_paths_calculated_p 1
+                        foreach act $activities_list {
+                            ##   act_seq_max is the maximum path length in context of sequence_number
+                            set act_seq_max $sequence_1
+                            ns_log Notice "acc_fin::scenario_prettify.2304: scenario '$scenario_tid' act $act act_seq_max ${act_seq_max}"
 
-                        # Are dependencies met for this activity?
+                            # Are dependencies met for this activity?
+                            set dependencies_met_p 1
+                            foreach dep $dependencies_larr($act) {
+                                ns_log Notice "acc_fin::scenario_prettify.2308: scenario '$scenario_tid' act $act dep $dep act_calculated_p_larr($dep) '$act_calculated_p_larr($dep)' len \$dep [string length $dep]"
+                                if { $act_calculated_p_larr($dep) == 0 } {
+                                    set dependencies_met_p 0
+                                }
+                            }
+
+                            if { $dependencies_met_p && $act_calculated_p_larr($act) == 0 } {
+                                # Calc max_num: maximum relative sequence number for activity dependencies
+                                set max_num 0
+                                foreach test_act $dependencies_larr($act) {
+                                    set test $act_seq_num_arr(${test_act})
+                                    if { $max_num < $test } {
+                                        set max_num $test
+                                    }
+                                }
+                                
+                                # Add activity's relative sequence number: act_seq_num_arr
+                                set act_seq_nbr [expr { $max_num + 1 } ]
+                                set act_seq_num_arr($act) $act_seq_nbr
+                                
+                                # increment act_seq_max and set defaults for a new max seq number?
+                                if { $act_seq_nbr > $act_seq_max } {
+                                    set act_seq_max $act_seq_nbr
+                                    set act_seq_list_arr(${act_seq_max}) [list ]
+                                    set act_count_of_seq_arr(${act_seq_max}) 0
+                                }
+                                # add activity to the network for this sequence number
+                                lappend act_seq_list_arr(${act_seq_nbr}) $act
+                                incr act_count_of_seq_arr(${act_seq_nbr})
+                                
+                                # Calculations including dependents
+                                if { !$error_time } {
+                                    # branches_duration_max is the min. path duration to complete dependent paths
+                                    # set branches_duration_max to the longest duration of dependent segments.
+                                    set branches_duration_max 0.
+                                    foreach dep_act $dependencies_larr($act) {
+                                        if { $tn_arr(${dep_act}) > $branches_duration_max } {
+                                            set branches_duration_max $tn_arr(${dep_act})
+                                        }
+                                    }
+                                    ##   tn_arr(act) is duration of ptrack up to (and including) activity.
+                                    set tn_arr($act) [expr { $branches_duration_max + $act_time_expected_arr($act) } ]
+                                    ns_log Notice "acc_fin::scenario_prettify.2384: scenario '$scenario_tid' act $act tn_arr($act) $tn_arr($act)"
+                                }
+                                if { !$error_cost } {
+                                    set paths_cost_sum 0.
+                                    foreach dep_act $dependencies_larr($act) {
+                                        #   paths_cost_sum is sum of costs for each dependent ptrack
+                                        #was set paths_cost_sum [expr { $paths_cost_sum + $act_cost_expected_arr(${dep_act}) } ]
+                                        ns_log Notice "acc_fin::scenario_prettify.2392: scenario '$scenario_tid' act $act cn_arr($act) $cn_arr($act) paths_cost_sum $paths_cost_sum + cn_arr({$dep_act}) $cn_arr(${dep_act})"
+                                        set paths_cost_sum [expr { $paths_cost_sum + $cn_arr(${dep_act}) } ]
+                                    }
+                                    ##   cn_arr is cost of all dependent ptrack plus cost of activity
+                                    set cn_arr($act) [expr { $paths_cost_sum + $act_cost_expected_arr($act) } ]
+                                    ns_log Notice "acc_fin::scenario_prettify.2394: scenario '$scenario_tid' act $act cn_arr($act) $cn_arr($act)"
+                                }
+                                
+                                # subtrees_larr(activity) is an array of list of ptracks ending with trunk activity
+                                #   paths (or ptracks) represented as a list of activity lists in chronological order (last acitivty last).
+                                #   For example, if A depends on B and C, and C depends on D, and A depends on F then:
+                                #   subtrees_larr(A) == (list (list B A) (list D C A ) (list F A) )
+                                set subtrees_larr($act) [list ]
+                                set dependents_count_arr($act) 0
+                                foreach dep_act $dependencies_larr($act) {
+                                    foreach path_list $subtrees_larr(${dep_act}) {
+                                        # Mark which tracks are complete (not partial track segments), 
+                                        # so that total program cost calculations don't include duplicate, incomplete ptracks
+                                        ## path_tree_p_arr answers question: is this tree of ptracks complete (ie not a subset of another track or tree)?
+                                        set path_tree_p_arr($dep_act) 0
+                                        set path_tree_p_arr($act) 1
+                                        set path_new_list $path_list
+                                        lappend path_new_list $act
+                                        lappend subtrees_larr($act) $path_new_list
+                                    }
+                                    ## dependents_count_arr(act) is count number of activities in each subtree, not including the activity itself.
+                                    set dependents_count_arr($act) [expr { $dependents_count_arr($act) + $dependents_count_arr($dep_act) + 1 } ]
+                                }
+                                if { [llength $subtrees_larr($act)] eq 0 } {
+                                    lappend subtrees_larr($act) $act
+                                    set path_tree_p_arr($act) 1
+                                }
+
+                                # activity calculated
+                                set act_calculated_p_larr($act) 1
+                            }
+
+                            if { $dependencies_met_p == 0 } {
+                                set all_paths_calculated_p 0
+                            }
+                        }
+                        incr i
+                    }
+                    # end while all_paths_calculated_p == 0
+                    
+                    # # # Curve calculations complete for t_moment and c_moment.
+                    ns_log Notice "acc_fin::scenario_prettify.2402: scenario '$scenario_tid' Curve calculations completed for t_moment and c_moment. "
+                    
+                    
+                    set all_deps_met_p 1
+                    foreach act $activities_list {
                         set dependencies_met_p 1
                         foreach dep $dependencies_larr($act) {
-                            ns_log Notice "acc_fin::scenario_prettify.2308: scenario '$scenario_tid' act $act dep $dep act_calculated_p_larr($dep) '$act_calculated_p_larr($dep)' len \$dep [string length $dep]"
+                            ns_log Notice "acc_fin::scenario_prettify.2409: scenario '$scenario_tid' dep $dep act_calculated_p_larr($dep) '$act_calculated_p_larr($dep)' len \$dep [string length $dep]"
                             if { $act_calculated_p_larr($dep) == 0 } {
                                 set dependencies_met_p 0
                             }
                         }
-
-                        if { $dependencies_met_p && $act_calculated_p_larr($act) == 0 } {
-                            # Calc max_num: maximum relative sequence number for activity dependencies
-                            set max_num 0
-                            foreach test_act $dependencies_larr($act) {
-                                set test $act_seq_num_arr(${test_act})
-                                if { $max_num < $test } {
-                                    set max_num $test
-                                }
-                            }
-                            
-                            # Add activity's relative sequence number: act_seq_num_arr
-                            set act_seq_nbr [expr { $max_num + 1 } ]
-                            set act_seq_num_arr($act) $act_seq_nbr
-                            
-                            # increment act_seq_max and set defaults for a new max seq number?
-                            if { $act_seq_nbr > $act_seq_max } {
-                                set act_seq_max $act_seq_nbr
-                                set act_seq_list_arr(${act_seq_max}) [list ]
-                                set act_count_of_seq_arr(${act_seq_max}) 0
-                            }
-                            # add activity to the network for this sequence number
-                            lappend act_seq_list_arr(${act_seq_nbr}) $act
-                            incr act_count_of_seq_arr(${act_seq_nbr})
-                            
-                            # Calculations including dependents
-                            if { !$error_time } {
-                                # branches_duration_max is the min. path duration to complete dependent paths
-                                # set branches_duration_max to the longest duration of dependent segments.
-                                set branches_duration_max 0.
-                                foreach dep_act $dependencies_larr($act) {
-                                    if { $tn_arr(${dep_act}) > $branches_duration_max } {
-                                        set branches_duration_max $tn_arr(${dep_act})
-                                    }
-                                }
-                                ##   tn_arr(act) is duration of ptrack up to (and including) activity.
-                                set tn_arr($act) [expr { $branches_duration_max + $act_time_expected_arr($act) } ]
-                                ns_log Notice "acc_fin::scenario_prettify.2384: scenario '$scenario_tid' act $act tn_arr($act) $tn_arr($act)"
-                            }
-                            if { !$error_cost } {
-                                set paths_cost_sum 0.
-                                foreach dep_act $dependencies_larr($act) {
-                                    #   paths_cost_sum is sum of costs for each dependent ptrack
-                                    #was set paths_cost_sum [expr { $paths_cost_sum + $act_cost_expected_arr(${dep_act}) } ]
-                                    ns_log Notice "acc_fin::scenario_prettify.2392: scenario '$scenario_tid' act $act cn_arr($act) $cn_arr($act) paths_cost_sum $paths_cost_sum + cn_arr({$dep_act}) $cn_arr(${dep_act})"
-                                    set paths_cost_sum [expr { $paths_cost_sum + $cn_arr(${dep_act}) } ]
-                                }
-                                ##   cn_arr is cost of all dependent ptrack plus cost of activity
-                                set cn_arr($act) [expr { $paths_cost_sum + $act_cost_expected_arr($act) } ]
-                                ns_log Notice "acc_fin::scenario_prettify.2394: scenario '$scenario_tid' act $act cn_arr($act) $cn_arr($act)"
-                            }
-                            
-                            # subtrees_larr(activity) is an array of list of ptracks ending with trunk activity
-                            #   paths (or ptracks) represented as a list of activity lists in chronological order (last acitivty last).
-                            #   For example, if A depends on B and C, and C depends on D, and A depends on F then:
-                            #   subtrees_larr(A) == (list (list B A) (list D C A ) (list F A) )
-                            set subtrees_larr($act) [list ]
-                            set dependents_count_arr($act) 0
-                            foreach dep_act $dependencies_larr($act) {
-                                foreach path_list $subtrees_larr(${dep_act}) {
-                                    # Mark which tracks are complete (not partial track segments), 
-                                    # so that total program cost calculations don't include duplicate, incomplete ptracks
-                                    ## path_tree_p_arr answers question: is this tree of ptracks complete (ie not a subset of another track or tree)?
-                                    set path_tree_p_arr($dep_act) 0
-                                    set path_tree_p_arr($act) 1
-                                    set path_new_list $path_list
-                                    lappend path_new_list $act
-                                    lappend subtrees_larr($act) $path_new_list
-                                }
-                                ## dependents_count_arr(act) is count number of activities in each subtree, not including the activity itself.
-                                set dependents_count_arr($act) [expr { $dependents_count_arr($act) + $dependents_count_arr($dep_act) + 1 } ]
-                            }
-                            if { [llength $subtrees_larr($act)] eq 0 } {
-                                lappend subtrees_larr($act) $act
-                                set path_tree_p_arr($act) 1
-                            }
-
-                            # activity calculated
-                            set act_calculated_p_larr($act) 1
-                        }
-
                         if { $dependencies_met_p == 0 } {
-                            set all_paths_calculated_p 0
+                            set all_deps_met_p 0
                         }
+                        # ns_log Notice "acc_fin::scenario_prettify: act $act act_seq_num_arr '$act_seq_num_arr($act)'"
+                        # ns_log Notice "acc_fin::scenario_prettify: act_seq_list_arr '$act_seq_list_arr($act_seq_num_arr($act))' $act_count_of_seq_arr($act_seq_num_arr($act))"
                     }
-                    incr i
-                }
-                # end while all_paths_calculated_p == 0
-                
-                # # # Curve calculations complete for t_moment and c_moment.
-                ns_log Notice "acc_fin::scenario_prettify.2402: scenario '$scenario_tid' Curve calculations completed for t_moment and c_moment. "
-                
-                
-                set all_deps_met_p 1
-                foreach act $activities_list {
-                    set dependencies_met_p 1
-                    foreach dep $dependencies_larr($act) {
-                        ns_log Notice "acc_fin::scenario_prettify.2409: scenario '$scenario_tid' dep $dep act_calculated_p_larr($dep) '$act_calculated_p_larr($dep)' len \$dep [string length $dep]"
-                        if { $act_calculated_p_larr($dep) == 0 } {
-                            set dependencies_met_p 0
+                    ns_log Notice "acc_fin::scenario_prettify.2416: scenario '$scenario_tid' All dependencies met? 1 = yes. all_deps_met_p $all_deps_met_p"
+                    if { $all_deps_met_p == 0 } {
+                        set hint "Hint: activities "
+                        set separator ""
+                        foreach act $activities_list {
+                            # act_seq_num_arr in next check may be redundant.
+                            if { $act_calculated_p_larr($act) == 0 && $act_seq_num_arr($act) == 0 } {
+                                append hint $separator $act
+                                set separator ", "
+                            }
                         }
+                        append hint "."
+                        set error_fail 1
+                        acc_fin::pretti_log_create $scenario_tid "all_deps_met_p" "value" "All dependencies could not be met. Possible circular reference in dependencies.(ref2609) $hint" $user_id $instance_id
+                        
                     }
-                    if { $dependencies_met_p == 0 } {
-                        set all_deps_met_p 0
-                    }
-                    # ns_log Notice "acc_fin::scenario_prettify: act $act act_seq_num_arr '$act_seq_num_arr($act)'"
-                    # ns_log Notice "acc_fin::scenario_prettify: act_seq_list_arr '$act_seq_list_arr($act_seq_num_arr($act))' $act_count_of_seq_arr($act_seq_num_arr($act))"
-                }
-                ns_log Notice "acc_fin::scenario_prettify.2416: scenario '$scenario_tid' All dependencies met? 1 = yes. all_deps_met_p $all_deps_met_p"
-                if { $all_deps_met_p == 0 } {
-                    set hint "Hint: activities "
-                    set separator ""
-                    foreach act $activities_list {
-                        # act_seq_num_arr in next check may be redundant.
-                        if { $act_calculated_p_larr($act) == 0 && $act_seq_num_arr($act) == 0 } {
-                            append hint $separator $act
-                            set separator ", "
-                        }
-                    }
-                    append hint "."
-                    set error_fail 1
-                    acc_fin::pretti_log_create $scenario_tid "all_deps_met_p" "value" "All dependencies could not be met. Possible circular reference in dependencies.(ref2609) $hint" $user_id $instance_id
-                    
-                }
 
-                
+                }
                 # # # compile results for report
                 ns_log Notice "acc_fin::scenario_prettify.2431: scenario '$scenario_tid' compile results for report."
                 if { $error_fail == 0 } {
