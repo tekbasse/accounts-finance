@@ -352,10 +352,10 @@ if { $form_posted } {
                     } else {
                         set created_tid [qss_table_create $table_lists $table_name $table_title $table_comments $table_template_id $table_flags $instance_id $user_id ]
                         if { $created_tid > 0 } {
-                            # trash the old one if it's made by the same user
+                            # trash the old one if it's made by the same user and has same name
                             # set table_stats_list [qss_table_stats $table_tid]
                             set user_id_prev [lindex $table_stats 11]
-                            if { $user_id eq $user_id_prev } {
+                            if { $user_id eq $user_id_prev && $table_name eq $name_old } {
                                 qss_table_trash 1 $table_tid $instance_id $user_id
                             }
                         }
