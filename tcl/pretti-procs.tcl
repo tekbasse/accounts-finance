@@ -3115,8 +3115,8 @@ ad_proc -public acc_fin::scenario_prettify {
                         # adjustment required for count_on_cp_p_arr, if this activity has a coefficient
                         set ac_idx [string first "*" $act]
                         ns_log Notice "acc_fin::scenario_prettify.3118: scenario '$scenario_tid' ac_idx '${ac_idx}'"
-                        if { $ac_idx > 1 } {
-                            incr ac_idx -1
+                        if { $ac_idx > 0 } {
+                            incr ac_idx 1
                             set ac [string range $act $ac_idx end]
                         ns_log Notice "acc_fin::scenario_prettify.3118: scenario '$scenario_tid' ac_idx '${ac_idx}' ac '$ac' act '$act'"
                             # if activity has a coefficient, then root activity gets coefs, but activity counts 1 ie. swap coef values for this case
