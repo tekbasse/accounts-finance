@@ -934,7 +934,7 @@ ad_proc -private acc_fin::pretti_columns_list {
             # each row is a cell (ie activity on a path), in format of detailed PRETTI internal output. See code. 
             # p5 was:
             #set ret_list [list activity_ref path_act_counter path_counter dependencies_q cp_q significant_q popularity waypoint_duration activity_time direct_dependencies activity_cost waypoint_cost path_col activity_seq dependents_count dep_act_seq ]
-            set ret_list [list activity_ref activity_counter dependencies_q direct_dependencies dependencies_count count_on_cp_p on_a_sig_path_p act_freq_in_load_cp_alts popularity activity_time waypoint_duration t_dc_source activity_cost waypoint_cost c_dc_source act_coef]
+            set ret_list [list activity_ref activity_counter dependencies_q direct_dependencies dependencies_count count_on_cp_p on_a_sig_path_p act_freq_in_load_cp_alts popularity activity_time waypoint_duration t_dc_source activity_cost waypoint_cost c_dc_source act_coef max_concurrent max_overlap_pct]
         }
         p60 {
             # each row is a path, in format of detailed PRETTI internal output. See code. All columns are required to reproduce output to p4 (including p4 comments).
@@ -2364,7 +2364,7 @@ ad_proc -public acc_fin::scenario_prettify {
         # Effectively, p2 imports parts of p3 that are more detailed than p2, to build the final p2 activity table
         # p3 includes default modifiers from p1 as well.
         
-        set constants_woc_list [list name description]
+        set constants_woc_list [list name description max_concurrent max_overlap_pct ]
         # _woc_ = without curve data (or columns)
         # Removed dependent_tasks from task_type substitution, 
         # because dependent_tasks creates a level of complexity significant enough to be avoided
@@ -2436,8 +2436,13 @@ ad_proc -public acc_fin::scenario_prettify {
                             # Requirements met: There is a coefficient and an existing activity.
                             ns_log Notice "acc_fin::scenario_prettify.1632: scenario '$scenario_tid' term '$term' exists as an activity, so creating new activity with coefficient '${activity}'."
                             # Generate a new activity with coeffient for this run.
+                            set larr_len [expr { [llength $activities_list] - 2 } ]
                             foreach constant $constants_list {
-                                lappend p2_larr($constant) [lindex $p2_larr($constant) $term_idx]
+                                ns_log Notice "acc_fin::scenario_prettify.1639: scenario '$scenario_tid' larr_len $larr_len term_idx $term_idx constant $constant"
+                                if { [llength $p2_larr($constant) ] > $larr_len } {
+                                    lappend p2_larr($constant) [lindex $p2_larr($constant) $term_idx]
+                                }
+
                             }
                             lappend p2_larr(_coef) $coefficient
                             lappend activities_list $activity
@@ -2451,23 +2456,24 @@ ad_proc -public acc_fin::scenario_prettify {
                                 set max_overlap_pct_idx [lsearch -exact $constants_list "max_overlap_pct"]
                                 set max_overlap_pct $p1_arr(max_overlap_pct)
                                 if { $max_overlap_pct_idx > -1 && [llength $p2_larr(max_overlap_pct)] > 0 } {
-                                    set test [lindex $p2_larr(max_overlap_pct) $max_overlap_pct_idx]
+                                    set test [lindex $p2_larr(max_overlap_pct) $term_idx]
                                     if { $test ne "" } {
                                         set max_overlap_pct $test
                                     }
                                 }
 
-                                set max_concurrent_idx [lsearch -exact $constants_list "max_concurrent_idx"]
+                                set max_concurrent_idx [lsearch -exact $constants_list "max_concurrent"]
                                 set max_concurrent $p1_arr(max_concurrent)
+                                ns_log Notice "acc_fin::scenario_prettify.1671: scenario '$scenario_tid' p1_arr(max_concurrent) '$p1_arr(max_concurrent)' max_concurrent_idx ${max_concurrent_idx} llength p2_larr(max_concurrent) [llength $p2_larr(max_concurrent)] test '[lindex $p2_larr(max_concurrent) $term_idx]'"
                                 if { $max_concurrent_idx > -1 && [llength $p2_larr(max_concurrent)] > 0 } {
-                                    set test [lindex $p2_larr(max_concurrent) $max_concurrent_idx]
+                                    set test [lindex $p2_larr(max_concurrent) $term_idx]
                                     if { $test ne "" } {
                                         set max_concurrent $test
                                     }
                                 }
 
-                                ns_log Notice "acc_fin::scenario_prettify.1673: scenario '$scenario_tid' p1_arr(max_overlap_pct) '$p1_arr(max_overlap_pct)' max_overlap_pct_idx ${max_overlap_pct_idx}"
-                                ns_log Notice "acc_fin::scenario_prettify.1675: scenario '$scenario_tid' max_overlap_pct '${max_overlap_pct}' max_concurrent '${max_concurrent}' before validation"
+                                #ns_log Notice "acc_fin::scenario_prettify.1673: scenario '$scenario_tid' p1_arr(max_overlap_pct) '$p1_arr(max_overlap_pct)' max_overlap_pct_idx ${max_overlap_pct_idx}"
+                                #ns_log Notice "acc_fin::scenario_prettify.1675: scenario '$scenario_tid' max_overlap_pct '${max_overlap_pct}' max_concurrent '${max_concurrent}' before validation"
                                 # activity curve @tcurvenum
                                 # for each point t(pm) in curve time_clarr($_tCurveRef), max_overlap_pct, max_concurrent, coeffient c
                                 if { [qf_is_decimal $max_overlap_pct ] && $max_overlap_pct <= 1. && $max_overlap_pct >= 0. } {
@@ -2490,7 +2496,8 @@ ad_proc -public acc_fin::scenario_prettify {
                                     set coef_p1 1.
                                     set coef_p2 0.
                                 }
-                                
+                                set act_maxol_arr(${activity}) $max_overlap_pct
+                                set act_maxcc_arr(${activity}) $max_concurrent
                                 # k3 calculates length of a full block max_concurrent wide as a decimal of block size, 1 = 1 block of maximum number of concurrent
                                 set k3 [expr { 1. + ( $coef_p1 - 1. ) * ( 1. - $max_overlap_pct ) } ]
                                 # k4 calculates length of partial blocks (one more activity than full block activity count, but maybe not overlapped as far)
@@ -2528,13 +2535,18 @@ ad_proc -public acc_fin::scenario_prettify {
                                 set tcurvenum [acc_fin::larr_set time_clarr $curve_lol]
                                 # save new reference
                                 lappend p2_larr(_tCurveRef) $tcurvenum
+                                set act_tcref($activity) [lindex $p2_larr(_tCurveRef) $i]
+
+
                                 lappend p2_larr(_tDcSource) 7
                                 ns_log Notice "acc_fin::scenario_prettify.1674: scenario '$scenario_tid' new t curve: time_clarr($tcurvenum) '$curve_lol'"
                             } else {
                                 lappend p2_larr(_tCurveRef) ""
                                 lappend p2_larr(_tDcSource) ""
+                                set act_tcref($activity) ""
                                 ns_log Warning "acc_fin::scenario_prettify.1676: scenario '$scenario_tid' NO tcurvenum for '$curve_lol'"
                             }
+
                             set ccurvenum [lindex $p2_larr(_cCurveRef) $term_idx]
                             if { [lindex $p2_larr(_cCurveRef) $term_idx] ne "" } {
                                 # New curve is isn't affected by overlap or max_concurrent. 
@@ -2558,7 +2570,7 @@ ad_proc -public acc_fin::scenario_prettify {
                                     if { $label_idx > -1 } {
                                         set label [lindex $point $label_idx]
                                     }
-                                    set y_new [expr { $y * $k5 } ]
+                                    set y_new [expr { $y * $coefficient } ]
                                     set point_new [list $y_new $x]
                                     if { $label_idx > -1 } {
                                         lappend point_new $label
@@ -2570,11 +2582,13 @@ ad_proc -public acc_fin::scenario_prettify {
                                 set ccurvenum [acc_fin::larr_set cost_clarr $curve_lol]
                                 # save new reference
                                 lappend p2_larr(_cCurveRef) $ccurvenum
+                                set act_ccref($activity) [lindex $p2_larr(_cCurveRef) $i]
                                 lappend p2_larr(_cDcSource) 7
                                 ns_log Notice "acc_fin::scenario_prettify.1694: scenario '$scenario_tid' new c curve: cost_clarr($ccurvenum) '$curve_lol'"
                             } else {
                                 lappend p2_larr(_cCurveRef) ""
                                 lappend p2_larr(_cDcSource) ""
+                                set act_ccref($activity) ""
                             }
                             ns_log Notice "acc_fin::scenario_prettify.1700: scenario '$scenario_tid' term '$term' tcurvenum '$tcurvenum' ccurvenum '$ccurvenum'"
                         } else {
@@ -3100,9 +3114,11 @@ ad_proc -public acc_fin::scenario_prettify {
                         set count_on_cp_arr($act) [llength [lsearch -exact -all $cp_list $act]]
                         # adjustment required for count_on_cp_p_arr, if this activity has a coefficient
                         set ac_idx [string first "*" $act]
+                        ns_log Notice "acc_fin::scenario_prettify.3118: scenario '$scenario_tid' ac_idx '${ac_idx}'"
                         if { $ac_idx > 1 } {
                             incr ac_idx -1
                             set ac [string range $act $ac_idx end]
+                        ns_log Notice "acc_fin::scenario_prettify.3118: scenario '$scenario_tid' ac_idx '${ac_idx}' ac '$ac' act '$act'"
                             # if activity has a coefficient, then root activity gets coefs, but activity counts 1 ie. swap coef values for this case
                             set count_on_cp_p_arr($ac) [expr { $on_critical_path_p_arr($ac) * $act_coef($act) + $count_on_cp_p_arr($ac) } ]
                             set count_on_cp_p_arr($act) [expr { $on_critical_path_p_arr($act) * $act_coef($ac) + $count_on_cp_p_arr($act) } ]
@@ -3292,9 +3308,16 @@ ad_proc -public acc_fin::scenario_prettify {
                         incr act_count_on_cp $count_on_cp_arr($act)
                         set has_direct_dependency_p [expr { [llength $dependencies_larr($act)] > 0 } ]
                         set on_a_sig_path_p [expr { $act_freq_in_load_cp_alts_arr($act) > $act_count_median } ]
-                        
+                        set act_maxcc ""
+                        set act_maxol ""
+                        if { [info exists act_maxcc_arr($act) ] } {
+                            set act_maxcc $act_maxcc_arr($act)
+                        }
+                        if { [info exists act_maxol_arr($act) ] } {
+                            set act_maxol $act_maxol_arr($act)
+                        }
                         # base for p5
-                        set activity_list [list $act $activity_counter $has_direct_dependency_p [join $dependencies_larr($act) " "] [llength $dependencies_larr($act)] $on_critical_path_p_arr($act) $on_a_sig_path_p $act_freq_in_load_cp_alts_arr($act) $popularity_arr($act) $act_time_expected_arr($act) $tn_arr($act) $t_dc_source_arr($act) $act_cost_expected_arr($act) $cn_arr($act) $c_dc_source_arr($act) $act_coef($act) $act_tcref($act) $act_ccref($act) ]
+                        set activity_list [list $act $activity_counter $has_direct_dependency_p [join $dependencies_larr($act) " "] [llength $dependencies_larr($act)] $on_critical_path_p_arr($act) $on_a_sig_path_p $act_freq_in_load_cp_alts_arr($act) $popularity_arr($act) $act_time_expected_arr($act) $tn_arr($act) $t_dc_source_arr($act) $act_cost_expected_arr($act) $cn_arr($act) $c_dc_source_arr($act) $act_coef($act)  $act_maxcc $act_maxol $act_tcref($act) $act_ccref($act) ]
                         lappend p5_lists $activity_list
                     }
                     
