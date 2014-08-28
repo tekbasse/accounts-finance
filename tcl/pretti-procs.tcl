@@ -836,8 +836,7 @@ ad_proc -private acc_fin::pretti_columns_list {
             #      time_probability_moment A percentage (0..1) along the (cumulative) distribution curve. defaults to 0.5
             #      cost_probability_moment A percentage (0..1) along the (cumulative) distribution curve. defaults to "", which defaults to same as time_probability_moment
             #set ret_list \[list name value\]
-            ### adding max_concurrent and max_overlap_pct but not sure if these have been coded for use yet..
-            set ret_list [list activity_table_tid activity_table_name task_types_tid task_types_name time_dist_curve_name time_dist_curve_tid cost_dist_curve_name cost_dist_curve_tid time_est_short time_est_median time_est_long time_probability_moment cost_est_low cost_est_median cost_est_high cost_probability_moment db_format index_equation precision tprecision cprecision pert_omp max_concurrent max_overlap_pct ]
+            set ret_list [list activity_table_tid activity_table_name task_types_tid task_types_name time_dist_curve_name time_dist_curve_tid cost_dist_curve_name cost_dist_curve_tid time_est_short time_est_median time_est_long time_probability_moment cost_est_low cost_est_median cost_est_high cost_probability_moment db_format index_equation precision tprecision cprecision pert_omp max_concurrent max_run_time max_tasks_per_run max_overlap_pct ]
         }
         p11 {
             #set ret_list \[list name value\]
@@ -858,7 +857,9 @@ ad_proc -private acc_fin::pretti_columns_list {
             #      name                   defaults to type's name (if exists else blank)
             #      description            defaults to type's description (if exists else blank)
             #      max_concurrent         defaults to type's max_concurrent 
-            #      max_overlap_pct     defaults to type's max_overlap_pct021
+            #      max_run_time           defaults to type's max_run_time or if blank (unlimited run time)
+            #      max_tasks_per_run      defaults to types' max_tasks_per_run or if blank (unlimited tasks per run)
+            #      max_overlap_pct        defaults to type's max_overlap_pct021
             
             #      time_est_short         estimated shortest duration. (Lowest statistical deviation value)
             #      time_est_median        estimated median duration. (Statistically, half of deviations are more or less than this.) 
@@ -881,7 +882,7 @@ ad_proc -private acc_fin::pretti_columns_list {
             #      _coef                  integer coefficient for use with calculations that require remembering the coefficient when multiple of an activity is referenced.
             #      _tDcSource             source of time curve used from acc_fin::curve_import
             #      _cDcSource             source of cost curve used from acc_fin::curve_import
-            set ret_list [list activity_ref dependent_tasks aid_type name description max_concurrent max_overlap_pct time_est_short time_est_median time_est_long time_dist_curve_tid time_dist_curve_name time_probability_moment cost_est_low cost_est_median cost_est_high cost_dist_curve_tid cost_dist_curve_name cost_probability_moment time_actual cost_actual]
+            set ret_list [list activity_ref dependent_tasks aid_type name description max_concurrent max_run_time max_tasks_per_run max_overlap_pct time_est_short time_est_median time_est_long time_dist_curve_tid time_dist_curve_name time_probability_moment cost_est_low cost_est_median cost_est_high cost_dist_curve_tid cost_dist_curve_name cost_probability_moment time_actual cost_actual]
 
         }
         p21 {
@@ -896,7 +897,9 @@ ad_proc -private acc_fin::pretti_columns_list {
             #                           to confirm that all dependencies are satisified.
             #      name
             #      description
-            #      max_concurrent       (as an integer, blank = no limit)
+            #      max_concurrent       (as a positive integer, blank = no limit)
+            #      max_run_time         (decimal, blank = no limit)
+            #      max_tasks_per_run    (as a positive integer, or blank = no limit)
             #      max_overlap_pct021  (as a percentage from 0 to 1, blank = 1)
             #
             #      RESERVED columns:
@@ -905,7 +908,7 @@ ad_proc -private acc_fin::pretti_columns_list {
             #      _tDcSource             source of time curve used from acc_fin::curve_import
             #      _cDcSource             source of cost curve used from acc_fin::curve_import
 
-            set ret_list [list type dependent_tasks dependent_types name description max_concurrent max_overlap_pct time_dist_curve_name time_dist_curve_tid cost_dist_curve_name cost_dist_curve_tid time_est_short time_est_median time_est_long cost_est_low cost_est_median cost_est_high ]
+            set ret_list [list type dependent_tasks dependent_types name description max_concurrent max_run_time max_tasks_per_run max_overlap_pct time_dist_curve_name time_dist_curve_tid cost_dist_curve_name cost_dist_curve_tid time_est_short time_est_median time_est_long cost_est_low cost_est_median cost_est_high ]
         }
         p31 {
             set ret_list [list type]
@@ -934,7 +937,7 @@ ad_proc -private acc_fin::pretti_columns_list {
             # each row is a cell (ie activity on a path), in format of detailed PRETTI internal output. See code. 
             # p5 was:
             #set ret_list [list activity_ref path_act_counter path_counter dependencies_q cp_q significant_q popularity waypoint_duration activity_time direct_dependencies activity_cost waypoint_cost path_col activity_seq dependents_count dep_act_seq ]
-            set ret_list [list activity_ref activity_counter dependencies_q direct_dependencies dependencies_count count_on_cp_p on_a_sig_path_p act_freq_in_load_cp_alts popularity activity_time waypoint_duration t_dc_source activity_cost waypoint_cost c_dc_source act_coef max_concurrent max_overlap_pct]
+            set ret_list [list activity_ref activity_counter dependencies_q direct_dependencies dependencies_count count_on_cp_p on_a_sig_path_p act_freq_in_load_cp_alts popularity activity_time waypoint_duration t_dc_source activity_cost waypoint_cost c_dc_source act_coef max_concurrent max_run_time max_tasks_per_run max_overlap_pct]
         }
         p60 {
             # each row is a path, in format of detailed PRETTI internal output. See code. All columns are required to reproduce output to p4 (including p4 comments).
@@ -2066,8 +2069,9 @@ ad_proc -public acc_fin::scenario_prettify {
 
     set p1_arr(time_probability_moment) "0.5"
     # set p1_arr(max_overlap_pct) "" defaults to 1
-    # set p1_arr(max_concurrent) "" defaults to infinite ie no concurrency limit.
-
+    # set p1_arr(max_concurrent) "" defaults to no limit.
+    # set p1_arr(max_run_time) "" defaults no limit
+    # set p1_arr(max_tasks_per_run) "" defaults to no limit
     # # # identify table ids to process
     set constants_required_list [acc_fin::pretti_columns_list p1 1]
     qss_tid_scalars_to_array $scenario_tid p1_arr $constants_list $constants_required_list $instance_id $user_id
@@ -2248,7 +2252,7 @@ ad_proc -public acc_fin::scenario_prettify {
                     # validate decimal values before importing
                     set type_errors_count 0
                     set type_errors_p 0
-                    set column_maybe_ck_list [list max_concurrent max_overlap_pct time_dist_curve_tid cost_dist_curve_tid time_est_short time_est_median time_est_long cost_est_low cost_est_median cost_est_high]
+                    set column_maybe_ck_list [list max_concurrent max_run_time max_tasks_per_run max_overlap_pct time_dist_curve_tid cost_dist_curve_tid time_est_short time_est_median time_est_long cost_est_low cost_est_median cost_est_high]
                     set column_ck_list [list ]
                     set titles_list [array names p3_larr]
                     # collect titles that are in p3_larr that should be checked
@@ -2364,7 +2368,7 @@ ad_proc -public acc_fin::scenario_prettify {
         # Effectively, p2 imports parts of p3 that are more detailed than p2, to build the final p2 activity table
         # p3 includes default modifiers from p1 as well.
         
-        set constants_woc_list [list name description max_concurrent max_overlap_pct ]
+        set constants_woc_list [list name description max_concurrent max_run_time max_tasks_per_run max_overlap_pct ]
         # _woc_ = without curve data (or columns)
         # Removed dependent_tasks from task_type substitution, 
         # because dependent_tasks creates a level of complexity significant enough to be avoided
@@ -2450,9 +2454,12 @@ ad_proc -public acc_fin::scenario_prettify {
                             set tcurvenum [lindex $p2_larr(_tCurveRef) $term_idx]
                             if { $tcurvenum ne "" } {
                                 # create new curve based on the one referenced 
-                                # parameters: max_concurrent max_overlap_pct
+                                # parameters: max_concurrent max_run_time max_tasks_per_run max_overlap_pct
                                 #      max_overlap_pct  (as a percentage from 0 to 1, blank = 1)
-                                #      max_concurrent       (as an integer, blank = no limit)
+                                #      max_concurrent   (as a positive integer, blank = no limit)
+                                #      max_run_time (as a decimal, blank = no limit)
+                                #      max_tasks_per_run (as a postive integer, blank = no limit)
+
                                 set max_overlap_pct_idx [lsearch -exact $constants_list "max_overlap_pct"]
                                 set max_overlap_pct $p1_arr(max_overlap_pct)
                                 if { $max_overlap_pct_idx > -1 && [llength $p2_larr(max_overlap_pct)] > 0 } {
@@ -2464,7 +2471,6 @@ ad_proc -public acc_fin::scenario_prettify {
 
                                 set max_concurrent_idx [lsearch -exact $constants_list "max_concurrent"]
                                 set max_concurrent $p1_arr(max_concurrent)
-                                ns_log Notice "acc_fin::scenario_prettify.1671: scenario '$scenario_tid' p1_arr(max_concurrent) '$p1_arr(max_concurrent)' max_concurrent_idx ${max_concurrent_idx} llength p2_larr(max_concurrent) [llength $p2_larr(max_concurrent)] test '[lindex $p2_larr(max_concurrent) $term_idx]'"
                                 if { $max_concurrent_idx > -1 && [llength $p2_larr(max_concurrent)] > 0 } {
                                     set test [lindex $p2_larr(max_concurrent) $term_idx]
                                     if { $test ne "" } {
@@ -2472,8 +2478,25 @@ ad_proc -public acc_fin::scenario_prettify {
                                     }
                                 }
 
-                                #ns_log Notice "acc_fin::scenario_prettify.1673: scenario '$scenario_tid' p1_arr(max_overlap_pct) '$p1_arr(max_overlap_pct)' max_overlap_pct_idx ${max_overlap_pct_idx}"
-                                #ns_log Notice "acc_fin::scenario_prettify.1675: scenario '$scenario_tid' max_overlap_pct '${max_overlap_pct}' max_concurrent '${max_concurrent}' before validation"
+                                set max_run_time_idx [lsearch -exact $constants_list "max_run_time"]
+                                set max_run_time $p1_arr(max_run_time)
+                                if { $max_run_time_idx > -1 && [llength $p2_larr(max_run_time)] > 0 } {
+                                    set test [lindex $p2_larr(max_run_time) $term_idx]
+                                    if { $test ne "" } {
+                                        set max_run_time $test
+                                    }
+                                }
+
+                                set max_tasks_per_run_idx [lsearch -exact $constants_list "max_tasks_per_run"]
+                                set max_tasks_per_run $p1_arr(max_tasks_per_run)
+                                if { $max_tasks_per_run_idx > -1 && [llength $p2_larr(max_tasks_per_run)] > 0 } {
+                                    set test [lindex $p2_larr(max_tasks_per_run) $term_idx]
+                                    if { $test ne "" } {
+                                        set max_tasks_per_run $test
+                                    }
+                                }
+
+
                                 # activity curve @tcurvenum
                                 # for each point t(pm) in curve time_clarr($_tCurveRef), max_overlap_pct, max_concurrent, coeffient c
                                 if { [qf_is_decimal $max_overlap_pct ] && $max_overlap_pct <= 1. && $max_overlap_pct >= 0. } {
@@ -2482,29 +2505,61 @@ ad_proc -public acc_fin::scenario_prettify {
                                     acc_fin::pretti_log_create $scenario_tid "max_overlap_pct" "value" "max_overlap_pct '$max_overlap_pct' is out of range or blank. Set to 1 (100%). (ref1520)" $user_id $instance_id
                                     set max_overlap_pct 1.
                                 }
-                                if { [qf_is_natural_number $max_concurrent ] &&  $max_concurrent >= 1 } {
-                                    # validated
+                                if { [qf_is_decimal $max_concurrent ] &&  $max_concurrent >= 1 } {
+                                    # validated. should be a natural number, so round off
+                                    set max_concurrent [expr { round( $max_concurrent ) } ]
                                     # coef_p1 * max_concurrent + coef_p2 = $coefficient
-                                    set coef_p1 [expr { int( $coefficient / $max_concurrent ) } ]
-                                    set coef_p2 [expr { $coefficient - $coef_p1 * $max_concurrent } ]
+                                    set block_count [expr { ceil( $coefficient / $max_concurrent ) } ]
                                     # coef_p2 should be at most 1 less than max_concurrent
                                     # max_trailing_pct = 1. - max_overlap_pct
                                 } else {
                                     acc_fin::pretti_log_create $scenario_tid "max_concurrent" "value" "max_concurrent '$max_concurrent' is out of range or blank. Set to no limit. (ref1525)" $user_id $instance_id
-                                    #set max_concurrent $coeffcient
                                     # max_concurrent is coeffcient
-                                    set coef_p1 1.
-                                    set coef_p2 0.
+                                    set max_concurrent ""
+                                    set block_count 1.
                                 }
+                                if { [qf_is_decimal $max_run_time ] && $max_run_time > 0. } {
+                                    # validated
+                                } else {
+                                    set max_run_time ""
+                                }
+                                if { [qf_is_decimal $max_tasks_per_run] && $max_tasks_per_run >= 1. } {
+                                    # validated, but should be a natural number
+                                    set max_tasks_per_run [expr { round( $max_tasks_per_run ) } ]
+                                } else {
+                                    set max_tasks_per_run ""
+                                }
+                                # These are run time constraints for multiples of an activity
+                                set act_maxtpr_arr(${activity}) $max_tasks_per_run
+                                set act_maxrt_arr(${activity}) $max_run_time
                                 set act_maxol_arr(${activity}) $max_overlap_pct
                                 set act_maxcc_arr(${activity}) $max_concurrent
-                                # k3 calculates length of a full block max_concurrent wide as a decimal of block size, 1 = 1 block of maximum number of concurrent
-                                set k3 [expr { 1. + ( $coef_p1 - 1. ) * ( 1. - $max_overlap_pct ) } ]
-                                # k4 calculates length of partial blocks (one more activity than full block activity count, but maybe not overlapped as far)
-                                set k4 [expr { 1. + ( $coef_p2 - 1. ) * ( 1. - $max_overlap_pct ) } ]
-                                # Choose the longer of the two blocks:
-                                set k5 [f::max $k3 $k4]
-                                ns_log Notice "acc_fin::scenario_prettify.1699: scenario '$scenario_tid' coef_p1 ${coef_p1} coef_p2 ${coef_p2} k3 $k3 k4 $k4 k5 $k5"
+
+                                ## $coefficient count of tasks
+                                ## a $block_count of tasks operates in up to $max_concurrent tasks per block
+                                ## a partial block occupies the same amount of scheduled time as a full block
+
+                                # a run is a contiguous period of time. A run can be measured in run_time or task count
+                                ## max_run_time = max duration of a run in units of time
+                                ## $tasks_per_run up to $max_tasks_per_run
+                                ## a batch is a multiple of run cycles
+
+                                # Calculate batch duration in units of task_count assuming no run limits
+                                # ie. first run is whole, subsequent runs are of length 1 - max_overlap
+                                set max_dedicated_pct [expr { 1. - $max_overlap_pct } ]
+                                set tasks_per_run [expr { 1. + ( $block_count - 1. ) * $max_dedicated_pct } ]
+                                set run_count 1.
+
+                                if { $max_tasks_per_run ne "" && $max_tasks_per_run >= 1. } {
+                                    # Calculate duration assuming max_tasks_per_run
+                                    # adjust task_count and run_count?
+                                    if { $tasks_per_run > $max_tasks_per_run } {
+                                        set run_count [expr { ceil( $block_count / $max_tasks_per_run ) } ]
+                                        set tasks_per_run $max_tasks_per_run
+                                    }
+                                } 
+
+                                # create new dc based on old dc
                                 set curve_lol [list ]
                                 # add titles
                                 set title_list [lindex $time_clarr($tcurvenum) 0]
@@ -2516,20 +2571,73 @@ ad_proc -public acc_fin::scenario_prettify {
                                     lappend title_new_list "label"
                                 }
                                 lappend curve_lol $title_new_list
-                                foreach point [lrange $time_clarr($tcurvenum) 1 end] {
-                                    # point: x y label
-                                    set x [lindex $point $x_idx]
-                                    set y [lindex $point $y_idx]
-                                    if { $label_idx > -1 } {
-                                        set label [lindex $point $label_idx]
+
+                                if { $max_run_time ne "" } {
+                                    # Use a separate loop for scaling.
+                                    foreach point [lrange $time_clarr($tcurvenum) 1 end] {
+                                        # point: x y label
+                                        set x [lindex $point $x_idx]
+                                        set y [lindex $point $y_idx]
+                                        if { $label_idx > -1 } {
+                                            set label [lindex $point $label_idx]
+                                        }
+                                        # y_run_time is run_time for y
+                                        set y_run_time [expr { $y * $tasks_per_run * $max_overlap_pct + $max_dedicated_pct } ]
+                                        # y_new constrained by max_overlap_pct, max_concurrent, and max_tasks_per_run
+                                        set y_new [expr { $y_run_time * $run_count } ]
+                                        
+                                        # constrain y_run_time by max_run_time?
+                                        # is y_run_time (optimally set using max_tasks_per_run) too long?
+                                        if { $y_run_time > $max_run_time && $y > 0. && $y < $max_run_time } {
+                                            # max_run_time per run is exceeded for this probability moment (pm)
+                                            # calculate new tasks_per_run for this pm.
+                                            
+                                            # How many tasks fit in max_run_time?
+                                            if { $max_overlap_pct > 0. } {
+                                                set tasks_per_run_at_pm [expr { int( ( $max_run_time - $max_dedicated_pct * $y ) / ( $y * $max_overlap_pct ) ) } ]
+                                            } else {
+                                                # no overlap
+                                                set tasks_per_run_at_pm [expr { int( $max_run_time / $y ) } ]
+                                            }
+                                            set run_count_at_pm [expr { ceil( $block_count / $tasks_per_run_at_pm ) } ]
+                                            if { $run_count_at_pm >= $run_count } {
+                                                ns_log Warning "acc_fin::scenario_prettify.2600: scenario '$scenario_tid' run_count_at_pm ${run_count_at_pm} should never be more than run_count ${run_count} here. tasks_per_run_at_pm '${tasks_per_run_at_pm}' y '$y' y_run_time '${y_run_time}' max_run_time '${max_run_time}'"
+                                            }
+                                            set y_new [expr { $y * $run_count_at_pm * ( $tasks_per_run_pm * $max_overlap_pct + $max_dedicated_pct ) } ]
+                                        } elseif { $y_run_time > $max_run_time } {
+                                            # y == 0
+                                            # warn user for out of bounds value of Y
+                                            acc_fin::pretti_log_create $scenario_tid "dc y=0" "value" "activity '${activity}': max_run_time ignored in dc for y = 0. In distribution curve, y '${y}' cannot be 0 when calculating task_run_time with a coefficient and a dominant max_run_time constraint. Set max_run_time longer (or no limit), or increase value of y. (ref2601)" $user_id $instance_id
+                                            
+                                        } elseif { $y > $max_run_time } {
+                                            # y duration is larger than max_run_time..
+                                            acc_fin::pretti_log_create $scenario_tid "dc y" "value" "activity '${activity}': y value '${y}' is larger than max_run_time. max_run_time ignored. Set max_run_time longer (or no limit). (ref2602)" $user_id $instance_id
+                                        }
+                                        set point_new [list $y_new $x]
+                                        if { $label_idx > -1 } {
+                                            lappend point_new $label
+                                        }
+                                        lappend curve_lol $point_new
                                     }
-                                    set y_new [expr { $y * $k5 } ]
-                                    set point_new [list $y_new $x]
-                                    if { $label_idx > -1 } {
-                                        lappend point_new $label
+                                } else {
+                                    # max_run_time is unlimited
+                                    foreach point [lrange $time_clarr($tcurvenum) 1 end] {
+                                        # point: x y label
+                                        set x [lindex $point $x_idx]
+                                        set y [lindex $point $y_idx]
+                                        if { $label_idx > -1 } {
+                                            set label [lindex $point $label_idx]
+                                        }
+                                        set y_new [expr { $y * $run_count * ( $tasks_per_run * $max_overlap_pct + $max_dedicated_pct ) } ]
+                                        set point_new [list $y_new $x]
+                                        if { $label_idx > -1 } {
+                                            lappend point_new $label
+                                        }
+                                        lappend curve_lol $point_new
                                     }
-                                    lappend curve_lol $point_new
                                 }
+
+
                                 # save new curve
                                 
                                 set tcurvenum [acc_fin::larr_set time_clarr $curve_lol]
@@ -2549,7 +2657,7 @@ ad_proc -public acc_fin::scenario_prettify {
 
                             set ccurvenum [lindex $p2_larr(_cCurveRef) $term_idx]
                             if { [lindex $p2_larr(_cCurveRef) $term_idx] ne "" } {
-                                # New curve is isn't affected by overlap or max_concurrent. 
+                                # New curve is isn't affected by overlap or max_concurrent max_run_time max_tasks_per_run. 
                                 # New curve is simple multiplication of old and coefficient
                                 # create new curve
                                 set curve_lol [list ]
@@ -3310,14 +3418,23 @@ ad_proc -public acc_fin::scenario_prettify {
                         set on_a_sig_path_p [expr { $act_freq_in_load_cp_alts_arr($act) > $act_count_median } ]
                         set act_maxcc ""
                         set act_maxol ""
+                        set act_maxtpr ""
+                        set act_maxrt ""
                         if { [info exists act_maxcc_arr($act) ] } {
                             set act_maxcc $act_maxcc_arr($act)
                         }
                         if { [info exists act_maxol_arr($act) ] } {
                             set act_maxol $act_maxol_arr($act)
                         }
+                        if { [info exists act_maxtpr_arr($act) ] } {
+                            set act_maxtpr $act_maxtpr_arr($act)
+                        }
+                        if { [info exists act_maxrt_arr($act) ] } {
+                            set act_maxrt $act_maxrt_arr($act)
+                        }
+
                         # base for p5
-                        set activity_list [list $act $activity_counter $has_direct_dependency_p [join $dependencies_larr($act) " "] [llength $dependencies_larr($act)] $on_critical_path_p_arr($act) $on_a_sig_path_p $act_freq_in_load_cp_alts_arr($act) $popularity_arr($act) $act_time_expected_arr($act) $tn_arr($act) $t_dc_source_arr($act) $act_cost_expected_arr($act) $cn_arr($act) $c_dc_source_arr($act) $act_coef($act)  $act_maxcc $act_maxol $act_tcref($act) $act_ccref($act) ]
+                        set activity_list [list $act $activity_counter $has_direct_dependency_p [join $dependencies_larr($act) " "] [llength $dependencies_larr($act)] $on_critical_path_p_arr($act) $on_a_sig_path_p $act_freq_in_load_cp_alts_arr($act) $popularity_arr($act) $act_time_expected_arr($act) $tn_arr($act) $t_dc_source_arr($act) $act_cost_expected_arr($act) $cn_arr($act) $c_dc_source_arr($act) $act_coef($act)  $act_maxcc $act_maxrt $act_maxtpr $act_maxol $act_tcref($act) $act_ccref($act) ]
                         lappend p5_lists $activity_list
                     }
                     

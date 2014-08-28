@@ -374,6 +374,7 @@ ad_proc -private acc_fin::pretti_example_maker {
                 time_est_median {
                     set row_arr($title) [expr { int( [random] * 256. + 10. ) / 12. } ]
                 }
+                max_run_time -
                 time_est_long   { 
                     set row_arr($title) [expr { int( [random] * 256. + 20. ) / 6. } ]
                     # a random amount, assume hours for a task for example
@@ -388,6 +389,7 @@ ad_proc -private acc_fin::pretti_example_maker {
                     set row_arr($title) [expr { int( [random] * 400. + 360. ) / 100. } ]
                     # these could be usd or btc for example
                 }
+                max_tasks_per_run  -
                 max_concurrent {
                     set row_arr($title) [expr { int( [random] * 12 ) + 1 } ]
                 }
