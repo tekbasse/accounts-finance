@@ -2507,9 +2507,9 @@ ad_proc -public acc_fin::scenario_prettify {
                                 }
                                 if { [qf_is_decimal $max_concurrent ] &&  $max_concurrent >= 1 } {
                                     # validated. should be a natural number, so round off
-                                    set max_concurrent [expr { round( $max_concurrent ) } ]
+                                    set max_concurrent [expr { round( $max_concurrent ) + 0. } ]
                                     # coef_p1 * max_concurrent + coef_p2 = $coefficient
-                                    set block_count [expr { ceil( $coefficient / $max_concurrent ) } ]
+                                    set block_count [expr { ceil( $coefficient / $max_concurrent ) + 0. } ]
                                     # coef_p2 should be at most 1 less than max_concurrent
                                     # max_trailing_pct = 1. - max_overlap_pct
                                 } else {
@@ -2525,7 +2525,7 @@ ad_proc -public acc_fin::scenario_prettify {
                                 }
                                 if { [qf_is_decimal $max_tasks_per_run] && $max_tasks_per_run >= 1. } {
                                     # validated, but should be a natural number
-                                    set max_tasks_per_run [expr { round( $max_tasks_per_run ) } ]
+                                    set max_tasks_per_run [expr { round( $max_tasks_per_run ) + 0. } ]
                                 } else {
                                     set max_tasks_per_run ""
                                 }
@@ -2554,7 +2554,7 @@ ad_proc -public acc_fin::scenario_prettify {
                                     # Calculate duration assuming max_tasks_per_run
                                     # adjust task_count and run_count?
                                     if { $tasks_per_run > $max_tasks_per_run } {
-                                        set run_count [expr { ceil( $block_count / $max_tasks_per_run ) } ]
+                                        set run_count [expr { ceil( $block_count / $max_tasks_per_run ) + 0. } ]
                                         set tasks_per_run $max_tasks_per_run
                                     }
                                 } 
@@ -2582,7 +2582,7 @@ ad_proc -public acc_fin::scenario_prettify {
                                             set label [lindex $point $label_idx]
                                         }
                                         # y_run_time is run_time for y
-                                        set y_run_time [expr { $y * $tasks_per_run * $max_overlap_pct + $max_dedicated_pct } ]
+                                        set y_run_time [expr { $y * ( $tasks_per_run * $max_overlap_pct * 1. + $max_dedicated_pct ) } ]
                                         # y_new constrained by max_overlap_pct, max_concurrent, and max_tasks_per_run
                                         set y_new [expr { $y_run_time * $run_count } ]
                                         
@@ -2599,11 +2599,11 @@ ad_proc -public acc_fin::scenario_prettify {
                                                 # no overlap
                                                 set tasks_per_run_at_pm [expr { int( $max_run_time / $y ) } ]
                                             }
-                                            set run_count_at_pm [expr { ceil( $block_count / $tasks_per_run_at_pm ) } ]
+                                            set run_count_at_pm [expr { ceil( $block_count / ( $tasks_per_run_at_pm + 0. ) ) } ]
                                             if { $run_count_at_pm >= $run_count } {
                                                 ns_log Warning "acc_fin::scenario_prettify.2600: scenario '$scenario_tid' run_count_at_pm ${run_count_at_pm} should never be more than run_count ${run_count} here. tasks_per_run_at_pm '${tasks_per_run_at_pm}' y '$y' y_run_time '${y_run_time}' max_run_time '${max_run_time}'"
                                             }
-                                            set y_new [expr { $y * $run_count_at_pm * ( $tasks_per_run_pm * $max_overlap_pct + $max_dedicated_pct ) } ]
+                                            set y_new [expr { $y * $run_count_at_pm * ( $tasks_per_run_pm * $max_overlap_pct * 1. + $max_dedicated_pct ) } ]
                                         } elseif { $y_run_time > $max_run_time } {
                                             # y == 0
                                             # warn user for out of bounds value of Y
@@ -2628,7 +2628,8 @@ ad_proc -public acc_fin::scenario_prettify {
                                         if { $label_idx > -1 } {
                                             set label [lindex $point $label_idx]
                                         }
-                                        set y_new [expr { $y * $run_count * ( $tasks_per_run * $max_overlap_pct + $max_dedicated_pct ) } ]
+                                        set y_new [expr { $y * $run_count * ( 1. * $tasks_per_run * $max_overlap_pct + $max_dedicated_pct ) } ]
+                                        #ns_log Notice "acc_fin::scenario_prettify.2631: scenario '$scenario_tid' y $y run_count ${run_count} tasks_per_run ${tasks_per_run} max_overlap_pct ${max_overlap_pct} max_dedicated_pct ${max_dedicated_pct} y_new ${y_new}"
                                         set point_new [list $y_new $x]
                                         if { $label_idx > -1 } {
                                             lappend point_new $label
