@@ -11,11 +11,7 @@ aa_register_case pert_OMP_curve_conversions {
     aa_run_with_teardown \
         -rollback \
         -test_code {
-ns_log Notice "aa_register_case.14: Begin test 
-
-
-
-"
+ns_log Notice "aa_register_case.14: Begin test"
 
             # Use examples from 
             # http://en.wikipedia.org/wiki/Program_Evaluation_and_Review_Technique
@@ -381,6 +377,160 @@ aa_register_case scenario_prettify_test1 {
             #set date [dt_ansi_to_julian_single_arg "2003-01-01 01:01:01"]
             #aa_equals "Returns correct julian date" $date "2452641"
 
+        }
+}
+
+aa_register_case pretti_curve_tc_multiply {
+    Test acc_fin::pretti_curve_time_multiply and acc_fin::pretti_curve_cost_multiply proc
+} {
+
+    aa_run_with_teardown \
+        -rollback \
+        -test_code {
+
+            # To test these procs, a single point curve is passed to test all cases.
+
+            # The tested procedures determine the longest run within constraints based on equations.
+
+            # To test, this procedure checks all cases from coefficient to 1 to see
+            # which parameters are the best fit, then checks values against values 
+            # returned from the tested procs.
+
+            # set defaults
+            set activity "pretti_curve_tc_multiply"
+            set user_id 0
+            set instance_id [ad_conn package_id]
+            set scenario_id 0
+            set base_curve_lol [list ]
+            lappend base_curve_lol [list x y]
+            set tcurvenum ""
+            set ccurvenum ""
+            set use_t_run_p 1
+
+            # Instead of random, to consider all cases, a combination of distributed numbers are used.
+            # For simplicity, the combinations are run through a base_n number count.
+            set base_n 5
+            set combo_set_count 4
+            set permutations_count [expr { pow( $base_n , $combo_set_count ) } ]
+            set permutations_length [acc_fin::base $base_n $permutations_count]
+            set i 0
+            set random_list [list ]
+            for {set ii 0} { $ii < $base_n } { incr ii } {
+                set random_arr($ii) [qaf_round_to_decimals [random] 3]
+            }
+            set zeros [string range "000000000000000" 1 $combo_set_count]
+            while { $i < $permutations_count } {
+                
+                set i_n $zeros
+                set i_n2 [acc_fin::base $base_n $i]
+                append i_n $i_n2
+                ns_log Notice "accounts-finance/tcl/test/pretti-test-procs.tcl.425: ********* loop i $i i_n2 $i_n2"
+                set offset [expr { $combo_set_count - 1 } ]
+                set i0 [string range $i_n end-$offset end]
+                set i_list [split $i0 ""]
+                #ns_log Notice "accounts-finance/tcl/test/pretti-test-procs.tcl.429: i0 $i0 i_list '$i_list'"
+                lassign $i_list ri(1) ri(2) ri(3) ri(4) ri(5)
+                #ns_log Notice "accounts-finance/tcl/test/pretti-test-procs.tcl.430: ri(1) $ri(1) ri(2) $ri(2) ri(3) $ri(3) ri(4) $ri(4) ri(5) $ri(5) ri(6) $ri(6) ri(7) $ri(7) ri(8) $ri(8)"
+                #ns_log Notice "accounts-finance/tcl/test/pretti-test-procs.tcl.431: i_list '$i_list'"
+                for {set ii 1} {$ii <= $combo_set_count} {incr ii} {
+                    set r($ii) $random_arr($ri($ii))
+                    #ns_log Notice "accounts-finance/tcl/test/pretti-test-procs.tcl.436: r($ii) $r($ii) ri($ii) $ri($ii) random_arr(ri($ii)) $random_arr($ri($ii))"
+                }
+                set coefficient [expr { ceil( $r(1) * 1024 ) } ]
+                set y_time [qaf_round_to_decimals [expr { $r(2) * 100. + .0125 } ] 5]
+                # Set the constraints:
+                set max_overlap_pct $r(1)
+                set max_concurrent [expr { ceil( $coefficient * $r(2) * 1.1 + .001 ) } ]
+                set max_run_time [expr { $y_time * $coefficient * $r(3) * 1.1 } ]
+                set max_tasks_per_run [expr { ceil( $coefficient * $r(4) * 1.1 ) } ]
+                set max_discount_pct $r(2)
+                # using r(3) in y_cost to save in combinations.
+                set y_cost [qaf_round_to_decimals [expr { $r(3) * 10000. } ] 3]
+
+                # initializations. assume no constraints
+                set t_test_curve_lol $base_curve_lol
+                set row [list 1 $y_time]
+                lappend t_test_curve_lol $row
+                set c_test_curve_lol $base_curve_lol
+                set row [list 1 $y_cost]
+                lappend c_test_curve_lol $row
+                #ns_log Notice "acc_fin::pretti_curve_time_multiply.455: y_cost $y_cost c_test_curve_lol $c_test_curve_lol t_test_curve_lol $t_test_curve_lol"
+
+                # if max_concurrent is unlimited, then 1 tasks_per_run
+                set tasks_per_run 1
+                set run_count 1
+
+                # if max_concurrent were 1, then tasks_per_run would be $coefficient
+
+                # block_count is coefficient constrained by max_concurrent
+                set block_count [expr { round( ceil( $coefficient / $max_concurrent ) + 0. ) } ]
+
+                set max_dedicated_pct [expr { 1. - $max_overlap_pct } ]
+                set max_batch_rate_pct [expr { 1. - $max_discount_pct } ]
+                
+                # multiple activity length 
+                set test_run_count 1
+                set test_tasks_per_run $block_count
+                set test_coef [expr { 1. * $test_tasks_per_run * $max_dedicated_pct + $max_overlap_pct } ]
+                set test_time [expr { $test_coef * $y_time } ]
+                set limited_p 0
+                # What are run_count and tasks_per_run, and subsequently y_new using brute force testing?
+                while { ( $test_coef > $max_tasks_per_run || $test_time > $max_run_time) && $test_tasks_per_run > 1 } {
+                    incr test_tasks_per_run -1
+                    set limited_p 1
+                    set test_coef [expr { 1. * $test_tasks_per_run * $max_dedicated_pct + $max_overlap_pct } ]
+                    set test_run_count [expr { ceil( $block_count / ( $test_tasks_per_run + 0. ) ) } ]
+                    set test_time [expr { $test_coef * $y_time } ]
+                }
+                set test_time_runs [expr { $test_time * $test_run_count } ]
+
+                # set t and test_time_runs_fmtd to same decimals as y_time
+                set tdecimals 0
+                set tdecimal_idx [string first "." $y_time]
+                if { $tdecimal_idx > -1 } {
+                    set tdecimals [expr { [string length $y_time] - $tdecimal_idx - 1 } ]
+                }
+
+
+                set test_cost [expr { $test_run_count * $y_cost * ( 1. * ( $test_tasks_per_run + 0. ) * $max_batch_rate_pct + $max_discount_pct ) } ]
+
+                # set c and test_cost to same decimals as y_cost
+                set cdecimals 0
+                set cdecimal_idx [string first "." $y_cost]
+                if { $cdecimal_idx > -1 } {
+                    set cdecimals [expr { [string length $y_cost] - $cdecimal_idx - 1 } ]
+                }
+                # test brute force against procs
+                # setup procs with preliminary environmental variables
+                set use_t_run_p 0
+                set t_constrained_by_time_p 0
+                set tcurve_lol [acc_fin::pretti_curve_time_multiply $t_test_curve_lol "" $coefficient $scenario_id $user_id $instance_id ]
+                set y_idx [lsearch -exact [lindex $tcurve_lol 0] "y"]
+                set t [qaf_round_to_decimals [lindex [lindex $tcurve_lol 1] $y_idx] $tdecimals]
+                set test_time_runs_fmtd [qaf_round_to_decimals $test_time_runs $tdecimals]
+
+                set ccurve_lol [acc_fin::pretti_curve_cost_multiply $c_test_curve_lol "" $coefficient $scenario_id $user_id $instance_id ]
+                set y_idx [lsearch -exact [lindex $ccurve_lol 0] "y"]
+                set c [qaf_round_to_decimals [lindex [lindex $ccurve_lol 1] $y_idx] $cdecimals]
+                set test_cost_fmtd [qaf_round_to_decimals $test_cost $cdecimals]
+                # check against proc
+                if { ![aa_equals "Test $i for T with coef ${coefficient} limited_p $limited_p test_tasks_per_run ${test_tasks_per_run} test_time_runs_fmtd ${test_time_runs_fmtd} t $t" $t $test_time_runs_fmtd] } {
+                    # log all the parameters..
+                    aa_log "y_time $y_time max_overlap_pct ${max_overlap_pct} max_concurrent ${max_concurrent} max_run_time ${max_run_time} max_tasks_per_run ${max_tasks_per_run}"
+                    aa_log "caclulated: block_count ${block_count} max_dedicated_pct ${max_dedicated_pct} test_coef ${test_coef} test_run_count ${test_run_count}"
+
+                }
+                if { ![aa_equals "Test $i for C with coef ${coefficient} limited_p $limited_p test_tasks_per_run ${test_tasks_per_run} test_cost_fmtd ${test_cost_fmtd} c $c" $c $test_cost_fmtd] } {
+                    # log all the parameters..
+                    aa_log "max_overlap_pct ${max_overlap_pct} max_concurrent ${max_concurrent} max_run_time ${max_run_time} max_tasks_per_run ${max_tasks_per_run}"
+                    aa_log "y_cost $y_cost max_discount_pct ${max_discount_pct}"
+                    aa_log "caclulated: block_count ${block_count} max_dedicated_pct ${max_dedicated_pct} test_coef ${test_coef} test_run_count ${test_run_count}"
+                    aa_log "use_t_run_p ${use_t_run_p} t_constrained_by_time_p ${t_constrained_by_time_p}"
+                    
+
+                }
+                incr i
+            }
         }
 }
 
