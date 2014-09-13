@@ -41,4 +41,5 @@ DROP TABLE qaf_log;
 DROP TABLE qaf_process_log;
 DROP TABLE qaf_process_log_viewed;
 
+DROP SEQUENCE qaf_sched_id_seq;
 DROP SEQUENCE qaf_id_seq;

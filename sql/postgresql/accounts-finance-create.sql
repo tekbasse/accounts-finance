@@ -7,6 +7,9 @@
 CREATE SEQUENCE qaf_id_seq start 10000;
 SELECT nextval ('qaf_id_seq');
 
+CREATE SEQUENCE qaf_sched_id_seq start 1;
+SELECT nextval ('qaf_sched_id_seq');
+
 -- For general qaf app delayed process logs
 CREATE TABLE qaf_process_log (
     id integer not null primary key,
