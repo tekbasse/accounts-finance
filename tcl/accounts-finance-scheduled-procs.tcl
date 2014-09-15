@@ -35,14 +35,20 @@ ad_proc -private acc_fin::schedule_do {
 } { 
     Process any scheduled procedures. Future batches are suspended until this process reports batch complete.
 } {
-   if {  [catch { set _calc_value [eval $_line] } _this_err_text] } {
+    # set batch_lists [acc_fin::schedule_list ...]
+    foreach sched_list $batch_lists {
+        # set proc_list lindex combo from sched_list
+        if {  [catch { set _calc_value [eval $proc_list] } _this_err_text] } {
             append _err_text "ERROR calculate '${_line}' errored with: ${_err_this_text}."
             ns_log Warning "acc_fin::model_compute ref 896: calculate '${_line}' errored with: ${_err_this_text}."
             incr _err_state
         } else {
             lappend _output [list $_varname $_calc_value]
         }
-# if do is idle, delete some (limit 100 or so) used args in qaf_sched_proc_args
+
+    }
+    # if do is idle, delete some (limit 100 or so) used args in qaf_sched_proc_args
+    
 }
 
 ad_proc -private acc_fin::schedule_add {
@@ -94,6 +100,8 @@ ad_proc -private acc_fin::schedule_trash {
 } {
     Removes an incomplete process from the process stack by noting it as completed.
 } {
+    # There is no delete for acc_fin::schedule
+
     # noting a process as completed in the stack keeps the proc api simple
     # Theoretically, one could create an untrash (reschedule) proc for this also..
     set session_user_id [ad_conn user_id]
@@ -142,8 +150,6 @@ ad_proc -private acc_fin::schedule_list {
     If processed_p = 1, includes stack history, otherwise completed_time is blank. 
     List can be segmented by n items offset by m. 
 } {
-###############    
-
     set session_user_id [ad_conn user_id]
     set session_package_id [ad_conn package_id]
     set admin_p [permission::permission_p -party_id $session_user_id -object_id $session_package_id -privilege admin]
@@ -164,18 +170,17 @@ ad_proc -private acc_fin::schedule_list {
         }
         if { $processed_p } {
             if { $admin_p && $instance_id eq "" } {
-                set process_stats_list [db_list_of_lists qaf_sched_proc_stack_read_adm_p1 { select id,proc_name,proc_args,proc_out,user_id,instance_id, priority, order_time, started_time, completed_time, process_seconds from qaf_sched_proc_stack order by :sort_by :sort_type limit :n_items offset :m_offset } ]
+                set process_stats_list [db_list_of_lists qaf_sched_proc_stack_read_adm_p1 { select id,proc_name,proc_args,user_id,instance_id, priority, order_time, started_time, completed_time, process_seconds from qaf_sched_proc_stack order by :sort_by :sort_type limit :n_items offset :m_offset } ]
             } else {
-                set process_stats_list [db_list_of_lists qaf_sched_proc_stack_read_user_p1 { select id,proc_name,proc_args,proc_out,user_id,instance_id, priority, order_time, started_time, completed_time, process_seconds from qaf_sched_proc_stack where id =:sched_id and user_id=:user_id and ( instance_id=:instance_id or instance_id=:user_id) order by :sort_by :sort_type limit :n_items offset :m_offset } ]
+                set process_stats_list [db_list_of_lists qaf_sched_proc_stack_read_user_p1 { select id,proc_name,proc_args,user_id,instance_id, priority, order_time, started_time, completed_time, process_seconds from qaf_sched_proc_stack where id =:sched_id and user_id=:user_id and ( instance_id=:instance_id or instance_id=:user_id) order by :sort_by :sort_type limit :n_items offset :m_offset } ]
             }
         } else {
             if { $admin_p && $instance_id eq "" } {
-                set process_stats_list [db_list_of_lists qaf_sched_proc_stack_read_adm_p0 { select id,proc_name,proc_args,proc_out,user_id,instance_id, priority, order_time, started_time, completed_time, process_seconds from qaf_sched_proc_stack where completed_time is null order by :sort_by :sort_type limit :n_items offset :m_offset } ]
+                set process_stats_list [db_list_of_lists qaf_sched_proc_stack_read_adm_p0 { select id,proc_name,proc_args,user_id,instance_id, priority, order_time, started_time, completed_time, process_seconds from qaf_sched_proc_stack where completed_time is null order by :sort_by :sort_type limit :n_items offset :m_offset } ]
             } else {
-                set process_stats_list [db_list_of_lists qaf_sched_proc_stack_read_user_p0 { select id,proc_name,proc_args,proc_out,user_id,instance_id, priority, order_time, started_time, completed_time, process_seconds from qaf_sched_proc_stack where completed_time is null and id =:sched_id and user_id=:user_id and ( instance_id=:instance_id or instance_id=:user_id) order by :sort_by :sort_type limit :n_items offset :m_offset } ]
+                set process_stats_list [db_list_of_lists qaf_sched_proc_stack_read_user_p0 { select id,proc_name,proc_args,user_id,instance_id, priority, order_time, started_time, completed_time, process_seconds from qaf_sched_proc_stack where completed_time is null and id =:sched_id and user_id=:user_id and ( instance_id=:instance_id or instance_id=:user_id) order by :sort_by :sort_type limit :n_items offset :m_offset } ]
             }
         }
     }
     return $process_stats_list
-
 }
