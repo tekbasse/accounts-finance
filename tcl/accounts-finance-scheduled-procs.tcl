@@ -104,7 +104,7 @@ ad_proc -private acc_fin::schedule_trash {
     # keep permissions simple for now
     set admin_p [permission::permission_p -party_id $session_user_id -object_id $session_package_id -privilege admin]
     # always allows a user to stop their own processes.
-    if { ( $session_user_id eq $user_id && $session_package_id eq $instance_id ) || $admin_p } {
+    if { $admin_p || ($session_user_id eq $user_id && ( $session_package_id eq $instance_id || $session_user_id eq $session_package_id ) ) } {
         set nowts [dt_systime -gmt 1]
         set proc_out "Process unscheduled by user_id $session_user_id."
         set success_p [db_dml qaf_sched_proc_stack_trash { update qaf_sched_proc_stack
@@ -118,15 +118,64 @@ ad_proc -private acc_fin::schedule_read {
     user_id
     instance_id
 } {
-    Returns a list containing process status and results, if any.
+    Returns a list containing process status and results as: id,proc_name,proc_args,proc_out,user_id,instance_id, priority, order_time, started_time, completed_time, process_seconds.  Otherwise returns an empty list.
 } {
-
+    set session_user_id [ad_conn user_id]
+    set session_package_id [ad_conn package_id]
+    set admin_p [permission::permission_p -party_id $session_user_id -object_id $session_package_id -privilege admin]
+    set process_stats_list [list ]
+    if { $admin_p || ($session_user_id eq $user_id && ( $session_package_id eq $instance_id || $session_user_id eq $session_package_id ) ) } {
+        set process_stats_list [db_list_of_lists qaf_sched_proc_stack_read { select id,proc_name,proc_args,proc_out,user_id,instance_id, priority, order_time, started_time, completed_time, process_seconds from qaf_sched_proc_stack where id =:sched_id and user_id=:user_id and instance_id=:instance_id } ]
+    }
+    return $process_stats_list
 }
 
 ad_proc -private acc_fin::schedule_list {
     {processed_p "0"}
+    {n_items "all"}
+    {m_offset "0"}
+    {sort_by "order_time"}
+    {sort_type "asc"}
 } {
-    Reads processes in stack.
+    Returns a list of active processes in stack ie. to be processed or in process; ordered by order_time. 
+    List of lists includes: id,proc_name,proc_args,user_id,instance_id,priority,order_time,started_time,completed_time,process_seconds.
+    If processed_p = 1, includes stack history, otherwise completed_time is blank. 
+    List can be segmented by n items offset by m. 
 } {
+###############    
+
+    set session_user_id [ad_conn user_id]
+    set session_package_id [ad_conn package_id]
+    set admin_p [permission::permission_p -party_id $session_user_id -object_id $session_package_id -privilege admin]
+    set process_stats_list [list ]
+    if { $admin_p || ($session_user_id eq $user_id && ( $session_package_id eq $instance_id || $session_user_id eq $session_package_id ) ) } {
+        if { ![qf_is_natural_number $m_offset]} {
+            set m_offset 0
+        }
+        if { ![qf_is_natural_number $n_items] } {
+            set n_items "all"
+        }
+        set fields_list [id proc_name proc_args user_id instance_id priority order_time started_time completed_time process_seconds]
+        if { [lsearch -exact $fields_list $sort_by] == -1 } {
+            set sort_by "order_time"
+            set sort_type "asc"
+        } elseif { $sort_type ne "asc" && $sort_type ne "desc" } {
+            set sort_type "asc"
+        }
+        if { $processed_p } {
+            if { $admin_p && $instance_id eq "" } {
+                set process_stats_list [db_list_of_lists qaf_sched_proc_stack_read_adm_p1 { select id,proc_name,proc_args,proc_out,user_id,instance_id, priority, order_time, started_time, completed_time, process_seconds from qaf_sched_proc_stack order by :sort_by :sort_type limit :n_items offset :m_offset } ]
+            } else {
+                set process_stats_list [db_list_of_lists qaf_sched_proc_stack_read_user_p1 { select id,proc_name,proc_args,proc_out,user_id,instance_id, priority, order_time, started_time, completed_time, process_seconds from qaf_sched_proc_stack where id =:sched_id and user_id=:user_id and ( instance_id=:instance_id or instance_id=:user_id) order by :sort_by :sort_type limit :n_items offset :m_offset } ]
+            }
+        } else {
+            if { $admin_p && $instance_id eq "" } {
+                set process_stats_list [db_list_of_lists qaf_sched_proc_stack_read_adm_p0 { select id,proc_name,proc_args,proc_out,user_id,instance_id, priority, order_time, started_time, completed_time, process_seconds from qaf_sched_proc_stack where completed_time is null order by :sort_by :sort_type limit :n_items offset :m_offset } ]
+            } else {
+                set process_stats_list [db_list_of_lists qaf_sched_proc_stack_read_user_p0 { select id,proc_name,proc_args,proc_out,user_id,instance_id, priority, order_time, started_time, completed_time, process_seconds from qaf_sched_proc_stack where completed_time is null and id =:sched_id and user_id=:user_id and ( instance_id=:instance_id or instance_id=:user_id) order by :sort_by :sort_type limit :n_items offset :m_offset } ]
+            }
+        }
+    }
+    return $process_stats_list
 
 }
