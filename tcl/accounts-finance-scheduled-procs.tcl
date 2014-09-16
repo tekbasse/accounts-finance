@@ -35,20 +35,45 @@ ad_proc -private acc_fin::schedule_do {
 } { 
     Process any scheduled procedures. Future batches are suspended until this process reports batch complete.
 } {
-    # set batch_lists [acc_fin::schedule_list ...]
-    foreach sched_list $batch_lists {
-        # set proc_list lindex combo from sched_list
-        if {  [catch { set _calc_value [eval $proc_list] } _this_err_text] } {
-            append _err_text "ERROR calculate '${_line}' errored with: ${_err_this_text}."
-            ns_log Warning "acc_fin::model_compute ref 896: calculate '${_line}' errored with: ${_err_this_text}."
-            incr _err_state
-        } else {
-            lappend _output [list $_varname $_calc_value]
-        }
 
+    set batch_lists [db_list_of_lists qaf_sched_proc_stack_read_adm_p0_s { select id,proc_name,user_id,instance_id, priority, order_time, started_time from qaf_sched_proc_stack where completed_time is null order by started_time asc, priority asc , order_time asc } ]
+    set first_started_time [lindex [lindex $batch_lists 0] 6]
+    if { $first_started_time eq "" } {
+        if { [llength $batch_lists] > 0 } {
+            foreach sched_list $batch_lists {
+                # set proc_list lindex combo from sched_list
+                lassign $sched_list id proc_name user_id instance_id priority order_time started_time
+                # package_id can vary with each entry
+                set allowed_procs [parameter::get -parameter ScheduledProcsAllowed -package_id $instance_id]
+                # added comma and period to "split" to screen external/private references and poorly formatted lists
+                set allowed_procs_list [split $allowed_procs " ,."]
+                set success_p [expr { [lsearch -exact $allowed_procs_list $proc_name] > -1 } ]
+
+                if { $success_p } {
+                    if { $proc_name ne "" } {
+                         set proc_list [list $proc_name]
+                         set args_lists [db_list_of_lists qaf_sched_proc_args_read_s { select argValue, argNumber from qaf_sched_proc_args where stack_id =:id order by argNumber asc} ]
+                         foreach arg_list $args_lists {
+                             set arg_value [lindex $arg_list 1]
+                             lappend proc_list $arg_value
+                         }
+                         if {  [catch { set _calc_value [eval $proc_list] } _this_err_text] } {
+                             append _err_text "ERROR calculate '${proc_list}' errored with: ${_err_this_text}."
+                             ns_log Warning "acc_fin::schedule_do.54: eval '${proc_list}' errored with: ${_err_this_text}."
+                         } else {
+                             db_dml
+################  $_calc_value
+                         }
+                     }
+            }
+        } else {
+            # if do is idle, delete some (limit 100 or so) used args in qaf_sched_proc_args
+####
+        }
+    } else {
+        # the previous acc_fin::schedule_do is still working. Don't clobber. quit.
     }
-    # if do is idle, delete some (limit 100 or so) used args in qaf_sched_proc_args
-    
+    return 1
 }
 
 ad_proc -private acc_fin::schedule_add {
@@ -62,33 +87,40 @@ ad_proc -private acc_fin::schedule_add {
 } {
     # check proc_name against allowd ones.
     set session_package_id [ad_conn package_id]
-    set allowed_procs [parameter::get -parameter ScheduledProcsAllowed -package_id $session_package_id]
-    # added comma and period to "split" to screen external/private references and poorly formatted lists
-    set allowed_procs_list [split $allowed_procs " ,."]
-    set success_p [expr { [lsearch -exact $allowed_procs_list $proc_name] > -1 } ]
-    if { $success_p } { 
-        set id [db_nextval qaf_sched_id_seq]
-        set ii 0
-        db_transaction {
-            set proc_args_txt [join $proc_args_list "\t"]
-            set nowts [dt_systime -gmt 1]
-            db_dml qaf_sched_proc_stack_create { insert into qaf_sched_proc_stack 
-                (id, proc_name, proc_args, user_id, instance_id, priority, order_time)
-                values (:id, :proc_name, :proc_args_txt, :user_id, :instance_id, :priority, :nowts)
-                
-            }
-            foreach proc_arg $proc_args_list {
-                db_dml qaf_sched_proc_args_create {
-                    insert into qaf_sched_proc_args
-                    (stack_id, arg_number, arg_value)
-                    values (:id, :ii, :proc_arg)
+    # We assume user has permission.. but qualify by verifying that instance_id is either user_id or package_id
+    if { $instance_id eq $user_id || $instance_id eq $session_package_id } {
+        set allowed_procs [parameter::get -parameter ScheduledProcsAllowed -package_id $session_package_id]
+        # added comma and period to "split" to screen external/private references and poorly formatted lists
+        set allowed_procs_list [split $allowed_procs " ,."]
+        set success_p [expr { [lsearch -exact $allowed_procs_list $proc_name] > -1 } ]
+        if { $success_p } { 
+            set id [db_nextval qaf_sched_id_seq]
+            set ii 0
+            db_transaction {
+                set proc_args_txt [join $proc_args_list "\t"]
+                set nowts [dt_systime -gmt 1]
+                db_dml qaf_sched_proc_stack_create { insert into qaf_sched_proc_stack 
+                    (id, proc_name, proc_args, user_id, instance_id, priority, order_time)
+                    values (:id,:proc_name,:proc_args_txt,:user_id,:session_package_id,:priority,:nowts)
+                    
                 }
-                incr ii
-            }
-        } on_error {
-            set success_p 0
-            ns_log Warning "acc_fin::schedule_add failed for id '$id' ii '$ii' user_id ${user_id} instance_id ${instance_id} proc_name '${proc_name}' with message: ${errmsg}"
-        }        
+                foreach proc_arg $proc_args_list {
+                    db_dml qaf_sched_proc_args_create {
+                        insert into qaf_sched_proc_args
+                        (stack_id, arg_number, arg_value)
+                        values (:id,:ii,:proc_arg)
+                    }
+                    incr ii
+                }
+            } on_error {
+                set success_p 0
+                ns_log Warning "acc_fin::schedule_add.90 failed for id '$id' ii '$ii' user_id ${user_id} instance_id ${instance_id} proc_args_list '${proc_args_list}'"
+                ns_log Warning "acc_fin::schedule_add.91 failed proc_name '${proc_name}' with message: ${errmsg}"
+            }        
+        }
+    } else {
+        ns_log Warning "acc_fin::schedule_add.127 failed user_id ${user_id} session_package_id ${session_package_id} instance_id not valid: ${instance_id}"
+        set success_p 0
     }
     return $success_p
 }
@@ -139,6 +171,8 @@ ad_proc -private acc_fin::schedule_read {
 }
 
 ad_proc -private acc_fin::schedule_list {
+    user_id
+    instance_id
     {processed_p "0"}
     {n_items "all"}
     {m_offset "0"}
@@ -150,11 +184,16 @@ ad_proc -private acc_fin::schedule_list {
     If processed_p = 1, includes stack history, otherwise completed_time is blank. 
     List can be segmented by n items offset by m. 
 } {
-    set session_user_id [ad_conn user_id]
-    set session_package_id [ad_conn package_id]
-    set admin_p [permission::permission_p -party_id $session_user_id -object_id $session_package_id -privilege admin]
     set process_stats_list [list ]
+    
+    if { [ns_conn isconnected] && [qaf_is_natural_number $user_id] && $user_id > 0 } {
+        set session_user_id [ad_conn user_id]
+        set session_package_id [ad_conn package_id]
+        set admin_p [permission::permission_p -party_id $session_user_id -object_id $session_package_id -privilege admin]
+    } 
+
     if { $admin_p || ($session_user_id eq $user_id && ( $session_package_id eq $instance_id || $session_user_id eq $session_package_id ) ) } {
+
         if { ![qf_is_natural_number $m_offset]} {
             set m_offset 0
         }
@@ -168,15 +207,16 @@ ad_proc -private acc_fin::schedule_list {
         } elseif { $sort_type ne "asc" && $sort_type ne "desc" } {
             set sort_type "asc"
         }
-        if { $processed_p } {
-            if { $admin_p && $instance_id eq "" } {
-                set process_stats_list [db_list_of_lists qaf_sched_proc_stack_read_adm_p1 { select id,proc_name,proc_args,user_id,instance_id, priority, order_time, started_time, completed_time, process_seconds from qaf_sched_proc_stack order by :sort_by :sort_type limit :n_items offset :m_offset } ]
+
+        if { $admin_p } {
+            if { $processed_p } {
+                set process_stats_list [db_list_of_lists qaf_sched_proc_stack_read_adm_p1 { select id,proc_name,proc_args,user_id,instance_id, priority, order_time, started_time, completed_time, process_seconds from qaf_sched_proc_stack order where instance_id=:instance_id by :sort_by :sort_type limit :n_items offset :m_offset } ]
             } else {
-                set process_stats_list [db_list_of_lists qaf_sched_proc_stack_read_user_p1 { select id,proc_name,proc_args,user_id,instance_id, priority, order_time, started_time, completed_time, process_seconds from qaf_sched_proc_stack where id =:sched_id and user_id=:user_id and ( instance_id=:instance_id or instance_id=:user_id) order by :sort_by :sort_type limit :n_items offset :m_offset } ]
+                set process_stats_list [db_list_of_lists qaf_sched_proc_stack_read_adm_p0 { select id,proc_name,proc_args,user_id,instance_id, priority, order_time, started_time, completed_time, process_seconds from qaf_sched_proc_stack where completed_time is null order by :sort_by :sort_type limit :n_items offset :m_offset } ]
             }
         } else {
-            if { $admin_p && $instance_id eq "" } {
-                set process_stats_list [db_list_of_lists qaf_sched_proc_stack_read_adm_p0 { select id,proc_name,proc_args,user_id,instance_id, priority, order_time, started_time, completed_time, process_seconds from qaf_sched_proc_stack where completed_time is null order by :sort_by :sort_type limit :n_items offset :m_offset } ]
+            if { $processed_p } {
+                set process_stats_list [db_list_of_lists qaf_sched_proc_stack_read_user_p1 { select id,proc_name,proc_args,user_id,instance_id, priority, order_time, started_time, completed_time, process_seconds from qaf_sched_proc_stack where id =:sched_id and user_id=:user_id and ( instance_id=:instance_id or instance_id=:user_id) order by :sort_by :sort_type limit :n_items offset :m_offset } ]
             } else {
                 set process_stats_list [db_list_of_lists qaf_sched_proc_stack_read_user_p0 { select id,proc_name,proc_args,user_id,instance_id, priority, order_time, started_time, completed_time, process_seconds from qaf_sched_proc_stack where completed_time is null and id =:sched_id and user_id=:user_id and ( instance_id=:instance_id or instance_id=:user_id) order by :sort_by :sort_type limit :n_items offset :m_offset } ]
             }
