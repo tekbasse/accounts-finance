@@ -35,7 +35,7 @@ ad_proc -private acc_fin::schedule_do {
 } { 
     Process any scheduled procedures. Future batches are suspended until this process reports batch complete.
 } {
-
+    set success_p 0
     set batch_lists [db_list_of_lists qaf_sched_proc_stack_read_adm_p0_s { select id,proc_name,user_id,instance_id, priority, order_time, started_time from qaf_sched_proc_stack where completed_time is null order by started_time asc, priority asc , order_time asc } ]
     set first_started_time [lindex [lindex $batch_lists 0] 6]
     if { $first_started_time eq "" } {
@@ -51,29 +51,47 @@ ad_proc -private acc_fin::schedule_do {
 
                 if { $success_p } {
                     if { $proc_name ne "" } {
-                         set proc_list [list $proc_name]
-                         set args_lists [db_list_of_lists qaf_sched_proc_args_read_s { select argValue, argNumber from qaf_sched_proc_args where stack_id =:id order by argNumber asc} ]
-                         foreach arg_list $args_lists {
-                             set arg_value [lindex $arg_list 1]
-                             lappend proc_list $arg_value
-                         }
-                         if {  [catch { set _calc_value [eval $proc_list] } _this_err_text] } {
-                             append _err_text "ERROR calculate '${proc_list}' errored with: ${_err_this_text}."
-                             ns_log Warning "acc_fin::schedule_do.54: eval '${proc_list}' errored with: ${_err_this_text}."
-                         } else {
-                             db_dml
-################  $_calc_value
-                         }
-                     }
+                        set nowts [dt_systime -gmt 1]
+                        set start_sec [clock seconds]
+                        # tell the system I am working on it.
+                        set success_p [db_dml qaf_sched_proc_stack_started {
+                            update qaf_sched_proc_stack set started_time =:nowts where id =:id
+                        } ]
+
+                        set proc_list [list $proc_name]
+                        set args_lists [db_list_of_lists qaf_sched_proc_args_read_s { select argValue, argNumber from qaf_sched_proc_args where stack_id =:id order by argNumber asc} ]
+                        foreach arg_list $args_lists {
+                            set arg_value [lindex $arg_list 1]
+                            lappend proc_list $arg_value
+                        }
+                        if {  [catch { set calc_value [eval $proc_list] } _this_err_text] } {
+                            ns_log Warning "acc_fin::schedule_do.54: id $id Eval '${proc_list}' errored with ${_err_this_text}."
+                            # don't time an error. This provides a way to manually identify errors via sql sort
+                            set nowts [dt_systime -gmt 1]
+                            set success_p [db_dml qaf_sched_proc_stack_write {
+                                update qaf_sched_proc_stack set proc_out =:this_err_text, completed_time=:nowts where id = :id 
+                            } ]
+                            
+                        } else {
+                            set dur_sec [expr { [clock seconds] - $start_sec } ]
+                            set nowts [dt_systime -gmt 1]
+                            set success_p [db_dml qaf_sched_proc_stack_write {
+                                update qaf_sched_proc_stack set proc_out =:calc_value, completed_time=:nowts, process_seconds=:dur_sec where id = :id 
+                            } ]
+                        }
+                    }
+                }
             }
         } else {
-            # if do is idle, delete some (limit 100 or so) used args in qaf_sched_proc_args
-####
+            # if do is idle, delete some (limit 100 or so) used args in qaf_sched_proc_args. Ids may have more than 1 arg..
+            db_dml { delete from qaf_sched_proc_args 
+                where id in ( select id from qaf_sched_proc_stack where process_seconds not null order by id limit 60 ) 
+            }
         }
     } else {
-        # the previous acc_fin::schedule_do is still working. Don't clobber. quit.
+        # the previous acc_fin::schedule_do is still working. Don't clobber. Quit.
     }
-    return 1
+    return $success_p
 }
 
 ad_proc -private acc_fin::schedule_add {
