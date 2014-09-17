@@ -359,11 +359,23 @@ if { $form_posted } {
                                 qss_table_trash 1 $table_tid $instance_id $user_id
                             }
                         }
+                        if { $table_flags eq "dc" } {
+                            # build related pie chart:
+                            set pie_filename [acc_fin::pretti_pie_filename $created_id]
+                            # using llength table_lists for priority. The more rows there are, the lower the priority..
+                            acc_fin::schedule_add "acc_fin::pie_file_create" [list $pie_filename] $user_id $instance_id [llength $table_lists]
+                        }
                     }
 
                 } else {
                     ns_log Notice "accounts-finance/www/pretti/app.tcl.210: qss_table_create new table"
-                    qss_table_create $table_lists $table_name $table_title $table_comments "" $table_flags $instance_id $user_id
+                    set created_id [qss_table_create $table_lists $table_name $table_title $table_comments "" $table_flags $instance_id $user_id]
+                    if { $table_flags eq "dc" } {
+                        # build related pie chart:
+                        set pie_filename [acc_fin::pretti_pie_filename $created_id]
+                        # using llength table_lists for priority. The more rows there are, the lower the priority..
+                        acc_fin::schedule_add "acc_fin::pie_file_create" [list $pie_filename] $user_id $instance_id [llength $table_lists]
+                    }
                 }
 
             }
@@ -501,6 +513,12 @@ expected value: ${pert_omp_expected}"
         } 
         set table_name [string range [string trim $input_array(table_name)] 0 30]
         set status [qss_table_create $curve_lol $table_name $table_name $table_comments  "" "dc" $instance_id $user_id]
+        if { $status > 0 } {
+            # status is new table_id. build related pie chart:
+            set pie_filename [acc_fin::pretti_pie_filename $status]
+            # using llength curve_lol for priority. The larger the curve, the lower the priority..
+            acc_fin::schedule_add "acc_fin::pie_file_create" [list $pie_filename] $user_id $instance_id [llength $curve_lol]
+        }
         if { $status == 0 } {
            lappend user_message_list "An internal error occured while attempting to create the table. Please contact an administrator."
         }

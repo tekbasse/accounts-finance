@@ -201,3 +201,11 @@ CREATE TABLE qaf_sched_proc_stack (
 CREATE index qaf_sched_proc_stack_id_key on qaf_sched_proc_stack(id);
 CREATE index qaf_sched_proc_stack_priority_key on qaf_sched_proc_stack(priority);
 CREATE index qaf_sched_proc_stack_started_time_key on qaf_sched_proc_stack(started_time);
+
+CREATE TABLE qaf_sched_proc_args (
+       stack_id integer,
+       arg_number integer,
+       arg_value text
+);
+
+CREATE index qaf_sched_proc_args_stack_id on qaf_sched_proc_args(stack_id);

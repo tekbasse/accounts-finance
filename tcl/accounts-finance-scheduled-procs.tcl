@@ -1,8 +1,8 @@
 # accounts-finance/tcl/accounts-finance-scheduled-procs.tcl
 ad_library {
 
-  Scheduled procedures for accounts-finance package.
-  @creation-date 2014-09-12
+    Scheduled procedures for accounts-finance package.
+    @creation-date 2014-09-12
 
 }
 
@@ -25,13 +25,14 @@ namespace eval acc_fin {}
 
 # TABLE qaf_sched_proc_args
 #    stack_id integer
-#    argNumber integer
-#    argValue text
+#    arg_number integer
+#    arg_value text
 
 
 # set id [db_nextval qaf_sched_id_seq]
 
 ad_proc -private acc_fin::schedule_do {
+
 } { 
     Process any scheduled procedures. Future batches are suspended until this process reports batch complete.
 } {
@@ -59,7 +60,7 @@ ad_proc -private acc_fin::schedule_do {
                         } ]
 
                         set proc_list [list $proc_name]
-                        set args_lists [db_list_of_lists qaf_sched_proc_args_read_s { select argValue, argNumber from qaf_sched_proc_args where stack_id =:id order by argNumber asc} ]
+                        set args_lists [db_list_of_lists qaf_sched_proc_args_read_s { select arg_value, arg_number from qaf_sched_proc_args where stack_id =:id order by arg_number asc} ]
                         foreach arg_list $args_lists {
                             set arg_value [lindex $arg_list 1]
                             lappend proc_list $arg_value
@@ -84,8 +85,8 @@ ad_proc -private acc_fin::schedule_do {
             }
         } else {
             # if do is idle, delete some (limit 100 or so) used args in qaf_sched_proc_args. Ids may have more than 1 arg..
-            db_dml { delete from qaf_sched_proc_args 
-                where id in ( select id from qaf_sched_proc_stack where process_seconds not null order by id limit 60 ) 
+            db_dml qaf_sched_proc_args_delete { delete from qaf_sched_proc_args 
+                where stack_id in ( select id from qaf_sched_proc_stack where process_seconds is not null order by id limit 60 ) 
             }
         }
     } else {

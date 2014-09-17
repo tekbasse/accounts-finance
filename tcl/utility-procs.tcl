@@ -513,6 +513,15 @@ ad_proc -public acc_fin::cobbler_html_view {
     return $cob_html
 }
 
+ad_proc -public acc_fin::pretti_pie_filename {
+    table_id
+} {
+    Returns a consistent pie filename for use with PRETTI tables.
+} {
+    # pie chart
+    set pie_filename "pretti-dc-${table_id}-pie.png"
+    return $pie_filename
+}
 
 ad_proc -public acc_fin::pie_file_create {
     pie_filename
