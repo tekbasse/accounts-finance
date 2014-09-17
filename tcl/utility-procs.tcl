@@ -13,22 +13,15 @@ ad_proc -public acc_fin::chart_file_names {
     Returns a list of standard paths used with generated charts. 
     ref 0 is OS pathname, ref 1 is web url, ref 2 is a temporary location while building chart
 } {
-    set package_id [ad_conn package_id]
     regsub -all -- {[^a-zA-Z0-9\.\_\-]} $cob_filename {_} cob_filename
     if { ![string match -nocase "*.png" $cob_filename] } {
         append cob_filename ".png"
     }
     set acsroot [acs_root_dir]
-    set fileroot [file join $acsroot "www"]
     set tempdir [file join $acsroot "tmp"]
-    set pkg_url [apm_package_url_from_id $package_id]
-    if { [string range $pkg_url 0 0] eq "/" } {
-        set pkg_url [string range $pkg_url 1 end]
-    }
-    set cob_webpath [file join "/resources" $pkg_url]
-    set cob_path "${fileroot}${cob_webpath}"
+    set cob_webpath [acc_fin::file_web_pathname]
+    set cob_path [acc_fin::file_sys_pathname $cob_filename $cob_webpath]
     
-    set cob_pathname "${cob_path}/${cob_filename}"
     set cob_webpathname "${cob_webpath}/${cob_filename}"
     set cob_tmppathname "${tempdir}/${cob_filename}"
     return [list $cob_pathname $cob_webpathname $cob_tmppathname]
@@ -523,6 +516,39 @@ ad_proc -public acc_fin::pretti_pie_filename {
     return $pie_filename
 }
 
+ad_proc -public acc_fin::file_sys_pathname {
+    {filename ""}
+    {webpath ""}
+} {
+    Returns a consistent full system pathname for use with static files such as images. If filename is not empty, includes filename in pathname.
+} {
+    if { $webpath eq "" } {
+        set webpath [acc_fin::file_web_pathname]
+    }
+    set acsroot [acs_root_dir]
+    set fileroot [file join $acsroot "www"]
+    set sys_pathname "${fileroot}${webpath}"
+    if { $filename ne "" } {
+        append sys_pathname "/"
+        append sys_pathname $filename
+    }
+    return $sys_pathname
+}
+
+ad_proc -public acc_fin::file_web_pathname {
+} {
+    Returns a consistent web pathname for use with static files such as images. If filename is not empty, includes filename in pathname.
+} {
+    set package_id [ad_conn package_id]
+    set pkg_url [apm_package_url_from_id $package_id]
+    if { [string range $pkg_url 0 0] eq "/" } {
+        set pkg_url [string range $pkg_url 1 end]
+    }
+    set webpath [file join "/resources" $pkg_url]
+    return $web_pathname
+}
+
+
 ad_proc -public acc_fin::pie_file_create {
     pie_filename
     curve_lists
@@ -775,197 +801,7 @@ ad_proc -public acc_fin::pie_html_view {
     returns html string if image exists, or an alternate "image not available try again shortly" if unavailable
 } {
     set error_p 0
-    set package_id [ad_conn package_id]
-    set user_id [ad_conn user_id]
-    set pie_html ""
-    # set alternating colors
-    if { [regexp {[\#]?([0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f])} $color1 ] } {
-        set color_arr(1) "#$color1"
-    } else {
-        set color_arr(1) "#cccccc"
-    }
-    if { [regexp {[\#]?([0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f])} $color2 ] } {
-        set color_arr(1) "#$color2"
-    } else {
-        set color_arr(0) "#999999"
-    }
-    # verify that color pixel files exist. If not, generate using graphicsmagick
-
-    if { ![qf_is_natural_number $x_max_min_px] } {
-        set x_max_min_px 100
-    }
-    if { ![qf_is_natural_number $x_max_max_px] } {
-        set x_max_max_px 500
-    }
-    if { ![qf_is_natural_number $y_max_min_px] } {
-        set y_max_min_px 100
-    }
-    if { ![qf_is_natural_number $y_max_min_px] } {
-        set y_max_min_px 500
-    }
-
-    if { $error_p == 0 } {
-        #set pie_pathname "${pie_path}/${pie_filename}"
-        #set pie_webpathname "${pie_webpath}/${pie_filename}"
-
-        set maybe_x_list_len [llength $maybe_x_list ]
-        set maybe_y_list_len [llength $maybe_y_list ]
-
-        if { $curve_lists ne "" && $maybe_x_list eq "" && $maybe_y_list eq "" } {
-            set table_titles_list [lindex $curve_lists 0]
-            set table_data_list [lrange $curve_lists 1 end]
-            set x_idx [lsearch -exact $table_titles_list "x"]
-            set y_idx [lsearch -exact $table_titles_list "y"]
-            set row_count [llength $table_data_list]
-            if { $x_idx > -1 && $y_idx > -1 && $row_count > 0 } {
-                
-                # find min max x and y values and other preparations
-                set row [lindex $table_data_list 0]
-                set x_min [lindex $row $x_idx]
-                set y_min [lindex $row $y_idx]
-                set x_max $x_min
-                set y_max $y_min
-                set x_sum $x_min
-                set y_sum $y_min
-                set maybe_x_list [list ]
-                set maybe_y_list [list ]
-                foreach row [lrange $table_data_list 1 end]  {
-                    set x [lindex $row $x_idx]
-                    set y [lindex $row $y_idx]
-                    if { [ad_var_type_check_number_p $x] && [ad_var_type_check_number_p $y] } {
-                        lappend maybe_x_list $x
-                        lappend maybe_y_list $y
-                        set maybe_x_list_len [llength $maybe_x_list ]
-                        set x_sum [expr { $x_sum + abs( $x ) } ]
-                        if { $y > $y_max } {
-                            set y_max $y
-                        }
-                        if { $y < $y_min } {
-                            set y_min $y
-                        }
-                        if { $x > $x_max } {
-                            set x_max $x
-                        } 
-                        if { $x < $x_min } {
-                            set x_min $x
-                        }
-                    } else {
-                        set error_p 1
-                    }
-                }
-            } else {
-                set error_p 1
-            }
-        } elseif { $maybe_x_list_len > 0 && $maybe_y_list_len > 0 && $maybe_x_list_len == $maybe_y_list_len } {
-            set y_p 1
-            set x_p 1
-            foreach x $maybe_x_list {
-                if { ![qf_is_decimal $x] } {
-                    set x_p 0
-                    set error_p 1
-                }
-            }
-            foreach y $maybe_y_list {
-                if { ![qf_is_decimal $y] } {
-                    set y_p 0
-                    set error_p 1
-                }
-            }
-            if { $error_p == 0 } {
-                set row_count $maybe_x_list_len
-                set x_max [f::lmax $maybe_x_list]
-                set y_max [f::lmax $maybe_y_list]
-                set x_min [f::lmin $maybe_x_list]
-                set y_min [f::lmin $maybe_y_list]
-                set x_sum [f::sum $maybe_x_list]
-                set y_sum [f::sum $maybe_y_list]
-            }
-        } else {
-            set error_p 1
-        }
-        
-        if { $error_p == 0 } {
-            # style pie (square pie) chart
-
-            # Try to provide image resolution at least one pixel per degree and/or 1% of range of y.
-
-            # r_case1 is resolution along min size of (x) 1 pixel for min width
-            set rx [f::max $x_max_min_px [f::min $x_max_max_px [expr { $x_sum / ( $x_min + 0. )} ]]]
-            # r_case2 is resolution along range of y.
-            set ry [f::max $y_max_min_px [f::min $y_max_max_px [expr { $y_max - $y_min + 0. } ]]]
-            set dim_px [expr { round( $rx + .99 )  } ]
-            set dim_py [expr { round( $ry / 3.6 ) } ]
-            #exec gm convert -size ${dim_px}x${dim_py} "xc:#ffffff" $pie_pathname
-            set pie_html "<div style=\"margin: 3px; padding-bottom: 0; width: ${dim_px} px ; height: ${dim_py} px ; display: inline-block; border-style: solid; border-width: 1 px ; border-color: #000000; \">\n"
-            
-            set x0 0
-            set y0 $dim_py
-            set x2 $x0
-            set y2 $y0
-            set k1 [expr { $dim_px / ( $x_sum + 0. ) } ]
-            set k2 [expr { $dim_py / ( $y_max + 0. ) } ]
-            set bar_width 0.
-            set xy_list [list x y]
-            set comb_bar_curv_lol [list $xy_list]
-            set xy_delim ""
-            set xy_html ""
-
-            for {set j 0} { $j < $maybe_x_list_len } {incr j } {
-                set odd_p [expr { 1 + $j - int( ( $j + 1 ) / 2 ) * 2 } ]
-                set x [lindex $maybe_x_list $j]
-                set y [lindex $maybe_y_list $j]
-                set bar_width [expr { round( $x * $k1 ) } ]
-                set bar_height [expr { round( $y * $k2 ) } ]
-
-                set bar_width [expr { $x * $k1 + $bar_width } ]
-                set bar_height [expr { $y * $k2 } ]
-                if { $bar_width >= 1. } {
-                    if { $bar_width > 3 } {
-                        set bar_width [expr { int( $bar_width ) } ]
-                    } else {
-                        set bar_width [expr { round( $bar_width ) } ]
-                    }
-                    set bars_count [llength $comb_bar_curv_lol]
-                    if { $bars_count > 1 } {
-                        set bar_list [list $x $y]
-                        lappend comb_bar_curv_lol $bar_list 
-                        set bar_height [expr { round([acc_fin::pretti_geom_avg_of_curve $comb_bar_curv_lol]) } ]
-                    } else {
-                        set bar_height [expr { round( $bar_height ) } ]
-                    }
-                    append xy_html $xy_delim
-                    append xy_html "y=$y x=$x"
-                    append pie_html "<div style=\"margin: 0; padding: 0; width: ${bar_width} px; height: ${bar_height} px; display: inline-block; vertical-align: bottom; border-style: none; background-color: $color_arr($odd_p); \"><img src=\"/resources/acs-subsite/spacer.gif\" style=\"margin: 0; padding: 0; border-style: none;\" width=\"${bar_width}\" height=\"${bar_height}\" alt=\"${xy_html}\" title=\"${xy_html} \"></div>"
-                    set bar_width 0.
-                    set comb_bar_curv_lol [list $xy_list]
-                    set batch_y_list [list ]
-                    set xy_delim ""
-                    set xy_html ""
-                } else {
-                    # keep info to combine bars to match resolution
-                    set bar_list [list $bar_width $bar_height]
-                    lappend comb_bar_curv_lol $bar_list 
-                    lappend batch_y_list $bar_height
-                    append xy_html $xy_delim
-                    append xy_html "y=$y x=$x"
-                    set xy_delim ", \n"
-                }
-            }
-            set bars_count [llength $comb_bar_curv_lol]
-            if { $bars_count > 1 } {
-                set bar_width [f::max 1 [expr { round( $bar_width ) } ]]
-                # catch tail bars
-
-                set odd_p [expr { $i - int( $i / 2 ) * 2 } ]
-                set bar_list [list $bar_width $bar_height]
-                lappend comb_bar_curv_lol $bar_list 
-                lappend batch_y_list $bar_height
-                set bar_height [f::max [f::lmin $batch_y_list] [expr { round([acc_fin::pretti_geom_avg_of_curve $comb_bar_curv_lol]) } ]]
-                append pie_html "<div style=\"margin: 0; padding: 0; width: ${bar_width} px; height: ${bar_height} px; display: inline-block; vertical-align: bottom; border-style: none; background-color: $color_arr($odd_p); \"><img src=\"/resources/acs-subsite/spacer.gif\" style=\"margin: 0; padding: 0; border-style: none;\" width=\"${bar_width}\" height=\"${bar_height}\" alt=\"${xy_html}\" title=\"${xy_html} \"></div>"
-            }
-            append pie_html "</div>"
-        }
-    }
+################
     if { $error_p } {
         set pie_html ""
     }
