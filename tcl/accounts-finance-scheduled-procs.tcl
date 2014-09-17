@@ -38,9 +38,11 @@ ad_proc -private acc_fin::schedule_do {
 } {
     set success_p 0
     set batch_lists [db_list_of_lists qaf_sched_proc_stack_read_adm_p0_s { select id,proc_name,user_id,instance_id, priority, order_time, started_time from qaf_sched_proc_stack where completed_time is null order by started_time asc, priority asc , order_time asc } ]
+    set batch_lists_len [llength $batch_lists]
     set first_started_time [lindex [lindex $batch_lists 0] 6]
+    ns_log Notice "acc_fin::schedule_do.39: first_started_time '${first_started_time}' batch_lists_len ${batch_lists_len}"
     if { $first_started_time eq "" } {
-        if { [llength $batch_lists] > 0 } {
+        if { $batch_lists_len > 0 } {
             foreach sched_list $batch_lists {
                 # set proc_list lindex combo from sched_list
                 lassign $sched_list id proc_name user_id instance_id priority order_time started_time
@@ -49,9 +51,9 @@ ad_proc -private acc_fin::schedule_do {
                 # added comma and period to "split" to screen external/private references and poorly formatted lists
                 set allowed_procs_list [split $allowed_procs " ,."]
                 set success_p [expr { [lsearch -exact $allowed_procs_list $proc_name] > -1 } ]
-
                 if { $success_p } {
                     if { $proc_name ne "" } {
+                        ns_log Notice "acc_fin::schedule_do.54 evaluating id $id"
                         set nowts [dt_systime -gmt 1]
                         set start_sec [clock seconds]
                         # tell the system I am working on it.
@@ -78,6 +80,7 @@ ad_proc -private acc_fin::schedule_do {
                             set nowts [dt_systime -gmt 1]
                             set success_p [db_dml qaf_sched_proc_stack_write {
                                 update qaf_sched_proc_stack set proc_out =:calc_value, completed_time=:nowts, process_seconds=:dur_sec where id = :id 
+                                ns_log Notice "acc_fin::schedule_do.83: id $id completed in circa ${dur_sec} seconds."
                             } ]
                         }
                     }
@@ -85,13 +88,16 @@ ad_proc -private acc_fin::schedule_do {
             }
         } else {
             # if do is idle, delete some (limit 100 or so) used args in qaf_sched_proc_args. Ids may have more than 1 arg..
+            ns_log Notice "acc_fin::schedule_do.91: Idle. Entering passive maintenance mode. deleting some used args, if any."
             db_dml qaf_sched_proc_args_delete { delete from qaf_sched_proc_args 
                 where stack_id in ( select id from qaf_sched_proc_stack where process_seconds is not null order by id limit 60 ) 
             }
         }
     } else {
+        ns_log Notice "acc_fin::schedule_do.97: Previous acc_fin::schedule_do still processing. Stopping."
         # the previous acc_fin::schedule_do is still working. Don't clobber. Quit.
     }
+    ns_log Notice "acc_fin::schedule_do.99: returning success_p ${success_p}"
     return $success_p
 }
 

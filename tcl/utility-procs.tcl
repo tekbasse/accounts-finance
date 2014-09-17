@@ -8,23 +8,27 @@ ad_library {
 namespace eval acc_fin {}
 
 ad_proc -public acc_fin::chart_file_names {
-    cob_filename
+    chart_filename
 } {
     Returns a list of standard paths used with generated charts. 
     ref 0 is OS pathname, ref 1 is web url, ref 2 is a temporary location while building chart
 } {
-    regsub -all -- {[^a-zA-Z0-9\.\_\-]} $cob_filename {_} cob_filename
-    if { ![string match -nocase "*.png" $cob_filename] } {
-        append cob_filename ".png"
+    regsub -all -- {[^a-zA-Z0-9\.\_\-]} $chart_filename {_} chart_filename
+    if { ![string match -nocase "*.png" $chart_filename] } {
+        append chart_filename ".png"
     }
     set acsroot [acs_root_dir]
     set tempdir [file join $acsroot "tmp"]
-    set cob_webpath [acc_fin::file_web_pathname]
-    set cob_path [acc_fin::file_sys_pathname $cob_filename $cob_webpath]
-    
-    set cob_webpathname "${cob_webpath}/${cob_filename}"
-    set cob_tmppathname "${tempdir}/${cob_filename}"
-    return [list $cob_pathname $cob_webpathname $cob_tmppathname]
+    set chart_webpath [acc_fin::file_web_pathname]
+    set chart_path [acc_fin::file_sys_pathname $chart_filename $chart_webpath]
+    # if chart_filename ne "" is always false..
+    set file_append "/"
+    append file_append ${chart_filename}
+    append chart_path $file_append
+    append chart_webpath $file_append
+    append tmpdir $file_append
+
+    return [list $chart_path $chart_webpath $tempdir]
 }
 
 ad_proc -public acc_fin::cobbler_file_create {
@@ -545,7 +549,7 @@ ad_proc -public acc_fin::file_web_pathname {
         set pkg_url [string range $pkg_url 1 end]
     }
     set webpath [file join "/resources" $pkg_url]
-    return $web_pathname
+    return $webpath
 }
 
 
