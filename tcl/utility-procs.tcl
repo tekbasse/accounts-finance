@@ -483,7 +483,7 @@ ad_proc -public acc_fin::cobbler_html_view {
                         append xy_html "y=$y x=$x"
                         set xy_delim ", \n"
                     }
-                    ns_log Notice "acc_fin::cobbler_html_view.465 j $j bar_width $bar_width bars_count $bars_count"
+                    #ns_log Notice "acc_fin::cobbler_html_view.465 j $j bar_width $bar_width bars_count $bars_count"
                 }
                 set bars_count [llength $comb_bar_curv_lol]
 
@@ -539,6 +539,7 @@ ad_proc -public acc_fin::file_sys_pathname {
     return $sys_pathname
 }
 
+
 ad_proc -public acc_fin::file_web_pathname {
 } {
     Returns a consistent web pathname for use with static files such as images. If filename is not empty, includes filename in pathname.
@@ -553,18 +554,36 @@ ad_proc -public acc_fin::file_web_pathname {
 }
 
 
+ad_proc -public acc_fin::pie_file_create_from_table {
+    qss_simple_table_id
+    {user_id ""}
+    {instance_id ""}
+} {
+    This is a wrapper for acc_fin::pie_file_create to conveniently pass data to scheduled proc add_fin::schedule_do.
+} {
+    if { $instance_id eq "" } {
+        set instance_id [ad_conn package_id]
+    }
+    if { $usr_id eq "" } {
+        set user_id [ad_conn user_id]
+    }
+    set pie_filename [pretti_pie_filename $table_id]
+    set curve_lists [qss_table_read $table_id $instance_id $user_id]
+    set return_val [acc_fin::pie_file_create $pie_filename $curve_lists]
+    return $return_val
+}
+
 ad_proc -public acc_fin::pie_file_create {
     pie_filename
     curve_lists
-    maybe_x_list
-    maybe_y_list
+    {maybe_x_list ""}
+    {maybe_y_list ""}
     {x_max_min_px "100"}
     {x_max_max_px "1000"}
     {y_max_min_px "100"}
     {y_max_max_px "1000"}
     {color1 ""}
     {color2 ""}
-    {url "web"}
 } {
     returns filepathname or empty string if error. depends on graphicsmagick.  Creates image if it doesn't exist.
     resolution adjusts automatically to fit smallest slice for pixel range of x_max_* by y_max_* where x is angle theta, y is radius.
@@ -575,8 +594,6 @@ ad_proc -public acc_fin::pie_file_create {
     If url is 'list', then a list of both filesystem-pathname and web-pathname are returned.
 } {
     set error_p 0
-    set package_id [ad_conn package_id]
-    set user_id [ad_conn user_id]
     
     # set alternating colors
     if { [regexp {[\#]?([0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f])} $color1 ] } {
@@ -602,8 +619,8 @@ ad_proc -public acc_fin::pie_file_create {
         set y_max_min_px 1000
     }
 
-    set name_list [acc_fin::chart_file_names $pie_filename]
 
+    set name_list [acc_fin::chart_file_names $pie_filename]
     set pie_pathname [lindex $name_list 0]
     set pie_path [file dirname $pie_pathname]
     if { [file exists $pie_path] } {
@@ -630,8 +647,6 @@ ad_proc -public acc_fin::pie_file_create {
         set pie_webpathname [lindex $name_list 1]
 
         if { ![file exists $pie_pathname] } {
-            set maybe_x_list_len [llength $maybe_x_list ]
-            set maybe_y_list_len [llength $maybe_y_list ]
 
             if { $curve_lists ne "" && $maybe_x_list eq "" && $maybe_y_list eq "" } {
                 set table_titles_list [lindex $curve_lists 0]
@@ -774,7 +789,7 @@ ad_proc -public acc_fin::pie_file_create {
                     }
                     set y3 [expr { round( $y0 - $ry ) } ]
                     exec gm convert -size ${dim_px}x${dim_px} -strokewidth 1 -stroke $color_arr(0) -draw "path 'M $x0 $y0 L $x0 $y3'" $pie_tmppathname $pie_tmppathname
-                    # some OSes are less buggy with copy/delete instead of move on busy VMs apparently due to server/OS file memory hooks.
+                    # move on busy servers can cause issues with OS file memory hooks. Use copy.
                     file copy $pie_tmppathname $pie_pathname
                     file delete $pie_tmppathname
                 } else {
@@ -798,19 +813,19 @@ ad_proc -public acc_fin::pie_file_create {
 }
 
 
-
 ad_proc -public acc_fin::pie_html_view {
     pie_filename
 } {
-    returns html string if image exists, or an alternate "image not available try again shortly" if unavailable
+    Returns image url if available, otherwise empty string.
 } {
-    set error_p 0
-################
-    if { $error_p } {
-        set pie_html ""
+    set pie_html ""
+    set filepathname [acc_fin::file_sys_pathname $pie_filename]
+    if { [file exists $filepathname ] } {
+        set webpathname [acc_fin::file_web_pathname $pie_filename]
     }
     return $pie_html
 }
+
 
 ad_proc -public acc_fin::gray_from_color {
     hexcolor
