@@ -358,12 +358,11 @@ if { $form_posted } {
                             if { $user_id eq $user_id_prev && $table_name eq $name_old } {
                                 qss_table_trash 1 $table_tid $instance_id $user_id
                             }
-                        }
-                        if { $table_flags eq "dc" } {
-                            # build related pie chart:
-                            set pie_filename [acc_fin::pretti_pie_filename $created_id]
-                            # using llength table_lists for priority. The more rows there are, the lower the priority..
-                            acc_fin::schedule_add "acc_fin::pie_file_create" [list $pie_filename] $user_id $instance_id [llength $table_lists]
+                            if { $table_flags eq "dc" } {
+                                # build related pie chart:
+                                # using llength table_lists for priority. The more rows there are, the lower the priority..
+                                acc_fin::schedule_add "pie_file_create_from_table" [list $created_id $user_id $instance_id] $user_id $instance_id [llength $table_lists]
+                            }
                         }
                     }
 
@@ -372,9 +371,8 @@ if { $form_posted } {
                     set created_id [qss_table_create $table_lists $table_name $table_title $table_comments "" $table_flags $instance_id $user_id]
                     if { $table_flags eq "dc" } {
                         # build related pie chart:
-                        set pie_filename [acc_fin::pretti_pie_filename $created_id]
                         # using llength table_lists for priority. The more rows there are, the lower the priority..
-                        acc_fin::schedule_add "acc_fin::pie_file_create" [list $pie_filename] $user_id $instance_id [llength $table_lists]
+                        acc_fin::schedule_add "acc_fin::pie_file_create_from_table" [list $created_id $user_id $instance_id] $user_id $instance_id [llength $table_lists]
                     }
                 }
 
@@ -453,13 +451,21 @@ if { $form_posted } {
         set table_flags ""
         set trashed_p 0
         foreach table_tid $tid_list {
-            set success_p [acc_fin::table_sort_y_asc $table_tid $instance_id $user_id]
-            if { $success_p } {
+            set new_table_id [acc_fin::table_sort_y_asc $table_tid $instance_id $user_id]
+            if { $new_table_id > 0 } {
                 # trash the old one if it's made by the same user
                 set table_stats_list [qss_table_stats $table_tid]
+                set table_flags [lindex $table_stats_list 6]
                 set user_id_prev [lindex $table_stats_list 11]
                 if { $user_id eq $user_id_prev } {
                     qss_table_trash 1 $table_tid $instance_id $user_id
+                }
+                if { $table_flags eq "dc" } {
+                    # build related pie chart:
+                    # using llength table_lists for priority. The more rows there are, the lower the priority..
+                    set table_stats_list [qss_table_stats $new_table_tid]
+                    set row_count [lindex $table_stats_list 4]
+                    acc_fin::schedule_add "acc_fin::pie_file_create_from_table" [list $new_table_id $user_id $instance_id] $user_id $instance_id $row_count
                 }
             }
         }
@@ -512,14 +518,13 @@ expected value: ${pert_omp_expected}"
             set input_array(table_name) "DC o $minimum m $median p $maximum N $count"
         } 
         set table_name [string range [string trim $input_array(table_name)] 0 30]
-        set status [qss_table_create $curve_lol $table_name $table_name $table_comments  "" "dc" $instance_id $user_id]
-        if { $status > 0 } {
-            # status is new table_id. build related pie chart:
-            set pie_filename [acc_fin::pretti_pie_filename $status]
+        set new_table_id [qss_table_create $curve_lol $table_name $table_name $table_comments  "" "dc" $instance_id $user_id]
+        if { $new_table_id > 0 } {
+            # new_table_id is new table_id. build related pie chart:
             # using llength curve_lol for priority. The larger the curve, the lower the priority..
-            acc_fin::schedule_add "acc_fin::pie_file_create" [list $pie_filename] $user_id $instance_id [llength $curve_lol]
+            acc_fin::schedule_add "acc_fin::pie_file_create_from_table" [list $new_table_id $user_id $instance_id] $user_id $instance_id [llength $curve_lol]
         }
-        if { $status == 0 } {
+        if { $new_table_id == 0 } {
            lappend user_message_list "An internal error occured while attempting to create the table. Please contact an administrator."
         }
         set mode "p"
