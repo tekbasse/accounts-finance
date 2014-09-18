@@ -26,7 +26,7 @@ ad_proc -public acc_fin::chart_file_names {
     append file_append ${chart_filename}
     append chart_path $file_append
     append chart_webpath $file_append
-    append tmpdir $file_append
+    append tempdir $file_append
 
     return [list $chart_path $chart_webpath $tempdir]
 }
@@ -555,16 +555,16 @@ ad_proc -public acc_fin::file_web_pathname {
 
 
 ad_proc -public acc_fin::pie_file_create_from_table {
-    qss_simple_table_id
+    table_id
     {user_id ""}
     {instance_id ""}
 } {
-    This is a wrapper for acc_fin::pie_file_create to conveniently pass data to scheduled proc add_fin::schedule_do.
+    This is a wrapper for acc_fin::pie_file_create to conveniently pass data to scheduled proc add_fin::schedule_do. table_id is a qss_simple_table id.
 } {
     if { $instance_id eq "" } {
         set instance_id [ad_conn package_id]
     }
-    if { $usr_id eq "" } {
+    if { $user_id eq "" } {
         set user_id [ad_conn user_id]
     }
     set pie_filename [pretti_pie_filename $table_id]
@@ -799,17 +799,11 @@ ad_proc -public acc_fin::pie_file_create {
         }
     }
     if { $error_p } {
-        set return_name ""
+        set return_val 0
     } else {
-        if { $url eq "web" } {
-            set return_name $pie_pathname
-        } elseif { $url eq "list" } {
-            set return_name [list $cob_pathname $cob_webpathname]
-        } else {
-            set return_name $pie_webpathname
-        }
+        set return_val 1
     }
-    return $return_name
+    return $return_val
 }
 
 

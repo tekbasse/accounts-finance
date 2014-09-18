@@ -64,11 +64,11 @@ ad_proc -private acc_fin::schedule_do {
                         set proc_list [list $proc_name]
                         set args_lists [db_list_of_lists qaf_sched_proc_args_read_s { select arg_value, arg_number from qaf_sched_proc_args where stack_id =:id order by arg_number asc} ]
                         foreach arg_list $args_lists {
-                            set arg_value [lindex $arg_list 1]
+                            set arg_value [lindex $arg_list 0]
                             lappend proc_list $arg_value
                         }
-                        if {  [catch { set calc_value [eval $proc_list] } _this_err_text] } {
-                            ns_log Warning "acc_fin::schedule_do.54: id $id Eval '${proc_list}' errored with ${_err_this_text}."
+                        if {  [catch { set calc_value [eval $proc_list] } this_err_text] } {
+                            ns_log Warning "acc_fin::schedule_do.71: id $id Eval '${proc_list}' errored with ${this_err_text}."
                             # don't time an error. This provides a way to manually identify errors via sql sort
                             set nowts [dt_systime -gmt 1]
                             set success_p [db_dml qaf_sched_proc_stack_write {
@@ -79,9 +79,8 @@ ad_proc -private acc_fin::schedule_do {
                             set dur_sec [expr { [clock seconds] - $start_sec } ]
                             set nowts [dt_systime -gmt 1]
                             set success_p [db_dml qaf_sched_proc_stack_write {
-                                update qaf_sched_proc_stack set proc_out =:calc_value, completed_time=:nowts, process_seconds=:dur_sec where id = :id 
+                                update qaf_sched_proc_stack set proc_out =:calc_value, completed_time=:nowts, process_seconds=:dur_sec where id = :id } ]
                                 ns_log Notice "acc_fin::schedule_do.83: id $id completed in circa ${dur_sec} seconds."
-                            } ]
                         }
                     }
                 }

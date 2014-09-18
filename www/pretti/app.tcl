@@ -463,7 +463,7 @@ if { $form_posted } {
                 if { $table_flags eq "dc" } {
                     # build related pie chart:
                     # using llength table_lists for priority. The more rows there are, the lower the priority..
-                    set table_stats_list [qss_table_stats $new_table_tid]
+                    set table_stats_list [qss_table_stats $new_table_id]
                     set row_count [lindex $table_stats_list 4]
                     acc_fin::schedule_add "acc_fin::pie_file_create_from_table" [list $new_table_id $user_id $instance_id] $user_id $instance_id $row_count
                 }
