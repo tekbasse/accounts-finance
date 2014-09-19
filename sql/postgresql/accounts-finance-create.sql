@@ -204,6 +204,9 @@ CREATE index qaf_sched_proc_stack_started_time_key on qaf_sched_proc_stack(start
 
 CREATE TABLE qaf_sched_proc_args (
        stack_id integer,
+       -- list_number 0 for standard args. if arg contains a regexp \1
+       -- or other integer, then insert list built from list_number = n (1 for example).
+       list_number integer,
        arg_number integer,
        arg_value text
 );
