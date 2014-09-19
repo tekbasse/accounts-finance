@@ -9,26 +9,29 @@ namespace eval acc_fin {}
 
 ad_proc -public acc_fin::chart_file_names {
     chart_filename
+    {instance_id ""}
 } {
     Returns a list of standard paths used with generated charts. 
     ref 0 is OS pathname, ref 1 is web url, ref 2 is a temporary location while building chart
 } {
+    #ns_log Notice "acc_fin::chart_file_names.17: chart_filename $chart_filename instance_id $instance_id"
     regsub -all -- {[^a-zA-Z0-9\.\_\-]} $chart_filename {_} chart_filename
     if { ![string match -nocase "*.png" $chart_filename] } {
         append chart_filename ".png"
     }
     set acsroot [acs_root_dir]
     set tempdir [file join $acsroot "tmp"]
-    set chart_webpath [acc_fin::file_web_pathname]
-    set chart_path [acc_fin::file_sys_pathname $chart_filename $chart_webpath]
+    set chart_webpath [acc_fin::file_web_pathname $instance_id]
+    set chart_path [acc_fin::file_sys_pathname "" $chart_webpath $instance_id]
     # if chart_filename ne "" is always false..
     set file_append "/"
     append file_append ${chart_filename}
     append chart_path $file_append
     append chart_webpath $file_append
     append tempdir $file_append
-
-    return [list $chart_path $chart_webpath $tempdir]
+    set name_list [list $chart_path $chart_webpath $tempdir]
+    #ns_log Notice "acc_fin::chart_file_names.30: ${name_list}"
+    return $name_list
 }
 
 ad_proc -public acc_fin::cobbler_file_create {
@@ -53,7 +56,7 @@ ad_proc -public acc_fin::cobbler_file_create {
     If url is 'list', then a list of both filesystem-pathname and web-pathname are returned.
 } {
     set error_p 0
-    set package_id [ad_conn package_id]
+    set instance_id [ad_conn package_id]
     set user_id [ad_conn user_id]
     
     # set alternating colors
@@ -80,7 +83,7 @@ ad_proc -public acc_fin::cobbler_file_create {
         set y_max_min_px 1000
     }
 
-    set name_list [acc_fin::chart_file_names $cob_filename]
+    set name_list [acc_fin::chart_file_names $cob_filename $instance_id]
     set cob_pathname [lindex $name_list 0]
     set cob_path [file dirname $cob_pathname]
 
@@ -265,10 +268,10 @@ ad_proc -public acc_fin::cobbler_html_view {
     x_max_min_px 100, x_max_max_px 500, y_max_min_px 100, y_max_max_px 500, color1 #999999, color2 #cccccc
 } {
     set error_p 0
-    set package_id [ad_conn package_id]
+    set instance_id [ad_conn package_id]
     set user_id [ad_conn user_id]
     set cob_html ""
-    set name_list [acc_fin::chart_file_names $cob_filename]
+    set name_list [acc_fin::chart_file_names $cob_filename $instance_id]
     set cob_pathname [lindex $name_list 0]
     if { [file exists $cob_pathname] && ![file isdirectory $cob_pathname] } {
         # display image
@@ -515,6 +518,7 @@ ad_proc -public acc_fin::pretti_pie_filename {
 } {
     Returns a consistent pie filename for use with PRETTI tables.
 } {
+    #ns_log Notice "acc_fin::pretti_pie_filename.521: table_id $table_id"
     # pie chart
     set pie_filename "pretti-dc-${table_id}-pie.png"
     return $pie_filename
@@ -523,11 +527,13 @@ ad_proc -public acc_fin::pretti_pie_filename {
 ad_proc -public acc_fin::file_sys_pathname {
     {filename ""}
     {webpath ""}
+    {instance_id ""}
 } {
     Returns a consistent full system pathname for use with static files such as images. If filename is not empty, includes filename in pathname.
 } {
+    #ns_log Notice "acc_fin::file_sys_pathname.534: filename $filename webpath $webpath instance_id $instance_id"
     if { $webpath eq "" } {
-        set webpath [acc_fin::file_web_pathname]
+        set webpath [acc_fin::file_web_pathname $instance_id]
     }
     set acsroot [acs_root_dir]
     set fileroot [file join $acsroot "www"]
@@ -541,11 +547,15 @@ ad_proc -public acc_fin::file_sys_pathname {
 
 
 ad_proc -public acc_fin::file_web_pathname {
+    {instance_id ""}
 } {
-    Returns a consistent web pathname for use with static files such as images. If filename is not empty, includes filename in pathname.
+    Returns a consistent web path for use with static files such as images. 
 } {
-    set package_id [ad_conn package_id]
-    set pkg_url [apm_package_url_from_id $package_id]
+    #ns_log Notice "acc_fin::file_web_pathname.554: instance_id $instance_id"
+    if { $instance_id eq "" } {
+        set instance_id [ad_conn package_id]
+    }
+    set pkg_url [apm_package_url_from_id $instance_id]
     if { [string range $pkg_url 0 0] eq "/" } {
         set pkg_url [string range $pkg_url 1 end]
     }
@@ -562,20 +572,23 @@ ad_proc -public acc_fin::pie_file_create_from_table {
     This is a wrapper for acc_fin::pie_file_create to conveniently pass data to scheduled proc add_fin::schedule_do. table_id is a qss_simple_table id.
 } {
     if { $instance_id eq "" } {
+        ns_log Warning "acc_fin::pie_file_create_from_table.566: No instance_id supplied."
         set instance_id [ad_conn package_id]
     }
     if { $user_id eq "" } {
+        ns_log Warning "acc_fin::pie_file_create_from_table.570: No user_id supplied."
         set user_id [ad_conn user_id]
     }
-    set pie_filename [pretti_pie_filename $table_id]
+    set pie_filename [acc_fin::pretti_pie_filename $table_id]
     set curve_lists [qss_table_read $table_id $instance_id $user_id]
-    set return_val [acc_fin::pie_file_create $pie_filename $curve_lists]
+    set return_val [acc_fin::pie_file_create $pie_filename $curve_lists $instance_id]
     return $return_val
 }
 
 ad_proc -public acc_fin::pie_file_create {
     pie_filename
     curve_lists
+    {instance_id ""}
     {maybe_x_list ""}
     {maybe_y_list ""}
     {x_max_min_px "100"}
@@ -620,7 +633,7 @@ ad_proc -public acc_fin::pie_file_create {
     }
 
 
-    set name_list [acc_fin::chart_file_names $pie_filename]
+    set name_list [acc_fin::chart_file_names $pie_filename $instance_id]
     set pie_pathname [lindex $name_list 0]
     set pie_path [file dirname $pie_pathname]
     if { [file exists $pie_path] } {
@@ -812,10 +825,18 @@ ad_proc -public acc_fin::pie_html_view {
 } {
     Returns image url if available, otherwise empty string.
 } {
+    #ns_log Notice "acc_fin::pie_html_view.32: pie_filename $pie_filename"
     set pie_html ""
-    set filepathname [acc_fin::file_sys_pathname $pie_filename]
+    # acc_fin::file_sys_pathname gets webpath, so let's get it here to save a double
+    # trip on a positive case
+    # get web pathname
+    set web_path [acc_fin::file_web_pathname]
+
+    set filepathname [acc_fin::file_sys_pathname $pie_filename $web_path]
     if { [file exists $filepathname ] } {
-        set webpathname [acc_fin::file_web_pathname $pie_filename]
+        append web_path "/"
+        append web_path $pie_filename
+        set pie_html $web_path
     }
     return $pie_html
 }

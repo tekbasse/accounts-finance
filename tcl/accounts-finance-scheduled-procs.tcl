@@ -67,6 +67,7 @@ ad_proc -private acc_fin::schedule_do {
                             set arg_value [lindex $arg_list 0]
                             lappend proc_list $arg_value
                         }
+                        #ns_log Notice "acc_fin::schedule_do.69: id $id to Eval: '${proc_list}' list len [llength $proc_list]."
                         if {  [catch { set calc_value [eval $proc_list] } this_err_text] } {
                             ns_log Warning "acc_fin::schedule_do.71: id $id Eval '${proc_list}' errored with ${this_err_text}."
                             # don't time an error. This provides a way to manually identify errors via sql sort
@@ -83,18 +84,21 @@ ad_proc -private acc_fin::schedule_do {
                                 ns_log Notice "acc_fin::schedule_do.83: id $id completed in circa ${dur_sec} seconds."
                         }
                     }
+                } else {
+                    ns_log Warning "acc_fin::schedule_do.87: id $id proc_name '${proc_name}' attempted but not allowed. user_id ${user_id} instance_id ${instance_id}"
                 }
             }
         } else {
             # if do is idle, delete some (limit 100 or so) used args in qaf_sched_proc_args. Ids may have more than 1 arg..
             ns_log Notice "acc_fin::schedule_do.91: Idle. Entering passive maintenance mode. deleting some used args, if any."
-            db_dml qaf_sched_proc_args_delete { delete from qaf_sched_proc_args 
+            set success_p db_dml qaf_sched_proc_args_delete { delete from qaf_sched_proc_args 
                 where stack_id in ( select id from qaf_sched_proc_stack where process_seconds is not null order by id limit 60 ) 
             }
         }
     } else {
         ns_log Notice "acc_fin::schedule_do.97: Previous acc_fin::schedule_do still processing. Stopping."
         # the previous acc_fin::schedule_do is still working. Don't clobber. Quit.
+        set success_p 1
     }
     ns_log Notice "acc_fin::schedule_do.99: returning success_p ${success_p}"
     return $success_p

@@ -361,18 +361,18 @@ if { $form_posted } {
                             if { $table_flags eq "dc" } {
                                 # build related pie chart:
                                 # using llength table_lists for priority. The more rows there are, the lower the priority..
-                                acc_fin::schedule_add "pie_file_create_from_table" [list $created_id $user_id $instance_id] $user_id $instance_id [llength $table_lists]
+                                acc_fin::schedule_add "acc_fin::pie_file_create_from_table" [list $created_tid $user_id $instance_id] $user_id $instance_id [llength $table_lists]
                             }
                         }
                     }
 
                 } else {
                     ns_log Notice "accounts-finance/www/pretti/app.tcl.210: qss_table_create new table"
-                    set created_id [qss_table_create $table_lists $table_name $table_title $table_comments "" $table_flags $instance_id $user_id]
+                    set created_tid [qss_table_create $table_lists $table_name $table_title $table_comments "" $table_flags $instance_id $user_id]
                     if { $table_flags eq "dc" } {
                         # build related pie chart:
                         # using llength table_lists for priority. The more rows there are, the lower the priority..
-                        acc_fin::schedule_add "acc_fin::pie_file_create_from_table" [list $created_id $user_id $instance_id] $user_id $instance_id [llength $table_lists]
+                        acc_fin::schedule_add "acc_fin::pie_file_create_from_table" [list $created_tid $user_id $instance_id] $user_id $instance_id [llength $table_lists]
                     }
                 }
 
