@@ -358,10 +358,15 @@ if { $form_posted } {
                             if { $user_id eq $user_id_prev && $table_name eq $name_old } {
                                 qss_table_trash 1 $table_tid $instance_id $user_id
                             }
+                            set priority [llength $table_lists]
+                            acc_fin::schedule_add "acc_fin::cobbler_file_create_from_table" [list $created_tid $user_id $instance_id] $user_id $instance_id $priority
+                            # when debugging the graphics, bypassing scheduling can save a few steps:
+                            #acc_fin::cobbler_file_create_from_table $created_tid $user_id $instance_id
                             if { $table_flags eq "dc" } {
+                                incr priority $priority
                                 # build related pie chart:
                                 # using llength table_lists for priority. The more rows there are, the lower the priority..
-                                acc_fin::schedule_add "acc_fin::pie_file_create_from_table" [list $created_tid $user_id $instance_id] $user_id $instance_id [llength $table_lists]
+                                acc_fin::schedule_add "acc_fin::pie_file_create_from_table" [list $created_tid $user_id $instance_id] $user_id $instance_id $priority
                             }
                         }
                     }
@@ -369,10 +374,13 @@ if { $form_posted } {
                 } else {
                     ns_log Notice "accounts-finance/www/pretti/app.tcl.210: qss_table_create new table"
                     set created_tid [qss_table_create $table_lists $table_name $table_title $table_comments "" $table_flags $instance_id $user_id]
+                    set priority [llength $table_lists]
+                    acc_fin::schedule_add "acc_fin::cobbler_file_create_from_table" [list $created_tid $user_id $instance_id] $user_id $instance_id $priority
                     if { $table_flags eq "dc" } {
+                        incr priority $priority
                         # build related pie chart:
                         # using llength table_lists for priority. The more rows there are, the lower the priority..
-                        acc_fin::schedule_add "acc_fin::pie_file_create_from_table" [list $created_tid $user_id $instance_id] $user_id $instance_id [llength $table_lists]
+                        acc_fin::schedule_add "acc_fin::pie_file_create_from_table" [list $created_tid $user_id $instance_id] $user_id $instance_id $priority
                     }
                 }
 
@@ -456,16 +464,20 @@ if { $form_posted } {
                 # trash the old one if it's made by the same user
                 set table_stats_list [qss_table_stats $table_tid]
                 set table_flags [lindex $table_stats_list 6]
+                set row_count [lindex $table_stats_list 4]
                 set user_id_prev [lindex $table_stats_list 11]
                 if { $user_id eq $user_id_prev } {
                     qss_table_trash 1 $table_tid $instance_id $user_id
                 }
+                set priority $row_count
+                acc_fin::schedule_add "acc_fin::cobbler_file_create_from_table" [list $new_table_id $user_id $instance_id] $user_id $instance_id $priority
                 if { $table_flags eq "dc" } {
+                    incr priority $priority
                     # build related pie chart:
                     # using llength table_lists for priority. The more rows there are, the lower the priority..
                     set table_stats_list [qss_table_stats $new_table_id]
-                    set row_count [lindex $table_stats_list 4]
-                    acc_fin::schedule_add "acc_fin::pie_file_create_from_table" [list $new_table_id $user_id $instance_id] $user_id $instance_id $row_count
+
+                    acc_fin::schedule_add "acc_fin::pie_file_create_from_table" [list $new_table_id $user_id $instance_id] $user_id $instance_id $priority
                 }
             }
         }
@@ -520,9 +532,12 @@ expected value: ${pert_omp_expected}"
         set table_name [string range [string trim $input_array(table_name)] 0 30]
         set new_table_id [qss_table_create $curve_lol $table_name $table_name $table_comments  "" "dc" $instance_id $user_id]
         if { $new_table_id > 0 } {
+            set priority [llength $curve_lol]
+            acc_fin::schedule_add "acc_fin::cobbler_file_create_from_table" [list $new_table_id $user_id $instance_id] $user_id $instance_id $priority
+            incr priority $priority
             # new_table_id is new table_id. build related pie chart:
             # using llength curve_lol for priority. The larger the curve, the lower the priority..
-            acc_fin::schedule_add "acc_fin::pie_file_create_from_table" [list $new_table_id $user_id $instance_id] $user_id $instance_id [llength $curve_lol]
+            acc_fin::schedule_add "acc_fin::pie_file_create_from_table" [list $new_table_id $user_id $instance_id] $user_id $instance_id $priority
         }
         if { $new_table_id == 0 } {
            lappend user_message_list "An internal error occured while attempting to create the table. Please contact an administrator."

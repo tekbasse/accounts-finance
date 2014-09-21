@@ -22,7 +22,7 @@
         <callbacks>
         </callbacks>
         <parameters>
-            <parameter scope="instance" datatype="string"  min_n_values="1"  max_n_values="1"  name="ScheduledProcsAllowed"  default="acc_fin::pie_file_create_from_table" description="A space delimited list of procs allowed to be scheduled in package instance" section_name="processes"/>
+            <parameter scope="instance" datatype="string"  min_n_values="1"  max_n_values="1"  name="ScheduledProcsAllowed"  default="acc_fin::pie_file_create_from_table acc_fin::cobbler_file_create_from_table" description="A space delimited list of procs allowed to be scheduled in package instance" section_name="processes"/>
         </parameters>
 
     </version>

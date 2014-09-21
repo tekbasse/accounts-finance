@@ -57,9 +57,10 @@ ad_proc -private acc_fin::schedule_do {
                         set nowts [dt_systime -gmt 1]
                         set start_sec [clock seconds]
                         # tell the system I am working on it.
-                        set success_p [db_dml qaf_sched_proc_stack_started {
+                        set success_p 1
+                        db_dml qaf_sched_proc_stack_started {
                             update qaf_sched_proc_stack set started_time =:nowts where id =:id
-                        } ]
+                        }
 
                         set proc_list [list $proc_name]
                         set args_lists [db_list_of_lists qaf_sched_proc_args_read_s { select arg_value, arg_number from qaf_sched_proc_args where stack_id =:id order by arg_number asc} ]
@@ -72,15 +73,17 @@ ad_proc -private acc_fin::schedule_do {
                             ns_log Warning "acc_fin::schedule_do.71: id $id Eval '${proc_list}' errored with ${this_err_text}."
                             # don't time an error. This provides a way to manually identify errors via sql sort
                             set nowts [dt_systime -gmt 1]
-                            set success_p [db_dml qaf_sched_proc_stack_write {
+                            set success_p 0
+                            db_dml qaf_sched_proc_stack_write {
                                 update qaf_sched_proc_stack set proc_out =:this_err_text, completed_time=:nowts where id = :id 
-                            } ]
+                            } 
                             
                         } else {
                             set dur_sec [expr { [clock seconds] - $start_sec } ]
                             set nowts [dt_systime -gmt 1]
-                            set success_p [db_dml qaf_sched_proc_stack_write {
-                                update qaf_sched_proc_stack set proc_out =:calc_value, completed_time=:nowts, process_seconds=:dur_sec where id = :id } ]
+                            set success_p 1
+                            db_dml qaf_sched_proc_stack_write {
+                                update qaf_sched_proc_stack set proc_out =:calc_value, completed_time=:nowts, process_seconds=:dur_sec where id = :id }
                                 ns_log Notice "acc_fin::schedule_do.83: id $id completed in circa ${dur_sec} seconds."
                         }
                     }
@@ -90,8 +93,9 @@ ad_proc -private acc_fin::schedule_do {
             }
         } else {
             # if do is idle, delete some (limit 100 or so) used args in qaf_sched_proc_args. Ids may have more than 1 arg..
-            ns_log Notice "acc_fin::schedule_do.91: Idle. Entering passive maintenance mode. deleting some used args, if any."
-            set success_p db_dml qaf_sched_proc_args_delete { delete from qaf_sched_proc_args 
+            ns_log Notice "acc_fin::schedule_do.91: Idle. Entering passive maintenance mode. deleting up to 60 used args, if any."
+            set success_p 1
+            db_dml qaf_sched_proc_args_delete { delete from qaf_sched_proc_args 
                 where stack_id in ( select id from qaf_sched_proc_stack where process_seconds is not null order by id limit 60 ) 
             }
         }

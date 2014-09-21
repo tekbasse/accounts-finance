@@ -34,18 +34,147 @@ ad_proc -public acc_fin::chart_file_names {
     return $name_list
 }
 
+ad_proc -public acc_fin::table_data_stats {
+    {curve_list_name "curve_lists"}
+    {x_list_name "maybe_x_list"}
+    {y_list_name "maybe_y_list"}
+    {x_min_name "x_min"}
+    {x_max_name "x_max"}
+    {y_min_name "y_min"}
+    {y_max_name "y_max"}
+    {x_sum_name "x_sum"}
+    {y_sum_name "y_sum"}
+} {
+    Validates data, splits off the x and y data (if curve_list_name supplied), and gathers some statistics about it.
+    Returns 1 if data validates, and values of x_min_name x_max_name y_min_name y_max_name x_list_name y_list_name via upvar
+} {
+    upvar 1 $curve_list_name curve_lists
+    upvar 1 $x_list_name maybe_x_list
+    upvar 1 $y_list_name maybe_y_list
+    upvar 1 $x_min_name x_min
+    upvar 1 $x_max_name x_max
+    upvar 1 $y_min_name y_min
+    upvar 1 $y_max_name y_max
+    upvar 1 $x_sum_name x_sum
+    upvar 1 $y_sum_name y_sum
+
+    set error_p 0
+    set maybe_x_list_len [llength $maybe_x_list ]
+    set maybe_y_list_len [llength $maybe_y_list ]
+
+    if { $curve_lists ne "" && $maybe_x_list eq "" && $maybe_y_list eq "" } {
+        set table_titles_list [lindex $curve_lists 0]
+        set table_data_list [lrange $curve_lists 1 end]
+        set x_idx [lsearch -exact $table_titles_list "x"]
+        set y_idx [lsearch -exact $table_titles_list "y"]
+        set row_count [llength $table_data_list]
+        if { $x_idx > -1 && $y_idx > -1 && $row_count > 0 } {
+            
+            # find min max x and y values and other preparations
+            set row [lindex $table_data_list 0]
+            set x_min [lindex $row $x_idx]
+            set y_min [lindex $row $y_idx]
+            set x_max $x_min
+            set y_max $y_min
+            set x_sum $x_min
+            set y_sum $y_min
+            set maybe_x_list [list $x_min]
+            set maybe_y_list [list $y_min]
+            foreach row [lrange $table_data_list 1 end]  {
+                set x [lindex $row $x_idx]
+                set y [lindex $row $y_idx]
+                if { [ad_var_type_check_number_p $x] && [ad_var_type_check_number_p $y] } {
+                    lappend maybe_x_list $x
+                    lappend maybe_y_list $y
+                    set maybe_x_list_len [llength $maybe_x_list ]
+                    set x_sum [expr { $x_sum + abs( $x ) } ]
+                    if { $y > $y_max } {
+                        set y_max $y
+                    }
+                    if { $y < $y_min } {
+                        set y_min $y
+                    }
+                    if { $x > $x_max } {
+                        set x_max $x
+                    } 
+                    if { $x < $x_min } {
+                        set x_min $x
+                    }
+                } else {
+                    set error_p 1
+                }
+            }
+        } else {
+            set error_p 1
+        }
+    } elseif { $maybe_x_list_len > 0 && $maybe_y_list_len > 0 && $maybe_x_list_len == $maybe_y_list_len } {
+        set y_p 1
+        set x_p 1
+        foreach x $maybe_x_list {
+            if { ![qf_is_decimal $x] } {
+                set x_p 0
+                set error_p 1
+            }
+        }
+        foreach y $maybe_y_list {
+            if { ![qf_is_decimal $y] } {
+                set y_p 0
+                set error_p 1
+            }
+        }
+        if { $error_p == 0 } {
+            set row_count $maybe_x_list_len
+            set x_max [f::lmax $maybe_x_list]
+            set y_max [f::lmax $maybe_y_list]
+            set x_min [f::lmin $maybe_x_list]
+            set y_min [f::lmin $maybe_y_list]
+            set x_sum [f::sum $maybe_x_list]
+            set y_sum [f::sum $maybe_y_list]
+        }
+    } else {
+        set error_p 1
+    }
+    set success_p 1
+    if { $error_p } {
+        set success_p 0
+    }
+    return $success_p
+}
+
+
+ad_proc -public acc_fin::cobbler_file_create_from_table {
+    table_id
+    {user_id ""}
+    {instance_id ""}
+} {
+    This is a wrapper for acc_fin::cobbler_file_create to conveniently pass data to scheduled proc add_fin::schedule_do. table_id is a qss_simple_table id.
+} {
+    if { $instance_id eq "" } {
+        ns_log Warning "acc_fin::cobbler_file_create_from_table.45: No instance_id supplied."
+        set instance_id [ad_conn package_id]
+    }
+    if { $user_id eq "" } {
+        ns_log Warning "acc_fin::cobbler_file_create_from_table.49: No user_id supplied."
+        set user_id [ad_conn user_id]
+    }
+    set cobbler_filename [acc_fin::pretti_cobbler_filename $table_id]
+    set curve_lists [qss_table_read $table_id $instance_id $user_id]
+    set return_val [acc_fin::cobbler_file_create $cobbler_filename $curve_lists $instance_id]
+    return $return_val
+}
+
 ad_proc -public acc_fin::cobbler_file_create {
     cob_filename
     curve_lists
-    maybe_x_list
-    maybe_y_list
+    {instance_id ""}
+    {maybe_x_list ""}
+    {maybe_y_list ""}
     {x_max_min_px "100"}
     {x_max_max_px "1000"}
     {y_max_min_px "100"}
     {y_max_max_px "1000"}
     {color1 ""}
     {color2 ""}
-    {url "web"}
 } {
     returns filepathname or empty string if error. depends on graphicsmagick. Creates image if it doesn't exist.
     resolution adjusts automatically to fit smallest slice for pixel range of x_max_* by y_max_* 
@@ -111,82 +240,8 @@ ad_proc -public acc_fin::cobbler_file_create {
         set cob_webpathname [lindex $name_list 1]
 
         if { ![file exists $cob_pathname] } {
-            set maybe_x_list_len [llength $maybe_x_list ]
-            set maybe_y_list_len [llength $maybe_y_list ]
-
-            if { $curve_lists ne "" && $maybe_x_list eq "" && $maybe_y_list eq "" } {
-                set table_titles_list [lindex $curve_lists 0]
-                set table_data_list [lrange $curve_lists 1 end]
-                set x_idx [lsearch -exact $table_titles_list "x"]
-                set y_idx [lsearch -exact $table_titles_list "y"]
-                set row_count [llength $table_data_list]
-                if { $x_idx > -1 && $y_idx > -1 && $row_count > 0 } {
-                    
-                    # find min max x and y values and other preparations
-                    set row [lindex $table_data_list 0]
-                    set x_min [lindex $row $x_idx]
-                    set y_min [lindex $row $y_idx]
-                    set x_max $x_min
-                    set y_max $y_min
-                    set x_sum $x_min
-                    set y_sum $y_min
-                    set maybe_x_list [list ]
-                    set maybe_y_list [list ]
-                    foreach row [lrange $table_data_list 1 end]  {
-                        set x [lindex $row $x_idx]
-                        set y [lindex $row $y_idx]
-                        if { [ad_var_type_check_number_p $x] && [ad_var_type_check_number_p $y] } {
-                            lappend maybe_x_list $x
-                            lappend maybe_y_list $y
-                            set maybe_x_list_len [llength $maybe_x_list ]
-                            set x_sum [expr { $x_sum + abs( $x ) } ]
-                            if { $y > $y_max } {
-                                set y_max $y
-                            }
-                            if { $y < $y_min } {
-                                set y_min $y
-                            }
-                            if { $x > $x_max } {
-                                set x_max $x
-                            } 
-                            if { $x < $x_min } {
-                                set x_min $x
-                            }
-                        } else {
-                            set error_p 1
-                        }
-                    }
-                } else {
-                    set error_p 1
-                }
-            } elseif { $maybe_x_list_len > 0 && $maybe_y_list_len > 0 && $maybe_x_list_len == $maybe_y_list_len } {
-                set y_p 1
-                set x_p 1
-                foreach x $maybe_x_list {
-                    if { ![qf_is_decimal $x] } {
-                        set x_p 0
-                        set error_p 1
-                    }
-                }
-                foreach y $maybe_y_list {
-                    if { ![qf_is_decimal $y] } {
-                        set y_p 0
-                        set error_p 1
-                    }
-                }
-                if { $error_p == 0 } {
-                    set row_count $maybe_x_list_len
-                    set x_max [f::lmax $maybe_x_list]
-                    set y_max [f::lmax $maybe_y_list]
-                    set x_min [f::lmin $maybe_x_list]
-                    set y_min [f::lmin $maybe_y_list]
-                    set x_sum [f::sum $maybe_x_list]
-                    set y_sum [f::sum $maybe_y_list]
-                }
-            } else {
-                set error_p 1
-            }
-            
+            set success_p [acc_fin::table_data_stats ]
+            set error_p [expr { abs( $success_p - 1 ) } ]
             if { $error_p == 0 } {
                 # style cobbler (square pie) chart
                 # make chart as png image?
@@ -214,6 +269,7 @@ ad_proc -public acc_fin::cobbler_file_create {
                     set y2 $y0
                     set k1 [expr { $r / ( $x_sum + 0. ) } ]
                     set k2 [expr { $dim_py / ( $y_max + 0. ) } ]
+                    set maybe_x_list_len [llength $maybe_x_list ]
                     for {set j 0} { $j < $maybe_x_list_len } {incr j } {
                         set odd_p [expr { 1 + $j - int( ( $j + 1 ) / 2 ) * 2 } ]
                         set x [lindex $maybe_x_list $j]
@@ -226,31 +282,46 @@ ad_proc -public acc_fin::cobbler_file_create {
                         set y2 [expr { round( $y0 - $bar_height ) } ]
                         #ns_log Notice "accounts-finance/lib/pretti-one-view.tcl x0 $x0 y0 $y0 x1 $x1 y1 $y1 x2 $x2 y2 $y2"
                         exec gm convert -size ${dim_px}x${dim_py} -fill $color_arr($odd_p) -stroke $color_arr($odd_p) -draw "rectangle $x1,$y1 $x2,$y2" $cob_tmppathname $cob_tmppathname
-                        # some OSes are less buggy with copy/delete instead of move on busy VMs apparently due to server/OS file memory hooks.
-                        file copy $cob_tmppathname $cob_pathname
-                        file delete $cob_tmppathname
                     }
+                    # some OSes are less buggy with copy/delete instead of move on busy VMs apparently due to server/OS file memory hooks.
+                    file copy $cob_tmppathname $cob_pathname
+                    file delete $cob_tmppathname
                 }
             }
         }
     }
     if { $error_p } {
-        set return_name ""
+        set return_val 0
     } else {
-        if { $url eq "web" } {
-            set return_name $cob_pathname
-        } elseif { $url eq "list" } {
-            set return_name [list $cob_pathname $cob_webpathname]
-        } else {
-            set return_name $cob_webpathname
-        }
+        set return_val 1
     }
-    return $return_name
+    return $return_val
 }
 
 
 
 ad_proc -public acc_fin::cobbler_html_view {
+    cobbler_filename
+} {
+    Returns image url if available, otherwise empty string.
+} {
+    #ns_log Notice "acc_fin::cobbler_html_view.309: cobbler_filename $cobbler_filename"
+    set cobbler_html ""
+    # acc_fin::file_sys_pathname gets webpath, so let's get it here to save a double
+    # trip on a positive case
+    # get web pathname
+    set web_path [acc_fin::file_web_pathname]
+
+    set filepathname [acc_fin::file_sys_pathname $cobbler_filename $web_path]
+    if { [file exists $filepathname ] } {
+        append web_path "/"
+        append web_path $cobbler_filename
+        set cobbler_html $web_path
+    }
+    return $cobbler_html
+}
+
+ad_proc -public acc_fin::cobbler_html_build_n_view {
     cob_filename
     curve_lists
     maybe_x_list
@@ -320,83 +391,9 @@ ad_proc -public acc_fin::cobbler_html_view {
         }
 
         if { $error_p == 0 } {
-            set maybe_x_list_len [llength $maybe_x_list ]
-            set maybe_y_list_len [llength $maybe_y_list ]
+            set success_p [acc_fin::table_data_stats ]
+            set error_p [expr { abs( $success_p - 1 ) } ]
 
-            if { $curve_lists ne "" && $maybe_x_list eq "" && $maybe_y_list eq "" } {
-                set table_titles_list [lindex $curve_lists 0]
-                set table_data_list [lrange $curve_lists 1 end]
-                #ns_log Notice "acc_fin::cobbler_html_view.329 table_data_list $table_data_list "
-                set x_idx [lsearch -exact $table_titles_list "x"]
-                set y_idx [lsearch -exact $table_titles_list "y"]
-                set row_count [llength $table_data_list]
-                if { $x_idx > -1 && $y_idx > -1 && $row_count > 0 } {
-                    
-                    # find min max x and y values and other preparations
-                    set row [lindex $table_data_list 0]
-                    set x_min [lindex $row $x_idx]
-                    set y_min [lindex $row $y_idx]
-                    set x_max $x_min
-                    set y_max $y_min
-                    set x_sum $x_min
-                    set y_sum $y_min
-                    set maybe_x_list [list ]
-                    set maybe_y_list [list ]
-                    foreach row [lrange $table_data_list 0 end]  {
-                        set x [lindex $row $x_idx]
-                        set y [lindex $row $y_idx]
-                        if { [ad_var_type_check_number_p $x] && [ad_var_type_check_number_p $y] } {
-                            lappend maybe_x_list $x
-                            lappend maybe_y_list $y
-                            set maybe_x_list_len [llength $maybe_x_list ]
-                            set x_sum [expr { $x_sum + abs( $x ) } ]
-                            if { $y > $y_max } {
-                                set y_max $y
-                            }
-                            if { $y < $y_min } {
-                                set y_min $y
-                            }
-                            if { $x > $x_max } {
-                                set x_max $x
-                            } 
-                            if { $x < $x_min } {
-                                set x_min $x
-                            }
-                        } else {
-                            set error_p 1
-                        }
-                    }
-                } else {
-                    set error_p 1
-                }
-            } elseif { $maybe_x_list_len > 0 && $maybe_y_list_len > 0 && $maybe_x_list_len == $maybe_y_list_len } {
-                set y_p 1
-                set x_p 1
-                foreach x $maybe_x_list {
-                    if { ![qf_is_decimal $x] } {
-                        set x_p 0
-                        set error_p 1
-                    }
-                }
-                foreach y $maybe_y_list {
-                    if { ![qf_is_decimal $y] } {
-                        set y_p 0
-                        set error_p 1
-                    }
-                }
-                if { $error_p == 0 } {
-                    set row_count $maybe_x_list_len
-                    set x_max [f::lmax $maybe_x_list]
-                    set y_max [f::lmax $maybe_y_list]
-                    set x_min [f::lmin $maybe_x_list]
-                    set y_min [f::lmin $maybe_y_list]
-                    set x_sum [f::sum $maybe_x_list]
-                    set y_sum [f::sum $maybe_y_list]
-                }
-            } else {
-                set error_p 1
-            }
-            
             if { $error_p == 0 } {
                 # style cobbler (square pie) chart
 
@@ -421,9 +418,10 @@ ad_proc -public acc_fin::cobbler_html_view {
                 set comb_bar_curv_lol [list $xy_list]
                 set xy_delim ""
                 set xy_html ""
+                set batch_y_list [list]
                 set bars_count 1
                 set bar_width_accum 0.
-                #ns_log Notice "acc_fin::cobbler_html_view.432 maybe_x_list_len $maybe_x_list_len "
+                set maybe_x_list_len [llength $maybe_x_list]
                 set odd_p 1
                 for {set j 0} { $j < $maybe_x_list_len } {incr j } {
                     set x [lindex $maybe_x_list $j]
@@ -432,7 +430,7 @@ ad_proc -public acc_fin::cobbler_html_view {
                     set bar_height [expr { round( $y * $k2 ) } ]
 
                     set bar_width_accum [expr { $bar_width_accum + $bar_width } ]
-                    set bar_height [expr { $y * $k2 } ]
+                    #set bar_height [expr { $y * $k2 } ]
                     #ns_log Notice "acc_fin::cobbler_html_view.433 j $j x $x y $y bar_width $bar_width bar_height $bar_height"
                     if { $bar_width_accum >= 1. } {
                         if { $bar_width > 3 } {
@@ -446,7 +444,8 @@ ad_proc -public acc_fin::cobbler_html_view {
                                 } else {
                                     set bar_height [lindex $batch_y_list 0]
                                 }
-                                append cob_html "<div style=\"margin: 0; padding: 0; width: 1 px; height: ${bar_height} px; display: inline-block; vertical-align: bottom; border-style: none; background-color: $color_arr($odd_p); \"><img src=\"/resources/acs-subsite/spacer.gif\" style=\"margin: 0; padding: 0; border-style: none;\" width=\"1\" height=\"${bar_height}\" alt=\"${xy_html}\" title=\"${xy_html} \"></div>"
+                                append cob_html "<div style=\"margin: 0; padding: 0; width: ${bar_width} px; height: ${bar_height} px; display: inline-block; vertical-align: bottom; border-style: none; background-color: $color_arr($odd_p); \"><img src=\"/resources/acs-subsite/spacer.gif\" style=\"margin: 0; padding: 0; border-style: none;\" height=\"${bar_height}\" width=\"${bar_width}\" alt=\"${xy_html}\" title=\"${xy_html} \"></div>"
+
                                 # reset values to print last bar in set
                                 set xy_html ""
                                 set xy_delim ""
@@ -469,7 +468,10 @@ ad_proc -public acc_fin::cobbler_html_view {
                         append xy_html $xy_delim
                         append xy_html "y=$y x=$x"
                         #ns_log Notice "acc_fin::cobbler_html_view.452 j $j x $x y $y bar_width $bar_width bar_height $bar_height xy_html $xy_html"
-                        append cob_html "<div style=\"margin: 0; padding: 0; width: ${bar_width} px; height: ${bar_height} px; display: inline-block; vertical-align: bottom; border-style: none; background-color: $color_arr($odd_p); \"><img src=\"/resources/acs-subsite/spacer.gif\" style=\"margin: 0; padding: 0; border-style: none;\" width=\"${bar_width}\" height=\"${bar_height}\" alt=\"${xy_html}\" title=\"${xy_html} \"></div>"
+                        append cob_html "<div style=\"margin: 0; padding: 0; width: ${bar_width} px; height: ${bar_height} px; display: inline-block; vertical-align: bottom; border-style: none; background-color: $color_arr($odd_p); \">"
+                        #append cob_html "<img src=\"/resources/acs-subsite/spacer.gif\" style=\"margin: 0; padding: 0; border-style: none;\" width=\"${bar_width}\" height=\"${bar_height}\" alt=\"${xy_html}\" title=\"${xy_html} \">"
+                        append cob_html "<img src=\"/resources/acs-subsite/spacer.gif\" style=\"margin: 0; padding: 0; border-style: none;\" width=\"${bar_width}\" height=\"${bar_height}\" alt=\"${xy_html}\" title=\"${xy_html} \">"
+                        append cob_html "</div>"
                         set bar_width 0.
                         set bar_width_accum 0.
                         set comb_bar_curv_lol [list $xy_list]
@@ -522,6 +524,18 @@ ad_proc -public acc_fin::pretti_pie_filename {
     # pie chart
     set pie_filename "pretti-dc-${table_id}-pie.png"
     return $pie_filename
+}
+
+
+ad_proc -public acc_fin::pretti_cobbler_filename {
+    table_id
+} {
+    Returns a consistent cobbler filename for use with PRETTI tables.
+} {
+    #ns_log Notice "acc_fin::pretti_cobbler_filename.515: table_id $table_id"
+    # cobbler chart
+    set cob_filename "pretti-dc-${table_id}-cob.png"
+    return $cob_filename
 }
 
 ad_proc -public acc_fin::file_sys_pathname {
@@ -660,79 +674,8 @@ ad_proc -public acc_fin::pie_file_create {
         set pie_webpathname [lindex $name_list 1]
 
         if { ![file exists $pie_pathname] } {
-
-            if { $curve_lists ne "" && $maybe_x_list eq "" && $maybe_y_list eq "" } {
-                set table_titles_list [lindex $curve_lists 0]
-                set table_data_list [lrange $curve_lists 1 end]
-                set x_idx [lsearch -exact $table_titles_list "x"]
-                set y_idx [lsearch -exact $table_titles_list "y"]
-                set row_count [llength $table_data_list]
-                if { $x_idx > -1 && $y_idx > -1 && $row_count > 0 } {
-                    
-                    # find min max x and y values and other preparations
-                    set row [lindex $table_data_list 0]
-                    set x_min [lindex $row $x_idx]
-                    set y_min [lindex $row $y_idx]
-                    set x_max $x_min
-                    set y_max $y_min
-                    set x_sum $x_min
-                    set y_sum $y_min
-                    set maybe_x_list [list ]
-                    set maybe_y_list [list ]
-                    foreach row [lrange $table_data_list 1 end]  {
-                        set x [lindex $row $x_idx]
-                        set y [lindex $row $y_idx]
-                        if { [ad_var_type_check_number_p $x] && [ad_var_type_check_number_p $y] } {
-                            lappend maybe_x_list $x
-                            lappend maybe_y_list $y
-                            set maybe_x_list_len [llength $maybe_x_list ]
-                            set x_sum [expr { $x_sum + abs( $x ) } ]
-                            if { $y > $y_max } {
-                                set y_max $y
-                            }
-                            if { $y < $y_min } {
-                                set y_min $y
-                            }
-                            if { $x > $x_max } {
-                                set x_max $x
-                            } 
-                            if { $x < $x_min } {
-                                set x_min $x
-                            }
-                        } else {
-                            set error_p 1
-                        }
-                    }
-                } else {
-                    set error_p 1
-                }
-            } elseif { $maybe_x_list_len > 0 && $maybe_y_list_len > 0 && $maybe_x_list_len == $maybe_y_list_len } {
-                set y_p 1
-                set x_p 1
-                foreach x $maybe_x_list {
-                    if { ![qf_is_decimal $x] } {
-                        set x_p 0
-                        set error_p 1
-                    }
-                }
-                foreach y $maybe_y_list {
-                    if { ![qf_is_decimal $y] } {
-                        set y_p 0
-                        set error_p 1
-                    }
-                }
-                if { $error_p == 0 } {
-                    set row_count $maybe_x_list_len
-                    set x_max [f::lmax $maybe_x_list]
-                    set y_max [f::lmax $maybe_y_list]
-                    set x_min [f::lmin $maybe_x_list]
-                    set y_min [f::lmin $maybe_y_list]
-                    set x_sum [f::sum $maybe_x_list]
-                    set y_sum [f::sum $maybe_y_list]
-                }
-            } else {
-                set error_p 1
-            }
+            set success_p [acc_fin::table_data_stats ]
+            set error_p [expr { abs( $success_p - 1 ) } ]
             
             if { $error_p == 0 } {
                 # style pie (square pie) chart
@@ -773,7 +716,7 @@ ad_proc -public acc_fin::pie_file_create {
                     set k5 [expr { $r / $y_max } ]
                     # convert rads to degs:
                     set k0 [expr { 360. / $2pi } ]
-
+                    set maybe_x_list_len [llength $maybe_x_list]
                     for {set j 0} { $j < $maybe_x_list_len } {incr j } {
                         set odd_p [expr { 1 + $j - int( ( $j + 1 ) / 2 ) * 2 } ]
                         set x [lindex $maybe_x_list $j]
