@@ -11,6 +11,6 @@
 #ns_schedule_daily -thread 4 14 acc_fin::proc...
 
 # once every 1/3 minute.
-set frequent_base [expr 20 * 1]
+set frequent_base [expr 13 * 1]
 
 ad_schedule_proc -thread t $frequent_base acc_fin::schedule_do

@@ -185,8 +185,7 @@ ad_proc -public acc_fin::cobbler_file_create {
     If url is 'list', then a list of both filesystem-pathname and web-pathname are returned.
 } {
     set error_p 0
-    set instance_id [ad_conn package_id]
-    set user_id [ad_conn user_id]
+
     
     # set alternating colors
     if { [regexp {[\#]?([0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f])} $color1 ] } {

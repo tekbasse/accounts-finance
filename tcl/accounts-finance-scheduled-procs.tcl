@@ -36,14 +36,20 @@ ad_proc -private acc_fin::schedule_do {
 } { 
     Process any scheduled procedures. Future batches are suspended until this process reports batch complete.
 } {
+    set cycle_time 13
+    incr cycle_time -1
     set success_p 0
     set batch_lists [db_list_of_lists qaf_sched_proc_stack_read_adm_p0_s { select id,proc_name,user_id,instance_id, priority, order_time, started_time from qaf_sched_proc_stack where completed_time is null order by started_time asc, priority asc , order_time asc } ]
     set batch_lists_len [llength $batch_lists]
+    set dur_sum 0
     set first_started_time [lindex [lindex $batch_lists 0] 6]
     ns_log Notice "acc_fin::schedule_do.39: first_started_time '${first_started_time}' batch_lists_len ${batch_lists_len}"
     if { $first_started_time eq "" } {
         if { $batch_lists_len > 0 } {
-            foreach sched_list $batch_lists {
+            set bi 0
+            # if loop nears cycle_time, quit and let next cycle reprioritize with any new jobs
+            while { $bi < $batch_lists_len && $dur_sum < $cycle_time } {
+                set sched_list [lindex $batch_lists $bi]
                 # set proc_list lindex combo from sched_list
                 lassign $sched_list id proc_name user_id instance_id priority order_time started_time
                 # package_id can vary with each entry
@@ -80,6 +86,7 @@ ad_proc -private acc_fin::schedule_do {
                             
                         } else {
                             set dur_sec [expr { [clock seconds] - $start_sec } ]
+                            set dur_sum [expr { $dur_sum + $dur_sec } ]
                             set nowts [dt_systime -gmt 1]
                             set success_p 1
                             db_dml qaf_sched_proc_stack_write {
@@ -90,6 +97,8 @@ ad_proc -private acc_fin::schedule_do {
                 } else {
                     ns_log Warning "acc_fin::schedule_do.87: id $id proc_name '${proc_name}' attempted but not allowed. user_id ${user_id} instance_id ${instance_id}"
                 }
+                # next batch index
+                incr bi
             }
         } else {
             # if do is idle, delete some (limit 100 or so) used args in qaf_sched_proc_args. Ids may have more than 1 arg..
