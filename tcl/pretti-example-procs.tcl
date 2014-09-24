@@ -26,10 +26,13 @@ ad_proc -private acc_fin::example_table {
             # goes with p20a
             set ret_list [list [list name value] [list activity_table_name "PRETTI Example 1"] [list time_est_short 5 ] [list time_est_median 8] [list time_est_long 12] [list time_probability_moment 0.5]]
         }
-        p11b {
+        p10b {
             # goes with p20b
             set ret_list [list [list name value] [list activity_table_name "WikipediaPERTchart"]]
         }
+        p10c {
+            # goes with p20c
+            set ret_list [list [list name value] [list activity_table_name "Fedora 20 Project Plan"]]
         p20a {
             set ret_list [list "Wikipedia PERT" "This is an example from PERT entry of Wikipedia. See entry for details: http://en.wikipedia.org/wiki/Program_Evaluation_and_Review_Technique" "activity_ref,time_est_short,time_est_med,time_est_long,time_ext,dependent_tasks
 A,2,4,6,4.0,
@@ -52,7 +55,11 @@ D,1,30,blue
 F,3,40,brown
 C,3,20,brown
 50,0,F E C,grey"]
+            p30c {
+            set ret_list [list "Fedora 20 Project chart" "This is an example rendered from an example in the open source TaskJuggler Project examples at http://www.taskjuggler.org/examples.html Example file retrieved from http://www.taskjuggler.org/tj3/examples/Fedora-20/f-20.tjp on 2014-09-22" "activity_ref,name,description,dependent_tasks,duration,flags
+"]}
 
+            }
             # p2 Task Network
             #      activity_ref           reference for an activity, a unique task id, using "activity" to differentiate between table_id's tid 
             #                             An activity reference is essential a function as in f() with no attributes,
