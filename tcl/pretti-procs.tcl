@@ -2046,7 +2046,8 @@ ad_proc -private acc_fin::list_filter {
             foreach input_row_unfiltered $user_input_list {
                 set filtered_row_list [list ]
                 foreach input_unfiltered $input_row_unfiltered {
-                    regsub -all -nocase -- {[^a-z0-9,\.]+} $input_unfiltered {} input_filtered
+                    # added dash and underscore, because these are often used in alpha/text references
+                    regsub -all -nocase -- {[^a-z0-9,\.\-\_]+} $input_unfiltered {} input_filtered
                     lappend filtered_row_list $input_filtered
                 }
                 lappend filtered_list $filtered_row_list
@@ -2058,7 +2059,8 @@ ad_proc -private acc_fin::list_filter {
             foreach input_row_unfiltered $user_input_list {
                 set filtered_row_list [list ]
                 foreach input_unfiltered $input_row_unfiltered {
-                    regsub -all -nocase -- {[^a-z0-9,\.\*]+} $input_unfiltered {} input_filtered
+                    # added dash and underscore, because these are often used in alpha/text references
+                    regsub -all -nocase -- {[^a-z0-9,\.\-\_\*]+} $input_unfiltered {} input_filtered
                     lappend filtered_row_list $input_filtered
                 }
                 lappend filtered_list $filtered_row_list
@@ -2067,7 +2069,8 @@ ad_proc -private acc_fin::list_filter {
         alphanum {
             set filtered_list [list ]
             foreach input_unfiltered $user_input_list {
-                regsub -all -nocase -- {[^a-z0-9,\.]+} $input_unfiltered {} input_filtered
+                    # added dash and underscore, because these are often used in alpha/text references
+                regsub -all -nocase -- {[^a-z0-9,\.\-\_]+} $input_unfiltered {} input_filtered
                 lappend filtered_list $input_filtered
             }
         }
