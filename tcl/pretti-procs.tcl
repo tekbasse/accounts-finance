@@ -2114,10 +2114,12 @@ ad_proc -private acc_fin::list_filter {
 
 ad_proc -public acc_fin::table_type {
     table_id
+    {instance_id ""}
+    {user_id ""}
 } {
     returns table flags.
 } {
-    set stats_list [qss_table_stats $table_id]
+    set stats_list [qss_table_stats $table_id $instance_id $user_id]
     # stats: name, title, comments, cell_count, row_count, template_id, flags, trashed, popularity, time last_modified, time created, user_id.
     set flags [string trim [lindex $stats_list 6]]
     return $flags
@@ -3640,7 +3642,7 @@ ad_proc -public acc_fin::scenario_prettify {
                         lappend p6_lists $path_list
                     }                
                     
-                    set scenario_stats_list [qss_table_stats $scenario_tid]
+                    set scenario_stats_list [qss_table_stats $scenario_tid $instance_id $user_id]
                     set scenario_name [lindex $scenario_stats_list 0]
                     if { [llength $t_moment_list ] > 1 } {
                         set t_moment_len_list [list ]
@@ -3889,7 +3891,7 @@ ad_proc -public acc_fin::table_sort_y_asc {
             set write_p [permission::permission_p -party_id $user_id -object_id $instance_id -privilege write]
         }
         if { $create_p || $write_p } {
-            set table_stats_list [qss_table_stats $table_tid]
+            set table_stats_list [qss_table_stats $table_tid $instance_id $user_id]
             # name, title, comments, cell_count, row_count, template_id, flags, trashed, popularity, time last_modified, time created, user_id.
             set trashed_p [lindex $table_stats_list 7]
             set table_flags [lindex $table_stats_list 6]
@@ -3901,7 +3903,7 @@ ad_proc -public acc_fin::table_sort_y_asc {
                 if { $y_idx > -1 } {
                     set table_sorted_lists [lsort -index $y_idx -real [lrange $table_lists 1 end]]
                     set table_sorted_lists [linsert $table_sorted_lists 0 $title_row]
-                    set table_stats [qss_table_stats $table_tid]
+                    set table_stats [qss_table_stats $table_tid $instance_id $user_id]
                     # name, title, comments, cell_count, row_count, template_id, flags, trashed, popularity, time last_modified, time created, user_id.
                     set table_name [lindex $table_stats 0]
                     set table_title [lindex $table_stats 1]
