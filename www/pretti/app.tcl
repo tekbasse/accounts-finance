@@ -506,7 +506,11 @@ if { $form_posted } {
             # see lib/pretti-view-one and lib/pretti-menu1
             # given table_tid 
             #set table_lists [qss_table_read $table_tid]
-            acc_fin::scenario_prettify $table_tid $instance_id $user_id
+            #acc_fin::scenario_prettify $table_tid $instance_id $user_id
+
+            set row_count [lindex $table_stats_list 4]
+            set priority [expr { $row_count * 3 } ]
+            acc_fin::schedule_add "acc_fin::scenario_prettify" [list $table_tid $instance_id $user_id] $user_id $instance_id $priority
         }
         set mode "p"
         set next_mode ""
