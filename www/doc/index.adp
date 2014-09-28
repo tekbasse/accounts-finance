@@ -47,6 +47,7 @@ A local copy is available at accounts-finance/www/doc/<a href="LICENSE.html">LIC
 <a href="LICENSE.html">GPL 3+ License</a>
 </li><li>
 <a href="pretti-features">PRETTI Features</a>
+</li><li>
 <a href="pretti-specs">PRETTI Specifications</a>
 </li><li>
 <a href="pretti-tables">PRETTI Table definitions</a>
