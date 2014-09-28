@@ -36,10 +36,10 @@ ad_proc -private acc_fin::example_table {
         }
         p10d {
             # goes with p20d
-            set ret_list [list [list name value] [list activity_table_name "Fedora 20 Project Plan"]] }
+            set ret_list [list [list name value] [list activity_table_name "Fedora 20 Doc Workflow"]] }
         p10e {
             # goes with p20d
-            set ret_list [list [list name value] [list activity_table_name "Fedora 20 Doc Workflow"]] }
+            set ret_list [list [list name value] [list activity_table_name "Fedora 20 network analysis from Project Schedule (draft)"]] }
         p20a {
             set ret_list [list "Wikipedia PERT" "This is an example from PERT entry of Wikipedia. See entry for details: http://en.wikipedia.org/wiki/Program_Evaluation_and_Review_Technique" "activity_ref,time_est_short,time_est_med,time_est_long,time_ext,dependent_tasks
 A,2,4,6,4.0,
@@ -80,7 +80,19 @@ beta_release,beta_cycles,7,Beta release
 final_cycles,beta_release,14,Final release candidate cycles
 final_release,final_cycles,5,GA \(Final) release"] }
         p20d {
-            set ret_list [list "Fedora 20 Project chart" "This is an example rendered from an example in the open source TaskJuggler Project examples at http://www.taskjuggler.org/examples.html Example file retrieved from http://www.taskjuggler.org/tj3/examples/Fedora-20/f-20.tjp on 2014-09-22" "name,activity_ref,description,dependent_tasks,time_est_median,flags
+            set ret_list [list "Fedora Doc Workflow" "This is an example rendered from a Documentation Workflow page in the open source Fedora Project's wiki retrieved from https://fedoraproject.org/wiki/Docs_Project_workflow on 26 September 2014" "activity_ref,dependent_tasks,time_est_median
+collect_input,,
+write_wiki,collect_input,
+wiki,collect_input write_wiki,
+review_wiki,wiki,
+write_xml,wiki collect_input,
+git,write_xml,
+review_xml,git,
+publish,git,
+package_docs,git,
+push_to_fedora,package_docs,"] }
+        p20e {
+            set ret_list [list "Fedora 20 Project task detail chart (draft)" "This draft example is an incomplete, third attempt at manually converting a task schedule from an example in the open source TaskJuggler Project examples at http://www.taskjuggler.org/examples.html Dependencies are not clearly, consistently defined in the schedule. Attempting a network analysis using the schedule makes this self evident.  Example file retrieved from http://www.taskjuggler.org/tj3/examples/Fedora-20/f-20.tjp on 2014-09-22." "name,activity_ref,description,dependent_tasks,time_est_median,flags
 1,first_day,First Day of Development,,,hidden
 2,PlanningPhase_start,Planning Phase start,,,key pm roadmap
 x2,PlanningPhase_end,Planning Phase end,,,key pm roadmap
@@ -456,18 +468,6 @@ x20,TestingPhase_end,Testing Phase end,,,
 412,ceo_blog_drop,Red Hat PR publish and send CEO blog to media contacts,final ceo_blog_legal,1,
 413,ceo_blog,CEO press blog entry,ceo_prepare_final_rc ceo_send_final_rc ceo_solicit_feedback ceo_blog_drop,,fpl pr
 "] }
-        p20e {
-            set ret_list [list "Fedora Doc Workflow" "This is an example rendered from a Release Life Cycle page in the open source Fedora Project's wiki retrieved from https://fedoraproject.org/wiki/Docs_Project_workflow on 26 September 2014" "activity_ref,dependent_tasks,time_est_median
-collect_input,,
-write_wiki,collect_input,
-wiki,collect_input write_wiki,
-review_wiki,wiki,
-write_xml,wiki collect_input,
-git,write_xml,
-review_xml,git,
-publish,git,
-package_docs,git,
-push_to_fedora,package_docs,"] }
         p20 {
             # p2 Task Network
             #      activity_ref           reference for an activity, a unique task id, using "activity" to differentiate between table_id's tid 
