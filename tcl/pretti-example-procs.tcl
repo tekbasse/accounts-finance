@@ -32,7 +32,11 @@ ad_proc -private acc_fin::example_table {
         }
         p10c {
             # goes with p20c
-            set ret_list [list [list name value] [list activity_table_name "Fedora 20 Project Plan"]]
+            set ret_list [list [list name value] [list activity_table_name "Fedora Release Life Cycle"]]
+        }
+        p10d {
+            # goes with p20d
+            set ret_list [list [list name value] [list activity_table_name "Fedora 20 Project Plan"]] }
         p20a {
             set ret_list [list "Wikipedia PERT" "This is an example from PERT entry of Wikipedia. See entry for details: http://en.wikipedia.org/wiki/Program_Evaluation_and_Review_Technique" "activity_ref,time_est_short,time_est_med,time_est_long,time_ext,dependent_tasks
 A,2,4,6,4.0,
@@ -44,8 +48,9 @@ F,3,4,8,4.5,D
 G,3,5,8,5.17,E" ]
         }
         p20b {
-            set ret_list [list "Wikipedia PERT chart" "This is an example rendered from a chart image in the PERT entry of Wikipedia. See image for details: http://en.wikipedia.org/wiki/File:Pert_chart_colored.svg" "activity_ref,time_est_med,dependent_tasks,color
+            set ret_list [list "Wikipedia PERT chart" "This is an example rendered from a chart image in the PERT entry of Wikipedia. See image for details: http://en.wikipedia.org/wiki/File:Pert_chart_colored.svg" "activity_ref,time_est_median,dependent_tasks,color
 10,0,,grey
+E,3,30,blue
 A,3,10,green
 B,4,10,green
 20,0,B,grey
@@ -54,9 +59,25 @@ D,1,30,blue
 40,0,D,grey
 F,3,40,brown
 C,3,20,brown
-50,0,F E C,grey"]
-            p20c {
-            set ret_list [list "Fedora 20 Project chart" "This is an example rendered from an example in the open source TaskJuggler Project examples at http://www.taskjuggler.org/examples.html Example file retrieved from http://www.taskjuggler.org/tj3/examples/Fedora-20/f-20.tjp on 2014-09-22" "name,activity_ref,description,dependent_tasks,duration,flags
+50,0,F E C,grey
+"] }
+        p20c {
+            set ret_list [list "Fedora Release Life Cycle tasks" "This is an example rendered from a Release Life Cycle page in the open source Fedora Project's wiki retrieved from https://fedoraproject.org/wiki/Fedora_Release_Life_Cycle on 26 September 2014" "activity_ref,dependent_tasks,time_est_median,description
+planning_development,,90,Planning and Development
+development,planning_development,90,Development
+branch_alpha,development,14,Branch and build Alpha base
+bodhi_cycling,branch_alpha,72,Bodhi maintenance release cycling \(494d overall)
+translations,branch_alpha,72,Translations accepted this release \(279d overall)
+alpha_testing,branch_alpha,23,Alpha testing cycle
+alpha_cycles,alpha_testing,14,Alpha release candidate cycles
+alpha_release,alpha_cycles,7,Alpha release
+beta_testing,alpha_release,7,Beta testing cycle
+beta_cycles,beta_testing,14,Beta release candidate cycles
+beta_release,beta_cycles,7,Beta release
+final_cycles,beta_release,14,Final release candidate cycles
+final_release,final_cycles,5,GA \(Final) release"] }
+        p20d {
+            set ret_list [list "Fedora 20 Project chart" "This is an example rendered from an example in the open source TaskJuggler Project examples at http://www.taskjuggler.org/examples.html Example file retrieved from http://www.taskjuggler.org/tj3/examples/Fedora-20/f-20.tjp on 2014-09-22" "name,activity_ref,description,dependent_tasks,time_est_median,flags
 1,first_day,First Day of Development,,,hidden
 2,PlanningPhase_start,Planning Phase start,,,key pm roadmap
 x2,PlanningPhase_end,Planning Phase end,,,key pm roadmap
@@ -78,7 +99,7 @@ x12,supplement_wallpaper_end,Supplemental Wallpaper Process,package_supplemental
 17,DevelopmentPhase_start,Development Phase,,,
 x17,DevelopmentPhase_end,Development Phase,develop,,
 18,devel_start,Start Development,,,devel
-19,develop,Packaging and Development (precedes Alpha),,70,devel proto
+19,develop,Packaging and Development \(precedes Alpha),,70,devel proto
 20,TestingPhase_start,Testing Phase start,,,
 x20,TestingPhase_end,Testing Phase end,,,
 21,alpha_start,Alpha Release start,TestingPhase_start,,
@@ -89,7 +110,7 @@ x20,TestingPhase_end,Testing Phase end,,,
 31,alpha_blocker4,Alpha Blocker Meeting 4,alpha_blocker3,5,releng quality devel pm blocker
 32,alpha_blocker5,Alpha Blocker Meeting alpha 5,alpha_blocker4,5,releng quality devel pm blocker
 34,alpha_deadline_remind,Remind Alpha Deadline in 1 week,feature_freeze alpha_deadline,6,hidden pm
-35,feature_freeze,Feature Freeze (Testable/Complete),,,releng quality pm proto devel key marketing roadmap fpl
+35,feature_freeze,Feature Freeze \(Testable/Complete),,,releng quality pm proto devel key marketing roadmap fpl
 37,spins_freeze,Spins Freeze--All Spins Identified,,,releng quality pm proto devel key marketing spins fpl
 38,talking_points,Create Talking Points,feature_freeze,5,marketing
 39,feature_profiles,Feature Profiles,talking_points,20,marketing
@@ -131,7 +152,7 @@ x20,TestingPhase_end,Testing Phase end,,,
 77,start_splash_screens_cal,Start Splash Screens,alpha_drop,,design
 78,finalize_splash_screens,Finalize Splash Screens,start_splash_screens,4,design
 79,beta_wallpaper,Prepare wallpaper for Beta,alpha_drop,13,design
-81,alpha_go_not,Alpha Go/No-Go Meeting (17:00 US Eastern),create_alpha_compose,4,releng quality devel pm proto blocker
+81,alpha_go_not,Alpha Go/No-Go Meeting \(17:00 US Eastern),create_alpha_compose,4,releng quality devel pm proto blocker
 82,trans_software_rebuild1,Remind f-dev-announce to Rebuild All Translated Packages,feature_freeze,5,translation
 83,software_string_freeze,Software String Freeze,feature_freeze,6,devel translation pm proto releng key roadmap
 85,software_translation,Software Translation,,,
@@ -141,12 +162,12 @@ x20,TestingPhase_end,Testing Phase end,,,
 90,compose_review_image,Compose of Live Image of Software Review UI for Translation,build_trans_software,,releng
 91,trans_software_review,Review and correct software translation in built UI,build_trans_software,6,translation
 92,trans_software_rebuild2,Remind f-dev-announce to Rebuild All Translated Packages,trans_software_review,,translation
-93,trans_software_deadline,Software: Translation Deadline (PO Files complete),trans_software_review,,translation roadmap key
+93,trans_software_deadline,Software: Translation Deadline \(PO Files complete),trans_software_review,,translation roadmap key
 94,start_trans_rebuild,Software: Start Rebuild all translated packages,trans_software_deadline,,devel
 95,trans_rebuild,Software: Rebuild all translated packages,trans_software_deadline,5,devel
 96,alpha_meeting_reminder,Reminder: Alpha Release Readiness Meeting,feature_freeze,10,pm
 97,alpha_meeting,Alpha Release Readiness Meeting,alpha_meeting_reminder,3,releng pm quality docs design translation marketing web
-98,create_alpha_tc,Create Alpha Test Compose (TC),,,releng proto
+98,create_alpha_tc,Create Alpha Test Compose \(TC),,,releng proto
 99,test_alpha_tc,Test Alpha 'Test Compose',create_alpha_tc,6,quality proto
 100,alpha_kernel_build,Submit Kernel Build for Alpha RC Compose,alpha_deadline,,devel
 101,alpha_installer_build,Submit Installer Build for Alpha RC Compose,alpha_deadline,1,devel
@@ -156,7 +177,7 @@ x20,TestingPhase_end,Testing Phase end,,,
 106,notify_mirrors_alpha,Notify Mirrors of Alpha,start_stage_alpha,1,releng
 107,stage_alpha,Stage and Sync Alpha to Mirrors,test_alpha_candidate,3,releng proto
 108,alpha_export_control,Alpha Export Control Reporting,start_stage_alpha,1,releng pm
-109,alpha_announce,Create Alpha Announcement (Marketing and Docs),alpha_meeting,2,docs marketing
+109,alpha_announce,Create Alpha Announcement \(Marketing and Docs),alpha_meeting,2,docs marketing
 110,alpha_banner,Alpha Release Banner,,3,
 111,alpha_create_banner,Create Alpha Website Banner,,2,design
 112,alpha_publish_banner,Add Alpha Banner to Website,alpha_create_banner,1,web
@@ -172,7 +193,7 @@ x20,TestingPhase_end,Testing Phase end,,,
 122,recruite_beat_writers,Recruit New Beat Writers,validate_beat_writers,5,docs
 123,comb_alpha_beats,Comb Beats and Feature Pages for Alpha,start_alpha_beats,2,docs quality
 124,notify_devel_relnotes,Notify Development About Alpha Release Notes,alpha_deadline,,docs
-125,prep_alpha_notes,Prepare Alpha Release Notes (1 page),comb_alpha_beats,6,docs quality
+125,prep_alpha_notes,Prepare Alpha Release Notes \(1 page),comb_alpha_beats,6,docs quality
 126,post_notes,Post Alpha Release Notes One-Page,prep_alpha_notes,1,docs
 127,test_alpha,Alpha Testing,stage_alpha,15,quality proto
 128,review_bookmarks,Review Firefox Bookmarks For Update,stage_alpha,5,marketing
@@ -181,14 +202,14 @@ x20,TestingPhase_end,Testing Phase end,,,
 131,alpha_end,End of Alpha Testing,test_alpha,,quality
 132,beta_marketing_notes,Marketing: Beta One Page Release Notes,alpha_end,5,marketing
 133,beta,Beta Release,,,
-134,remind_beta_blocker1,Reminder: Beta Blocker Meeting (beta) 1,create_alpha_compose,9,pm
-135,beta_blocker1,Beta Blocker Meeting (beta) 1,stage_alpha,3,quality releng devel pm blocker
+134,remind_beta_blocker1,Reminder: Beta Blocker Meeting \(beta) 1,create_alpha_compose,9,pm
+135,beta_blocker1,Beta Blocker Meeting \(beta) 1,stage_alpha,3,quality releng devel pm blocker
 136,beta_releng_tickets,File All Release Engineering Tickets for Beta,stage_alpha,2,releng
-137,remind_beta_blocker2,Reminder: Beta Blocker Meeting (beta) #2,beta_blocker1,3,pm
-138,beta_blocker2,Beta Blocker Meeting (beta) 2,beta_blocker1,5,releng quality devel pm blocker
+137,remind_beta_blocker2,Reminder: Beta Blocker Meeting \(beta) #2,beta_blocker1,3,pm
+138,beta_blocker2,Beta Blocker Meeting \(beta) 2,beta_blocker1,5,releng quality devel pm blocker
 139,daily_beta_blocker,Daily Review and Notification of Open Beta Blocker Bugs,beta_blocker2,4,releng quality devel pm blocker
-141,beta_blocker3,Beta Blocker Meeting (beta) #3,beta_blocker2,5,releng quality devel pm blocker
-143,beta_blocker4,Beta Blocker Meeting (beta) #4,beta_blocker3,5,releng quality devel pm blocker
+141,beta_blocker3,Beta Blocker Meeting \(beta) #3,beta_blocker2,5,releng quality devel pm blocker
+143,beta_blocker4,Beta Blocker Meeting \(beta) #4,beta_blocker3,5,releng quality devel pm blocker
 146,beta_spins_ks,Build spin-kickstarts package from master,,,spins
 147,coordinate_swag_design,FAmSCo Coordinate Media/Swag/Poster artwork with Design team,,10,ambassadors
 150,beta_deadline,Beta Change Deadline,test_alpha,,releng docs quality pm proto devel key marketing spins roadmap
@@ -206,8 +227,8 @@ x20,TestingPhase_end,Testing Phase end,,,
 165,beta_wiki_freeze,Wiki Freeze: Beta Release Notes,beta,2,docs
 166,trans_release_notes,Translate Beta Release Notes,port_wiki_publican,14,translation
 167,build_trans_review,Ongoing build translation review htmls,beta_wiki_freeze,5,docs
-168,trans_review_beta,Review and correct Beta Release Notes (daily buids html),beta_wiki_freeze,5,translation
-169,trans_release_notes_deadline,Translation Deadline: Beta Release Notes (PO Files complete),trans_review_beta,,translation docs
+168,trans_review_beta,Review and correct Beta Release Notes \(daily buids html),beta_wiki_freeze,5,translation
+169,trans_release_notes_deadline,Translation Deadline: Beta Release Notes \(PO Files complete),trans_review_beta,,translation docs
 170,build_beta_relnotes,Build f-r-n.rpm and Push to updates-candidate,trans_release_notes_deadline,2,docs translation
 171,final_release_notes_reminder,Reminder: Send Project Wide-Final Release Notes Deadlines,beta_deadline,7,docs
 172,web_notes,Build and Post Beta release-notes to docs.fedoraproject.org,beta_meeting,2,docs
@@ -219,12 +240,12 @@ x20,TestingPhase_end,Testing Phase end,,,
 178,beta_meeting_announce,Announce: Beta Release Readiness Meeting,,,pm
 179,beta_meeting_reminder,Reminder: Beta Release Readiness Meeting,beta_deadline,4,pm
 180,beta_meeting,Beta Release Readiness Meeting,beta_meeting_reminder,3,releng pm quality docs design translation marketing web
-181,beta_announce,Create Beta Announcement (Docs and Marketing),beta_meeting,2,docs marketing
+181,beta_announce,Create Beta Announcement \(Docs and Marketing),beta_meeting,2,docs marketing
 182,beta_installer_build1,Submit Installer Build for Beta TC Compose,,,devel
 183,beta_rawhide_install,Pre-Beta Acceptance Test Plan,,5,quality
-184,create_beta_tc,Create Beta Test Compose (TC),beta_rawhide_install,2,releng proto
+184,create_beta_tc,Create Beta Test Compose \(TC),beta_rawhide_install,2,releng proto
 185,test_beta_tc,Test Beta 'Test Compose',create_beta_tc,6,quality proto
-187,beta_go_not,Beta Go/No-Go Meeting (17:00 US Eastern),create_beta_compose,4,releng quality devel pm proto blocker
+187,beta_go_not,Beta Go/No-Go Meeting \(17:00 US Eastern),create_beta_compose,4,releng quality devel pm proto blocker
 188,beta_kernel_build,Submit Kernel Build for Beta RC Compose,beta_deadline,,devel
 189,beta_installer_build,Submit Installer Build for Beta RC Compose,beta_deadline,1,devel
 191,create_beta_compose,Compose Beta Candidate,beta_deadline,2,releng proto
@@ -258,9 +279,9 @@ x20,TestingPhase_end,Testing Phase end,,,
 220,monitor,Monitor news sites to provide corrections and info,screenshots,29,marketing
 221,rc,Release Candidate,,,
 222,final_releng_tickets,File All Release Engineering Tickets for GA,stage_beta,2,releng
-224,ga_blocker1,Final Blocker Meeting (blocker) #1,start_stage_beta,1,releng quality devel pm blocker
-226,ga_blocker2,Final Blocker Meeting (blocker) #2,ga_blocker1,5,releng quality devel pm blocker
-228,ga_blocker3,Final Blocker Meeting (blocker) #3,ga_blocker2,5,releng quality devel pm blocker
+224,ga_blocker1,Final Blocker Meeting \(blocker) #1,start_stage_beta,1,releng quality devel pm blocker
+226,ga_blocker2,Final Blocker Meeting \(blocker) #2,ga_blocker1,5,releng quality devel pm blocker
+228,ga_blocker3,Final Blocker Meeting \(blocker) #3,ga_blocker2,5,releng quality devel pm blocker
 229,kernel_debug,Disable Kernel debug and submit new Kernel build for RC,,,devel
 231,final_change_deadline,Final Change Deadline,beta_test,,releng devel proto pm key spins
 232,check_swag,FAmSCo and Regional Teams Meet to Address Unresolved Events/Media/Swag Issues,final_change_deadline,1,ambassadors
@@ -269,36 +290,36 @@ x20,TestingPhase_end,Testing Phase end,,,
 235,announce_final_change_deadline,Announce Final Freeze and Implications,final_change_deadline,,pm
 236,eol_warning,File RHT Eng-ops ticket for Fedora 15 EOL Bugzilla warning,final_change_deadline,,pm
 237,final_infrastructure_freeze,Final Infrastructure Change Freeze,beta_test,10,infrastructure releng
-239,ga_blocker4,Final Blocker Meeting (blocker) #4,ga_blocker3,5,releng quality devel pm blocker
+239,ga_blocker4,Final Blocker Meeting \(blocker) #4,ga_blocker3,5,releng quality devel pm blocker
 240,daily_ga_blocker,Daily Review and Notification of Open Final Blocker Bugs,ga_blocker3,4,releng quality devel pm blocker
-241,ga_blocker5,Final Blocker Meeting (blocker)--Blocks RC Compose,ga_blocker4,1,releng quality devel pm blocker
+241,ga_blocker5,Final Blocker Meeting \(blocker)--Blocks RC Compose,ga_blocker4,1,releng quality devel pm blocker
 242,ga_release_notes,Final Release Notes,,,
 243,final_release_note_wiki_reminder,Reminder to Development: Wiki Freeze in 7 days,,,docs
 244,prep_ga_notes,Prepare GA Release Notes,beta_drop,,docs quality
 245,ga_release_notes_freeze,String Freeze: GA Release Notes,prep_ga_notes,4,docs
 246,wiki_ga_port,Port diff wiki content to Publican,ga_release_notes_freeze,5,docs
-248,ga_pot_trans,Translate Final Release Notes (POT to PO),beta_release_notes trans_release_notes_deadline,24,translation
+248,ga_pot_trans,Translate Final Release Notes \(POT to PO),beta_release_notes trans_release_notes_deadline,24,translation
 249,ga_release_notes_pot,Generate GA Release Notes POT files for Translation,wiki_ga_port,,docs
 250,build_trans_review_final,Build GA release note htmls for Translation,ga_release_notes_pot,4,docs
-251,build_ga_trans_review,Review and correct GA Release Notes (daily builds html),ga_release_notes_pot,4,docs translation
-253,ga_release_notes_po,Translation Deadline: GA rel-notes (PO Files complete),ga_pot_trans,,translation
+251,build_ga_trans_review,Review and correct GA Release Notes \(daily builds html),ga_release_notes_pot,4,docs translation
+253,ga_release_notes_po,Translation Deadline: GA rel-notes \(PO Files complete),ga_pot_trans,,translation
 254,ga_release_notes_rpm,Build fedora-release-notes.rpm,ga_release_notes_po,2,docs
 255,ga_create_banners,Create Final Release Banners,testmile,9,design
-256,create_ga_announce,Create GA Announcement (Docs and Marketing),,7,docs marketing
-257,translate_ga_announce,GA Announcement available for translation (optional),create_ga_announce,5,translation
+256,create_ga_announce,Create GA Announcement \(Docs and Marketing),,7,docs marketing
+257,translate_ga_announce,GA Announcement available for translation \(optional),create_ga_announce,5,translation
 258,ga_publish_banners,Add Final Release Banners to Website,ga_create_banners,1,web
 259,web_content_update,Update Website Content,beta_drop,5,web
 260,web_freeze,Website String Freeze,web_content_update,,web
 261,web_create_pot,Create Website POT Files,web_freeze,1,web
-262,trans_web,Translation Period for Website (POT to PO),web_create_pot,9,translation
+262,trans_web,Translation Period for Website \(POT to PO),web_create_pot,9,translation
 263,review_trans_web,Review and correct Website translations,trans_web,4,translation web
-264,finish_trans_web,Translation Deadline: Websites (POs done),review_trans_web,,translation
-265,publish_trans_web,Publish Translations on Website (fedoraproject.org),review_trans_web,1,web
+264,finish_trans_web,Translation Deadline: Websites \(POs done),review_trans_web,,translation
+265,publish_trans_web,Publish Translations on Website \(fedoraproject.org),review_trans_web,1,web
 266,final_meeting_reminder,Reminder: Final Release Readiness Meeting,beta_test,5,pm
 267,ga_meeting,Final Release Readiness Meeting,final_meeting_reminder,3,releng pm quality docs design marketing translation web
 268,final_installer_build1,Submit Installer Build for Final TC Compose,,,devel
-269,create_final_tc,Create 'Final' Test Compose (TC),,2,releng proto
-270,test_final_tc,Test 'Final' Test Compose (TC),create_final_tc,4,quality proto
+269,create_final_tc,Create 'Final' Test Compose \(TC),,2,releng proto
+270,test_final_tc,Test 'Final' Test Compose \(TC),create_final_tc,4,quality proto
 271,final_installer_build,Submit Installer Build for Final RC Compose,final_change_deadline,,devel
 273,start_final_compose,Compose 'Final' RC: DVD;Live;Spins,final_change_deadline,1,releng key roadmap proto
 274,early_iso,Regional Teams Obtain Final Release ISOs from Release Engineering for duplication,test_final,3,ambassadors
@@ -311,7 +332,7 @@ x20,TestingPhase_end,Testing Phase end,,,
 281,package_spins_ks,Branch spin-kickstarts and build package from new branch,create_final_tc,,spins
 282,freeze_spins_ks,Spins kickstart package Freeze,create_final_tc,,spins
 283,enable_updates,Enable Updates,beta_test,2,releng
-285,final_go_not,Final Go/No-Go Meeting (17:00 US Eeastern),start_final_compose,4,releng quality docs pm proto blocker
+285,final_go_not,Final Go/No-Go Meeting \(17:00 US Eeastern),start_final_compose,4,releng quality docs pm proto blocker
 286,final_export_control,Final Export Control Reporting,start_stage_final,1,releng pm
 287,bugzilla_descrption,Reflect supported versions in Bugzilla product description,stage_final,,pm
 288,zero_day_relnotes,Zero Day Release Notes,beta_drop,,
@@ -319,13 +340,13 @@ x20,TestingPhase_end,Testing Phase end,,,
 291,zero_day_rpm,0-Day rel-notes build updated rpm,zero_day_relnotes,6,docs
 292,zero_day_pot,0-Day rel-notes generate POT,zero_day_relnotes,6,docs
 293,zero_day_trans,Translate 0-Day Release Notes,zero_day_relnotes,6,translation
-294,zero_day_deadline,Translation Deadline: 0-Day (PO Files complete),zero_day_trans,10,translation
+294,zero_day_deadline,Translation Deadline: 0-Day \(PO Files complete),zero_day_trans,10,translation
 295,web_post,Add translated zero-day updates to docs.fp.org,zero_day_trans,,docs
 296,post_tech_notes,Update and post Fedora Technical Notes to docs.fedoraproject.org,final,,docs
 297,push_updates_rpm,Push updated rel-notes RPMs to Updates repo,final,4,docs
-300,final,Final (GA) Release,stage_final zero_day_relnotes media_prebriefs,,quality releng docs design pm translation proto devel key marketing roadmap spins infrastructure fpl
+300,final,Final \(GA) Release,stage_final zero_day_relnotes media_prebriefs,,quality releng docs design pm translation proto devel key marketing roadmap spins infrastructure fpl
 302,event_reports,Hold Release Events and Publish Event Reports,final,23,ambassadors
-303,spins_ga_ks,Build new spin-kickstarts package for updates (if necessary),stage_final,,spins
+303,spins_ga_ks,Build new spin-kickstarts package for updates \(if necessary),stage_final,,spins
 304,marketing_post,Marketing Retrospective,final,10,marketing
 305,all_guides,Guides,,,
 306,continue_guides_trans,Continue translation of guides in branch of previous release,,70,translation
@@ -333,16 +354,16 @@ x20,TestingPhase_end,Testing Phase end,,,
 308,branch_guides,Branch Guides,test_branch_guides,,docs
 309,guides_pot,Create POT files for All Guides,branch_guides,,docs
 310,notify_trans,Notify trans that new Guide POT files available,guides_pot,,docs
-311,trans_all_guides,Translate All Guides (POT to PO),guides_pot,,docs
+311,trans_all_guides,Translate All Guides \(POT to PO),guides_pot,,docs
 312,publish_draft,Publish draft guides,branch_guides,,docs
 313,annouce_publish_draft,Notify announce-list and f-devel-list draft guides available,publish_draft,,docs
-314,guides_trans,Translate All Guides (POT to PO),guides_pot,39,translation
+314,guides_trans,Translate All Guides \(POT to PO),guides_pot,39,translation
 316,srpm_review,Remind new guide owners SRPM package review,beta_deadline,6,docs
 318,guides_string_freeze,String Freeze All Guides,final_change_deadline,,docs
 319,generate_final_pot,Generate final POT files for Guides,guides_string_freeze,,docs
 320,notify_trans_final,Notify Trans of Final Guides POT availability,guides_string_freeze,,docs
 321,build_daily,Daily builds of Final guides for Translation,final_change_deadline,9,docs
-322,review_daily,Review and correct Final Translated Guides (daily builds html),final_change_deadline,9,translation
+322,review_daily,Review and correct Final Translated Guides \(daily builds html),final_change_deadline,9,translation
 323,guides_trans_deadline,Translation Deadline: All Final Guides,,,translation
 324,test_guides_beta,Test guides against Beta and correct,beta_drop,4,docs
 325,refresh_pot,Refresh POT files for all guides against Beta,test_guides_beta,,docs
@@ -350,7 +371,7 @@ x20,TestingPhase_end,Testing Phase end,,,
 327,republish_draft,Republish draft guides for Beta,test_guides_beta,,docs
 328,notify_revised_draft,Notify announce-list and f-devel-list revised draft guides available,republish_draft,,docs
 329,guides_final_build,Final Build All Guides: All Languages,srpm_review,3,docs
-330,publish_guides,Publish all guides to docs.fp.o (html;html-single;pdf),,,docs
+330,publish_guides,Publish all guides to docs.fp.o \(html;html-single;pdf),,,docs
 331,elections,Election Coordination,,,elections fpl pm
 332,remind,Remind advisory-board list of upcoming election schedule,,,
 333,solicit,Solicit volunteers for questionnaire and town halls,remind,7,
@@ -431,9 +452,8 @@ x20,TestingPhase_end,Testing Phase end,,,
 411,ceo_blog_legal,Red Hat PR send CEO blog to Legal,ceo_blog_draft,3,
 412,ceo_blog_drop,Red Hat PR publish and send CEO blog to media contacts,final ceo_blog_legal,1,
 413,ceo_blog,CEO press blog entry,ceo_prepare_final_rc ceo_send_final_rc ceo_solicit_feedback ceo_blog_drop,,fpl pr
-"]}
-
-            }
+"] }
+        p20 {
             # p2 Task Network
             #      activity_ref           reference for an activity, a unique task id, using "activity" to differentiate between table_id's tid 
             #                             An activity reference is essential a function as in f() with no attributes,

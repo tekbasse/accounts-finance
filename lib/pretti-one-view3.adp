@@ -25,6 +25,8 @@
     @table_comments;noquote@
   </p>
 
+  @log_html;noquote@
+
   <if @table_flags@ not nil and @table_flags@ eq "p4">
     <p>Legend</p>
     <include src="/packages/accounts-finance/lib/pretti-p4-legend">

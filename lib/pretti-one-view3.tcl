@@ -42,7 +42,7 @@ if { [qf_is_natural_number $table_tid] } {
                 append message_html "</li>"
             }
             append message_html "</ul>"
-            append table_comments $message_html
+            set log_html $message_html
         }
     }
 }
