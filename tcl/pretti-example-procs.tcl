@@ -37,6 +37,9 @@ ad_proc -private acc_fin::example_table {
         p10d {
             # goes with p20d
             set ret_list [list [list name value] [list activity_table_name "Fedora 20 Project Plan"]] }
+        p10e {
+            # goes with p20d
+            set ret_list [list [list name value] [list activity_table_name "Fedora 20 Doc Workflow"]] }
         p20a {
             set ret_list [list "Wikipedia PERT" "This is an example from PERT entry of Wikipedia. See entry for details: http://en.wikipedia.org/wiki/Program_Evaluation_and_Review_Technique" "activity_ref,time_est_short,time_est_med,time_est_long,time_ext,dependent_tasks
 A,2,4,6,4.0,
@@ -453,6 +456,18 @@ x20,TestingPhase_end,Testing Phase end,,,
 412,ceo_blog_drop,Red Hat PR publish and send CEO blog to media contacts,final ceo_blog_legal,1,
 413,ceo_blog,CEO press blog entry,ceo_prepare_final_rc ceo_send_final_rc ceo_solicit_feedback ceo_blog_drop,,fpl pr
 "] }
+        p20e {
+            set ret_list [list "Fedora Doc Workflow" "This is an example rendered from a Release Life Cycle page in the open source Fedora Project's wiki retrieved from https://fedoraproject.org/wiki/Docs_Project_workflow on 26 September 2014" "activity_ref,dependent_tasks,time_est_median
+collect_input,,
+write_wiki,collect_input,
+wiki,collect_input write_wiki,
+review_wiki,wiki,
+write_xml,wiki collect_input,
+git,write_xml,
+review_xml,git,
+publish,git,
+package_docs,git,
+push_to_fedora,package_docs,"] }
         p20 {
             # p2 Task Network
             #      activity_ref           reference for an activity, a unique task id, using "activity" to differentiate between table_id's tid 

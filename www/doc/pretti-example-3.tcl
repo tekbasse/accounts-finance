@@ -1,4 +1,4 @@
-set title "PRETTI Example 2"
+set title "PRETTI Example 3"
 set context [list [list index "Documentation"] $title]
 
 set p1_html "<pre>"
@@ -19,7 +19,7 @@ regsub -all -- { ([h][t][t][p][s]?[\:][\/][\/][A-Za-z0-9\.\-\/\_]+) } $comments_
 
 set p3_html "<p>* not used<p>"
 
-set p1b_html {<pre>name: PRETTI example 2 fedorataskworkflow scenario
+set p1b_html {<pre>name: PRETTI example 3 fedorataskworkflow scenario
  tid: 10098
 </pre>
 

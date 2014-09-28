@@ -8,7 +8,7 @@
 #set package_id [ad_conn package_id]
 set user_id [ad_conn user_id]
 set read_p [permission::permission_p -party_id $user_id -object_id $instance_id -privilege read]
-
+set log_html ""
 if { [qf_is_natural_number $table_tid] } {
     set table_stats_list [qss_table_stats $table_tid]
     # name, title, comments, cell_count, row_count, template_id, flags, trashed, popularity, time last_modified, time created, user_id

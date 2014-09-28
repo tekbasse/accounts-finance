@@ -10,10 +10,10 @@
 
 <p>@comments_html;noquote@</p>
 
-<h3>P1 Table: PRETTI example 2 scenario</h3>
+<h3>P1 Table: PRETTI example 4 scenario</h3>
 @p1_html;noquote@
 
-<h3>P2 Table: PRETTI Example 2 (tasks)</h3>
+<h3>P2 Table: PRETTI Example 4 (tasks)</h3>
 @p2_html;noquote@
 
 <h3>P3 Table: Task Types</h3>
