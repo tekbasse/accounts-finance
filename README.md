@@ -3,8 +3,8 @@ accounts-finance
 
 Finance Package provides some tools for forecasting and reporting
 
-The lastest version of the code is available at the development site:
- http://github.com/tekbasse/accounts-finance
+The lastest version of the code is available at site:
+ http://github.com/dcpm/accounts-finance
 
 introduction
 ------------
@@ -18,7 +18,7 @@ license
 -------
 Copyright (c) 2014 Benjamin Brink
 po box 20, Marylhurst, OR 97036-0020 usa
-email: kappa@dekka.com
+email: tekbasse@yahoo.com
 
 Finance Package is open source and published under the GNU General Public License, 
 consistent with the OpenACS system license: http://www.gnu.org/licenses/gpl.html
