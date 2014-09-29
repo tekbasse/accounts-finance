@@ -1,8 +1,12 @@
 -- accounts-finance-drop.sql
 --
--- @author Dekka Corp.
+-- @author
 -- @cvs-id
 --
+DROP index qaf_sched_proc_args_stack_id;
+
+DROP TABLE qaf_sched_proc_args;
+
 DROP index qaf_sched_proc_stack_started_time_key;
 DROP index qaf_sched_proc_stack_priority_key;
 DROP index qaf_sched_proc_stack_id_key;
@@ -41,4 +45,5 @@ DROP TABLE qaf_log;
 DROP TABLE qaf_process_log;
 DROP TABLE qaf_process_log_viewed;
 
+DROP SEQUENCE qaf_sched_id_seq;
 DROP SEQUENCE qaf_id_seq;

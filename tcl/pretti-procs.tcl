@@ -167,7 +167,7 @@ ad_proc -private acc_fin::pretti_curve_time_multiply {
                 set run_count_at_pm [expr { ceil( $block_count / ( $tasks_per_run_at_pm + 0. ) ) } ]
                 set tpr_coef_at_pm [expr { 1. * $tasks_per_run_at_pm * $max_dedicated_pct + $max_overlap_pct } ]
                 if { $run_count_at_pm >= $run_count } {
-                    ns_log Warning "acc_fin::scenario_prettify.2600: scenario '$scenario_tid' run_count_at_pm ${run_count_at_pm} should never be more than run_count ${run_count} here. tasks_per_run_at_pm '${tasks_per_run_at_pm}' y '$y' run_time '${run_time}' max_run_time '${max_run_time}'"
+                    ns_log Warning "acc_fin::pretti_curve_time_multiply.2600: scenario '$scenario_tid' run_count_at_pm ${run_count_at_pm} should never be more than run_count ${run_count} here. tasks_per_run_at_pm '${tasks_per_run_at_pm}' y '$y' run_time '${run_time}' max_run_time '${max_run_time}'"
                     set error_time 1
                 }
                 set y_new [expr { $y * $run_count_at_pm * $tpr_coef_at_pm } ]
@@ -206,7 +206,7 @@ ad_proc -private acc_fin::pretti_curve_time_multiply {
 
             set y_new [expr { $y * $run_count * $tpr_coef } ]
             #ns_log Notice "acc_fin::pretti_curve_time_multiply.199: for point y $y tasks_per_run ${tasks_per_run} tpr_coef ${tpr_coef} y_new ${y_new}"
-            #ns_log Notice "acc_fin::scenario_prettify.2631: scenario '$scenario_tid' y $y run_count ${run_count} tasks_per_run ${tasks_per_run} max_overlap_pct ${max_overlap_pct} max_dedicated_pct ${max_dedicated_pct} y_new ${y_new}"
+            #ns_log Notice "acc_fin::pretti_curve_time_multiply.2631: scenario '$scenario_tid' y $y run_count ${run_count} tasks_per_run ${tasks_per_run} max_overlap_pct ${max_overlap_pct} max_dedicated_pct ${max_dedicated_pct} y_new ${y_new}"
             set point_new [list $y_new $x]
             if { $label_idx > -1 } {
                 lappend point_new $label
@@ -448,9 +448,11 @@ ad_proc -private acc_fin::pretti_log_create {
     if { $status } {
         if { $entry_text ne "" } {
             if { $instance_id eq "" } {
+                ns_log Notice "acc_fin::pretti_log_create.451: instance_id ''"
                 set instance_id [ad_conn package_id]
             }
             if { $user_id eq "" } {
+                ns_log Notice "acc_fin::pretti_log_create.451: user_id ''"
                 set user_id [ad_conn user_id]
             }
             set id [db_nextval qaf_id_seq]
@@ -488,9 +490,11 @@ ad_proc -public acc_fin::pretti_log_read {
     if { $valid1_p && $valid2_p } {
         if { $instance_id eq "" } {
             set instance_id [ad_conn package_id]
+            ns_log Notice "acc_fin::pretti_log_read.493: instance_id ''"
         }
         if { $user_id eq "" } {
             set user_id [ad_conn user_id]
+            ns_log Notice "acc_fin::pretti_log_read.497: user_id ''"
         }
         set return_lol [list ]
         set last_viewed ""
@@ -1742,7 +1746,7 @@ ad_proc -private acc_fin::p_load_tid {
                 ns_log Notice "acc_fin::p_load_tid.1081: for ${p_larr_name} i $i q1"
             }
             if { $time_dist_curve_name ne "" } {
-                set time_dist_curve_tid [qss_tid_from_name $time_dist_curve_name ]
+                set time_dist_curve_tid [qss_tid_from_name $time_dist_curve_name $instance_id $user_id]
                 ns_log Notice "acc_fin::p_load_tid.1085: for ${p_larr_name} i $i q2"
             } 
             if { $p3_t_dc_tid_exists_p && $time_dist_curve_tid eq "" } {
@@ -1798,7 +1802,7 @@ ad_proc -private acc_fin::p_load_tid {
                 set cost_dist_curve_name [lindex $p_larr(cost_dist_curve_name) $i]
             }
             if { $cost_dist_curve_name ne "" } {
-                set cost_dist_curve_tid [qss_tid_from_name $cost_dist_curve_name ]
+                set cost_dist_curve_tid [qss_tid_from_name $cost_dist_curve_name $instance_id $user_id]
             } 
             if { $p3_c_dc_tid_exists_p && $cost_dist_curve_tid eq "" } {
                 set cost_dist_curve_tid [lindex $p_larr(cost_dist_curve_tid) $i]
@@ -1891,7 +1895,7 @@ ad_proc -private acc_fin::p_load_tid {
                 ns_log Notice "acc_fin::p_load_tid.1238: for ${p_larr_name} i $i q1"
             }
             if { $time_dist_curve_name ne "" } {
-                set time_dist_curve_tid [qss_tid_from_name $time_dist_curve_name ]
+                set time_dist_curve_tid [qss_tid_from_name $time_dist_curve_name $instance_id $user_id]
                 ns_log Notice "acc_fin::p_load_tid.1242: for ${p_larr_name} i $i q2"
             } 
             if { $p2_t_dc_tid_exists_p && $time_dist_curve_tid eq "" } {
@@ -1964,7 +1968,7 @@ ad_proc -private acc_fin::p_load_tid {
                 set cost_dist_curve_name [lindex $p_larr(cost_dist_curve_name) $i]
             }
             if { $cost_dist_curve_name ne "" } {
-                set cost_dist_curve_tid [qss_tid_from_name $cost_dist_curve_name ]
+                set cost_dist_curve_tid [qss_tid_from_name $cost_dist_curve_name $instance_id $user_id]
             } 
             if { $p2_c_dc_tid_exists_p && $cost_dist_curve_tid eq "" } {
                 set cost_dist_curve_tid [lindex $p_larr(cost_dist_curve_tid) $i]
@@ -2046,7 +2050,8 @@ ad_proc -private acc_fin::list_filter {
             foreach input_row_unfiltered $user_input_list {
                 set filtered_row_list [list ]
                 foreach input_unfiltered $input_row_unfiltered {
-                    regsub -all -nocase -- {[^a-z0-9,\.]+} $input_unfiltered {} input_filtered
+                    # added dash and underscore, because these are often used in alpha/text references
+                    regsub -all -nocase -- {[^a-z0-9,\.\-\_]+} $input_unfiltered {} input_filtered
                     lappend filtered_row_list $input_filtered
                 }
                 lappend filtered_list $filtered_row_list
@@ -2058,7 +2063,8 @@ ad_proc -private acc_fin::list_filter {
             foreach input_row_unfiltered $user_input_list {
                 set filtered_row_list [list ]
                 foreach input_unfiltered $input_row_unfiltered {
-                    regsub -all -nocase -- {[^a-z0-9,\.\*]+} $input_unfiltered {} input_filtered
+                    # added dash and underscore, because these are often used in alpha/text references
+                    regsub -all -nocase -- {[^a-z0-9,\.\-\_\*]+} $input_unfiltered {} input_filtered
                     lappend filtered_row_list $input_filtered
                 }
                 lappend filtered_list $filtered_row_list
@@ -2067,7 +2073,8 @@ ad_proc -private acc_fin::list_filter {
         alphanum {
             set filtered_list [list ]
             foreach input_unfiltered $user_input_list {
-                regsub -all -nocase -- {[^a-z0-9,\.]+} $input_unfiltered {} input_filtered
+                    # added dash and underscore, because these are often used in alpha/text references
+                regsub -all -nocase -- {[^a-z0-9,\.\-\_]+} $input_unfiltered {} input_filtered
                 lappend filtered_list $input_filtered
             }
         }
@@ -2107,10 +2114,12 @@ ad_proc -private acc_fin::list_filter {
 
 ad_proc -public acc_fin::table_type {
     table_id
+    {instance_id ""}
+    {user_id ""}
 } {
     returns table flags.
 } {
-    set stats_list [qss_table_stats $table_id]
+    set stats_list [qss_table_stats $table_id $instance_id $user_id]
     # stats: name, title, comments, cell_count, row_count, template_id, flags, trashed, popularity, time last_modified, time created, user_id.
     set flags [string trim [lindex $stats_list 6]]
     return $flags
@@ -2358,9 +2367,13 @@ ad_proc -public acc_fin::scenario_prettify {
 
     set setup_start [clock seconds]
     if { $instance_id eq "" } {
+        # Added warning for diagnostics if called via schedule proc
+        ns_log Warning "acc_fin::scenario_prettify.2364 instance_id not previously set."
         set instance_id [ad_conn package_id]
     }
     if { $user_id eq "" } {
+        # Added warning for diagnostics if called via schedule proc
+        ns_log Warning "acc_fin::scenario_prettify.2368 instance_id not previously set."
         set user_id [ad_conn user_id]
     }
     ## error_fail is set to 1 if there has been an error that prevents continued processing
@@ -2397,21 +2410,21 @@ ad_proc -public acc_fin::scenario_prettify {
 
     if { $p1_arr(activity_table_name) ne "" } {
         # set activity_table_tid
-        set p1_arr(activity_table_tid) [qss_tid_from_name $p1_arr(activity_table_name) ]
+        set p1_arr(activity_table_tid) [qss_tid_from_name $p1_arr(activity_table_name) $instance_id $user_id]
         if { $p1_arr(activity_table_tid) eq "" } {
             acc_fin::pretti_log_create $scenario_tid "activity_table_name" "value" "activity_table_name reference does not exist." $user_id $instance_id
         }
     } 
     if { $p1_arr(task_types_name) ne "" } {
         # set task_types_tid
-        set p1_arr(task_types_tid) [qss_tid_from_name $p1_arr(task_types_name) ]
+        set p1_arr(task_types_tid) [qss_tid_from_name $p1_arr(task_types_name) $instance_id $user_id]
         if { $p1_arr(task_types_tid) eq "" } {
             acc_fin::pretti_log_create $scenario_tid "task_types_name" "value" "task_types_name reference does not exist." $user_id $instance_id
         }
     } 
     if { $p1_arr(time_dist_curve_name) ne "" } {
         # set dist_curve_tid
-        set p1_arr(time_dist_curve_tid) [qss_tid_from_name $p1_arr(time_dist_curve_name) ]
+        set p1_arr(time_dist_curve_tid) [qss_tid_from_name $p1_arr(time_dist_curve_name) $instance_id $user_id]
         if { $p1_arr(time_dist_curve_tid) eq "" } {
             acc_fin::pretti_log_create $scenario_tid "time_dist_curve_name" "value" "time_dist_curve_name reference does not exist." $user_id $instance_id
         }
@@ -2419,7 +2432,7 @@ ad_proc -public acc_fin::scenario_prettify {
     }
     if { $p1_arr(cost_dist_curve_name) ne "" } {
         # set dist_curve_tid
-        set p1_arr(cost_dist_curve_tid) [qss_tid_from_name $p1_arr(cost_dist_curve_name) ]
+        set p1_arr(cost_dist_curve_tid) [qss_tid_from_name $p1_arr(cost_dist_curve_name) $instance_id $user_id ]
         if { $p1_arr(cost_dist_curve_tid) eq "" } {
             acc_fin::pretti_log_create $scenario_tid "cost_dist_curve_name" "value" "cost_dist_curve_name reference does not exist." $user_id $instance_id
         }
@@ -2433,6 +2446,8 @@ ad_proc -public acc_fin::scenario_prettify {
             set constants_exist_p 0
             lappend compute_message_list "Initial condition constant '${constant}' is required but does not exist."
             acc_fin::pretti_log_create $scenario_tid "${constant}" "value" "${constant} is required but does not exist." $user_id $instance_id
+            # This may be triggered by code/permissions unable to find p1 table. Report more info?
+
             set error_fail 1
         }
     }
@@ -3627,7 +3642,7 @@ ad_proc -public acc_fin::scenario_prettify {
                         lappend p6_lists $path_list
                     }                
                     
-                    set scenario_stats_list [qss_table_stats $scenario_tid]
+                    set scenario_stats_list [qss_table_stats $scenario_tid $instance_id $user_id]
                     set scenario_name [lindex $scenario_stats_list 0]
                     if { [llength $t_moment_list ] > 1 } {
                         set t_moment_len_list [list ]
@@ -3850,7 +3865,8 @@ ad_proc -public acc_fin::scenario_prettify {
         # next t_moment
     }
     ns_log Notice "acc_fin::scenario_prettify.2639: scenario '$scenario_tid' done."
-    return !${error_fail}
+    set success_p [expr { abs( $error_fail - 1 ) } ]
+    return $success_p
 }
 
 
@@ -3875,7 +3891,7 @@ ad_proc -public acc_fin::table_sort_y_asc {
             set write_p [permission::permission_p -party_id $user_id -object_id $instance_id -privilege write]
         }
         if { $create_p || $write_p } {
-            set table_stats_list [qss_table_stats $table_tid]
+            set table_stats_list [qss_table_stats $table_tid $instance_id $user_id]
             # name, title, comments, cell_count, row_count, template_id, flags, trashed, popularity, time last_modified, time created, user_id.
             set trashed_p [lindex $table_stats_list 7]
             set table_flags [lindex $table_stats_list 6]
@@ -3887,7 +3903,7 @@ ad_proc -public acc_fin::table_sort_y_asc {
                 if { $y_idx > -1 } {
                     set table_sorted_lists [lsort -index $y_idx -real [lrange $table_lists 1 end]]
                     set table_sorted_lists [linsert $table_sorted_lists 0 $title_row]
-                    set table_stats [qss_table_stats $table_tid]
+                    set table_stats [qss_table_stats $table_tid $instance_id $user_id]
                     # name, title, comments, cell_count, row_count, template_id, flags, trashed, popularity, time last_modified, time created, user_id.
                     set table_name [lindex $table_stats 0]
                     set table_title [lindex $table_stats 1]

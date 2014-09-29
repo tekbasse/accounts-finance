@@ -8,7 +8,7 @@
 #set package_id [ad_conn package_id]
 set user_id [ad_conn user_id]
 set read_p [permission::permission_p -party_id $user_id -object_id $instance_id -privilege read]
-
+set log_html ""
 if { [qf_is_natural_number $table_tid] } {
     set table_stats_list [qss_table_stats $table_tid]
     # name, title, comments, cell_count, row_count, template_id, flags, trashed, popularity, time last_modified, time created, user_id
@@ -24,13 +24,12 @@ if { [qf_is_natural_number $table_tid] } {
         set table_html [acc_fin::pretti_table_to_html $table_lists $table_comments]
     } else {
         if { $table_flags eq "dc" } {
-            # pie chart
-            set pie_filename "pretti-dc-${table_tid}-pie.png"
-            # cobbler chart
-            set cob_filename "pretti-dc-${table_tid}-cob.png"
-            set cob_html [acc_fin::cobbler_html_view $cob_filename $table_lists "" ""]
-           # set pie_html [acc_fin::cobbler_html_view $cob_filename ]
 
+            # cobbler chart
+            set cob_filename [acc_fin::pretti_cobbler_filename $table_tid]
+            set cob_html [acc_fin::cobbler_html_view $cob_filename]
+            set pie_filename [acc_fin::pretti_pie_filename $table_tid]
+            set pie_html [acc_fin::pie_html_view $pie_filename]
         }
         set table_html [qss_list_of_lists_to_html_table $table_lists $table_tag_atts_list]
         #    append table_html "<p>${table_comments}</p>"
@@ -43,7 +42,7 @@ if { [qf_is_natural_number $table_tid] } {
                 append message_html "</li>"
             }
             append message_html "</ul>"
-            append table_comments $message_html
+            set log_html $message_html
         }
     }
 }

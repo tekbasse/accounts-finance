@@ -7,14 +7,14 @@
     <initial-install-p>f</initial-install-p>
     <singleton-p>f</singleton-p>
     
-    <version name="0.443" url="http://openacs.org/repository/download/apm/accounts-finance-0.443.apm">
+    <version name="0.513" url="http://openacs.org/repository/download/apm/accounts-finance-0.513.apm">
         <owner url="mailto:tekbasse@yahoo.com">Benjamin Brink</owner>
         <owner url="http://openacs.org">OpenACS community</owner>
         <summary>Finance package provides limited set of tools for long-term debts, fixed assets, forecasting.</summary>
         <description format="text/plain">Finance package provides some tools for long-term debts, fixed assets, capital, stock holding, dividends, forecasting and reporting. Integrates with general-ledger etc.</description>
         <maturity>0</maturity>
 
-        <provides url="accounts-finance" version="0.443"/>
+        <provides url="accounts-finance" version="0.513"/>
 	<requires url="acs-datetime" version="4.0"/>
 	<requires url="q-forms" version="0.001"/>
 	<requires url="spreadsheet" version="0.001"/>
@@ -22,7 +22,7 @@
         <callbacks>
         </callbacks>
         <parameters>
-        <!-- No version parameters -->
+            <parameter scope="instance" datatype="string"  min_n_values="1"  max_n_values="1"  name="ScheduledProcsAllowed"  default="acc_fin::pie_file_create_from_table acc_fin::cobbler_file_create_from_table" description="A space delimited list of procs allowed to be scheduled in package instance" section_name="processes"/>
         </parameters>
 
     </version>

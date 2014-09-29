@@ -7,6 +7,9 @@
 CREATE SEQUENCE qaf_id_seq start 10000;
 SELECT nextval ('qaf_id_seq');
 
+CREATE SEQUENCE qaf_sched_id_seq start 1;
+SELECT nextval ('qaf_sched_id_seq');
+
 -- For general qaf app delayed process logs
 CREATE TABLE qaf_process_log (
     id integer not null primary key,
@@ -198,3 +201,14 @@ CREATE TABLE qaf_sched_proc_stack (
 CREATE index qaf_sched_proc_stack_id_key on qaf_sched_proc_stack(id);
 CREATE index qaf_sched_proc_stack_priority_key on qaf_sched_proc_stack(priority);
 CREATE index qaf_sched_proc_stack_started_time_key on qaf_sched_proc_stack(started_time);
+
+CREATE TABLE qaf_sched_proc_args (
+       stack_id integer,
+       -- list_number 0 for standard args. if arg contains a regexp \1
+       -- or other integer, then insert list built from list_number = n (1 for example).
+       list_number integer,
+       arg_number integer,
+       arg_value text
+);
+
+CREATE index qaf_sched_proc_args_stack_id on qaf_sched_proc_args(stack_id);

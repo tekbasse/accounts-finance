@@ -1,14 +1,14 @@
 ad_page_contract {
     model display/edit page
     returns @window_content@
-    @author Torben Brosten
+    @author Benjamin Brink
     @creation-date 2010-08-10
 
 } {
-    {-case_id ""}
-    {-iterations_count ""}
-    {-action ""}
-    {-context ""}
+    {case_id ""}
+    {iterations_count ""}
+    {action ""}
+    {context ""}
 }
 
 # the UI is based on xowiki UI.
@@ -56,37 +56,39 @@ set window_content ""
 set user_id [ad_conn user_id]
 set write_p [permission::permission_p -party_id $user_id -object_id $package_id -privilege write]
 set admin_p [permission::permission_p -party_id $user_id -object_id $package_id -privilege admin]
+if { $admin_p } {
+
+    #set model [acc_fin::template_model 0]
+
+    if { $action eq "view" } {
+
+        set computed_model [acc_fin::model_compute $model 120]
+        set formatting_list [list ]
+        set error_table [lindex $computed_model 0]
+        set error_table_html [qaf_tcl_list_of_lists_to_html_table $error_table $formatting_list 1 0 0]
+        set data_model [lrange $computed_model 1 end]
+        set computed_model_html [qaf_tcl_list_of_lists_to_html_table $data_model $formatting_list 1 0 2]
+
+    }
 
 
-#set model [acc_fin::template_model 0]
+    if { $action eq "compute" } {
+        set computed_model [acc_fin::model_compute $model 120]
+        set formatting_list [list ]
+        set error_table [lindex $computed_model 0]
+        set error_table_html [qaf_tcl_list_of_lists_to_html_table $error_table $formatting_list 1 0 0]
+        set data_model [lrange $computed_model 1 end]
+        set computed_model_html [qaf_tcl_list_of_lists_to_html_table $data_model $formatting_list 1 0 2]
+    }
 
-if { $action eq "view" } {
-
-    set computed_model [acc_fin::model_compute $model 120]
-    set formatting_list [list ]
-    set error_table [lindex $computed_model 0]
-    set error_table_html [qaf_tcl_list_of_lists_to_html_table $error_table $formatting_list 1 0 0]
-    set data_model [lrange $computed_model 1 end]
-    set computed_model_html [qaf_tcl_list_of_lists_to_html_table $data_model $formatting_list 1 0 2]
-
-}
+    if { $action eq "compile" } {
+        set computed_model [acc_fin::model_compute $model 120]
+        set error_table [lindex $computed_model 0]
+        set error_table_html [qaf_tcl_list_of_lists_to_html_table $error_table $formatting_list 1 0 0]
+        set data_model [lrange $computed_model 1 end]
+        set computed_model_html [qaf_tcl_list_of_lists_to_html_table $data_model $formatting_list 1 0 2]
 
 
-if { $action eq "compute" } {
-    set computed_model [acc_fin::model_compute $model 120]
-    set formatting_list [list ]
-    set error_table [lindex $computed_model 0]
-    set error_table_html [qaf_tcl_list_of_lists_to_html_table $error_table $formatting_list 1 0 0]
-    set data_model [lrange $computed_model 1 end]
-    set computed_model_html [qaf_tcl_list_of_lists_to_html_table $data_model $formatting_list 1 0 2]
-}
-
-if { $action eq "compile" } {
-    set computed_model [acc_fin::model_compute $model 120]
-    set error_table [lindex $computed_model 0]
-    set error_table_html [qaf_tcl_list_of_lists_to_html_table $error_table $formatting_list 1 0 0]
-    set data_model [lrange $computed_model 1 end]
-    set computed_model_html [qaf_tcl_list_of_lists_to_html_table $data_model $formatting_list 1 0 2]
-
+    }
 
 }
