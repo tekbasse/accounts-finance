@@ -7,7 +7,7 @@
 <p>Finance Package provides some tools for forecasting and reporting</p>
 
 <p>The lastest released version of the code is available at:
- <a href="http://github.com/dcpm/accounts-finance">http://github.com/dcpm/accounts-finance</a>
+ <a href="http://github.com/xdcpm/accounts-finance">http://github.com/xdcpm/accounts-finance</a>
 </p><p>
 The development reference is at <a href="http://github.com/tekbasse/accounts-finance">http://github.com/tekbasse/accounts-finance</a>
 </p>
