@@ -2957,7 +2957,7 @@ ad_proc -public acc_fin::scenario_prettify {
                     # It's just here so that internal representation is consistent.
                     set act_list [list $act]
                     # use this loop to intialize empty array:
-                    set path_idxs_in_act_arr($act) [list ]
+                    set path_idxs_in_act_larr($act) [list ]
 
                     # the first paths are single activities, subsequently time expected and duration are same values
                     set tref [lindex $p2_larr(_tCurveRef) $i]
@@ -3247,8 +3247,9 @@ ad_proc -public acc_fin::scenario_prettify {
                                 set paths_arr(${path_idx}) $path_list
                                 # create a reverse lookup array also:
                                 foreach path $path_list {
-                                    lappend path_idxs_in_act_arr($act) $path_idx
+                                    lappend path_idxs_in_act_larr($act) $path_idx
                                 }
+
                                 if { !$error_time } {
                                     # calculate no-float, no-lag duration for each path
                                     set path_duration  0.
@@ -3626,13 +3627,21 @@ ad_proc -public acc_fin::scenario_prettify {
                         }
                         # determine max duration of paths for this activity
                         set max_path_duration 0
-                        foreach p_idx $path_idxs_in_act_arr($act) {
-                            if { $path_duration_arr(${p_idx}) > $max_path_duration } {
-                                set max_path_duration $path_duration_arr(${p_idx})
+                        # there should be at least one p_idx per act..
+                        if { [llength $path_idx_in_act_larr($act) ] > 0 } { 
+                            foreach p_idx $path_idxs_in_act_larr($act) {
+                                if { $path_duration_arr(${p_idx}) > $max_path_duration } {
+                                    set max_path_duration $path_duration_arr(${p_idx})
+                                }
                             }
+                        } else {
+                            ns_log Warning "acc_fin::scenario_prettify.3638: path_idx_in_act_larr(${act}) is empty. This should not happen. Investigate. path_idx_in_act_larr '[array get path_idx_in_act_larr]'"
                         }
-                        set max_act_path_dur($act) $max_path_duration
-
+                        if { $max_path_duration != 0 } {
+                            set max_act_path_dur_arr($act) $max_path_duration
+                        } else {
+                            ns_log Warning "acc_fin::scenario_prettify.3643: max_path_duration '0' for ${act}. This should not happen. Investigate. path_duration_arr '[array get path_duration_arr]' "
+                        }
                         # base for p5
                         set activity_list [list $act $activity_counter $has_direct_dependency_p [join $dependencies_larr($act) " "] [llength $dependencies_larr($act)] $on_critical_path_p_arr($act) $on_a_sig_path_p $act_freq_in_load_cp_alts_arr($act) $popularity_arr($act) $act_time_expected_arr($act) $tn_arr($act) $t_dc_source_arr($act) $act_cost_expected_arr($act) $cn_arr($act) $c_dc_source_arr($act) $act_coef($act) $act_maxcc $act_maxrt $act_maxtpr $act_maxol $act_maxd $act_tcref($act) $act_ccref($act) $max_path_duration ]
                         lappend p5_lists $activity_list
@@ -3855,7 +3864,7 @@ ad_proc -public acc_fin::scenario_prettify {
                                 #                            set popularity $popularity_arr($activity)
                                 set popularity $act_freq_in_load_cp_alts_arr($activity)
                                 set on_a_sig_path_p [expr { $act_freq_in_load_cp_alts_arr($activity) > $act_count_median } ]
-                                set max_path_duration $max_act_path_dur($activity)
+                                set max_path_duration $max_act_path_dur_arr($activity)
                                 # this calced in p4 html generator: set on_cp_p [expr { $count_on_cp_p_arr($activity) > 0 } ]
                                 append cell "<!-- ${on_a_sig_path_p} ${popularity} ${max_path_duration} --> "
                                 lappend row_larr($i) $cell

@@ -3,13 +3,6 @@
 <msg key="Dataset">Dataset</msg>
 <msg key="Edit">Edit</msg>
 <msg key="ID">ID</msg>
-<msg key="proc_name">Process Name</msg>
-<msg key="proc_args">Process Arguments</msg>
-<msg key="priority">Priority</msg>
-<msg key="order_time">Order Time</msg>
-<msg key="started_time">Time Started</msg>
-<msg key="completed_time">Time Finished</msg>
-<msg key="process_seconds">Time Processed (Seconds)</msg>
 <msg key="Internal_Notes">Internal Notes</msg>
 <msg key="Name">Name</msg>
 <msg key="Name_missing_">Name missing!</msg>
@@ -26,6 +19,7 @@
 <msg key="act_freq_in_load_cp_alts">Activity Run Count</msg>
 <msg key="act_freq_in_load_cp_alts_def">Number of times an activity is completed across all paths.</msg>
 <msg key="actions">Actions</msg>
+<msg key="active_processes">Active Processes</msg>
 <msg key="activity">Activity</msg>
 <msg key="activity_cost">Activity Cost</msg>
 <msg key="activity_cost_def">Cost of an activity at predesignated Cost Probability Moment</msg>
@@ -48,6 +42,7 @@
 <msg key="cells">Cells</msg>
 <msg key="columns">Columns</msg>
 <msg key="comments">Comments</msg>
+<msg key="completed_time">Time Finished</msg>
 <msg key="cost_dist_curve_name">Cost Distribution Curve Name</msg>
 <msg key="cost_dist_curve_name_def">A cost distribution curve referenced by Name.</msg>
 <msg key="cost_dist_curve_tid">Cost Distribution Curve Table ID</msg>
@@ -103,6 +98,7 @@
 <msg key="new">New</msg>
 <msg key="on_a_sig_path_p">On a Significant Path?</msg>
 <msg key="on_a_sig_path_p_def">Answers question: Is this activity on a significant path?</msg>
+<msg key="order_time">Order Time</msg>
 <msg key="path">Path</msg>
 <msg key="path_1">CP</msg>
 <msg key="path_1_def">Critical Path</msg>
@@ -119,7 +115,11 @@
 <msg key="popularity_def">An indication to the relative use of item compared to others.</msg>
 <msg key="precision">Precision</msg>
 <msg key="precision_def">A number specifying the count of digits to the right of the decimal.</msg>
+<msg key="priority">Priority</msg>
+<msg key="proc_args">Process Arguments</msg>
+<msg key="proc_name">Process Name</msg>
 <msg key="process">Process</msg>
+<msg key="process_seconds">Time Processed (Seconds)</msg>
 <msg key="report_table_p4">Report Table (p4)</msg>
 <msg key="report_table_p4_def">A tabular report with one path per column.</msg>
 <msg key="report_table_p5">Activity Audit Table (p5)</msg>
@@ -138,6 +138,7 @@
 <msg key="sort_by_Y_ascending">Sort by Y ascending</msg>
 <msg key="split">Split</msg>
 <msg key="standardize">Standardize</msg>
+<msg key="started_time">Time Started</msg>
 <msg key="t_dc_source">TDC Source</msg>
 <msg key="t_dc_source_def">Source of time distribution curve (via acc_fin::curve_import)</msg>
 <msg key="tables">Tables</msg>
