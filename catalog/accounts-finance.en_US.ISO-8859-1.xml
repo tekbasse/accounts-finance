@@ -96,6 +96,8 @@
 <msg key="max_concurrent_def">The maximum number of a specific activity that can operate indefinitely.</msg>
 <msg key="max_overlap_pct">Percent Maximum Overlap</msg>
 <msg key="max_overlap_pct_def">A decimal percentage (0 to 1) of maximum amount of overlap between concurrent operations of same activity.</msg>
+<msg key="max_path_duration">Maximum Path Duration</msg>
+<msg key="max_path_duration_def">Maximum duration of paths that have a specific activity in common.</msg>
 <msg key="name">Name</msg>
 <msg key="name_def">A unique word used as a reference as in a variable or table name.</msg>
 <msg key="new">New</msg>

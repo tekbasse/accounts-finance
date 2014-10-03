@@ -20,7 +20,7 @@ for {set odd_row_p 1} {$odd_row_p > -1} {incr odd_row_p -1} {
         set on_cp_p [lindex $on_cp_list $i]
         set on_a_sig_path_p [lindex $on_sig_list $i]
         set popularity [lindex $popularity_list $i]
-        set colorhex [acc_fin::pretti_color_chooser $on_cp_p $on_a_sig_path_p $odd_row_p $popularity $max_act_count_per_track ]
+        set colorhex [acc_fin::pretti_color_chooser $on_cp_p $on_a_sig_path_p $odd_row_p $popularity $max_act_count_per_track 100 0 ]
         set cell $colorhex
         set popularity_pct [expr { int( 1000. * $popularity / $max_act_count_per_track ) / 10. } ]
         switch -exact -- $on_cp_p {
