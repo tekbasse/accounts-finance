@@ -132,6 +132,31 @@ if { $write_p || ( $user_created_p && $create_p ) } {
             } 
         }
         default {
+            if { ![info exists user_id] } {
+                set user_id [ad_conn user_id]
+            }
+            # Update user regarding any scheduled jobs
+            set jobs_html ""
+            set jobs_lists [acc_fin::schedule_list $user_id $instance_id]
+            if { [llength $jobs_lists ] > 0 } {
+                #lists includes: id,proc_name,proc_args,user_id,instance_id,priority,order_time,started_time,completed_time,process_seconds.
+                # sort by priority
+                set jobs_sorted_lists [lsort -real -index 5 -increasing $jobs_lists]
+                set display_jobs_lists [list ]
+                set title_jobs_list [list "#accounts-finance.ID#" "#accounts-finance.proc_name#" "#accounts-finance.priority#" "#accounts-finance.order_time#" "#accounts-finance.started_time#"]
+                lappend display_jobs_lists $title_jobs_list
+                set priority 0
+                foreach job_list $jobs_sorted_lists {
+                    set new_job_list [lrange $job_list 0 1]
+                    lappend new_job_list $priority
+                    lappend new_job_list [lindex $job_list 6]
+                    lappend new_job_list [lindex $job_list 7]
+                    lappend display_jobs_lists $new_job_list
+                    incr priority
+                }
+                set table_tag_atts_list [list border 1 celpadding 3 cellspacing 0]
+                set jobs_html [qss_list_of_lists_to_html_table $display_jobs_lists $table_tag_atts_list]
+            }
             # default includes v,p
             #  present...... presents a list of contexts/tables to choose from
             ns_log Notice "accounts-finance/lib/pretti-menu2.tcl.392:  mode = $mode ie. default"

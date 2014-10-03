@@ -3,6 +3,13 @@
 <msg key="Dataset">Dataset</msg>
 <msg key="Edit">Edit</msg>
 <msg key="ID">ID</msg>
+<msg key="proc_name">Process Name</msg>
+<msg key="proc_args">Process Arguments</msg>
+<msg key="priority">Priority</msg>
+<msg key="order_time">Order Time</msg>
+<msg key="started_time">Time Started</msg>
+<msg key="completed_time">Time Finished</msg>
+<msg key="process_seconds">Time Processed (Seconds)</msg>
 <msg key="Internal_Notes">Internal Notes</msg>
 <msg key="Name">Name</msg>
 <msg key="Name_missing_">Name missing!</msg>
