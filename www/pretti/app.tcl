@@ -511,6 +511,7 @@ if { $form_posted } {
             set row_count [lindex $table_stats_list 4]
             set priority [expr { $row_count * 3 } ]
             acc_fin::schedule_add "acc_fin::scenario_prettify" [list $table_tid $instance_id $user_id] $user_id $instance_id $priority
+            lappend user_message_list "Job added. table_id=${table_tid}"
         }
         set mode "p"
         set next_mode ""
@@ -655,6 +656,7 @@ switch -exact -- $mode {
         set table_flags [lindex $table_stats_list 6]
         set trash_folder_p [lindex $table_stats_list 7]
         # see lib/pretti-view-one and lib/pretti-menu1
+        
     }
     default {
         # default includes v,p
