@@ -83,7 +83,11 @@ ad_proc -private acc_fin::schedule_do {
                             db_dml qaf_sched_proc_stack_write {
                                 update qaf_sched_proc_stack set proc_out =:this_err_text, completed_time=:nowts where id = :id 
                             } 
-                            
+                            if { $proc_name eq "acc_fin::scenario_prettify" } {
+                                # inform user of error
+                                set scenario_tid [lindex [lindex $args_lists 0] 0]
+                                acc_fin::pretti_log_create $scenario_tid "#accounts-finance.process#" "error" "id ${id} Message: ${this_err_text}" $user_id $instance_id
+                            }
                         } else {
                             set dur_sec [expr { [clock seconds] - $start_sec } ]
                             # part of while loop so that remaining processes are re-prioritized with any new ones:
