@@ -596,7 +596,7 @@ switch -exact -- $mode {
 
         qf_input type submit value "Save" name "zw" class btn
 #        qf_close form_id $form_id
-        qf_append html "</form>"
+#        qf_append html "</form>"
 #        set form_html [qf_read form_id $form_id]
         set form_html [qf_read ]
 
@@ -633,7 +633,7 @@ switch -exact -- $mode {
         qf_input type submit value "Save" name "zw" class btn
 
 #        qf_close form_id $form_id
-        qf_append html "</form>"
+#        qf_append html "</form>"
 #        set form_html [qf_read form_id $form_id]
         set form_html [qf_read ]
     }
