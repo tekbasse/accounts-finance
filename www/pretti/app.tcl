@@ -333,7 +333,7 @@ if { $form_posted } {
                 set table_flags [acc_fin::pretti_type_flag $table_lists]
                 ns_log Notice "accounts-finance/www/pretti/app.tcl.193: table_flags $table_flags"
                 if { [qf_is_natural_number $table_tid] } {
-                    set table_stats [qss_table_stats $table_tid]
+                    set table_stats [qss_table_stats $table_tid $instance_id $user_id]
                     # name, title, comments, cell_count, row_count, template_id, flags, trashed, popularity, time last_modified, time created, user_id.
                     set name_old [lindex $table_stats 0]
                     set title_old [lindex $table_stats 1]
@@ -346,7 +346,7 @@ if { $form_posted } {
                     # Old method wrote to the same table using qss_table_write when name and title were the same regardless of comments or content.
 
                     # Get table_lists_old table_comments_old and compare..
-                    set table_old_lists [qss_table_read $table_tid]
+                    set table_old_lists [qss_table_read $table_tid $instance_id $user_id]
                     if { $table_name eq $name_old && $table_title eq $title_old && $table_comments eq $comments_old && $table_lists eq $table_old_lists } {
                         # Don't create a new table. The new one is exactly like the old one..
                     } else {
@@ -358,11 +358,11 @@ if { $form_posted } {
                             if { $user_id eq $user_id_prev && $table_name eq $name_old } {
                                 qss_table_trash 1 $table_tid $instance_id $user_id
                             }
-                            set priority [llength $table_lists]
-                            acc_fin::schedule_add "acc_fin::cobbler_file_create_from_table" [list $created_tid $user_id $instance_id] $user_id $instance_id $priority
-                            # when debugging the graphics, bypassing scheduling can save a few steps:
-                            #acc_fin::cobbler_file_create_from_table $created_tid $user_id $instance_id
                             if { $table_flags eq "dc" } {
+                                set priority [llength $table_lists]
+                                acc_fin::schedule_add "acc_fin::cobbler_file_create_from_table" [list $created_tid $user_id $instance_id] $user_id $instance_id $priority
+                                # when debugging the graphics, bypassing scheduling can save a few steps:
+                                #acc_fin::cobbler_file_create_from_table $created_tid $user_id $instance_id
                                 incr priority $priority
                                 # build related pie chart:
                                 # using llength table_lists for priority. The more rows there are, the lower the priority..
@@ -374,9 +374,9 @@ if { $form_posted } {
                 } else {
                     ns_log Notice "accounts-finance/www/pretti/app.tcl.210: qss_table_create new table"
                     set created_tid [qss_table_create $table_lists $table_name $table_title $table_comments "" $table_flags $instance_id $user_id]
-                    set priority [llength $table_lists]
-                    acc_fin::schedule_add "acc_fin::cobbler_file_create_from_table" [list $created_tid $user_id $instance_id] $user_id $instance_id $priority
                     if { $table_flags eq "dc" } {
+                        set priority [llength $table_lists]
+                        acc_fin::schedule_add "acc_fin::cobbler_file_create_from_table" [list $created_tid $user_id $instance_id] $user_id $instance_id $priority
                         incr priority $priority
                         # build related pie chart:
                         # using llength table_lists for priority. The more rows there are, the lower the priority..
@@ -417,7 +417,7 @@ if { $form_posted } {
             }
             foreach table_tid $tid_list {
                 # permissions checked for each table_tid in qss_table_trash
-                set trashed_p [lindex [qss_table_stats $table_tid] 7]
+                set trashed_p [lindex [qss_table_stats $table_tid $instance_id $user_id ] 7]
                 if { $trashed_p == 1 } {
                     set trash 0
                 } else {
@@ -438,7 +438,7 @@ if { $form_posted } {
             lappend tid_list $table_tid
         }
         foreach table_tid $tid_list {
-            set table_stats_list [qss_table_stats $table_tid]
+            set table_stats_list [qss_table_stats $table_tid $instance_id $user_id]
             # name, title, comments, cell_count, row_count, template_id, flags, trashed, popularity, time last_modified, time created, user_id.
             set trashed_p [lindex $table_stats_list 7]
             set table_flags [lindex $table_stats_list 6]
@@ -462,7 +462,7 @@ if { $form_posted } {
             set new_table_id [acc_fin::table_sort_y_asc $table_tid $instance_id $user_id]
             if { $new_table_id > 0 } {
                 # trash the old one if it's made by the same user
-                set table_stats_list [qss_table_stats $table_tid]
+                set table_stats_list [qss_table_stats $table_tid $instance_id $user_id]
                 set table_flags [lindex $table_stats_list 6]
                 set row_count [lindex $table_stats_list 4]
                 set user_id_prev [lindex $table_stats_list 11]
@@ -475,7 +475,7 @@ if { $form_posted } {
                     incr priority $priority
                     # build related pie chart:
                     # using llength table_lists for priority. The more rows there are, the lower the priority..
-                    set table_stats_list [qss_table_stats $new_table_id]
+                    set table_stats_list [qss_table_stats $new_table_id $instance_id $user_id]
 
                     acc_fin::schedule_add "acc_fin::pie_file_create_from_table" [list $new_table_id $user_id $instance_id] $user_id $instance_id $priority
                 }
@@ -489,7 +489,7 @@ if { $form_posted } {
         ns_log Notice "accounts-finance/www/pretti/app.tcl.342:  mode = process"
         set mode_name "#accounts-finance.process#"
         #requires table_tid
-        set table_stats_list [qss_table_stats $table_tid]
+        set table_stats_list [qss_table_stats $table_tid $instance_id $user_id]
         # name, title, comments, cell_count, row_count, template_id, flags, trashed, popularity, time last_modified, time created, user_id
         # set table_name [lindex $table_stats_list 0]
         # set table_title [lindex $table_stats_list 1]
@@ -568,7 +568,7 @@ switch -exact -- $mode {
 #        qf_input type hidden value w name mode label ""
         
         if { [qf_is_natural_number $table_tid] } {
-            set table_stats_list [qss_table_stats $table_tid]
+            set table_stats_list [qss_table_stats $table_tid $instance_id $user_id]
             set table_name [lindex $table_stats_list 0]
             set table_title [lindex $table_stats_list 1]
             set table_comments [lindex $table_stats_list 2]
@@ -576,7 +576,7 @@ switch -exact -- $mode {
             set table_template_id [lindex $table_stats_list 5]
             set trashed_p [lindex $table_stats_list 7]
             set trash_folder_p $trashed_p
-            set table_lists [qss_table_read $table_tid]
+            set table_lists [qss_table_read $table_tid $instance_id $user_id]
             set table_text [qss_lists_to_text $table_lists]
 
             qf_input type hidden value $table_tid name table_tid label ""
@@ -648,7 +648,7 @@ switch -exact -- $mode {
         #  view table(s) (standard, html page document/report)
         ns_log Notice "accounts-finance/www/pretti/app.tcl.358:  mode = $mode ie. view table"
         set mode_name "#accounts-finance.view#"
-        set table_stats_list [qss_table_stats $table_tid]
+        set table_stats_list [qss_table_stats $table_tid $instance_id $user_id]
         # name, title, comments, cell_count, row_count, template_id, flags, trashed, popularity, time last_modified, time created, user_id
         # set table_name [lindex $table_stats_list 0]
         # set table_title [lindex $table_stats_list 1]
