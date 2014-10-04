@@ -3234,6 +3234,7 @@ ad_proc -public acc_fin::scenario_prettify {
                     foreach act $activities_list {
                         # Remove partial tracks from subtrees by placing only paths in paths_lists
                         ns_log Notice "acc_fin::scenario_prettify.2485: scenario '$scenario_tid' path_tree_p_arr($act) '$path_tree_p_arr($act)' "
+
                         if { $path_tree_p_arr($act) } {
                             # subtrees_larr($act) is a tree of full paths here.
                             # Expand path trees to a list of paths
@@ -3245,9 +3246,10 @@ ad_proc -public acc_fin::scenario_prettify {
                                 lappend row_list $path_idx
                                 
                                 set paths_arr(${path_idx}) $path_list
-                                # create a reverse lookup array also:
-                                foreach path $path_list {
-                                    lappend path_idxs_in_act_larr($act) $path_idx
+
+                                # create a reverse lookup array for every activity so that path properties can be referenced from an activity:
+                                foreach acty $path_list {
+                                    lappend path_idxs_in_act_larr(${acty}) $path_idx
                                 }
 
                                 if { !$error_time } {
@@ -3628,14 +3630,14 @@ ad_proc -public acc_fin::scenario_prettify {
                         # determine max duration of paths for this activity
                         set max_path_duration 0
                         # there should be at least one p_idx per act..
-                        if { [llength $path_idx_in_act_larr($act) ] > 0 } { 
+                        if { [llength $path_idxs_in_act_larr($act) ] > 0 } { 
                             foreach p_idx $path_idxs_in_act_larr($act) {
                                 if { $path_duration_arr(${p_idx}) > $max_path_duration } {
                                     set max_path_duration $path_duration_arr(${p_idx})
                                 }
                             }
                         } else {
-                            ns_log Warning "acc_fin::scenario_prettify.3638: path_idx_in_act_larr(${act}) is empty. This should not happen. Investigate. path_idx_in_act_larr '[array get path_idx_in_act_larr]'"
+                            ns_log Warning "acc_fin::scenario_prettify.3638: path_idxs_in_act_larr(${act}) is empty. This should not happen. Investigate. path_idxs_in_act_larr '[array get path_idxs_in_act_larr]'"
                         }
                         if { $max_path_duration != 0 } {
                             set max_act_path_dur_arr($act) $max_path_duration
@@ -3643,7 +3645,8 @@ ad_proc -public acc_fin::scenario_prettify {
                             ns_log Warning "acc_fin::scenario_prettify.3643: max_path_duration '0' for ${act}. This should not happen. Investigate. path_duration_arr '[array get path_duration_arr]' "
                         }
                         # base for p5
-                        set activity_list [list $act $activity_counter $has_direct_dependency_p [join $dependencies_larr($act) " "] [llength $dependencies_larr($act)] $on_critical_path_p_arr($act) $on_a_sig_path_p $act_freq_in_load_cp_alts_arr($act) $popularity_arr($act) $act_time_expected_arr($act) $tn_arr($act) $t_dc_source_arr($act) $act_cost_expected_arr($act) $cn_arr($act) $c_dc_source_arr($act) $act_coef($act) $act_maxcc $act_maxrt $act_maxtpr $act_maxol $act_maxd $act_tcref($act) $act_ccref($act) $max_path_duration ]
+                        # Note that last two columns are appended ie not part of official p5 definition in acc_fin::pretti_columns_list
+                        set activity_list [list $act $activity_counter $has_direct_dependency_p [join $dependencies_larr($act) " "] [llength $dependencies_larr($act)] $on_critical_path_p_arr($act) $on_a_sig_path_p $act_freq_in_load_cp_alts_arr($act) $popularity_arr($act) $act_time_expected_arr($act) $tn_arr($act) $t_dc_source_arr($act) $act_cost_expected_arr($act) $cn_arr($act) $c_dc_source_arr($act) $act_coef($act) $act_maxcc $act_maxrt $act_maxtpr $act_maxol $act_maxd $max_path_duration $act_tcref($act) $act_ccref($act) ]
                         lappend p5_lists $activity_list
                     }
                     
