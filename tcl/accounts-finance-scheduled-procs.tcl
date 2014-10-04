@@ -83,9 +83,14 @@ ad_proc -private acc_fin::schedule_do {
                             db_dml qaf_sched_proc_stack_write {
                                 update qaf_sched_proc_stack set proc_out =:this_err_text, completed_time=:nowts where id = :id 
                             } 
-                            
+                            if { $proc_name eq "acc_fin::scenario_prettify" } {
+                                # inform user of error
+                                set scenario_tid [lindex [lindex $args_lists 0] 0]
+                                acc_fin::pretti_log_create $scenario_tid "#accounts-finance.process#" "error" "id ${id} Message: ${this_err_text}" $user_id $instance_id
+                            }
                         } else {
                             set dur_sec [expr { [clock seconds] - $start_sec } ]
+                            # part of while loop so that remaining processes are re-prioritized with any new ones:
                             set dur_sum [expr { $dur_sum + $dur_sec } ]
                             set nowts [dt_systime -gmt 1]
                             set success_p 1
@@ -93,6 +98,13 @@ ad_proc -private acc_fin::schedule_do {
                                 update qaf_sched_proc_stack set proc_out =:calc_value, completed_time=:nowts, process_seconds=:dur_sec where id = :id }
                                 ns_log Notice "acc_fin::schedule_do.83: id $id completed in circa ${dur_sec} seconds."
                         }
+                        # Alert user that job is done?  
+                        # util_user_message doesn't accept user_id instance_id, only session_id
+                        # We don't have session_id available.. and it may have changed or not exist..
+                        # Email?  that would create too many alerts for lots of quick jobs.
+                        # auth::sync::job::* api does this.
+                        # Create another package for user conveniences like active alerts..
+                        # maybe hook into util_user_message after querying users.n_sessions or something..
                     }
                 } else {
                     ns_log Warning "acc_fin::schedule_do.87: id $id proc_name '${proc_name}' attempted but not allowed. user_id ${user_id} instance_id ${instance_id}"
@@ -227,7 +239,7 @@ ad_proc -private acc_fin::schedule_list {
 } {
     set process_stats_list [list ]
     
-    if { [ns_conn isconnected] && [qaf_is_natural_number $user_id] && $user_id > 0 } {
+    if { [ns_conn isconnected] && [qf_is_natural_number $user_id] && $user_id > 0 } {
         set session_user_id [ad_conn user_id]
         set session_package_id [ad_conn package_id]
         set admin_p [permission::permission_p -party_id $session_user_id -object_id $session_package_id -privilege admin]
@@ -241,7 +253,7 @@ ad_proc -private acc_fin::schedule_list {
         if { ![qf_is_natural_number $n_items] } {
             set n_items "all"
         }
-        set fields_list [id proc_name proc_args user_id instance_id priority order_time started_time completed_time process_seconds]
+        set fields_list [list id proc_name proc_args user_id instance_id priority order_time started_time completed_time process_seconds]
         if { [lsearch -exact $fields_list $sort_by] == -1 } {
             set sort_by "order_time"
             set sort_type "asc"
@@ -251,15 +263,15 @@ ad_proc -private acc_fin::schedule_list {
 
         if { $admin_p } {
             if { $processed_p } {
-                set process_stats_list [db_list_of_lists qaf_sched_proc_stack_read_adm_p1 { select id,proc_name,proc_args,user_id,instance_id, priority, order_time, started_time, completed_time, process_seconds from qaf_sched_proc_stack order where instance_id=:instance_id by :sort_by :sort_type limit :n_items offset :m_offset } ]
+                set process_stats_list [db_list_of_lists qaf_sched_proc_stack_read_adm_p1 " select id,proc_name,proc_args,user_id,instance_id, priority, order_time, started_time, completed_time, process_seconds from qaf_sched_proc_stack order where instance_id=:instance_id by $sort_by $sort_type limit $n_items offset :m_offset " ]
             } else {
-                set process_stats_list [db_list_of_lists qaf_sched_proc_stack_read_adm_p0 { select id,proc_name,proc_args,user_id,instance_id, priority, order_time, started_time, completed_time, process_seconds from qaf_sched_proc_stack where completed_time is null order by :sort_by :sort_type limit :n_items offset :m_offset } ]
+                set process_stats_list [db_list_of_lists qaf_sched_proc_stack_read_adm_p0 " select id,proc_name,proc_args,user_id,instance_id, priority, order_time, started_time, completed_time, process_seconds from qaf_sched_proc_stack where completed_time is null order by $sort_by $sort_type limit $n_items offset :m_offset " ]
             }
         } else {
             if { $processed_p } {
-                set process_stats_list [db_list_of_lists qaf_sched_proc_stack_read_user_p1 { select id,proc_name,proc_args,user_id,instance_id, priority, order_time, started_time, completed_time, process_seconds from qaf_sched_proc_stack where id =:sched_id and user_id=:user_id and ( instance_id=:instance_id or instance_id=:user_id) order by :sort_by :sort_type limit :n_items offset :m_offset } ]
+                set process_stats_list [db_list_of_lists qaf_sched_proc_stack_read_user_p1 " select id,proc_name,proc_args,user_id,instance_id, priority, order_time, started_time, completed_time, process_seconds from qaf_sched_proc_stack where id =:sched_id and user_id=:user_id and ( instance_id=:instance_id or instance_id=:user_id) order by $sort_by $sort_type limit $n_items offset :m_offset " ]
             } else {
-                set process_stats_list [db_list_of_lists qaf_sched_proc_stack_read_user_p0 { select id,proc_name,proc_args,user_id,instance_id, priority, order_time, started_time, completed_time, process_seconds from qaf_sched_proc_stack where completed_time is null and id =:sched_id and user_id=:user_id and ( instance_id=:instance_id or instance_id=:user_id) order by :sort_by :sort_type limit :n_items offset :m_offset } ]
+                set process_stats_list [db_list_of_lists qaf_sched_proc_stack_read_user_p0 " select id,proc_name,proc_args,user_id,instance_id, priority, order_time, started_time, completed_time, process_seconds from qaf_sched_proc_stack where completed_time is null and id =:sched_id and user_id=:user_id and ( instance_id=:instance_id or instance_id=:user_id) order by $sort_by $sort_type limit $n_items offset :m_offset " ]
             }
         }
     }

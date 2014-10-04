@@ -7,8 +7,12 @@
     <a href="pretti/index">PRETTI</a>
 </li><li>
     <a href="doc/index">PRETTI documentation</a>
-</li><li>
-    <a href="admin/affilate">Affiliate app</a> Models affiliate calculations using triangle series calculations (alpha phase, admin only)
-</li><li>
+</li>
+<if @admin_p@>
+ <li>
+    <a href="admin/affiliate">Affiliate app</a> Models affiliate calculations using triangle series calculations (alpha phase, admin only)
+ </li><li>
     <a href="admin/model">Systems modeling app</a> Models a system described in equations. (alpha phase, admin only)
-</li></ul>
+ </li>
+</if>
+</ul>

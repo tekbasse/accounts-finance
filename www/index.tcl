@@ -6,5 +6,7 @@ ad_page_contract {
 
 set title "Accounts Finance"
 set context [list $title]
-
+set user_id [ad_conn user_id]
+set instance_id [ad_conn package_id]
+set admin_p [permission::permission_p -party_id $user_id -object_id $instance_id -privilege admin]
 

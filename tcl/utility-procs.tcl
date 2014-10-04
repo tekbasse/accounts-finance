@@ -260,7 +260,9 @@ ad_proc -public acc_fin::cobbler_file_create {
                     set r_case2 [f::max $y_max_min_px [f::min $y_max_max_px [expr { $y_max - $y_min } ]]]
                     set r [f::max $r_case1 $r_case2 ]
                     set dim_px [expr { round( $r + .99 )  } ]
-                    set dim_py [expr { round( $r / 3.6 ) } ]
+                    #set dim_py [expr { round( $r / 3.6 ) } ]
+                    set dim_py $dim_px
+                    ns_log Notice "acc_fin::cobbler_file_create.265. dim_px $dim_px dim_py $dim_py"
                     exec gm convert -size ${dim_px}x${dim_py} "xc:#ffffff" $cob_tmppathname
                     set x0 0
                     set y0 [expr { $dim_py } ]

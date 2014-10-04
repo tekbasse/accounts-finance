@@ -19,9 +19,9 @@
   <include src="/packages/accounts-finance/lib/pretti-view2" instance_id="@instance_id@" form_action_attr="app" trash_folder_p="@trash_folder_p@">
  </if>
 
-</form> <!-- from pretti-menu2 -->
 
 <if @mode@ eq "v">
   <include src="/packages/accounts-finance/lib/pretti-one-view3" instance_id="@instance_id@" table_tid="@table_tid@" table_flags="@table_flags@" trash_folder_p="@trash_folder_p@">
 </if>
 
+</form> <!-- from pretti-menu2 -->

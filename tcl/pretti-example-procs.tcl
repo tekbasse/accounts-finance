@@ -38,8 +38,11 @@ ad_proc -private acc_fin::example_table {
             # goes with p20d
             set ret_list [list [list name value] [list activity_table_name "Fedora 20 Doc Workflow"]] }
         p10e {
-            # goes with p20d
+            # goes with p20e
             set ret_list [list [list name value] [list activity_table_name "Fedora 20 network analysis from Project Schedule (draft)"]] }
+        p10f {
+            # goes with p20f
+            set ret_list [list [list name value] [list activity_table_name "Example 6"]] }
         p20a {
             set ret_list [list "Wikipedia PERT" "This is an example from PERT entry of Wikipedia. See entry for details: http://en.wikipedia.org/wiki/Program_Evaluation_and_Review_Technique" "activity_ref,time_est_short,time_est_med,time_est_long,time_ext,dependent_tasks
 A,2,4,6,4.0,
@@ -468,6 +471,71 @@ x20,TestingPhase_end,Testing Phase end,,,
 412,ceo_blog_drop,Red Hat PR publish and send CEO blog to media contacts,final ceo_blog_legal,1,
 413,ceo_blog,CEO press blog entry,ceo_prepare_final_rc ceo_send_final_rc ceo_solicit_feedback ceo_blog_drop,,fpl pr
 "] }
+        p20f {
+            set ret_list [list "Example 6" "This example highlights features that somewhat resemble the XDCPM banner." "activity_ref,dependent_tasks,time_est_median
+AA,,100
+BB,AA,100
+CC,BB,100
+DD,CC,100
+EE,DD,100
+FF,EE,100
+GG,FF,100
+HH,GG,100
+II,HH,100
+JJ,,100
+KK,JJ,100
+LL,KK,100
+MM,LL,100
+NN,MM,100
+OO,NN,100
+PP,OO,100
+QQ,PP,100
+RR,,90
+SS,KK,100
+TT,JJ,90
+UU,LL,100
+VV,MM,100
+WW,NN,90
+XX,OO,90
+YY,PP,100
+ZZ,SS,100
+AE,TT,90
+OE,UU,100
+OU,VV,100
+EU,WW,90
+US,XX,90
+DK,YY,100
+G1,RR,12
+G2,G1,10.8
+G3,G2,9.72
+G4,G3,8.748
+G5,G4,7.8732
+G6,G5,7.08588
+G7,G6,6.377292
+G8,G7,5.7395628
+H1,AE,53
+H2,H1,47.7
+H3,H2,42.93
+H4,H3,38.637
+H5,H4,19
+H6,H5,32
+J1,ZZ,28.8
+J2,J1,25.92
+J3,J2,23.328
+J4,J3,20.9952
+J5,J4,18.89568
+L1,OE,17.006112
+L2,L1,15.3055008
+L3,L2,13.77495072
+L4,L3,12.397455648
+K1,OU,11.1577100832
+K2,K1,10.0419390749
+K3,K2,9.0377451674
+INT,EU,28
+ORG,INT,28
+UK,QQ,90
+RI,US,23" ]
+        }
         p20 {
             # p2 Task Network
             #      activity_ref           reference for an activity, a unique task id, using "activity" to differentiate between table_id's tid 

@@ -341,6 +341,8 @@ ad_proc -public acc_fin::pretti_color_chooser {
     odd_row_p
     popularity
     max_act_count_per_track
+    cp_duration
+    path_duration
     {color_cp_mask_idx "3"}
     {color_sig_mask_idx "5"}
     {row_contrast "-8"}
@@ -367,19 +369,24 @@ ad_proc -public acc_fin::pretti_color_chooser {
         # intensity is 0 to 15.
         # subtract 1 for contrast variance
         # which leaves color variance 0 to 14
-        if { $on_cp_p } {
+        if { $on_cp_p || $path_duration == $cp_duration } {
             set color_mask_list $color_cp_mask_list
             set c1 255
             set c0 127
         } else {
             set color_mask_list $color_sig_mask_list
+            set dur_ratio_case [expr { round( 255 * $path_duration / ( $cp_duration + 0. ) ) } ]
             if { $on_a_sig_path_p } {
-                set c1 [f::max 0 [f::min 255 [expr { 127 + int( $popularity * $k2 + 1. ) } ] ]]
+                set pop_case [expr { 127 + int( $popularity * $k2 + 1. ) } ]
+                set max_case [f::max $pop_case $dur_ratio_case ]
+                set c1 [f::max 0 [f::min 255 $max_case ]]
                 set c0 127
 
             } else {
                 set c0 127
-                set c1 [f::max 0 [f::min 255 [expr { int( $popularity * $k2 + 1. ) } ] ]]
+                set pop_case [expr { int( $popularity * $k2 + 1. ) } ]
+                set max_case [f::max $pop_case $dur_ratio_case ]
+                set c1 [f::max 0 [f::min 255 $max_case ]]
             }
         }
 #        set c0 [expr { 255 - $c1 } ]
@@ -1254,13 +1261,13 @@ ad_proc -private acc_fin::pretti_columns_list {
         p50 {
             # each row is a cell (ie activity on a path), in format of detailed PRETTI internal output. See code. 
             #set ret_list [list activity_ref path_act_counter path_counter dependencies_q cp_q significant_q popularity waypoint_duration activity_time direct_dependencies activity_cost waypoint_cost]
-            set ret_list [list activity_ref activity_counter dependencies_q direct_dependencies dependencies_count count_on_cp_p on_a_sig_path_p act_freq_in_load_cp_alts popularity activity_time waypoint_duration t_dc_source activity_cost waypoint_cost c_dc_source act_coef]
+            set ret_list [list activity_ref activity_counter dependencies_q direct_dependencies dependencies_count count_on_cp_p on_a_sig_path_p act_freq_in_load_cp_alts popularity activity_time waypoint_duration t_dc_source activity_cost waypoint_cost c_dc_source act_coef max_concurrent max_run_time max_tasks_per_run max_overlap_pct max_discount_pct max_path_duration]
         }
         p51 {
             # each row is a cell (ie activity on a path), in format of detailed PRETTI internal output. See code. 
             # p5 was:
             #set ret_list [list activity_ref path_act_counter path_counter dependencies_q cp_q significant_q popularity waypoint_duration activity_time direct_dependencies activity_cost waypoint_cost path_col activity_seq dependents_count dep_act_seq ]
-            set ret_list [list activity_ref activity_counter dependencies_q direct_dependencies dependencies_count count_on_cp_p on_a_sig_path_p act_freq_in_load_cp_alts popularity activity_time waypoint_duration t_dc_source activity_cost waypoint_cost c_dc_source act_coef max_concurrent max_run_time max_tasks_per_run max_overlap_pct max_discount_pct]
+            set ret_list [list activity_ref activity_counter dependencies_q direct_dependencies dependencies_count count_on_cp_p on_a_sig_path_p act_freq_in_load_cp_alts popularity activity_time waypoint_duration t_dc_source activity_cost waypoint_cost c_dc_source act_coef max_concurrent max_run_time max_tasks_per_run max_overlap_pct max_discount_pct max_path_duration]
         }
         p60 {
             # each row is a path, in format of detailed PRETTI internal output. See code. All columns are required to reproduce output to p4 (including p4 comments).
@@ -1388,6 +1395,7 @@ ad_proc -public acc_fin::pretti_table_to_html {
             set cp_duration_at_pm $test_num
         }
     }
+
     #ns_log Notice "acc_fin::pretti_table_to_html.857: cp_duration_at_pm $cp_duration_at_pm max_act_count_per_track $max_act_count_per_track column_count $column_count row_count $row_count"
     # determine list of CP activities
     set cp_list [list ]
@@ -1511,16 +1519,16 @@ ad_proc -public acc_fin::pretti_table_to_html {
                 } 
 
                 # set on_a_sig_path_p and popularity
-                if { ![regexp -- {<!--[^0-9]([0-9\.]+)[^0-9]([0-9\.]+)[^0-9]-->} $cell scratch on_a_sig_path_p popularity ] } {
+                if { ![regexp -- {<!--[^0-9]([0-9\.]+)[^0-9]([0-9\.]+)[^0-9]([0-9\.]+)[^0-9]-->} $cell scratch on_a_sig_path_p popularity path_duration] } {
                     ns_log Notice "acc_fin::pretti_table_to_html.928: regexp broken for row $row_nbr column $cell_nbr $row_cell cell '$cell'"
                 } 
                 
-                set colorhex [acc_fin::pretti_color_chooser $on_cp_p $on_a_sig_path_p $odd_row_p $popularity $max_act_count_per_track]
+                set colorhex [acc_fin::pretti_color_chooser $on_cp_p $on_a_sig_path_p $odd_row_p $popularity $max_act_count_per_track $cp_duration_at_pm $path_duration]
 
             } else {
                 set cell "&nbsp;"
                 # pass on_cp_p as -1 when cell is inactive
-                set colorhex [acc_fin::pretti_color_chooser -1 $on_a_sig_path_p $odd_row_p $popularity $max_act_count_per_track]
+                set colorhex [acc_fin::pretti_color_chooser -1 $on_a_sig_path_p $odd_row_p $popularity $max_act_count_per_track $cp_duration_at_pm $path_duration]
             }
             #append cell "row $row_nbr col $cell_nbr on_cp $on_cp_p on_sig $on_a_sig_path_p act_on_cp_p $act_on_cp_p <br>"
             set greycol [acc_fin::gray_from_color $colorhex]
@@ -2948,6 +2956,9 @@ ad_proc -public acc_fin::scenario_prettify {
                     # first paths are single activities, so following line of code doesn't seem significant.
                     # It's just here so that internal representation is consistent.
                     set act_list [list $act]
+                    # use this loop to intialize empty array:
+                    set path_idxs_in_act_larr($act) [list ]
+
                     # the first paths are single activities, subsequently time expected and duration are same values
                     set tref [lindex $p2_larr(_tCurveRef) $i]
                     if { $tref ne "" } {
@@ -3223,6 +3234,7 @@ ad_proc -public acc_fin::scenario_prettify {
                     foreach act $activities_list {
                         # Remove partial tracks from subtrees by placing only paths in paths_lists
                         ns_log Notice "acc_fin::scenario_prettify.2485: scenario '$scenario_tid' path_tree_p_arr($act) '$path_tree_p_arr($act)' "
+
                         if { $path_tree_p_arr($act) } {
                             # subtrees_larr($act) is a tree of full paths here.
                             # Expand path trees to a list of paths
@@ -3234,7 +3246,12 @@ ad_proc -public acc_fin::scenario_prettify {
                                 lappend row_list $path_idx
                                 
                                 set paths_arr(${path_idx}) $path_list
-                                
+
+                                # create a reverse lookup array for every activity so that path properties can be referenced from an activity:
+                                foreach acty $path_list {
+                                    lappend path_idxs_in_act_larr(${acty}) $path_idx
+                                }
+
                                 if { !$error_time } {
                                     # calculate no-float, no-lag duration for each path
                                     set path_duration  0.
@@ -3565,12 +3582,13 @@ ad_proc -public acc_fin::scenario_prettify {
                     ## path_tree_p_arr(act)              answers question: is this tree of ptracks complete (ie not a subset of another track or tree)?
                     ## tn_arr(activity) is the time expected to complete an activity and its dependents
                     ## cn_arr(activity)      is the cost expected to complete an activity and its dependents
-                    
+
                     
                     # other
-                    
+                    ## max_act_path_dur(activity) the maximum path duration that an activity is in. (helps with prioritization)                    
                     ## act_count_of_seq_arr(sequence no) is the count of activities at this sequence number across all paths, 0 is first sequence number
                     ## act_seq_max                       is the maximum path length in context of sequence_number
+
                     
                     
                     # # # PRETTI p5_lists built 
@@ -3609,9 +3627,26 @@ ad_proc -public acc_fin::scenario_prettify {
                         if { [info exists act_maxd_arr($act) ] } {
                             set act_maxd $act_maxd_arr($act)
                         }
-
+                        # determine max duration of paths for this activity
+                        set max_path_duration 0
+                        # there should be at least one p_idx per act..
+                        if { [llength $path_idxs_in_act_larr($act) ] > 0 } { 
+                            foreach p_idx $path_idxs_in_act_larr($act) {
+                                if { $path_duration_arr(${p_idx}) > $max_path_duration } {
+                                    set max_path_duration $path_duration_arr(${p_idx})
+                                }
+                            }
+                        } else {
+                            ns_log Warning "acc_fin::scenario_prettify.3638: path_idxs_in_act_larr(${act}) is empty. This should not happen. Investigate. path_idxs_in_act_larr '[array get path_idxs_in_act_larr]'"
+                        }
+                        if { $max_path_duration != 0 } {
+                            set max_act_path_dur_arr($act) $max_path_duration
+                        } else {
+                            ns_log Warning "acc_fin::scenario_prettify.3643: max_path_duration '0' for ${act}. This should not happen. Investigate. path_duration_arr '[array get path_duration_arr]' "
+                        }
                         # base for p5
-                        set activity_list [list $act $activity_counter $has_direct_dependency_p [join $dependencies_larr($act) " "] [llength $dependencies_larr($act)] $on_critical_path_p_arr($act) $on_a_sig_path_p $act_freq_in_load_cp_alts_arr($act) $popularity_arr($act) $act_time_expected_arr($act) $tn_arr($act) $t_dc_source_arr($act) $act_cost_expected_arr($act) $cn_arr($act) $c_dc_source_arr($act) $act_coef($act)  $act_maxcc $act_maxrt $act_maxtpr $act_maxol $act_maxd $act_tcref($act) $act_ccref($act) ]
+                        # Note that last two columns are appended ie not part of official p5 definition in acc_fin::pretti_columns_list
+                        set activity_list [list $act $activity_counter $has_direct_dependency_p [join $dependencies_larr($act) " "] [llength $dependencies_larr($act)] $on_critical_path_p_arr($act) $on_a_sig_path_p $act_freq_in_load_cp_alts_arr($act) $popularity_arr($act) $act_time_expected_arr($act) $tn_arr($act) $t_dc_source_arr($act) $act_cost_expected_arr($act) $cn_arr($act) $c_dc_source_arr($act) $act_coef($act) $act_maxcc $act_maxrt $act_maxtpr $act_maxol $act_maxd $max_path_duration $act_tcref($act) $act_ccref($act) ]
                         lappend p5_lists $activity_list
                     }
                     
@@ -3832,8 +3867,9 @@ ad_proc -public acc_fin::scenario_prettify {
                                 #                            set popularity $popularity_arr($activity)
                                 set popularity $act_freq_in_load_cp_alts_arr($activity)
                                 set on_a_sig_path_p [expr { $act_freq_in_load_cp_alts_arr($activity) > $act_count_median } ]
+                                set max_path_duration $max_act_path_dur_arr($activity)
                                 # this calced in p4 html generator: set on_cp_p [expr { $count_on_cp_p_arr($activity) > 0 } ]
-                                append cell "<!-- ${on_a_sig_path_p} ${popularity} --> "
+                                append cell "<!-- ${on_a_sig_path_p} ${popularity} ${max_path_duration} --> "
                                 lappend row_larr($i) $cell
                             } else {
                                 lappend row_larr($i) ""

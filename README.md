@@ -4,7 +4,7 @@ accounts-finance
 Finance Package provides some tools for forecasting and reporting
 
 The lastest version of the code is available at site:
- http://github.com/dcpm/accounts-finance
+ http://github.com/xdcpm/accounts-finance
 
 introduction
 ------------
