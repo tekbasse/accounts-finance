@@ -62,7 +62,7 @@ ad_proc -private acc_fin::pretti_curve_time_multiply {
         # validated
     } else {
         if { $user_id > 0 } {
-            acc_fin::pretti_log_create $scenario_tid "max_overlap_pct" "value" "max_overlap_pct '${max_overlap_pct}' is out of range or blank. Set to 1 (100%). (ref1520)" $user_id $instance_id
+            acc_fin::pretti_log_create $scenario_tid "max_overlap_pct" "#accounts-finance.value#" "max_overlap_pct '${max_overlap_pct}' #accounts-finance.Value_out_of_range_or_blank# #accounts-finance.Value_set_to# '1' (100%). (ref1520)" $user_id $instance_id
         }
         set max_overlap_pct 1.
     }
@@ -75,7 +75,7 @@ ad_proc -private acc_fin::pretti_curve_time_multiply {
         # max_trailing_pct = 1. - max_overlap_pct
     } else {
         if { $user_id > 0 } {
-            acc_fin::pretti_log_create $scenario_tid "max_concurrent" "value" "max_concurrent '$max_concurrent' is out of range or blank. Set to no limit. (ref1525)" $user_id $instance_id
+            acc_fin::pretti_log_create $scenario_tid "max_concurrent" "#accounts-finance.value#" "max_concurrent '$max_concurrent' #accounts-finance.Value_out_of_range_or_blank# #accounts-finance.Value_set_to# #accounts-finance.no_limit# (ref1525)" $user_id $instance_id
         }
         # max_concurrent is coeffcient
         set max_concurrent ""
@@ -177,13 +177,13 @@ ad_proc -private acc_fin::pretti_curve_time_multiply {
                 # y == 0
                 # warn user for out of bounds value of Y
                 if { $user_id > 0 } {
-                    acc_fin::pretti_log_create $scenario_tid "dc y=0" "value" "activity '${activity}': max_run_time ignored in dc for y = 0. In distribution curve, y '${y}' cannot be 0 when calculating task_run_time with a coefficient and a dominant max_run_time constraint. Set max_run_time longer (or no limit), or increase value of y. (ref2601)" $user_id $instance_id
+                    acc_fin::pretti_log_create $scenario_tid "dc y=0" "#accounts-finance.value#" "activity '${activity}': y '${y}'; #accounts-finance.max_run_time_ignored_in_dc# #accounts-finance.in_dc_y_cannot_be_0# #accounts-finance.set_max_run_time_longer_or_blank# (ref2601)" $user_id $instance_id
                 }
                 
             } elseif { $y > $max_run_time } {
                 # y duration is larger than max_run_time..
                 if { $user_id > 0 } {
-                    acc_fin::pretti_log_create $scenario_tid "dc y" "value" "activity '${activity}': y value '${y}' is larger than max_run_time. max_run_time ignored. Set max_run_time longer (or no limit). (ref2602)" $user_id $instance_id
+                    acc_fin::pretti_log_create $scenario_tid "dc y" "#accounts-finance.value#" "activity '${activity}': y '${y}'; #accounts-finance.in_dc_y_gt_max_run_time_ignored# #accounts-finance.set_max_run_time_longer_or_blank# (ref2602)" $user_id $instance_id
                 }
             }
             set point_new [list $y_new $x]
@@ -253,7 +253,7 @@ ad_proc -private acc_fin::pretti_curve_cost_multiply {
         # validated
     } else {
         if { $user_id > 0 } {
-            acc_fin::pretti_log_create $scenario_tid "max_discount_pct" "value" "max_discount_pct '${max_discount_pct}' is out of range or blank. Set to 0 (0 or 100%). (ref1620)" $user_id $instance_id
+            acc_fin::pretti_log_create $scenario_tid "max_discount_pct" "#accounts-finance.value#" "max_discount_pct '${max_discount_pct}'; #accounts-finance.Value_out_of_range_or_blank# #accounts-finance.Value_set_to# '0'. (ref1620)" $user_id $instance_id
         }
         set max_discount_pct 0.
     }
@@ -280,7 +280,7 @@ ad_proc -private acc_fin::pretti_curve_cost_multiply {
             # max_trailing_pct = 1. - max_overlap_pct
         } else {
             if { $user_id > 0 } {
-                acc_fin::pretti_log_create $scenario_tid "max_concurrent" "value" "max_concurrent '$max_concurrent' is out of range or blank. Set to no limit. (ref1625)" $user_id $instance_id
+                acc_fin::pretti_log_create $scenario_tid "max_concurrent" "#accounts-finance.value#" "max_concurrent '$max_concurrent'; #accounts-finance.Value_out_of_range_or_blank# #accounts-finance.Value_set_to# #accounts-finance.no_limit# (ref1625)" $user_id $instance_id
             }
             # max_concurrent is coeffcient
             set max_concurrent ""
@@ -1688,7 +1688,7 @@ ad_proc -private acc_fin::p_load_tid {
             set p2_types_exist_p [expr { [llength $p_larr(aid_type)] > 0 } ]
             if { $p1_arr(task_types_tid) eq "" && $p2_types_exist_p } {
                 set success_p 0
-                acc_fin::pretti_log_create $scenario_tid "p_load_tid" "value" "error. task_types_tid is required in p1 when p2 has nonempty aid_type column.(ref1441)" $user_id $instance_id
+                acc_fin::pretti_log_create $scenario_tid "p_load_tid" "#accounts-finance.value#" "#accounts-finance.error# #accounts-finance.task_types_tid_is_required_when# (ref1441)" $user_id $instance_id
             }
         } 
     }
@@ -1952,7 +1952,7 @@ ad_proc -private acc_fin::p_load_tid {
                         set type_tcurve_list $time_clarr($type_t_curve_arr(${aid_type}))
                     } else {
                         set success_p 0
-                        acc_fin::pretti_log_create $scenario_tid "p_load_tid" "value" "error. No time curve aid_type '${aid_type}' found while loading activity_table.(ref1440)" $user_id $instance_id
+                        acc_fin::pretti_log_create $scenario_tid "p_load_tid" "#accounts-finance.value#" "aid_type: '${aid_type}'; #accounts-finance.error# #accounts-finance.aid_type_for_time_not_found# (ref1440)" $user_id $instance_id
                     }
                 }
             }
@@ -2020,7 +2020,7 @@ ad_proc -private acc_fin::p_load_tid {
                     set type_ccurve_list $cost_clarr($type_c_curve_arr(${aid_type}))
                 } else {
                     set success_p 0
-                    acc_fin::pretti_log_create $scenario_tid "p_load_tid" "value" "error. No cost curve aid_type '${aid_type}' found while loading activity_table.(ref1540)" $user_id $instance_id
+                    acc_fin::pretti_log_create $scenario_tid "p_load_tid" "#accounts-finance.value#" "aid_type '${aid_type}'; #accounts-finance.error# #accounts-finance.aid_type_for_cost_not_found# (ref1540)" $user_id $instance_id
                 }
 
             }
@@ -2112,7 +2112,7 @@ ad_proc -private acc_fin::list_filter {
         }
     }
     if { $type_errors_count > 0 } {
-        acc_fin::pretti_log_create $scenario_tid $table_name "value" "table '${table_name}' includes ${type_errors_count} bad values for '${list_name}'." $user_id $instance_id
+        acc_fin::pretti_log_create $scenario_tid $table_name "#accounts-finance.value#" "#accounts-finance.table_name# '${table_name}'; #accounts-finance.set_name# '${list_name}'; #accounts-finance.unacceptable_values_in_set# #accounts-finance.count#: ${type_errors_count}" $user_id $instance_id
         set type_errors_count 0
         set type_errors_p 1
     }
@@ -2420,21 +2420,21 @@ ad_proc -public acc_fin::scenario_prettify {
         # set activity_table_tid
         set p1_arr(activity_table_tid) [qss_tid_from_name $p1_arr(activity_table_name) $instance_id $user_id]
         if { $p1_arr(activity_table_tid) eq "" } {
-            acc_fin::pretti_log_create $scenario_tid "activity_table_name" "value" "activity_table_name reference does not exist." $user_id $instance_id
+            acc_fin::pretti_log_create $scenario_tid "activity_table_name" "#accounts-finance.value#" "activity_table_name #accounts-finance.unknown_reference#" $user_id $instance_id
         }
     } 
     if { $p1_arr(task_types_name) ne "" } {
         # set task_types_tid
         set p1_arr(task_types_tid) [qss_tid_from_name $p1_arr(task_types_name) $instance_id $user_id]
         if { $p1_arr(task_types_tid) eq "" } {
-            acc_fin::pretti_log_create $scenario_tid "task_types_name" "value" "task_types_name reference does not exist." $user_id $instance_id
+            acc_fin::pretti_log_create $scenario_tid "task_types_name" "#accounts-finance.value#" "task_types_name #accounts-finance.unknown_reference#" $user_id $instance_id
         }
     } 
     if { $p1_arr(time_dist_curve_name) ne "" } {
         # set dist_curve_tid
         set p1_arr(time_dist_curve_tid) [qss_tid_from_name $p1_arr(time_dist_curve_name) $instance_id $user_id]
         if { $p1_arr(time_dist_curve_tid) eq "" } {
-            acc_fin::pretti_log_create $scenario_tid "time_dist_curve_name" "value" "time_dist_curve_name reference does not exist." $user_id $instance_id
+            acc_fin::pretti_log_create $scenario_tid "time_dist_curve_name" "#accounts-finance.value#" "time_dist_curve_name #accounts-finance.unknown_reference#" $user_id $instance_id
         }
 
     }
@@ -2442,7 +2442,7 @@ ad_proc -public acc_fin::scenario_prettify {
         # set dist_curve_tid
         set p1_arr(cost_dist_curve_tid) [qss_tid_from_name $p1_arr(cost_dist_curve_name) $instance_id $user_id ]
         if { $p1_arr(cost_dist_curve_tid) eq "" } {
-            acc_fin::pretti_log_create $scenario_tid "cost_dist_curve_name" "value" "cost_dist_curve_name reference does not exist." $user_id $instance_id
+            acc_fin::pretti_log_create $scenario_tid "cost_dist_curve_name" "#accounts-finance.value#" "cost_dist_curve_name #accounts-finance.unknown_reference#" $user_id $instance_id
         }
     }
     
@@ -2452,8 +2452,8 @@ ad_proc -public acc_fin::scenario_prettify {
     foreach constant $constants_required_list {
         if { $p1_arr($constant) eq "" } {
             set constants_exist_p 0
-            lappend compute_message_list "Initial condition constant '${constant}' is required but does not exist."
-            acc_fin::pretti_log_create $scenario_tid "${constant}" "value" "${constant} is required but does not exist." $user_id $instance_id
+            lappend compute_message_list "Initial condition constant '${constant}'; #accounts-finance.unknown_reference# #accounts-finance.reference_is_required#"
+            acc_fin::pretti_log_create $scenario_tid "${constant}" "#accounts-finance.value#" "${constant}; #accounts-finance.unknown_reference# #accounts-finance.reference_is_required#" $user_id $instance_id
             # This may be triggered by code/permissions unable to find p1 table. Report more info?
 
             set error_fail 1
@@ -2510,7 +2510,7 @@ ad_proc -public acc_fin::scenario_prettify {
             }
 
         } else {
-            acc_fin::pretti_log_create $scenario_tid "time_dist_curve_tid" "value" "time_dist_curve reference does not exist." $user_id $instance_id
+            acc_fin::pretti_log_create $scenario_tid "time_dist_curve_tid" "#accounts-finance.value#" "time_dist_curve #accounts-finance.unknown_reference#" $user_id $instance_id
         }
     } 
     set tc_lists [acc_fin::curve_import $tc_larr(x) $tc_larr(y) $tc_larr(label) [list ] $p1_arr(time_est_short) $p1_arr(time_est_median) $p1_arr(time_est_long) [list ] tcurve_source ]
@@ -2551,7 +2551,7 @@ ad_proc -public acc_fin::scenario_prettify {
             }
 
         } else {
-            acc_fin::pretti_log_create $scenario_tid "cost_dist_curve_tid" "value" "cost_dist_curve reference does not exist." $user_id $instance_id
+            acc_fin::pretti_log_create $scenario_tid "cost_dist_curve_tid" "#accounts-finance.value#" "cost_dist_curve #accounts-finance.unknown_reference#" $user_id $instance_id
         }
     }
     ns_log Notice "acc_fin::scenario_prettify.1422: scenario '$scenario_tid' cc_larr(x) '$cc_larr(x)' cc_larr(y) '$cc_larr(y)'"
@@ -2644,11 +2644,11 @@ ad_proc -public acc_fin::scenario_prettify {
                     }
                 } else {
                     set error_fail 1
-                    acc_fin::pretti_log_create $scenario_tid "p_load_tid" "operation" "error while loading type_table.(ref1390)" $user_id $instance_id
+                    acc_fin::pretti_log_create $scenario_tid "p_load_tid" "operation" "#accounts-finance.error# 'type_table'; #accounts-finance.table_load_error# (ref1390)" $user_id $instance_id
                 }
             }
         } else {
-            acc_fin::pretti_log_create $scenario_tid "task_types_tid" "value" "task_types_tid reference does not exist." $user_id $instance_id
+            acc_fin::pretti_log_create $scenario_tid "task_types_tid" "#accounts-finance.value#" "task_types_tid #accounts-finance.unknown_reference#" $user_id $instance_id
             set error_fail 1
         }
     }
@@ -2690,15 +2690,15 @@ ad_proc -public acc_fin::scenario_prettify {
                         set p2_larr(dependent_tasks) [acc_fin::list_filter factorlist $p2_larr(dependent_tasks) "p2" "dependent_tasks"]
                     } else {
                         set error_fail 1
-                        acc_fin::pretti_log_create $scenario_tid "activity_table_tid" "value" "error while loading activity_table.(ref1490)" $user_id $instance_id
+                        acc_fin::pretti_log_create $scenario_tid "activity_table_tid" "#accounts-finance.value#" "#accounts-finance.error# 'activity_table' #accounts-finance.table_load_error# (ref1490)" $user_id $instance_id
                     }
                 }
             } else {
-                acc_fin::pretti_log_create $scenario_tid "activity_table_tid" "value" "activity_table_tid reference does not exist, but is required.(ref1450)" $user_id $instance_id
+                acc_fin::pretti_log_create $scenario_tid "activity_table_tid" "#accounts-finance.value#" "activity_table_tid #accounts-finance.unknown_reference# #accounts-finance.reference_is_required# (ref1450)" $user_id $instance_id
                 set error_fail 1
             }
         } else {
-            acc_fin::pretti_log_create $scenario_tid "activity_table_tid" "value" "activity_table_tid reference does not exist, but is required.(ref1453)" $user_id $instance_id
+            acc_fin::pretti_log_create $scenario_tid "activity_table_tid" "#accounts-finance.value#" "activity_table_tid #accounts-finance.unknown_reference# #accounts-finance.reference_is_required# (ref1453)" $user_id $instance_id
             set error_fail 1
         }
     }    
@@ -2764,7 +2764,7 @@ ad_proc -public acc_fin::scenario_prettify {
                 if { $activity eq $base_activity } {
                     # activity is dependent on itself. Throw an error.
                     set error_fail 1
-                    acc_fin::pretti_log_create $scenario_tid $activity "value" "Activity '${activity}' includes a dependent with same reference as itself. (ref2188)" $user_id $instance_id
+                    acc_fin::pretti_log_create $scenario_tid $activity "#accounts-finance.value#" "Activity '${activity}'; #accounts-finance.dependent_circular_reference. (ref2188)" $user_id $instance_id
                 }
                 if { [lsearch -exact $activities_list $activity] == -1 } {
                     # A dependent activity doesn't exist..
@@ -2883,13 +2883,13 @@ ad_proc -public acc_fin::scenario_prettify {
                         } else {
                             # No activity defined for this factor (term with coefficient), flag an error --missing dependency.
                             lappend compute_message_list "Dependency '${term}' is undefined, referenced in: '${activity}'."
-                            acc_fin::pretti_log_create $scenario_tid "${term}" "value" "Dependency '${term}' referenced in '${activity}' is undefined.(ref1576)" $user_id $instance_id
+                            acc_fin::pretti_log_create $scenario_tid "${term}" "#accounts-finance.value#" "#accounts-finance.dependent# '${term}'; #accounts-finance.activity# '${activity}'; #accounts-finance.unknown_reference# (ref1576)" $user_id $instance_id
                             set error_fail 1
                         }
                     } else {
                         # No activity defined for this factor (term with coefficient), flag an error --missing dependency.
                         lappend compute_message_list "Dependency '${activity}' is an undefined activity."
-                        acc_fin::pretti_log_create $scenario_tid "${activity}" "value" "Dependency '${activity}' is an undefined activity. (ref1582)" $user_id $instance_id
+                        acc_fin::pretti_log_create $scenario_tid "${activity}" "#accounts-finance.value#" "#accounts-finanace.dependent# #accounts-finance.activity# '${activity}'; #accounts-finance.unknown_reference#  (ref1582)" $user_id $instance_id
                         set error_fail 1
                     }
                 }
@@ -2969,7 +2969,7 @@ ad_proc -public acc_fin::scenario_prettify {
                         set tn_arr($act) $time_expected
                     } else {
                         ns_log Warning "acc_fin::scenario_prettify.1763: scenario '$scenario_tid' act '$act' tref '${tref}' p2_larr(_tCurveRef) '$p2_larr(_tCurveRef)'"
-                        acc_fin::pretti_log_create $scenario_tid "${act}" "value" "Duration referenced in activity  '${act}' is undefined.(ref1763)" $user_id $instance_id
+                        acc_fin::pretti_log_create $scenario_tid "${act}" "#accounts-finance.value#" "#accounts-finance.activity# '${act}'; #accounts-finance.duration# #accounts-finance.unknown_reference# (ref1763)" $user_id $instance_id
                         set error_time 1
                     }
                     # the first paths are single activities, subsequently cost expected and path segment costs are same values
@@ -2982,7 +2982,7 @@ ad_proc -public acc_fin::scenario_prettify {
                         set cn_arr($act) $cost_expected
                     } else {
                         ns_log Warning "acc_fin::scenario_prettify.1773: scenario '$scenario_tid' act '$act' cref '${cref}' p2_larr(_cCurveRef) '$p2_larr(_cCurveRef)'"
-                        acc_fin::pretti_log_create $scenario_tid "${act}" "value" "Cost referenced in activity '${act}' is undefined.(ref1773)" $user_id $instance_id
+                        acc_fin::pretti_log_create $scenario_tid "${act}" "#accounts-finance.value#" "#accounts-finance.activity# '${act}'; #accounts-finance.cost# #accounts-finance.unknown_reference# (ref1773)" $user_id $instance_id
                         set error_cost 1
                     }
                     incr i
@@ -3218,7 +3218,7 @@ ad_proc -public acc_fin::scenario_prettify {
                         }
                         append hint "."
                         set error_fail 1
-                        acc_fin::pretti_log_create $scenario_tid "all_deps_met_p" "value" "All dependencies could not be met. Possible circular reference in dependencies.(ref2609) $hint" $user_id $instance_id
+                        acc_fin::pretti_log_create $scenario_tid "all_deps_met_p" "#accounts-finance.value#" "#accounts-finance.dependencies_not_met_error# (ref2609) #accounts-finance.hint# $hint" $user_id $instance_id
                         
                     }
 
@@ -3518,7 +3518,7 @@ ad_proc -public acc_fin::scenario_prettify {
                         } _error_text] } {
                             set error_fail 1
                             ns_log Warning "acc_fin::scenario_prettify.2646: scenario '$scenario_tid' act '$act' index_eq '${index_eq}'"
-                            acc_fin::pretti_log_create $scenario_tid "${act}" "calculation" "There was an error in calculation '${index_eq}' of custom equation for PRETTI index (ref2646). Error text is '${_error_text}'" $user_id $instance_id
+                            acc_fin::pretti_log_create $scenario_tid "${act}" "#accounts-finance.calculation#" "#accounts-finance.error# PRETTI '${index_eq}' (ref2646). #accounts-finance.hint# '${_error_text}'" $user_id $instance_id
                         }
                         
                         # paths_lists 5
