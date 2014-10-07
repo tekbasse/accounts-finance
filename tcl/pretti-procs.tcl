@@ -16,6 +16,23 @@ ad_library {
 
 namespace eval acc_fin {}
 
+ad_proc -public acc_fin::delete_b_from_a_list {
+    a_list
+    b_list
+} {
+    Returns a list after removing any elements in b_list that are also in a_list.
+} {
+    set c_list [list ]
+    foreach element $a_list {
+        set i [lsearch -exact $a_list $element ]
+        if { $i > -1 } {
+            # do nothing. faster to add than subtract
+        } else {
+            lappend c_list $element
+        }
+        return $c_list
+}
+
 ad_proc -private acc_fin::pretti_curve_time_multiply {
     factor_curve_lol
     tcurvenum 
@@ -2048,7 +2065,7 @@ ad_proc -private acc_fin::list_filter {
     {table_name ""}
     {list_name ""}
 } {
-    filters input as a list to meet basic word or reference requirements. type can be alphanum decimal natnum alphanumlist factorlist. If decimal or natural number (natnum) does not pass filter, value is replaced with blank. if list_name is specified and an input value doesn't pass, procedure logs an error and notifies user of count of filtered changes via pretti_log_create
+    filters input as a list to meet basic word or reference requirements. type can be alphanum decimal natnum alphanumlist factorlist. If decimal or natural number (natnum) does not pass filter, value is replaced with blank. if table_name and list_name is specified and an input value doesn't pass, procedure logs an error to the server and notifies user of count of filtered changes via pretti_log_create
 } {
     set type_errors_count 0
     switch -exact $type {
@@ -2578,6 +2595,14 @@ ad_proc -public acc_fin::scenario_prettify {
     #### also ta=time_actual and ca=cost_actual
     # set defaults
     set constants_list [acc_fin::pretti_columns_list p3]
+    set aux_col_names_unfiltered_list [parameter::get -parameter AuxiliaryColumnNames -package_id $instance_id]
+    set aux_col_names_list [acc_fin::list_filter alphanum $aux_col_names_unfiltered_list ]
+    #### create a proc acc_fin::delete_elements_from_a_list that subtracts elements in b from a:  acc_fin::delete_b_from_a_list $a_list $b_list
+    set aux_col_name_max_len [parameter::get -parameter AuxiliaryColumnNameMaxLength -package_id $instance_id]
+    #### where is a list of user's existing column names? it's handled in acc_fin::p_load_tid $constants_list $constants_required_list $p_larr_name ...
+    #### so move this code in there.. any array names for p_larr_name that are not reserved are auxiliary..
+
+
     foreach constant $constants_list {
         set p3_larr($constant) [list ]
     }
@@ -2675,6 +2700,7 @@ ad_proc -public acc_fin::scenario_prettify {
         foreach constant $constants_list {
             set p2_larr($constant) [list ]
         }
+
         if { $p1_arr(activity_table_tid) ne "" } {
             set table_stats_list [qss_table_stats $p1_arr(activity_table_tid) $instance_id $user_id]
             set trashed_p [lindex $table_stats_list 7]

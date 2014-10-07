@@ -24,6 +24,8 @@
         <parameters>
             <parameter scope="instance" datatype="string"  min_n_values="1"  max_n_values="1"  name="ScheduledProcsAllowed"  default="acc_fin::pie_file_create_from_table acc_fin::cobbler_file_create_from_table" description="A space delimited list of procs allowed to be scheduled in package instance" section_name="processes"/>
             <parameter scope="instance" datatype="number"  min_n_values="1"  max_n_values="1"  name="TableRowsMax"  default="0" description="Limits the maximum row size of any table. 0 is no limit." section_name="constraints"/>
+            <parameter scope="instance" datatype="string"  min_n_values="1"  max_n_values="1"  name="AuxiliaryColumnNames"  default="ghg ggwp co2e cde coal oil ng gt nuke hydro solar wind cement eru cers rec km airkm" description="A space delimited list of column names allowed for alternate resource costs or system inputs and outputs in PRETTI P2 and P3 tables.  Column 'name' and 'type' are reserved." section_name="auxiliary"/>
+            <parameter scope="instance" datatype="number"  min_n_values="1"  max_n_values="1"  name="AuxiliaryColumnsNameMaxLength"  default="4" description="Limits the maximum column name length of auxiliary resource cost calculations used in PRETTI P2 and P3 tables. 0 means no auxiliary columns calculated (except any declared in AuxiliaryColumnNames parameter. Column 'name' and 'type' are reserved." section_name="auxiliary"/>
         </parameters>
     </version>
 </package>
