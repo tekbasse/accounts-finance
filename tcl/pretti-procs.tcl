@@ -1168,7 +1168,7 @@ ad_proc -private acc_fin::pretti_columns_list {
             #      time_probability_moment A percentage (0..1) along the (cumulative) distribution curve. defaults to 0.5
             #      cost_probability_moment A percentage (0..1) along the (cumulative) distribution curve. defaults to "", which defaults to same as time_probability_moment
             #set ret_list \[list name value\]
-            set ret_list [list activity_table_tid activity_table_name task_types_tid task_types_name time_dist_curve_name time_dist_curve_tid cost_dist_curve_name cost_dist_curve_tid time_est_short time_est_median time_est_long time_probability_moment cost_est_low cost_est_median cost_est_high cost_probability_moment db_format index_equation precision tprecision cprecision pert_omp max_concurrent max_discount_pct max_run_time max_tasks_per_run max_overlap_pct ]
+            set ret_list [list activity_table_tid activity_table_name task_types_tid task_types_name time_dist_curve_name time_dist_curve_tid cost_dist_curve_name cost_dist_curve_tid time_est_short time_est_median time_est_long time_probability_moment cost_est_low cost_est_median cost_est_high cost_probability_moment db_format index_equation precision tprecision cprecision eprecision pert_omp max_concurrent max_discount_pct max_run_time max_tasks_per_run max_overlap_pct eco2_high eco2_low eco2_median eco2_dist_curve_tid eco2_dist_curve_name]
         }
         p11 {
             #set ret_list \[list name value\]
@@ -1214,7 +1214,9 @@ ad_proc -private acc_fin::pretti_columns_list {
             #      _coef                  integer coefficient for use with calculations that require remembering the coefficient when multiple of an activity is referenced.
             #      _tDcSource             source of time curve used from acc_fin::curve_import
             #      _cDcSource             source of cost curve used from acc_fin::curve_import
-            set ret_list [list activity_ref dependent_tasks aid_type name description max_concurrent max_discount_pct max_run_time max_tasks_per_run max_overlap_pct time_est_short time_est_median time_est_long time_dist_curve_tid time_dist_curve_name time_probability_moment cost_est_low cost_est_median cost_est_high cost_dist_curve_tid cost_dist_curve_name cost_probability_moment time_actual cost_actual]
+
+            # eco2_* uses cost_probability_moment
+            set ret_list [list activity_ref dependent_tasks aid_type name description max_concurrent max_discount_pct max_run_time max_tasks_per_run max_overlap_pct time_est_short time_est_median time_est_long time_dist_curve_tid time_dist_curve_name time_probability_moment cost_est_low cost_est_median cost_est_high cost_dist_curve_tid cost_dist_curve_name cost_probability_moment time_actual cost_actual eco2_actual eco2_low eco2_high eco2_median eco2_dist_curve_tid eco2_dist_curve_name]
 
         }
         p21 {
@@ -1240,7 +1242,7 @@ ad_proc -private acc_fin::pretti_columns_list {
             #      _tDcSource             source of time curve used from acc_fin::curve_import
             #      _cDcSource             source of cost curve used from acc_fin::curve_import
 
-            set ret_list [list type dependent_tasks dependent_types name description max_concurrent max_discount_pct max_run_time max_tasks_per_run max_overlap_pct time_dist_curve_name time_dist_curve_tid cost_dist_curve_name cost_dist_curve_tid time_est_short time_est_median time_est_long cost_est_low cost_est_median cost_est_high ]
+            set ret_list [list type dependent_tasks dependent_types name description max_concurrent max_discount_pct max_run_time max_tasks_per_run max_overlap_pct time_dist_curve_name time_dist_curve_tid cost_dist_curve_name cost_dist_curve_tid time_est_short time_est_median time_est_long cost_est_low cost_est_median cost_est_high eco2_low eco2_high eco2_median eco2_dist_curve_tid eco2_dist_curve_name]
         }
         p31 {
             set ret_list [list type]
@@ -1263,21 +1265,21 @@ ad_proc -private acc_fin::pretti_columns_list {
         p50 {
             # each row is a cell (ie activity on a path), in format of detailed PRETTI internal output. See code. 
             #set ret_list [list activity_ref path_act_counter path_counter dependencies_q cp_q significant_q popularity waypoint_duration activity_time direct_dependencies activity_cost waypoint_cost]
-            set ret_list [list activity_ref activity_counter dependencies_q direct_dependencies dependencies_count count_on_cp_p on_a_sig_path_p act_freq_in_load_cp_alts popularity activity_time waypoint_duration t_dc_source activity_cost waypoint_cost c_dc_source act_coef max_concurrent max_run_time max_tasks_per_run max_overlap_pct max_discount_pct max_path_duration]
+            set ret_list [list activity_ref activity_counter dependencies_q direct_dependencies dependencies_count count_on_cp_p on_a_sig_path_p act_freq_in_load_cp_alts popularity activity_time waypoint_duration t_dc_source activity_cost waypoint_cost c_dc_source activity_eco2 waypoint_eco2 e_dc_source act_coef max_concurrent max_run_time max_tasks_per_run max_overlap_pct max_discount_pct max_path_duration]
         }
         p51 {
             # each row is a cell (ie activity on a path), in format of detailed PRETTI internal output. See code. 
             # p5 was:
             #set ret_list [list activity_ref path_act_counter path_counter dependencies_q cp_q significant_q popularity waypoint_duration activity_time direct_dependencies activity_cost waypoint_cost path_col activity_seq dependents_count dep_act_seq ]
-            set ret_list [list activity_ref activity_counter dependencies_q direct_dependencies dependencies_count count_on_cp_p on_a_sig_path_p act_freq_in_load_cp_alts popularity activity_time waypoint_duration t_dc_source activity_cost waypoint_cost c_dc_source act_coef max_concurrent max_run_time max_tasks_per_run max_overlap_pct max_discount_pct max_path_duration]
+            set ret_list [list activity_ref activity_counter dependencies_q direct_dependencies dependencies_count count_on_cp_p on_a_sig_path_p act_freq_in_load_cp_alts popularity activity_time waypoint_duration t_dc_source activity_cost waypoint_cost c_dc_source activity_eco2 waypoint_eco2 e_dc_source act_coef max_concurrent max_run_time max_tasks_per_run max_overlap_pct max_discount_pct max_path_duration]
         }
         p60 {
             # each row is a path, in format of detailed PRETTI internal output. See code. All columns are required to reproduce output to p4 (including p4 comments).
-            set ret_list [list path_idx path path_counter cp_q significant_q path_duration path_cost index_custom]
+            set ret_list [list path_idx path path_counter cp_q significant_q path_duration path_cost path_eco2 index_custom]
         }
         p61 {
             # each row is a path, in format of detailed PRETTI internal output. See code. All columns are required to reproduce output to p4 (including p4 comments).
-            set ret_list [list path_idx path path_counter cp_q significant_q path_duration path_cost index_custom]
+            set ret_list [list path_idx path path_counter cp_q significant_q path_duration path_cost path_eco2 index_custom]
         }
 
         dc0 {
@@ -2701,7 +2703,7 @@ ad_proc -public acc_fin::scenario_prettify {
         #### Use lsearch -glob or -regexp to screen alt columns and create list for custom summary feature. [a-z][0-9]
         #### ..connected to cost_probability_moment.. so columns represent curve IDs..
         #### Use [lsearch -regexp {[a-z][0-9]s} -all -inline $x_list] to screen alt time columns and create list for a scheduling feature.
-        #### also ta,twa,tna for time_actual, tw..a etc.
+        #### also ta,twa,tna for time_actual, time_waypoint_actual time_node_actual etc.  
         # set defaults
         set constants_list [acc_fin::pretti_columns_list p2]
         foreach constant $constants_list {
@@ -2718,7 +2720,7 @@ ad_proc -public acc_fin::scenario_prettify {
                 ns_log Notice "acc_fin::scenario_prettify.1495: scenario '$scenario_tid' import activity_table_tid from '$p1_arr(activity_table_tid)'."
                 if { $error_fail == 0 } {
                     if { [acc_fin::p_load_tid $constants_list $constants_required_list p2_larr $p1_arr(activity_table_tid) p3_larr $instance_id $user_id] } {
-                        # aux_col_names_list is now complete. Set an error flag for each in aux_error_p_arr()
+                        #### aux_col_names_list is now complete. Set an error flag for each in aux_error_p_arr()
                         foreach nam $aux_col_names_list {
                             set aux_error_p_arr($nam) 0
                         }
