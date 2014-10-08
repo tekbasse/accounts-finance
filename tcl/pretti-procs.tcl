@@ -2420,11 +2420,13 @@ ad_proc -public acc_fin::scenario_prettify {
         set user_id [ad_conn user_id]
     }
     ## error_fail is set to 1 if there has been an error that prevents continued processing
-    ## error_cost is set to 1 if there has been an error that prevents continued processing of costing aspects
+    ## error_cost is set to 1 if there has been an error that prevents continued processing of cost aspects
     ## error_time is set to 1 if there has been an error that prevents continued processing of time aspects
+    ## error_eco2 is set to 1 if there has been an error that prevents continued processing of eco2 aspects
     set error_fail 0
     set error_cost 0
     set error_time 0
+    set error_eco2 0
     set index_eq ""
     # # # load scenario values -- requires scenario_tid
     
@@ -2478,6 +2480,13 @@ ad_proc -public acc_fin::scenario_prettify {
         set p1_arr(cost_dist_curve_tid) [qss_tid_from_name $p1_arr(cost_dist_curve_name) $instance_id $user_id ]
         if { $p1_arr(cost_dist_curve_tid) eq "" } {
             acc_fin::pretti_log_create $scenario_tid "cost_dist_curve_name" "#accounts-finance.value#" "cost_dist_curve_name #accounts-finance.unknown_reference#" $user_id $instance_id
+        }
+    }
+    if { $p1_arr(eco2_dist_curve_name) ne "" } {
+        # set dist_curve_tid
+        set p1_arr(eco2_dist_curve_tid) [qss_tid_from_name $p1_arr(eco2_dist_curve_name) $instance_id $user_id ]
+        if { $p1_arr(eco2_dist_curve_tid) eq "" } {
+            acc_fin::pretti_log_create $scenario_tid "eco2_dist_curve_name" "#accounts-finance.value#" "eco2_dist_curve_name #accounts-finance.unknown_reference#" $user_id $instance_id
         }
     }
     
@@ -2591,8 +2600,51 @@ ad_proc -public acc_fin::scenario_prettify {
     }
     ns_log Notice "acc_fin::scenario_prettify.1422: scenario '$scenario_tid' cc_larr(x) '$cc_larr(x)' cc_larr(y) '$cc_larr(y)'"
     set cc_lists [acc_fin::curve_import $cc_larr(x) $cc_larr(y) $cc_larr(label) [list ] $p1_arr(cost_est_low) $p1_arr(cost_est_median) $p1_arr(cost_est_high) [list ] ccurve_source ]
-    
-    # curves_larr ie *_c_larr has 2 versions: time as t_c_larr and cost as c_c_larr
+
+
+    # # # Make eco2_curve_data defaults
+    ns_log Notice "acc_fin::scenario_prettify.1401 :scenario '$scenario_tid' make eco2_curve_data defaults from p1."
+
+    set constants_list [acc_fin::pretti_columns_list dc]
+    foreach constant $constants_list {
+        set ec_larr($constant) [list ]
+    }
+    if { $p1_arr(eco2_dist_curve_tid) ne "" } {
+        set table_stats_list [qss_table_stats $p1_arr(eco2_dist_curve_tid) $instance_id $user_id]
+        set trashed_p [lindex $table_stats_list 7]
+        if { [llength $table_stats_list] > 1 && !$trashed_p } {
+            set constants_required_list [acc_fin::pretti_columns_list dc 1]
+            qss_tid_columns_to_array_of_lists $p1_arr(eco2_dist_curve_tid) ec_larr $constants_list $constants_required_list $instance_id $user_id
+            #ec_larr(x), ec_larr(y) and optionally ec_larr(label) where _larr refers to an array where each value is a list of column data by row 1..n
+            ns_log Notice "acc_fin::scenario_prettify.1404: scenario '$scenario_tid' ec_larr(x) '$ec_larr(x)' ec_larr(y) '$ec_larr(y)'"
+            # validate x and y values before importing
+            set type_errors_count 0
+            set type_errors_p 0
+            set column_ck_list [list x y]
+            foreach col $column_ck_list {
+                set filtered_list [acc_fin::list_filter decimal $ec_larr($col) "eco2_dist_curve_tid: $p1_arr(eco2_dist_curve_tid)" $col]
+                if { $filtered_list ne $ec_larr($col) } {
+                    set type_errors_p 1
+                }
+            }
+            if { $type_errors_p } {
+                # undo data expansion
+                set ec_larr(x) [list ]
+                set ec_larr(y) [list ]
+                if { [info exists ec_larr(label)] } {
+                    set ec_larr(label) [list ]
+                }
+            }
+
+        } else {
+            acc_fin::pretti_log_create $scenario_tid "eco2_dist_curve_tid" "#accounts-finance.value#" "eco2_dist_curve #accounts-finance.unknown_reference#" $user_id $instance_id
+        }
+    }
+    ns_log Notice "acc_fin::scenario_prettify.1422: scenario '$scenario_tid' ec_larr(x) '$ec_larr(x)' ec_larr(y) '$ec_larr(y)'"
+    set ec_lists [acc_fin::curve_import $ec_larr(x) $ec_larr(y) $ec_larr(label) [list ] $p1_arr(eco2_est_low) $p1_arr(eco2_est_median) $p1_arr(eco2_est_high) [list ] ecurve_source ]
+
+
+    # curves_larr ie *_c_larr has 3 versions: time as t_c_larr, cost as c_c_larr, eco2 as e_c_larr
     # index 0 is default
     set p1_arr(_tCurveRef) [acc_fin::larr_set time_clarr $tc_lists]
     set p1_arr(_tDcSource) $tcurve_source
@@ -2600,8 +2652,12 @@ ad_proc -public acc_fin::scenario_prettify {
     set p1_arr(_cCurveRef) [acc_fin::larr_set cost_clarr $cc_lists]
     set p1_arr(_cDcSource) $ccurve_source
     #    set cost_clarr(0) $cc_lists
+    set p1_arr(_eCurveRef) [acc_fin::larr_set eco2_clarr $ec_lists]
+    set p1_arr(_eDcSource) $ecurve_source
+    #    set eco2_clarr(0) $ec_lists
     ns_log Notice "acc_fin::scenario_prettify.1426: scenario '$scenario_tid' default t curve: time_clarr($p1_arr(_tCurveRef)) '$tc_lists'"
     ns_log Notice "acc_fin::scenario_prettify.1427: scenario '$scenario_tid' default c curve: cost_clarr($p1_arr(_cCurveRef)) '$cc_lists'"
+    ns_log Notice "acc_fin::scenario_prettify.1428: scenario '$scenario_tid' default e curve: eco2_clarr($p1_arr(_eCurveRef)) '$ec_lists'"
     
     # # # import task_types table p3
     ns_log Notice "acc_fin::scenario_prettify.1432: scenario '$scenario_tid' import task_types table p3, if any."
@@ -2628,7 +2684,7 @@ ad_proc -public acc_fin::scenario_prettify {
                     # validate decimal values before importing
                     set type_errors_count 0
                     set type_errors_p 0
-                    set column_maybe_ck_list [list max_concurrent max_discount_pct max_run_time max_tasks_per_run max_overlap_pct time_dist_curve_tid cost_dist_curve_tid time_est_short time_est_median time_est_long cost_est_low cost_est_median cost_est_high]
+                    set column_maybe_ck_list [list max_concurrent max_discount_pct max_run_time max_tasks_per_run max_overlap_pct time_dist_curve_tid cost_dist_curve_tid eco2_dist_curve_tid time_est_short time_est_median time_est_long cost_est_low cost_est_median cost_est_high eco2_est_low eco2_est_median eco2_est_high]
                     set column_ck_list [list ]
                     set titles_list [array names p3_larr]
                     # collect titles that are in p3_larr that should be checked
@@ -2900,6 +2956,7 @@ ad_proc -public acc_fin::scenario_prettify {
                                 ns_log Warning "acc_fin::scenario_prettify.1676: scenario '$scenario_tid' NO tcurvenum for '$curve_lol'"
                             }
 
+                            # cost
                             set ccurvenum [lindex $p2_larr(_cCurveRef) $term_idx]
                             if { [lindex $p2_larr(_cCurveRef) $term_idx] ne "" && $error_cost == 0 } {
 
@@ -2918,7 +2975,29 @@ ad_proc -public acc_fin::scenario_prettify {
                                 lappend p2_larr(_cDcSource) ""
                                 set act_ccref($activity) ""
                             }
-                            ns_log Notice "acc_fin::scenario_prettify.1700: scenario '$scenario_tid' term '$term' tcurvenum '$tcurvenum' ccurvenum '$ccurvenum'"
+
+                            # eco2
+                            set ecurvenum [lindex $p2_larr(_ecurveRef) $term_idx]
+                            if { [lindex $p2_larr(_ecurveRef) $term_idx] ne "" && $error_eco2 == 0 } {
+
+                                set curve_lol [acc_fin::pretti_curve_eco2_multiply "" $ecurvenum $coefficient $scenario_id $user_id $instance_id ]
+                                set act_maxd_arr(${activity}) $max_discount_pct
+
+                                # save new curve
+                                set ecurvenum [acc_fin::larr_set eco2_clarr $curve_lol]
+                                # save new reference
+                                lappend p2_larr(_ecurveRef) $ecurvenum
+                                set act_ccref($activity) [lindex $p2_larr(_ecurveRef) $i]
+                                lappend p2_larr(_eDcSource) 7
+                                ns_log Notice "acc_fin::scenario_prettify.1694: scenario '$scenario_tid' new c curve: eco2_clarr($ecurvenum) '$curve_lol'"
+                            } else {
+                                lappend p2_larr(_ecurveRef) ""
+                                lappend p2_larr(_eDcSource) ""
+                                set act_ccref($activity) ""
+                            }
+
+                            # time cost eco2
+                            ns_log Notice "acc_fin::scenario_prettify.1700: scenario '$scenario_tid' term '$term' tcurvenum '$tcurvenum' ccurvenum '$ccurvenum' ecurvenum '$ecurvenum'"
                         } else {
                             # No activity defined for this factor (term with coefficient), flag an error --missing dependency.
                             lappend compute_message_list "Dependency '${term}' is undefined, referenced in: '${activity}'."
@@ -2944,13 +3023,21 @@ ad_proc -public acc_fin::scenario_prettify {
         if { $p1_arr(cost_probability_moment) ne "" } {
             set c_moment_list [split $p1_arr(cost_probability_moment)]
             set c_moment_blank_p 0
-            ns_log Notice "acc_fin::scenario_prettify.1733: scenario '$scenario_tid' prepare p1 time '${t_moment_list}'and cost '${c_moment_list}' probability_moment loops."
+            ns_log Notice "acc_fin::scenario_prettify.1733: scenario '$scenario_tid' prepare p1 time '${t_moment_list}' and cost '${c_moment_list}' probability_moment loops."
         } else {
             set c_moment_blank_p 1
         }
-        ns_log Notice "acc_fin::scenario_prettify.1750: scenario '$scenario_tid' prepare p1 time '${t_moment_list}'and c_moment_blank_p ${c_moment_blank_p}."
+        if { $p1_arr(eco2_probability_moment) ne "" } {
+            set e_moment_list [split $p1_arr(eco2_probability_moment)]
+            set e_moment_blank_p 0
+            ns_log Notice "acc_fin::scenario_prettify.1743: scenario '$scenario_tid' prepare p1 time '${t_moment_list}' and eco2 '${e_moment_list}' probability_moment loops."
+        } else {
+            set e_moment_blank_p 1
+        }
+
+        ns_log Notice "acc_fin::scenario_prettify.1750: scenario '$scenario_tid' prepare p1 time '${t_moment_list}' c_moment_blank_p ${c_moment_blank_p} e_moment_blank_p ${e_moment_blank_p}."
         
-        
+
         # Be sure any new values are nullified between each loop
         set setup_end [clock seconds]
         set time_start [clock seconds]
@@ -2983,12 +3070,22 @@ ad_proc -public acc_fin::scenario_prettify {
                 foreach cCurve [array names cost_clarr] {
                     set c_est_arr($cCurve) [qaf_y_of_x_dist_curve $c_moment $cost_clarr($cCurve) ]
                 }
-                # Create activity time estimate and cost estimate arrays for repeated use in main loop
-                # These arrays vary in values by t_moment and c_moment
+
+            foreach e_moment $e_moment_list {
+                # Calculate base eco2s for eco2_probability_moment. These work for activities and task types.
+                array unset e_est_arr
+                foreach eCurve [array names eco2_clarr] {
+                    set e_est_arr($eCurve) [qaf_y_of_x_dist_curve $e_moment $eco2_clarr($eCurve) ]
+                }
+
+                # Create activity time, cost, and eco2 estimate arrays for repeated use in main loop
+                # These arrays vary in values by t_moment c_moment e_moment
                 set i 0
                 array unset act_time_expected_arr
                 array unset act_cost_expected_arr
+                array unset act_eco2_expected_arr
                 array unset cw_arr
+                array unset ew_arr
                 array unset depnc_eq_arr
                 
                 foreach act $activities_list {
@@ -3026,12 +3123,27 @@ ad_proc -public acc_fin::scenario_prettify {
                         set error_cost 1
                     }
 
+                    # the first paths are single activities, subsequently eco2 expected and path segment eco2s are same values
+                    set eref [lindex $p2_larr(_eCurveRef) $i]
+                    if { $cref ne "" } {
+                        set eco2_expected $e_est_arr($eref)
+                        ## act_eco2_expected_arr(act) is the eco2 expected to complete an activity
+                        set act_eco2_expected_arr($act) $eco2_expected
+                        ## en_arr(act) is the eco2 expected to complete an activity and its dependents
+                        set en_arr($act) $eco2_expected
+                    } else {
+                        ns_log Warning "acc_fin::scenario_prettify.1776: scenario '$scenario_tid' act '$act' eref '${eref}' p2_larr(_eCurveRef) '$p2_larr(_eCurveRef)'"
+                        acc_fin::pretti_log_create $scenario_tid "${act}" "#accounts-finance.value#" "#accounts-finance.activity# '${act}'; #accounts-finance.eco2# #accounts-finance.unknown_reference# (ref1776)" $user_id $instance_id
+                        set error_eco2 1
+                    }
+
                     ##### add aux_col_name calcs here that reflect cost ones.
                     ## ref i , create aux_act_cost_expected_arr(act),  aux_cn_arr(act) from lindex p2_larr(aux_col) i
 
                     incr i
                 }
-                
+            }
+
                 # handy api ref
                 # util_commify_number
                 # format "% 8.2f" $num
@@ -3039,7 +3151,7 @@ ad_proc -public acc_fin::scenario_prettify {
                 # PERTTI calculations
                 
                 # Build activity dependent map
-                ns_log Notice "acc_fin::scenario_prettify.1783: scenario '$scenario_tid' build activity dependents map and sequences for t_moment '${t_moment}' c_moment '${c_moment}'"
+                ns_log Notice "acc_fin::scenario_prettify.1783: scenario '$scenario_tid' build activity dependents map and sequences for t_moment '${t_moment}' c_moment '${c_moment}' e_moment '${e_moment}'"
                 #  activity map table:  depnc_larr($activity_ref) dependent_tasks_list
                 #  array of activity_ref sequence_num: act_seq_num_arr($activity_ref) sequence_number
                 
@@ -3058,6 +3170,8 @@ ad_proc -public acc_fin::scenario_prettify {
                         set t_dc_source_arr($act) [lindex $p2_larr(_tDcSource) $i ]
                         ## c_dc_source_arr(act) answers Q: what is source of cost distribution curve?
                         set c_dc_source_arr($act) [lindex $p2_larr(_cDcSource) $i ]
+                        ## e_dc_source_arr(act) answers Q: what is source of eco2 distribution curve?
+                        set e_dc_source_arr($act) [lindex $p2_larr(_eDcSource) $i ]
                         
                         # Filter out any blanks
                         set scratch_list [split $depnc ";, "]
@@ -3078,6 +3192,7 @@ ad_proc -public acc_fin::scenario_prettify {
                         set act_coef($act) [lindex $p2_larr(_coef) $i]
                         set act_tcref($act) [lindex $p2_larr(_tCurveRef) $i]
                         set act_ccref($act) [lindex $p2_larr(_cCurveRef) $i]
+                        set act_ecref($act) [lindex $p2_larr(_eCurveRef) $i]
                         incr i
                     }
                 }
@@ -3165,7 +3280,7 @@ ad_proc -public acc_fin::scenario_prettify {
                                 # add activity to the network for this sequence number
                                 lappend act_seq_list_arr(${act_seq_nbr}) $act
                                 incr act_count_of_seq_arr(${act_seq_nbr})
-                                
+
                                 # Calculations including dependents
                                 if { !$error_time } {
                                     # branches_duration_max is the min. path duration to complete dependent paths
@@ -3191,6 +3306,18 @@ ad_proc -public acc_fin::scenario_prettify {
                                     ##   cn_arr is cost of all dependent ptrack plus cost of activity
                                     set cn_arr($act) [expr { $paths_cost_sum + $act_cost_expected_arr($act) } ]
                                     ns_log Notice "acc_fin::scenario_prettify.2394: scenario '$scenario_tid' act $act cn_arr($act) $cn_arr($act)"
+                                }
+                                if { !$error_eco2 } {
+                                    set paths_eco2_sum 0.
+                                    foreach dep_act $dependencies_larr($act) {
+                                        #   paths_eco2_sum is sum of eco2s for each dependent ptrack
+                                        #was set paths_eco2_sum [expr { $paths_eco2_sum + $act_eco2_expected_arr(${dep_act}) } ]
+                                        ns_log Notice "acc_fin::scenario_prettify.2396: scenario '$scenario_tid' act $act en_arr($act) $en_arr($act) paths_eco2_sum $paths_eco2_sum + en_arr({$dep_act}) $en_arr(${dep_act})"
+                                        set paths_eco2_sum [expr { $paths_eco2_sum + $en_arr(${dep_act}) } ]
+                                    }
+                                    ##   en_arr is eco2 of all dependent ptrack plus eco2 of activity
+                                    set en_arr($act) [expr { $paths_eco2_sum + $act_eco2_expected_arr($act) } ]
+                                    ns_log Notice "acc_fin::scenario_prettify.2398: scenario '$scenario_tid' act $act en_arr($act) $en_arr($act)"
                                 }
                                 
                                 # subtrees_larr(activity) is an array of list of ptracks ending with trunk activity
@@ -3229,9 +3356,9 @@ ad_proc -public acc_fin::scenario_prettify {
                         incr i
                     }
                     # end while all_paths_calculated_p == 0
-                    
-                    # # # Curve calculations complete for t_moment and c_moment.
-                    ns_log Notice "acc_fin::scenario_prettify.2402: scenario '$scenario_tid' Curve calculations completed for t_moment and c_moment. "
+
+                    # # # Curve calculations complete for t_moment c_moment e_moment.
+                    ns_log Notice "acc_fin::scenario_prettify.2402: scenario '$scenario_tid' Curve calculations completed for t_moment c_moment e_moment. "
                     
                     
                     set all_deps_met_p 1
@@ -3358,8 +3485,33 @@ ad_proc -public acc_fin::scenario_prettify {
                                 ## path_len_w_coef_arr is total number of activities in a path (with coefficients)
                                 set path_len_w_coef_arr(${path_idx}) $path_len_w_coef
                                 lappend row_list $path_len_w_coef
+
+
                                 # adding empty list incase of index_custom later
+                                # paths_lists 5
                                 lappend row_list ""
+
+                                if { !$error_eco2 } {
+                                    # calculate eco2 for each path. 
+                                    set path_eco2 0.
+                                    set ptrack_list [list ]
+                                    # Since paths share activities, some eco2s are duplicative and so do not total these between paths
+                                    foreach pa $path_list {
+                                        lappend ptrack_list $pa
+                                        # subtotal
+                                        set path_eco2 [expr { $path_eco2 + $act_eco2_expected_arr($pa) } ]
+                                        set ew_arr(${path_idx},$pa) $path_eco2
+                                    }
+                                    # save this for later reporting
+                                    ###set en_arr($path_list) $path_eco2
+                                    #### duplicative. see above.
+                                } else {
+                                    set path_eco2 ""
+                                }
+                                # paths_lists 6
+                                set ew_arr(${path_idx}) $path_eco2
+                                lappend row_list $path_eco2
+
                                 lappend paths_lists $row_list
                                 incr path_idx
                             }
@@ -3368,7 +3520,7 @@ ad_proc -public acc_fin::scenario_prettify {
                     ## paths_count is the number of paths ie length of paths_list
                     set paths_count [expr { $path_idx - 1 } ]
                     ## paths_list: (list path_arr_idx duration cost length length_w_coefs )
-                    
+
                     if { !$error_time } {
                         # sort by path duration
                         # critical path is the longest path. Float is the difference between CP and next longest CP.
@@ -3383,6 +3535,14 @@ ad_proc -public acc_fin::scenario_prettify {
                         # critical path is the longest path. Float is the difference between CP and next longest CP.
                         # create an array of paths from longest to shortest duration to help build base table
                         set paths_sort1_lists [lsort -decreasing -real -index 2 $paths_lists]
+                        
+                    } elseif { !$error_eco2 } {
+                        
+                        # make something useful for eco2 biased table, critical_path is most eco2 related.. etc.
+                        # sort by path eco2
+                        # critical path is the longest path. Float is the difference between CP and next longest CP.
+                        # create an array of paths from longest to shortest duration to help build base table
+                        set paths_sort1_lists [lsort -decreasing -real -index 6 $paths_lists]
                         
                     } else {
                         
@@ -3440,7 +3600,7 @@ ad_proc -public acc_fin::scenario_prettify {
                     
                     ## act_count_median is median count of unique activities on a path
                     set act_count_median [lindex [lindex $activities_popular_sort_list $act_count_median_pos] 1]
-                    
+#eco2 added to here                    
                     # Critical Path (CP) is: 
                     set cp_row_list [lindex $paths_sort1_lists 0]
                     
