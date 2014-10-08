@@ -16,22 +16,7 @@ ad_library {
 
 namespace eval acc_fin {}
 
-ad_proc -public acc_fin::delete_b_from_a_list {
-    a_list
-    b_list
-} {
-    Returns a list after removing any elements in b_list that are also in a_list.
-} {
-    set c_list [list ]
-    foreach element $a_list {
-        set i [lsearch -exact $a_list $element ]
-        if { $i > -1 } {
-            # do nothing. faster to add than subtract
-        } else {
-            lappend c_list $element
-        }
-        return $c_list
-}
+## acs-tcl/tcl/set-operation-procs.tcl 
 
 ad_proc -private acc_fin::pretti_curve_time_multiply {
     factor_curve_lol
@@ -1651,6 +1636,8 @@ ad_proc -private acc_fin::p_load_tid {
     upvar 1 scenario_tid scenario_tid
     # need to pass p1_arr defaults for p2 dc processing
     upvar 1 p1_arr p1_arr
+    # to pass and share auxiliary variables:
+    upvar 1 aux_col_names_list aux_col_names_list
     # following are not upvar'd because the cache is mainly useless after proc ends
     #    upvar 1 tc_cache_larr tc_cache_larr
     #    upvar 1 cc_cache_larr cc_cache_larr
@@ -1681,6 +1668,35 @@ ad_proc -private acc_fin::p_load_tid {
 
     # load table into array of lists {{a b c} {1 2 3} {4 5 6}} becomes p_larr(a) {1 4}, p_larr(b) {2 5}, p_larr(c) {3 6}
     qss_tid_columns_to_array_of_lists $tid p_larr $constants_list $constants_required_list $instance_id $user_id
+    #### setup auxiliary calculation columns
+    ## p_larr_k_w_data_list   p_larr names having data.
+    set p_larr_names_unfiltered_list [list ]
+    foreach col [array names p_larr] {
+        if { [llength $p_larr(${col}) > 0 ] } {
+            lappend p_larr_names_unfiltered_list $col
+        }
+    }
+    set p_larr_names_list [acc_fin::list_filter alphanum $p_larr_names_unfiltered_list ]
+    set names_wo_reserved_list [set_difference $p_larr_names_list $constants_list ]
+    # Are any names in names_wo_reserved_list auxiliary names?
+    set aux_col_names_allowed_unfiltered_list [parameter::get -parameter AuxiliaryColumnNames -package_id $instance_id ]
+    set aux_col_names_allowed_list [acc_fin::list_filter alphanum $aux_col_names_unfiltered_list ]
+    set my_aux_col_names_list [set_intersection $aux_col_names_allowed_list $names_wo_reserved_list ]
+    set remainder_names_list [set_difference $names_wo_reserved_list $my_aux_col_names_list ]
+    set aux_col_name_max_len [parameter::get -parameter AuxiliaryColumnNameMaxLength -package_id $instance_id ]
+    # Add any remaining names qualified by AuxiliaryColumnNameMaxLength
+    if { $aux_col_name_max_len > 0 } {
+        foreach name $remainder_names_list {
+            set name_len [llength $name]
+            if { $name_len <= $aux_col_name_max_len && $name_len > 0 } {
+                lappend $my_aux_col_names_list $name
+            }
+        }
+    }
+    set aux_col_names_list [set_union $aux_col_names_list $my_aux_col_names_list]
+    ## aux_col_names_list   is the list of auxiliary column names in p_larr to perform auxiliary calculations identical to cost
+
+    ####
     set i_max -1
     set p2_types_exist_p 0
     set p2_type_column_exists_p 0
@@ -2588,24 +2604,15 @@ ad_proc -public acc_fin::scenario_prettify {
     # # # import task_types table p3
     ns_log Notice "acc_fin::scenario_prettify.1432: scenario '$scenario_tid' import task_types table p3, if any."
 
-
-    #### Use [lsearch -regexp {[a-z][0-9]+} -all -inline $x_list] to screen alt debit/credit/"cost/revenue" columns and create list for custom summary feature.
-    #### Use [lsearch -regexp {[a-z][0-9]+s} -all -inline $x_list] to screen alt time columns and create list for a scheduling feature
-    #### with parameters defined in scenario or as a separate compilation of pretti output
-    #### also ta=time_actual and ca=cost_actual
     # set defaults
     set constants_list [acc_fin::pretti_columns_list p3]
-    set aux_col_names_unfiltered_list [parameter::get -parameter AuxiliaryColumnNames -package_id $instance_id]
-    set aux_col_names_list [acc_fin::list_filter alphanum $aux_col_names_unfiltered_list ]
-    #### create a proc acc_fin::delete_elements_from_a_list that subtracts elements in b from a:  acc_fin::delete_b_from_a_list $a_list $b_list
-    set aux_col_name_max_len [parameter::get -parameter AuxiliaryColumnNameMaxLength -package_id $instance_id]
-    #### where is a list of user's existing column names? it's handled in acc_fin::p_load_tid $constants_list $constants_required_list $p_larr_name ...
-    #### so move this code in there.. any array names for p_larr_name that are not reserved are auxiliary..
-
-
     foreach constant $constants_list {
         set p3_larr($constant) [list ]
     }
+    # declare auxiliary variables list
+    ## aux_col_names_list   is the list of auxiliary column names in p2_larr to perform auxiliary calculations identical to cost
+    set aux_col_names_list [list ]
+
     if { $p1_arr(task_types_tid) ne "" } {
         set table_stats_list [qss_table_stats $p1_arr(task_types_tid) $instance_id $user_id]
         set trashed_p [lindex $table_stats_list 7]
@@ -2711,6 +2718,10 @@ ad_proc -public acc_fin::scenario_prettify {
                 ns_log Notice "acc_fin::scenario_prettify.1495: scenario '$scenario_tid' import activity_table_tid from '$p1_arr(activity_table_tid)'."
                 if { $error_fail == 0 } {
                     if { [acc_fin::p_load_tid $constants_list $constants_required_list p2_larr $p1_arr(activity_table_tid) p3_larr $instance_id $user_id] } {
+                        # aux_col_names_list is now complete. Set an error flag for each in aux_error_p_arr()
+                        foreach nam $aux_col_names_list {
+                            set aux_error_p_arr($nam) 0
+                        }
                         # filter user input
                         set p2_larr(activity_ref) [acc_fin::list_filter alphanum $p2_larr(activity_ref) "p2" "activity_ref"]
                         set p2_larr(dependent_tasks) [acc_fin::list_filter factorlist $p2_larr(dependent_tasks) "p2" "dependent_tasks"]
@@ -2998,6 +3009,7 @@ ad_proc -public acc_fin::scenario_prettify {
                         acc_fin::pretti_log_create $scenario_tid "${act}" "#accounts-finance.value#" "#accounts-finance.activity# '${act}'; #accounts-finance.duration# #accounts-finance.unknown_reference# (ref1763)" $user_id $instance_id
                         set error_time 1
                     }
+
                     # the first paths are single activities, subsequently cost expected and path segment costs are same values
                     set cref [lindex $p2_larr(_cCurveRef) $i]
                     if { $cref ne "" } {
@@ -3011,6 +3023,10 @@ ad_proc -public acc_fin::scenario_prettify {
                         acc_fin::pretti_log_create $scenario_tid "${act}" "#accounts-finance.value#" "#accounts-finance.activity# '${act}'; #accounts-finance.cost# #accounts-finance.unknown_reference# (ref1773)" $user_id $instance_id
                         set error_cost 1
                     }
+
+                    ##### add aux_col_name calcs here that reflect cost ones.
+                    ## ref i , create aux_act_cost_expected_arr(act),  aux_cn_arr(act) from lindex p2_larr(aux_col) i
+
                     incr i
                 }
                 
