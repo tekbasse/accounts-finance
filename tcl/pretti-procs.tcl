@@ -3600,7 +3600,7 @@ ad_proc -public acc_fin::scenario_prettify {
                     
                     ## act_count_median is median count of unique activities on a path
                     set act_count_median [lindex [lindex $activities_popular_sort_list $act_count_median_pos] 1]
-#eco2 added to here                    
+
                     # Critical Path (CP) is: 
                     set cp_row_list [lindex $paths_sort1_lists 0]
                     
@@ -3609,6 +3609,7 @@ ad_proc -public acc_fin::scenario_prettify {
                     set cp_list $paths_arr(${cp_path_idx})
                     set cp_duration [lindex $cp_row_list 1]
                     set cp_cost [lindex $cp_row_list 2]
+                    set cp_eco2 [lindex $cp_row_list 6]
                     set cp_len [lindex $cp_row_list 3]
                     
                     foreach act $activities_list {
@@ -3674,6 +3675,10 @@ ad_proc -public acc_fin::scenario_prettify {
                         if { !$error_cost } {
                             set cost_ratio_arr(${path_idx}) [expr { $cw_arr(${path_idx}) / ( $cp_cost + 0. ) } ]
                         }
+                        if { !$error_eco2 } {
+                            set eco2_ratio_arr(${path_idx}) [expr { $ew_arr(${path_idx}) / ( $cp_eco2 + 0. ) } ]
+                        }
+
                         set path_counter_arr(${path_idx}) $path_counter
                         incr path_counter
                     }
@@ -3715,6 +3720,9 @@ ad_proc -public acc_fin::scenario_prettify {
                         if { !$error_cost } {
                             set cost_ratio $cw_arr(${path_idx})
                         }
+                        if { !$error_eco2 } {
+                            set eco2_ratio $ew_arr(${path_idx})
+                        }
                         set on_critical_path_p [expr { $path_counter_arr(${path_idx}) == 0 } ]
                         set index_custom ""
                         if { [catch {
@@ -3753,7 +3761,8 @@ ad_proc -public acc_fin::scenario_prettify {
                     ## activity_count                    is length activities_list
                     ## paths_count                   is the number of paths ie length of paths_list
                     ## error_fail                        is set to 1 if there has been an error that prevents continued processing
-                    ## error_cost                        is set to 1 if there has been an error that prevents continued processing of costing aspects
+                    ## error_cost                        is set to 1 if there has been an error that prevents continued processing of cost aspects
+                    ## error_eco2                        is set to 1 if there has been an error that prevents continued processing of eco2 aspects
                     ## error_time                        is set to 1 if there has been an error that prevents continued processing of time aspects
                     ## paths_sort1_lists                 is paths_list sorted by index used to calc CP
                     
@@ -3779,13 +3788,16 @@ ad_proc -public acc_fin::scenario_prettify {
                     ## t_dc_source_arr(act)              answers Q: what is source of time distribution curve?
                     ## act_cost_expected_arr(act)        is the cost expected to complete an activity
                     ## cw_arr(path_idx,act)               is cost of all dependent ptrack plus cost of activity
+                    ## ew_arr(path_idx,act)               is eco2 of all dependent ptrack plus eco2 of activity
                     ## c_dc_source_arr(act)              answers Q: what is source of cost distribution curve?
+                    ## e_dc_source_arr(act)              answers Q: what is source of eco2 distribution curve?
                     ## act_coef(act)                     is the coefficient of an activity. If activity is defined as a multiple of another activity, it is an integer greater than 1 otherwise 1.
                     ## popularity_arr(act)                   is the count of paths that an activity is in.
                     
                     ## path_tree_p_arr(act)              answers question: is this tree of ptracks complete (ie not a subset of another track or tree)?
                     ## tn_arr(activity) is the time expected to complete an activity and its dependents
                     ## cn_arr(activity)      is the cost expected to complete an activity and its dependents
+                    ## en_arr(activity)      is the eco2 expected to complete an activity and its dependents
 
                     
                     # other
@@ -3800,9 +3812,11 @@ ad_proc -public acc_fin::scenario_prettify {
                     # p5 are activities, and p6 are paths. a path key is shared between p5 and p6 tables
                     set p5_lists [list ]
                     set p5_titles_list [acc_fin::pretti_columns_list p5 1]
+                    # Theoretically, the following 4 lines are no longer needed, because ?_dc_source is now part of p5 table definition. Leave in until confirmed that p5 audit works.
                     # *_dc_ref references cache reference
-                    lappend p5_titles_list "t_dc"
-                    lappend p5_titles_list "c_dc"
+                    # lappend p5_titles_list "t_dc"
+                    # lappend p5_titles_list "c_dc"
+                    # lappend p5_titles_list "e_dc"
                     lappend p5_lists $p5_titles_list
                     set activity_counter 0
                     foreach act $activities_list {
@@ -3849,11 +3863,10 @@ ad_proc -public acc_fin::scenario_prettify {
                             ns_log Warning "acc_fin::scenario_prettify.3643: max_path_duration '0' for ${act}. This should not happen. Investigate. path_duration_arr '[array get path_duration_arr]' "
                         }
                         # base for p5
-                        # Note that last two columns are appended ie not part of official p5 definition in acc_fin::pretti_columns_list
-                        set activity_list [list $act $activity_counter $has_direct_dependency_p [join $dependencies_larr($act) " "] [llength $dependencies_larr($act)] $on_critical_path_p_arr($act) $on_a_sig_path_p $act_freq_in_load_cp_alts_arr($act) $popularity_arr($act) $act_time_expected_arr($act) $tn_arr($act) $t_dc_source_arr($act) $act_cost_expected_arr($act) $cn_arr($act) $c_dc_source_arr($act) $act_coef($act) $act_maxcc $act_maxrt $act_maxtpr $act_maxol $act_maxd $max_path_duration $act_tcref($act) $act_ccref($act) ]
+                        set activity_list [list $act $activity_counter $has_direct_dependency_p [join $dependencies_larr($act) " "] [llength $dependencies_larr($act)] $on_critical_path_p_arr($act) $on_a_sig_path_p $act_freq_in_load_cp_alts_arr($act) $popularity_arr($act) $act_time_expected_arr($act) $tn_arr($act) $t_dc_source_arr($act) $act_cost_expected_arr($act) $cn_arr($act) $c_dc_source_arr($act) $act_eco2_expected_arr($act) $en_arr($act) $e_dc_source_arr($act) $act_coef($act) $act_maxcc $act_maxrt $act_maxtpr $act_maxol $act_maxd $max_path_duration $act_tcref($act) $act_ccref($act) ]
                         lappend p5_lists $activity_list
                     }
-                    
+#eco2 added to here                                        
                     set p6_lists [list ]
                     set p6_titles_list [acc_fin::pretti_columns_list p6 1]
                     lappend p6_titles_list "path_len"
