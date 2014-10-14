@@ -1275,11 +1275,11 @@ ad_proc -private acc_fin::pretti_columns_list {
         }
         p60 {
             # each row is a path, in format of detailed PRETTI internal output. See code. All columns are required to reproduce output to p4 (including p4 comments).
-            set ret_list [list path_idx path path_counter cp_q significant_q path_duration path_cost path_eco2 index_custom]
+            set ret_list [list path_idx path path_counter cp_q significant_q path_duration path_cost index_custom path_eco2 path_len path_len_w_coefs]
         }
         p61 {
             # each row is a path, in format of detailed PRETTI internal output. See code. All columns are required to reproduce output to p4 (including p4 comments).
-            set ret_list [list path_idx path path_counter cp_q significant_q path_duration path_cost path_eco2 index_custom]
+            set ret_list [list path_idx path path_counter cp_q significant_q path_duration path_cost index_custom path_eco2 path_len path_len_w_coefs]
         }
 
         dc0 {
@@ -3866,11 +3866,12 @@ ad_proc -public acc_fin::scenario_prettify {
                         set activity_list [list $act $activity_counter $has_direct_dependency_p [join $dependencies_larr($act) " "] [llength $dependencies_larr($act)] $on_critical_path_p_arr($act) $on_a_sig_path_p $act_freq_in_load_cp_alts_arr($act) $popularity_arr($act) $act_time_expected_arr($act) $tn_arr($act) $t_dc_source_arr($act) $act_cost_expected_arr($act) $cn_arr($act) $c_dc_source_arr($act) $act_eco2_expected_arr($act) $en_arr($act) $e_dc_source_arr($act) $act_coef($act) $act_maxcc $act_maxrt $act_maxtpr $act_maxol $act_maxd $max_path_duration $act_tcref($act) $act_ccref($act) ]
                         lappend p5_lists $activity_list
                     }
-#eco2 added to here                                        
+
                     set p6_lists [list ]
                     set p6_titles_list [acc_fin::pretti_columns_list p6 1]
-                    lappend p6_titles_list "path_len"
-                    lappend p6_titles_list "path_len_w_coefs"
+                    # following added to acc_fin::pretti_columns_list p6 so no need to add here:
+                    #lappend p6_titles_list "path_len"
+                    #lappend p6_titles_list "path_len_w_coefs"
                     lappend p6_lists $p6_titles_list
                     
                     foreach path_idx_dur_cost_len_list $paths_sort1_lists {
@@ -3885,12 +3886,13 @@ ad_proc -public acc_fin::scenario_prettify {
                         set path_len [lindex $path_idx_dur_cost_len_list 3]
                         set path_len_w_coefs [lindex $path_idx_dur_cost_len_list 4]
                         set index_custom [lindex $path_idx_dur_cost_len_list 5]
+                        set path_eco2 [lindex $path_idx_dur_cost_len_list 6]
                         set activity_counter 0
                         set act_count_on_cp 0
                         # base for p6
-                        #            set ret_list [list path_idx path path_counter cp_q significant_q path_duration path_cost index_custom]
+                        #            set ret_list [list path_idx path path_counter cp_q significant_q path_duration path_cost index_custom path_len  path_len_w_coefs]
                         set cp_q [expr { $path_counter == 0 } ]
-                        set path_list [list $path_idx [join $path_list "."] $path_counter $cp_q $a_sig_path_p $path_duration $path_cost $index_custom $path_len $path_len_w_coefs ]
+                        set path_list [list $path_idx [join $path_list "."] $path_counter $cp_q $a_sig_path_p $path_duration $path_cost $index_custom $path_eco2 $path_len $path_len_w_coefs ]
                         lappend p6_lists $path_list
                     }                
                     
@@ -3911,9 +3913,19 @@ ad_proc -public acc_fin::scenario_prettify {
                             lappend c_moment_len_list [string length $moment]
                         }
                         set c_moment_format "%1.f"
-                        append c_moment_format [expr { [f::lmax $t_moment_len_list] - 2 } ]
+                        append c_moment_format [expr { [f::lmax $c_moment_len_list] - 2 } ]
                         lappend " c=[format ${c_moment_format} ${c_moment}]"
                     }
+                    if { [llength $e_moment_list ] > 1 } {
+                        set e_moment_len_list [list ]
+                        foreach moment $e_moment_list {
+                            lappend e_moment_len_list [string length $moment]
+                        }
+                        set e_moment_format "%1.f"
+                        append e_moment_format [expr { [f::lmax $e_moment_len_list] - 2 } ]
+                        lappend " e=[format ${e_moment_format} ${e_moment}]"
+                    }
+
                     set scenario_title [lindex $scenario_stats_list 1]
                     
                     set time_end [clock seconds]
@@ -3949,7 +3961,12 @@ ad_proc -public acc_fin::scenario_prettify {
                     } else {
                         set cprecision $precision
                     }
-                    append comments "precision $precision , tprecision $tprecision , cprecision $cprecision , "
+                    if { [qf_is_decimal $p1_arr(eprecision) ] } {
+                        set eprecision $p1_arr(eprecision)
+                    } else {
+                        set eprecision $precision
+                    }
+                    append comments "precision $precision , tprecision $tprecision , cprecision $cprecision , eprecision $eprecision , "
                     # # # build p4
                     
                     # save as a new table of type p4
@@ -4003,6 +4020,7 @@ ad_proc -public acc_fin::scenario_prettify {
                         set path_len [lindex $path_idx_dur_cost_len_list 3]
                         set path_len_w_coefs [lindex $path_idx_dur_cost_len_list 4]
                         set index_custom [lindex $path_idx_dur_cost_len_list 5]
+                        set path_eco2 [lindex $path_idx_dur_cost_len_list 6]
 
                         set path_name "path_${path_num}"
                         lappend title_row_list $path_name
@@ -4077,6 +4095,36 @@ ad_proc -public acc_fin::scenario_prettify {
                                         append cell [qaf_round_to_precision $cn_arr($activity) $cprecision ]
                                     }
                                 }
+                                # eco2 part start
+                                append cell " <br> "
+                                append cell "&nbsp;e:"
+                                if { $act_eco2_expected_arr($activity) ne "" } {
+                                    if { $eprecision eq "" } {
+                                        append cell $act_eco2_expected_arr($activity)
+                                    } else {
+                                        append cell [qaf_round_to_precision $act_eco2_expected_arr($activity) $eprecision ]
+                                    }
+                                }
+                                append cell " <br> "
+                                append cell "ew:"
+                                if { $ew_arr(${path_idx},$activity) ne "" } {
+                                    if { $eprecision eq "" } {
+                                        append cell $ew_arr(${path_idx},$activity)
+                                    } else {
+                                        append cell [qaf_round_to_precision $ew_arr(${path_idx},$activity) $eprecision ]
+                                    }
+                                }
+                                append cell " <br> "
+                                append cell "en:"
+                                if { $en_arr($activity) ne "" } {
+                                    if { $eprecision eq "" } {
+                                        append cell $en_arr($activity)
+                                    } else {
+                                        append cell [qaf_round_to_precision $en_arr($activity) $eprecision ]
+                                    }
+                                }
+                                # eco2 part end
+
                                 append cell " <br> "
                                 append cell "d:("
                                 append cell [join $dependencies_larr(${activity}) " "]
@@ -4107,8 +4155,13 @@ ad_proc -public acc_fin::scenario_prettify {
                     }
                     if { $c_moment ne "" } {
                         append sname "c${c_moment}"
-                        append stitle " c=${t_moment}"
+                        append stitle " c=${c_moment}"
                     }
+                    if { $e_moment ne "" } {
+                        append sname "e${e_moment}"
+                        append stitle " e=${e_moment}"
+                    }
+
                     qss_table_create $p4_lists $sname $stitle $comments "" p4 $instance_id $user_id
                     # Comments data will be interpreted for determining standard deviation for determining cell highlighting
                 }
