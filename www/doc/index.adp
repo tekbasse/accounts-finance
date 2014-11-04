@@ -57,7 +57,7 @@ A local copy is available at accounts-finance/www/doc/<a href="LICENSE.html">LIC
 
 <h3>Package Features</h3>
 <ul><li>
-Project Reporting Evaluation and Track Task Interprettation (PRETTI) charts.
+Project Reporting Evaluation and Track Task Interpretation (PRETTI) charts.
 </li></ul>
 <p>
 Example apps on how to use the code are linked from the www directory of this package.

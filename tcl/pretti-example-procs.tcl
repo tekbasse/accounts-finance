@@ -24,7 +24,7 @@ ad_proc -private acc_fin::example_table {
     switch -exact $table_ref {
         p10a {
             # goes with p20a
-            set ret_list [list [list name value] [list activity_table_name "PRETTI Example 1"] [list time_est_short 5 ] [list time_est_median 8] [list time_est_long 12] [list time_probability_moment 0.5]]
+            set ret_list [list [list name value] [list activity_table_name "PRETTI Example 1"] [list time_est_short 5 ] [list time_est_median 8] [list time_est_long 12] [list time_probability_point 0.5]]
         }
         p10b {
             # goes with p20b
@@ -567,8 +567,8 @@ RI,US,23" ]
             #      cost_dist_curv_eq  Use this distribution curve equation. 
             #
             #      RESERVED columns:
-            #      _tCurveRef             integer reference to time curve in time_clarr and   time duration estimate at time_probability_moment in t_est_arr
-            #      _cCurveRef             integer reference to cost curve in cost_clarr and   cost duration estimate at cost_probability_moment in c_est_arr
+            #      _tCurveRef             integer reference to time curve in time_clarr and   time duration estimate at time_probability_point in t_est_arr
+            #      _cCurveRef             integer reference to cost curve in cost_clarr and   cost duration estimate at cost_probability_point in c_est_arr
             set ret_list acc_fin::pretti_columns_list p2 0
             
         }
@@ -588,8 +588,8 @@ RI,US,23" ]
             #      max_overlap_pct021  (as a percentage from 0 to 1, blank = 1)
             #
             #      RESERVED columns:
-            #      _tCurveRef             integer reference to time curve in time_clarr and   time duration estimate at time_probability_moment in t_est_arr
-            #      _cCurveRef             integer reference to cost curve in cost_clarr and   cost duration estimate at cost_probability_moment in c_est_arr
+            #      _tCurveRef             integer reference to time curve in time_clarr and   time duration estimate at time_probability_point in t_est_arr
+            #      _cCurveRef             integer reference to cost curve in cost_clarr and   cost duration estimate at cost_probability_point in c_est_arr
             set ret_list acc_fin::pretti_columns_list p3 0
         }
         p31 {
@@ -644,7 +644,7 @@ RI,US,23" ]
             # A three point (short/median/long or low/median/high) estimation curve can be respresented as
             # a discrete set of six points:  minimum median median median median maximum 
             # of standard bell curve probabilities (outliers + standard deviation).
-            # Thereby allowing *_probability_moment variable to be used in estimates with lower statistical resolution.
+            # Thereby allowing *_probability_point variable to be used in estimates with lower statistical resolution.
             set ret_list acc_fin::pretti_columns_list dc 0
         }
         dc1 {
@@ -1084,8 +1084,8 @@ ad_proc -private acc_fin::pretti_example_maker {
                         set delim " "
                     }
                 }
-                cost_probability_moment -
-                time_probability_moment {
+                cost_probability_point -
+                time_probability_point {
                     set row_arr($title) ""
                 }
                 default {
@@ -1123,9 +1123,9 @@ ad_proc -private acc_fin::pretti_example_maker {
     # time_dist_curve_name time_dist_curve_tid 
     # cost_dist_curve_name cost_dist_curve_tid 
     # time_est_short time_est_median time_est_long 
-    # time_probability_moment 
+    # time_probability_point 
     # cost_est_low cost_est_median cost_est_high 
-    # cost_probability_moment 
+    # cost_probability_point 
     # db_format (1 or 0) saves p5 report table if db_format ne ""
    
     set p1_larr [list ]
@@ -1134,7 +1134,7 @@ ad_proc -private acc_fin::pretti_example_maker {
     set title_list [list name value]
     lappend p1_larr $title_list
         # p1: activity_table_tid 
-        # activity_table_name task_types_tid task_types_name time_dist_curve_name time_dist_curve_tid cost_dist_curve_name cost_dist_curve_tid time_est_short time_est_median time_est_long time_probability_moment cost_est_low cost_est_median cost_est_high cost_probability_moment db_format
+        # activity_table_name task_types_tid task_types_name time_dist_curve_name time_dist_curve_tid cost_dist_curve_name cost_dist_curve_tid time_est_short time_est_median time_est_long time_probability_point cost_est_low cost_est_median cost_est_high cost_probability_point db_format
     set vals_list $p11_list
     set vals_diff [expr { $param_arr(p1_vals) -  [llength $p11_list] } ]
     if { $vals_diff > 0 } {
@@ -1155,8 +1155,8 @@ ad_proc -private acc_fin::pretti_example_maker {
         # time_dist_curve_name time_dist_curve_tid 
         # cost_dist_curve_name cost_dist_curve_tid 
         # db_format
-        # cost_probability_moment
-        # time_probability_moment
+        # cost_probability_point
+        # time_probability_point
 
         # why not these: ?? max_concurrent max_overlap_pct
         # currently defaults are unlimited and 100% overlapp
@@ -1249,8 +1249,8 @@ ad_proc -private acc_fin::pretti_example_maker {
                 set row_arr($title) [expr { int( [random] * 12 ) } ]
             }
             max_overlap_pct         -
-            cost_probability_moment -
-            time_probability_moment {
+            cost_probability_point -
+            time_probability_point {
                 # round off to nearest percent ( 0.01 )
                 set row_arr($title) [expr { int( [random] * 100. ) / 100. } ]
             }

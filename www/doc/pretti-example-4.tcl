@@ -45,7 +45,7 @@ set p4_html { <pre>name: fedoraDocScenario.p4t0.5c0.5
 
 
   <p>
-    Scenario report for Fedora Docs Scenario: scenario_name fedoraDocScenario , cp_duration_at_pm 7.0 , cp_cost_pm 7.0 , max_act_count_per_track 7 , time_probability_moment 0.5 , cost_probability_moment 0.5 , setup_time 0 , main_processing_time 0 seconds , time/date finished processing 2014 Sep 28 00:20:48 , _tDcSource 6 , _cDcSource 6 , precision  , tprecision  , cprecision  , color_mask_sig_idx 3 , color_mask_oth_idx 5 , colorswap_p 0
+    Scenario report for Fedora Docs Scenario: scenario_name fedoraDocScenario , cp_duration_at_pm 7.0 , cp_cost_pm 7.0 , max_act_count_per_track 7 , time_probability_point 0.5 , cost_probability_point 0.5 , setup_time 0 , main_processing_time 0 seconds , time/date finished processing 2014 Sep 28 00:20:48 , _tDcSource 6 , _cDcSource 6 , precision  , tprecision  , cprecision  , color_mask_sig_idx 3 , color_mask_oth_idx 5 , colorswap_p 0
   </p>
 
   

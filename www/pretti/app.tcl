@@ -1,5 +1,4 @@
-# generic header for static .adp pages
-
+# accounts-finance/www/pretti/app.tcl
 
 set instance_id [ad_conn package_id]
 set user_id [ad_conn user_id]
@@ -24,6 +23,14 @@ if { $read_p } {
     set admin_p 0
     set delete_p 0
 }
+
+set debug_p 0
+# set debug_p to 1 to bypass scheduling and possibly add extra error logging for admins
+if { $debug_p && $admin_p == 0 } {
+    # only admins debug
+    set debug_p 0
+}
+
 # randmize rand with seed from clock
 expr { srand([clock clicks]) }
 
@@ -154,7 +161,7 @@ if { $form_posted } {
             set validated 1
             if { ![qf_is_natural_number $table_tid] } {
                 ns_log Notice "accounts-finance/www/pretti/app.tcl.94: table_tid '${table_tid}' is not valid for mode c"
-                lappend user_message_list "Table has not been specified."
+                lappend user_message_list "#accounts-finance.table_not_specified#"
                 set validated 0
                 set mode "p"
                 set next_mode ""
@@ -195,19 +202,19 @@ if { $form_posted } {
                                 ns_log Notice "accounts-finance/www/pretti/app.tcl.217:  validated for m"
                             } else {
                                 ns_log Notice "accounts-finance/www/pretti/app.tcl.197: input_array(count) '$input_array(count)' is not valid."
-                                lappend user_message_list "'Number of Points' should be greater than 5 or blank. Leave blank for the default number used by the system."
+                                lappend user_message_list "#accounts-finance.points_gt_5_or_blank# #leave_blank_for_default#"
                             } 
                         } else {
                             ns_log Notice "accounts-finance/www/pretti/app.tcl.202: input_array(median) '$input_array(median)' is not a number."
-                            lappend user_message_list "'Median' value of '$input_array(median)' is not a recognized number."
+                            lappend user_message_list "#accounts-finance.median# '$input_array(median)' #accounts-finance.not_recognized_number#"
                         }
                     } else {
                             ns_log Notice "accounts-finance/www/pretti/app.tcl.205: input_array(maximum) '$input_array(maximum)' is not a number."
-                        lappend user_message_list "'Maximum' value of '$input_array(maximum)' is not a recognized number."
+                        lappend user_message_list "#accounts-finance.maximum# '$input_array(maximum)' #accounts-finance.not_recognized_number#"
                     }
                 } else {
                     ns_log Notice "accounts-finance/www/pretti/app.tcl.209: input_array(minimum) '$input_array(minimum)' is not a number."
-                    lappend user_message_list "'Minimum' value of '$input_array(minimum)' is not a recognized number."
+                    lappend user_message_list "#accounts-finance.minimum# '$input_array(minimum)' #accounts-finance.not_recognized_number#"
                 }
             }
             if { $validated } {
@@ -236,7 +243,7 @@ if { $form_posted } {
             ns_log Notice "accounts-finance/www/pretti/app.tcl.123:  validated for s"
             if { ![qf_is_natural_number $table_tid] } {
                 ns_log Notice "accounts-finance/www/pretti/app.tcl.129: table_tid '${table_tid}' is not valid for mode s"
-                lappend user_message_list "Table has not been specified."
+                lappend user_message_list "#accounts-finance.table_not_specified#"
                 set validated 0
                 set mode "p"
                 set next_mode ""
@@ -247,7 +254,7 @@ if { $form_posted } {
             ns_log Notice "accounts-finance/www/pretti/app.tcl.133:  validated for y"
             if { ![qf_is_natural_number $table_tid] } {
                 ns_log Notice "accounts-finance/www/pretti/app.tcl.139: table_tid '${table_tid}' is not valid for mode y"
-                lappend user_message_list "Table has not been specified."
+                lappend user_message_list "#accounts-finance.table_not_specified#"
                 set validated 0
                 set mode "p"
                 set next_mode ""
@@ -327,63 +334,72 @@ if { $form_posted } {
                     }
                 }
                 set table_lists $table_lists_new
-                ns_log Notice "accounts-finance/www/pretti/app.tcl.189: : create/write table" 
-                ns_log Notice "accounts-finance/www/pretti/app.tcl.190: : llength table_lists [llength $table_lists]"
-                # detect table type for flags
-                set table_flags [acc_fin::pretti_type_flag $table_lists]
-                ns_log Notice "accounts-finance/www/pretti/app.tcl.193: table_flags $table_flags"
-                if { [qf_is_natural_number $table_tid] } {
-                    set table_stats [qss_table_stats $table_tid $instance_id $user_id]
-                    # name, title, comments, cell_count, row_count, template_id, flags, trashed, popularity, time last_modified, time created, user_id.
-                    set name_old [lindex $table_stats 0]
-                    set title_old [lindex $table_stats 1]
-                    set comments_old [lindex $table_stats 2]
-                    set table_template_id [lindex $table_stats 5]
+                set table_rows_max [parameter::get -parameter TableRowsMax -package_id $instance_id]
+                set table_rows_count [llength $table_lists ]
+                if { $table_rows_max == 0 || ( $table_rows_max > 0 && $table_rows_count < $table_rows_max ) } {
+                    ns_log Notice "accounts-finance/www/pretti/app.tcl.189: : create/write table" 
+                    ns_log Notice "accounts-finance/www/pretti/app.tcl.190: : llength table_lists [llength $table_lists]"
+                    # detect table type for flags
+                    set table_flags [acc_fin::pretti_type_flag $table_lists]
+                    ns_log Notice "accounts-finance/www/pretti/app.tcl.193: table_flags $table_flags"
+                    if { [qf_is_natural_number $table_tid] } {
+                        set table_stats [qss_table_stats $table_tid $instance_id $user_id]
+                        # name, title, comments, cell_count, row_count, template_id, flags, trashed, popularity, time last_modified, time created, user_id.
+                        set name_old [lindex $table_stats 0]
+                        set title_old [lindex $table_stats 1]
+                        set comments_old [lindex $table_stats 2]
+                        set table_template_id [lindex $table_stats 5]
 
-                    # For revisioning purposes, create a new table each time, except:
-                    # Don't create a new table if it is exactly the same as the old one... ie same table, name, title
+                        # For revisioning purposes, create a new table each time, except:
+                        # Don't create a new table if it is exactly the same as the old one... ie same table, name, title
 
-                    # Old method wrote to the same table using qss_table_write when name and title were the same regardless of comments or content.
+                        # Old method wrote to the same table using qss_table_write when name and title were the same regardless of comments or content.
 
-                    # Get table_lists_old table_comments_old and compare..
-                    set table_old_lists [qss_table_read $table_tid $instance_id $user_id]
-                    if { $table_name eq $name_old && $table_title eq $title_old && $table_comments eq $comments_old && $table_lists eq $table_old_lists } {
-                        # Don't create a new table. The new one is exactly like the old one..
+                        # Get table_lists_old table_comments_old and compare..
+                        set table_old_lists [qss_table_read $table_tid $instance_id $user_id]
+                        if { $table_name eq $name_old && $table_title eq $title_old && $table_comments eq $comments_old && $table_lists eq $table_old_lists } {
+                            # Don't create a new table. The new one is exactly like the old one..
+                        } else {
+                            set created_tid [qss_table_create $table_lists $table_name $table_title $table_comments $table_template_id $table_flags $instance_id $user_id ]
+                            if { $created_tid > 0 } {
+                                # trash the old one if it's made by the same user and has same name
+                                # set table_stats_list [qss_table_stats $table_tid]
+                                set user_id_prev [lindex $table_stats 11]
+                                if { $user_id eq $user_id_prev && $table_name eq $name_old } {
+                                    qss_table_trash 1 $table_tid $instance_id $user_id
+                                }
+                                if { $table_flags eq "dc" } {
+                                    set priority [llength $table_lists]
+                                    acc_fin::schedule_add "acc_fin::cobbler_file_create_from_table" [list $created_tid $user_id $instance_id] $user_id $instance_id $priority
+                                    # when debugging the graphics, bypassing scheduling can save a few steps:
+                                    #acc_fin::cobbler_file_create_from_table $created_tid $user_id $instance_id
+                                    incr priority $priority
+                                    # build related pie chart:
+                                    # using llength table_lists for priority. The more rows there are, the lower the priority..
+                                    acc_fin::schedule_add "acc_fin::pie_file_create_from_table" [list $created_tid $user_id $instance_id] $user_id $instance_id $priority
+                                }
+                            }
+                        }
+
                     } else {
-                        set created_tid [qss_table_create $table_lists $table_name $table_title $table_comments $table_template_id $table_flags $instance_id $user_id ]
-                        if { $created_tid > 0 } {
-                            # trash the old one if it's made by the same user and has same name
-                            # set table_stats_list [qss_table_stats $table_tid]
-                            set user_id_prev [lindex $table_stats 11]
-                            if { $user_id eq $user_id_prev && $table_name eq $name_old } {
-                                qss_table_trash 1 $table_tid $instance_id $user_id
-                            }
-                            if { $table_flags eq "dc" } {
-                                set priority [llength $table_lists]
-                                acc_fin::schedule_add "acc_fin::cobbler_file_create_from_table" [list $created_tid $user_id $instance_id] $user_id $instance_id $priority
-                                # when debugging the graphics, bypassing scheduling can save a few steps:
-                                #acc_fin::cobbler_file_create_from_table $created_tid $user_id $instance_id
-                                incr priority $priority
-                                # build related pie chart:
-                                # using llength table_lists for priority. The more rows there are, the lower the priority..
-                                acc_fin::schedule_add "acc_fin::pie_file_create_from_table" [list $created_tid $user_id $instance_id] $user_id $instance_id $priority
-                            }
+                        ns_log Notice "accounts-finance/www/pretti/app.tcl.210: qss_table_create new table"
+                        set created_tid [qss_table_create $table_lists $table_name $table_title $table_comments "" $table_flags $instance_id $user_id]
+                        if { $table_flags eq "dc" } {
+                            set priority [llength $table_lists]
+                            acc_fin::schedule_add "acc_fin::cobbler_file_create_from_table" [list $created_tid $user_id $instance_id] $user_id $instance_id $priority
+                            incr priority $priority
+                            # build related pie chart:
+                            # using llength table_lists for priority. The more rows there are, the lower the priority..
+                            acc_fin::schedule_add "acc_fin::pie_file_create_from_table" [list $created_tid $user_id $instance_id] $user_id $instance_id $priority
                         }
                     }
 
                 } else {
-                    ns_log Notice "accounts-finance/www/pretti/app.tcl.210: qss_table_create new table"
-                    set created_tid [qss_table_create $table_lists $table_name $table_title $table_comments "" $table_flags $instance_id $user_id]
-                    if { $table_flags eq "dc" } {
-                        set priority [llength $table_lists]
-                        acc_fin::schedule_add "acc_fin::cobbler_file_create_from_table" [list $created_tid $user_id $instance_id] $user_id $instance_id $priority
-                        incr priority $priority
-                        # build related pie chart:
-                        # using llength table_lists for priority. The more rows there are, the lower the priority..
-                        acc_fin::schedule_add "acc_fin::pie_file_create_from_table" [list $created_tid $user_id $instance_id] $user_id $instance_id $priority
-                    }
-                }
+                    # table_rows_max exceeds limit.
+                    set next_mode "p"
+                    lappend user_message_list "#accounts-finance.too_many_rows# ${table_rows_count} #accounts-finance.table_row_count#. ${table_rows_max} #accounts-finance.is_the_limit# #accounts-finance.table_not_created#."
 
+                }
             }
             # since table_tid is deleted, remove it from any remaining mode activity
             unset table_tid
@@ -496,22 +512,30 @@ if { $form_posted } {
         # set table_comments [lindex $table_stats_list 2]
         set table_flags [lindex $table_stats_list 6]
         if { $table_flags eq "p1" } {
-#            set table_name [lindex $table_stats_list 0]
-#            set table_title [lindex $table_stats_list 1]
-#            set table_comments [lindex $table_stats_list 2]
-#            set table_template_id [lindex $table_stats_list 5]
+            #            set table_name [lindex $table_stats_list 0]
+            #            set table_title [lindex $table_stats_list 1]
+            #            set table_comments [lindex $table_stats_list 2]
+            #            set table_template_id [lindex $table_stats_list 5]
             set trashed_p [lindex $table_stats_list 7]
             set trash_folder_p $trashed_p
-
+            
             # see lib/pretti-view-one and lib/pretti-menu1
             # given table_tid 
             #set table_lists [qss_table_read $table_tid]
             #acc_fin::scenario_prettify $table_tid $instance_id $user_id
-
-            set row_count [lindex $table_stats_list 4]
-            set priority [expr { $row_count * 3 } ]
-            acc_fin::schedule_add "acc_fin::scenario_prettify" [list $table_tid $instance_id $user_id] $user_id $instance_id $priority
-            lappend user_message_list "Job added. table_id=${table_tid}"
+            set table_rows_max [parameter::get -parameter TableRowsMax -package_id $instance_id]
+            set table_rows_count [lindex $table_stats_list 4]
+            if { $table_rows_max == 0 || ( $table_rows_max > 0 && $table_rows_count < $table_rows_max ) } {
+                set priority [expr { $table_rows_count * 3 } ]
+                if { $debug_p } {
+                    acc_fin::scenario_prettify $table_tid $instance_id $user_id
+                } else {
+                    acc_fin::schedule_add "acc_fin::scenario_prettify" [list $table_tid $instance_id $user_id] $user_id $instance_id $priority
+                }
+                lappend user_message_list "#accounts-finance.job_added# table_id=${table_tid}"
+            } else {
+                lappend user_message_list "#accounts-finance.too_many_rows# ${table_rows_count} #accounts-finance.table_row_count#. ${table_rows_max} #accounts-finance.is_the_limit# #accounts-finance.job_not_created#."
+            }
         }
         set mode "p"
         set next_mode ""
@@ -545,7 +569,7 @@ expected value: ${pert_omp_expected}"
             acc_fin::schedule_add "acc_fin::pie_file_create_from_table" [list $new_table_id $user_id $instance_id] $user_id $instance_id $priority
         }
         if { $new_table_id == 0 } {
-           lappend user_message_list "An internal error occured while attempting to create the table. Please contact an administrator."
+           lappend user_message_list "#accounts-finance.internal_error_while_making_table# #accounts-finance.contact_sysadmin#"
         }
         set mode "p"
         set next_mode ""
@@ -671,6 +695,7 @@ set user_message_html ""
 foreach user_message $user_message_list {
     append user_message_html "<li>${user_message}</li>"
 }
+# generic header for .adp pages
 set app_name "PRETTI"
 set title ${app_name}
 set context [list [list app $title] $mode_name]
