@@ -43,7 +43,11 @@ ad_proc -private acc_fin::schedule_do {
     set batch_lists_len [llength $batch_lists]
     set dur_sum 0
     set first_started_time [lindex [lindex $batch_lists 0] 6]
-    ns_log Notice "acc_fin::schedule_do.39: first_started_time '${first_started_time}' batch_lists_len ${batch_lists_len}"
+    # set debug_p to 0 to reduce repeated log noise:
+    set debug_p 1
+    if { $debug_p } {
+        ns_log Notice "acc_fin::schedule_do.39: first_started_time '${first_started_time}' batch_lists_len ${batch_lists_len}"
+    }
     if { $first_started_time eq "" } {
         if { $batch_lists_len > 0 } {
             set bi 0
@@ -53,6 +57,7 @@ ad_proc -private acc_fin::schedule_do {
                 # set proc_list lindex combo from sched_list
                 lassign $sched_list id proc_name user_id instance_id priority order_time started_time
                 # package_id can vary with each entry
+
                 set allowed_procs [parameter::get -parameter ScheduledProcsAllowed -package_id $instance_id]
                 # added comma and period to "split" to screen external/private references and poorly formatted lists
                 set allowed_procs_list [split $allowed_procs " ,."]
@@ -114,7 +119,9 @@ ad_proc -private acc_fin::schedule_do {
             }
         } else {
             # if do is idle, delete some (limit 100 or so) used args in qaf_sched_proc_args. Ids may have more than 1 arg..
-            ns_log Notice "acc_fin::schedule_do.91: Idle. Entering passive maintenance mode. deleting up to 60 used args, if any."
+            if { $debug_p } {
+                ns_log Notice "acc_fin::schedule_do.91: Idle. Entering passive maintenance mode. deleting up to 60 used args, if any."
+            }
             set success_p 1
             db_dml qaf_sched_proc_args_delete { delete from qaf_sched_proc_args 
                 where stack_id in ( select id from qaf_sched_proc_stack where process_seconds is not null order by id limit 60 ) 
@@ -125,7 +132,9 @@ ad_proc -private acc_fin::schedule_do {
         # the previous acc_fin::schedule_do is still working. Don't clobber. Quit.
         set success_p 1
     }
-    ns_log Notice "acc_fin::schedule_do.99: returning success_p ${success_p}"
+    if { $debug_p || !$success_p } {
+        ns_log Notice "acc_fin::schedule_do.99: returning success_p ${success_p}"
+    }
     return $success_p
 }
 

@@ -55,7 +55,7 @@
 
 
   <p>
-    Scenario report for Table 20140924-15:39:13: scenario_name fedora20scenario , cp_duration_at_pm 155.0 , cp_cost_pm 18.0 , max_act_count_per_track 19 , time_probability_moment 0.5 , cost_probability_moment 0.5 , setup_time 0 , main_processing_time 0 seconds , time/date finished processing 2014 Sep 28 02:19:55 , _tDcSource 6 , _cDcSource 6 , precision  , tprecision  , cprecision  , color_mask_sig_idx 3 , color_mask_oth_idx 5 , colorswap_p 0
+    Scenario report for Table 20140924-15:39:13: scenario_name fedora20scenario , cp_duration_at_pm 155.0 , cp_cost_pm 18.0 , max_act_count_per_track 19 , time_probability_point 0.5 , cost_probability_point 0.5 , setup_time 0 , main_processing_time 0 seconds , time/date finished processing 2014 Sep 28 02:19:55 , _tDcSource 6 , _cDcSource 6 , precision  , tprecision  , cprecision  , color_mask_sig_idx 3 , color_mask_oth_idx 5 , colorswap_p 0
   </p>
 
   

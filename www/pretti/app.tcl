@@ -1,4 +1,5 @@
 # accounts-finance/www/pretti/app.tcl
+
 set instance_id [ad_conn package_id]
 set user_id [ad_conn user_id]
 set read_p [permission::permission_p -party_id $user_id -object_id $instance_id -privilege read]
@@ -22,6 +23,14 @@ if { $read_p } {
     set admin_p 0
     set delete_p 0
 }
+
+set debug_p 0
+# set debug_p to 1 to bypass scheduling and possibly add extra error logging for admins
+if { $debug_p && $admin_p == 0 } {
+    # only admins debug
+    set debug_p 0
+}
+
 # randmize rand with seed from clock
 expr { srand([clock clicks]) }
 
@@ -388,7 +397,7 @@ if { $form_posted } {
                 } else {
                     # table_rows_max exceeds limit.
                     set next_mode "p"
-                    lappend user_message_list "#accounts-finance.too_many_rows# ${table_rows_count} #accounts-finance.table_row_count#. {table_rows_max} #accounts-finance.is_the_limit# #accounts-finance.table_not_created#."
+                    lappend user_message_list "#accounts-finance.too_many_rows# ${table_rows_count} #accounts-finance.table_row_count#. ${table_rows_max} #accounts-finance.is_the_limit# #accounts-finance.table_not_created#."
 
                 }
             }
@@ -503,26 +512,31 @@ if { $form_posted } {
         # set table_comments [lindex $table_stats_list 2]
         set table_flags [lindex $table_stats_list 6]
         if { $table_flags eq "p1" } {
-#            set table_name [lindex $table_stats_list 0]
-#            set table_title [lindex $table_stats_list 1]
-#            set table_comments [lindex $table_stats_list 2]
-#            set table_template_id [lindex $table_stats_list 5]
+            #            set table_name [lindex $table_stats_list 0]
+            #            set table_title [lindex $table_stats_list 1]
+            #            set table_comments [lindex $table_stats_list 2]
+            #            set table_template_id [lindex $table_stats_list 5]
             set trashed_p [lindex $table_stats_list 7]
             set trash_folder_p $trashed_p
-
+            
             # see lib/pretti-view-one and lib/pretti-menu1
             # given table_tid 
             #set table_lists [qss_table_read $table_tid]
             #acc_fin::scenario_prettify $table_tid $instance_id $user_id
             set table_rows_max [parameter::get -parameter TableRowsMax -package_id $instance_id]
-            set row_count [lindex $table_stats_list 4]
-            if { $table_rows_max == 0 || ( $table_rows_max > 0 && $row_count < $table_rows_max ) } {
-                set priority [expr { $row_count * 3 } ]
-                acc_fin::schedule_add "acc_fin::scenario_prettify" [list $table_tid $instance_id $user_id] $user_id $instance_id $priority
+            set table_rows_count [lindex $table_stats_list 4]
+            if { $table_rows_max == 0 || ( $table_rows_max > 0 && $table_rows_count < $table_rows_max ) } {
+                set priority [expr { $table_rows_count * 3 } ]
+                if { $debug_p } {
+                    acc_fin::scenario_prettify $table_tid $instance_id $user_id
+                } else {
+                    acc_fin::schedule_add "acc_fin::scenario_prettify" [list $table_tid $instance_id $user_id] $user_id $instance_id $priority
+                }
                 lappend user_message_list "#accounts-finance.job_added# table_id=${table_tid}"
             } else {
-                lappend user_message_list "#accounts-finance.too_many_rows# ${table_rows_count} #accounts-finance.table_row_count#. {table_rows_max} #accounts-finance.is_the_limit# #accounts-finance.job_not_created#."
+                lappend user_message_list "#accounts-finance.too_many_rows# ${table_rows_count} #accounts-finance.table_row_count#. ${table_rows_max} #accounts-finance.is_the_limit# #accounts-finance.job_not_created#."
             }
+        }
         set mode "p"
         set next_mode ""
     }
