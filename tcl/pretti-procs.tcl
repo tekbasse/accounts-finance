@@ -1381,13 +1381,13 @@ ad_proc -private acc_fin::pretti_columns_list {
         p50 {
             # each row is a cell (ie activity on a path), in format of detailed PRETTI internal output. See code. 
             #set ret_list [list activity_ref path_act_counter path_counter dependencies_q cp_q significant_q popularity waypoint_duration activity_time direct_dependencies activity_cost waypoint_cost]
-            set ret_list [list activity_ref activity_counter dependencies_q direct_dependencies dependencies_count count_on_cp_p on_a_sig_path_p act_freq_in_load_cp_alts popularity activity_time waypoint_duration t_dc_source activity_cost waypoint_cost c_dc_source activity_eco2 waypoint_eco2 e_dc_source act_coef max_concurrent max_run_time max_tasks_per_run max_overlap_pct max_discount_pct max_reduction_pct max_path_duration]
+            set ret_list [list activity_ref activity_counter dependencies_q direct_dependencies dependencies_count count_on_cp_p on_a_sig_path_p act_freq_in_load_cp_alts popularity activity_time waypoint_duration t_dc_source activity_cost waypoint_cost c_dc_source activity_eco2 waypoint_eco2 e_dc_source act_coef max_concurrent max_run_time max_tasks_per_run max_overlap_pct max_discount_pct max_reduction_pct max_path_duration t_dc c_dc e_dc]
         }
         p51 {
             # each row is a cell (ie activity on a path), in format of detailed PRETTI internal output. See code. 
             # p5 was:
             #set ret_list [list activity_ref path_act_counter path_counter dependencies_q cp_q significant_q popularity waypoint_duration activity_time direct_dependencies activity_cost waypoint_cost path_col activity_seq dependents_count dep_act_seq ]
-            set ret_list [list activity_ref activity_counter dependencies_q direct_dependencies dependencies_count count_on_cp_p on_a_sig_path_p act_freq_in_load_cp_alts popularity activity_time waypoint_duration t_dc_source activity_cost waypoint_cost c_dc_source activity_eco2 waypoint_eco2 e_dc_source act_coef max_concurrent max_run_time max_tasks_per_run max_overlap_pct max_discount_pct max_reduction_pct max_path_duration]
+            set ret_list [list activity_ref activity_counter dependencies_q direct_dependencies dependencies_count count_on_cp_p on_a_sig_path_p act_freq_in_load_cp_alts popularity activity_time waypoint_duration t_dc_source activity_cost waypoint_cost c_dc_source activity_eco2 waypoint_eco2 e_dc_source act_coef max_concurrent max_run_time max_tasks_per_run max_overlap_pct max_discount_pct max_reduction_pct max_path_duration t_dc c_dc e_dc]
         }
         p60 {
             # each row is a path, in format of detailed PRETTI internal output. See code. All columns are required to reproduce output to p4 (including p4 comments).
@@ -4089,11 +4089,11 @@ ad_proc -public acc_fin::scenario_prettify {
                     # p5 are activities, and p6 are paths. a path key is shared between p5 and p6 tables
                     set p5_lists [list ]
                     set p5_titles_list [acc_fin::pretti_columns_list p5 1]
-                    # Theoretically, the following 4 lines are no longer needed, because ?_dc_source is now part of p5 table definition. Leave in until confirmed that p5 audit works.
+
                     # *_dc_ref references cache reference
-                    # lappend p5_titles_list "t_dc"
-                    # lappend p5_titles_list "c_dc"
-                    # lappend p5_titles_list "e_dc"
+                    #lappend p5_titles_list "t_dc"
+                    #lappend p5_titles_list "c_dc"
+                    #lappend p5_titles_list "e_dc"
                     lappend p5_lists $p5_titles_list
                     set activity_counter 0
                     foreach act $activities_list {
@@ -4144,7 +4144,7 @@ ad_proc -public acc_fin::scenario_prettify {
                             ns_log Warning "acc_fin::scenario_prettify.3643: max_path_duration '0' for ${act}. This should not happen. Investigate. path_duration_arr '[array get path_duration_arr]' "
                         }
                         # base for p5
-                        set activity_list [list $act $activity_counter $has_direct_dependency_p [join $dependencies_larr($act) " "] [llength $dependencies_larr($act)] $on_critical_path_p_arr($act) $on_a_sig_path_p $act_freq_in_load_cp_alts_arr($act) $popularity_arr($act) $act_time_expected_arr($act) $tn_arr($act) $t_dc_source_arr($act) $act_cost_expected_arr($act) $cn_arr($act) $c_dc_source_arr($act) $act_eco2_expected_arr($act) $en_arr($act) $e_dc_source_arr($act) $act_coef($act) $act_maxcc $act_maxrt $act_maxtpr $act_maxol $act_maxcd $act_maxer $max_path_duration $act_tcref($act) $act_ccref($act) ]
+                        set activity_list [list $act $activity_counter $has_direct_dependency_p [join $dependencies_larr($act) " "] [llength $dependencies_larr($act)] $on_critical_path_p_arr($act) $on_a_sig_path_p $act_freq_in_load_cp_alts_arr($act) $popularity_arr($act) $act_time_expected_arr($act) $tn_arr($act) $t_dc_source_arr($act) $act_cost_expected_arr($act) $cn_arr($act) $c_dc_source_arr($act) $act_eco2_expected_arr($act) $en_arr($act) $e_dc_source_arr($act) $act_coef($act) $act_maxcc $act_maxrt $act_maxtpr $act_maxol $act_maxcd $act_maxer $max_path_duration $act_tcref($act) $act_ccref($act) $act_ecref($act) ]
                         lappend p5_lists $activity_list
                     }
 

@@ -8,11 +8,15 @@ set g_list [list "t  : (crash) duration" \
                 "waypoint :  A task along one path" \
                 "node : A task and all its direct and indirect dependents" \
                 "tn : (crash) duration at node" \
+                "fw : float at waypoint (tn - tw)" \
                 "c : cost" \
                 "cw : cost at waypoint " \
                 "cn : cost at node" \
                 "d : dependents" \
-                "fw : float at waypoint (tn - tw) "]
+                 "e : eco2" \
+                 "ew : eco2 at waypoint " \
+                 "en : eco2 at node" \
+                 ]
 set g_list [lsort $g_list]
 append glossary_html "<ul>\n"
 foreach gl $g_list {
