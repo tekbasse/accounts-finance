@@ -47,6 +47,8 @@
 <msg key="aid_type_for_cost_not_found">No cost curve aid_type found while loading activity_table.</msg>
 <msg key="aid_type_for_eco2_not_found">No eco2 curve aid_type found while loading activity_table.</msg>
 <msg key="aid_type_for_time_not_found">No time curve aid_type found while loading activity_table.</msg>
+<msg key="c_dc">CDC</msg>
+<msg key="c_dc_def">Cost distribution curve's internal reference</msg>
 <msg key="c_dc_source">CDC Source</msg>
 <msg key="c_dc_source_def">Source of cost distribution curve (via acc_fin::curve_import)</msg>
 <msg key="calculation">calculation</msg>
@@ -101,6 +103,8 @@
 <msg key="distribution_curve_dc">Distribution_Curve (dc)</msg>
 <msg key="distribution_curve_dc_def">A table representing a discrete distribution curve.</msg>
 <msg key="duration">Duration</msg>
+<msg key="e_dc">EDC</msg>
+<msg key="e_dc_def">Eco2 distribution curve's internal reference</msg>
 <msg key="e_dc_source">EDC Source</msg>
 <msg key="e_dc_source_def">Source of eco2 distribution curve (via acc_fin::curve_import)</msg>
 <msg key="eco2">Eco2</msg>
@@ -143,12 +147,12 @@
 <msg key="max_concurrent_def">The maximum number of a specific activity that can operate indefinitely.</msg>
 <msg key="max_discount_pct">Max Discount Pct</msg>
 <msg key="max_discount_pct_def">Maximum Discount for batch (contiguous) runs. Expressed as a percent cost of a run. A 10% discount equals '0.1'.</msg>
-<msg key="max_reduction_pct">Max Reduction Pct</msg>
-<msg key="max_reduction_pct_def">Maximum Reduction for batch (contiguous) runs. Expressed as a percent eco2 of a run. A 10% reduction equals '0.1'.</msg>
 <msg key="max_overlap_pct">Percent Maximum Overlap</msg>
 <msg key="max_overlap_pct_def">A decimal percentage (0 to 1) of maximum amount of overlap between concurrent operations of same activity.</msg>
 <msg key="max_path_duration">Maximum Path Duration</msg>
 <msg key="max_path_duration_def">Maximum duration of paths that have a specific activity in common.</msg>
+<msg key="max_reduction_pct">Max Reduction Pct</msg>
+<msg key="max_reduction_pct_def">Maximum Reduction for batch (contiguous) runs. Expressed as a percent eco2 of a run. A 10% reduction equals '0.1'.</msg>
 <msg key="max_run_time">Max Run Time</msg>
 <msg key="max_run_time_def">A constraint of a maximum time a batch can run before a break.</msg>
 <msg key="max_run_time_ignored_in_dc">max_run_time ignored in dc table.</msg>
@@ -215,6 +219,8 @@
 <msg key="standardize">Standardize</msg>
 <msg key="started_time">Time Started</msg>
 <msg key="system_error">System Error</msg>
+<msg key="t_dc">TDC</msg>
+<msg key="t_dc_def">Time distribution curve's internal reference</msg>
 <msg key="t_dc_source">TDC Source</msg>
 <msg key="t_dc_source_def">Source of time distribution curve (via acc_fin::curve_import)</msg>
 <msg key="table_load_error">There was an error while loading table.</msg>
