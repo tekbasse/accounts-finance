@@ -1502,6 +1502,7 @@ ad_proc -public acc_fin::pretti_table_to_html {
         set max_act_count_per_track $column_count
     }
 
+    set cp_duration_at_pp 0
     regexp -- {[^a-z\_]?cp_duration_at_pp[\ \=\:]([0-9]+)[^0-9]} $comments scratch cp_duration_at_pp
     if { $cp_duration_at_pp == 0 } {
         # Calculate cp_duration_at_pp manually, using path_1 (cp track)
