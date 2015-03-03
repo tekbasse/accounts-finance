@@ -44,7 +44,7 @@ ad_proc -private acc_fin::example_table {
             # goes with p20f
             set ret_list [list [list name value] [list activity_table_name "Example 6"]] }
         p20a {
-            set ret_list [list "Wikipedia PERT" "This is an example from PERT entry of Wikipedia. See entry for details: http://en.wikipedia.org/wiki/Program_Evaluation_and_Review_Technique" "activity_ref,time_est_short,time_est_med,time_est_long,time_ext,dependent_tasks
+            set ret_list [list "Wikipedia PERT" "This is an example from PERT entry of Wikipedia. See entry for details: http://en.wikipedia.org/wiki/Program_Evaluation_and_Review_Technique" "activity_ref,time_est_short,time_est_median,time_est_long,time_ext,dependent_tasks
 A,2,4,6,4.0,
 B,3,5,9,5.33,
 C,4,5,7,5.17,A
