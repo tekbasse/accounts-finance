@@ -50,7 +50,11 @@ A local copy is available at accounts-finance/www/doc/<a href="LICENSE.html">LIC
 </li><li>
 <a href="pretti-specs">PRETTI Specifications</a>
 </li><li>
+<a href="pretti-workflow">PRETTI Workflow</a>
+</li><li>
 <a href="pretti-tables">PRETTI Table definitions</a>
+</li><li>
+<a href="pretti-glossary">PRETTI Glossary</a>
 </li>
 @examples_html;noquote@
 </ul>
