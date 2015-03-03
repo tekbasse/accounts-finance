@@ -7,14 +7,14 @@
     <initial-install-p>f</initial-install-p>
     <singleton-p>f</singleton-p>
     
-    <version name="0.544" url="http://openacs.org/repository/download/apm/accounts-finance-0.544.apm">
+    <version name="0.546" url="http://openacs.org/repository/download/apm/accounts-finance-0.546.apm">
         <owner url="mailto:tekbasse@yahoo.com">Benjamin Brink</owner>
         <owner url="http://openacs.org">OpenACS community</owner>
         <summary>Finance package provides limited set of tools for long-term debts, fixed assets, forecasting.</summary>
-        <description format="text/plain">Finance package provides some tools for long-term debts, fixed assets, capital, stock holding, dividends, forecasting and reporting. Integrates with general-ledger etc.</description>
+        <description format="text/plain">Finance package provides some calculation tools for XDCPM project management network analysis, affiliate modeling using single path triangular compensation network that is geared for social network marketing, and a systems modeling calculator. Also has some procedures for long-term debts, fixed assets, capital, stock holding, dividends, forecasting and reporting. Will integrate with general-ledger etc.</description>
         <maturity>1</maturity>
 
-        <provides url="accounts-finance" version="0.544"/>
+        <provides url="accounts-finance" version="0.546"/>
 	<requires url="acs-datetime" version="4.0"/>
 	<requires url="q-forms" version="0.001"/>
 	<requires url="spreadsheet" version="0.001"/>
@@ -22,7 +22,7 @@
         <callbacks>
         </callbacks>
         <parameters>
-            <parameter scope="instance" datatype="string"  min_n_values="1"  max_n_values="1"  name="ScheduledProcsAllowed"  default="acc_fin::pie_file_create_from_table acc_fin::cobbler_file_create_from_table" description="A space delimited list of procs allowed to be scheduled in package instance" section_name="processes"/>
+            <parameter scope="instance" datatype="string"  min_n_values="1"  max_n_values="1"  name="ScheduledProcsAllowed"  default="acc_fin::pie_file_create_from_table acc_fin::cobbler_file_create_from_table acc_fin::scenario_prettify" description="A space delimited list of procs allowed to be scheduled in package instance" section_name="processes"/>
             <parameter scope="instance" datatype="number"  min_n_values="1"  max_n_values="1"  name="TableRowsMax"  default="0" description="Limits the maximum row size of any table. 0 is no limit." section_name="constraints"/>
             <parameter scope="instance" datatype="string"  min_n_values="1"  max_n_values="1"  name="AuxiliaryColumnNames"  default="ghg ggwp co2e cde coal oil ng gt nuke hydro solar wind cement eru cers rec km airkm" description="A space delimited list of column names allowed for alternate resource costs or system inputs and outputs in PRETTI P2 and P3 tables.  Column 'name' and 'type' are reserved." section_name="auxiliary"/>
             <parameter scope="instance" datatype="number"  min_n_values="1"  max_n_values="1"  name="AuxiliaryColumnsNameMaxLength"  default="4" description="Limits the maximum column name length of auxiliary resource cost calculations used in PRETTI P2 and P3 tables. 0 means no auxiliary columns calculated (except any declared in AuxiliaryColumnNames parameter. Column 'name' and 'type' are reserved." section_name="auxiliary"/>
