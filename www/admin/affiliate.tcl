@@ -125,7 +125,7 @@ if { $form_posted } {
 
     switch -exact -- $mode {
         e {
-            ns_log Notice "app-model.tcl validated for e"
+            ns_log Notice "affiliate.tcl validated for e"
             set validated 1
             if { ![qf_is_natural_number $initial_conditions_tid] && ![qf_is_natural_number $sales_curve_tid] } {
                 set mode "n"
@@ -133,7 +133,7 @@ if { $form_posted } {
             } 
         }
         d {
-            ns_log Notice "app-model.tcl validated for d"
+            ns_log Notice "affiliate.tcl validated for d"
             set validated 1
             if { ( ![qf_is_natural_number $initial_conditions_tid] && ![qf_is_natural_number $sales_curve_tid] ) || !$delete_p } {
                 set mode "p"
@@ -141,7 +141,7 @@ if { $form_posted } {
             } 
         }
         t {
-            ns_log Notice "app-model.tcl validated for t"
+            ns_log Notice "affiliate.tcl validated for t"
             set validated 1
             if { ![qf_is_natural_number $initial_conditions_tid] && ![qf_is_natural_number $sales_curve_tid] } {
                 set mode "p"
@@ -149,7 +149,7 @@ if { $form_posted } {
             } 
         }
         c {
-            ns_log Notice "app-model.tcl validated for c"
+            ns_log Notice "affiliate.tcl validated for c"
             set validated 1
             if { ![qf_is_natural_number $initial_conditions_tid] } {
                 lappend user_message_list "Table for Initial Conditions has not been specified."
@@ -172,18 +172,18 @@ if { $form_posted } {
             set initial_conditions_text $input_array(initial_conditions_text)
             set sales_curve_text $input_array(sales_curve_text)
             set validated 1
-            ns_log Notice "app-model.tcl validated for w"
+            ns_log Notice "affiliate.tcl validated for w"
         }
         n {
             set validated 1
-            ns_log Notice "app-model.tcl validated for n"
+            ns_log Notice "affiliate.tcl validated for n"
         }
         r {
             set validated 1
-            ns_log Notice "app-model.tcl validated for r"
+            ns_log Notice "affiliate.tcl validated for r"
         }
         default {
-            ns_log Notice "app-model.tcl validated for v"
+            ns_log Notice "affiliate.tcl validated for v"
             if { [qf_is_natural_number $initial_conditions_tid] || [qf_is_natural_number $sales_curve_tid] } {
                 set validated 1
                 set mode "v"
@@ -224,7 +224,7 @@ if { $form_posted } {
                 } else {
                     set ic_title $input_array(ic_title)
                 }
-                ns_log Notice "app-model.tcl ic_name '${ic_name}' [string length $ic_name]"
+                ns_log Notice "affiliate.tcl ic_name '${ic_name}' [string length $ic_name]"
                 # ic_comments Comments
                 set ic_comments $input_array(ic_comments)
                 # initial_conditions_text
@@ -234,12 +234,12 @@ if { $form_posted } {
                 set delimiter ","
                 # linebreak_char delimiter rows_count columns_count 
                 set ic_text_stats [qss_txt_table_stats $initial_conditions_text]
-                ns_log Notice "app-model.tcl: ic_text_stats $ic_text_stats"
+                ns_log Notice "affiliate.tcl: ic_text_stats $ic_text_stats"
                 set line_break [lindex $ic_text_stats 0]
                 set delimiter [lindex $ic_text_stats 1]
-                ns_log Notice "app-model.tcl: initial_conditions_text ${initial_conditions_text}"
+                ns_log Notice "affiliate.tcl: initial_conditions_text ${initial_conditions_text}"
                 set ic_lists [qss_txt_to_tcl_list_of_lists $initial_conditions_text $line_break $delimiter]
-                ns_log Notice "app-model.tcl: set ic_lists ${ic_lists}"
+                ns_log Notice "affiliate.tcl: set ic_lists ${ic_lists}"
                 # cleanup input
                 set ic_lists_new [list ]
                 foreach condition_list $ic_lists {
@@ -248,30 +248,30 @@ if { $form_posted } {
                         set cell_new [string trim $cell]
                         regsub -all -- {[ ][ ]*} $cell_new { } cell_new
                         lappend row_new $cell_new
-                        #ns_log Notice "app-model.tcl new cell '$cell_new'"
+                        #ns_log Notice "affiliate.tcl new cell '$cell_new'"
                     }
                     if { [llength $row_new] > 0 } {
                         lappend ic_lists_new $row_new
                     }
                 }
                 set ic_lists $ic_lists_new
-                ns_log Notice "app-model.tcl: create/write table" 
-                ns_log Notice "app-model.tcl: llength ic_lists [llength $ic_lists]"
+                ns_log Notice "affiliate.tcl: create/write table" 
+                ns_log Notice "affiliate.tcl: llength ic_lists [llength $ic_lists]"
                 if { [qf_is_natural_number $initial_conditions_tid] } {
                     set table_stats [qss_table_stats $initial_conditions_tid]
                     set name_old [lindex $table_stats 0]
                     set title_old [lindex $table_stats 1]
                     if { $name_old eq $ic_name && $title_old eq $ic_title } {
-                        ns_log Notice "app-model.tcl: qss_table_write table_id ${initial_conditions_tid}" 
+                        ns_log Notice "affiliate.tcl: qss_table_write table_id ${initial_conditions_tid}" 
                         qss_table_write $ic_lists $ic_name $ic_title $ic_comments $initial_conditions_tid $ic_template_id $ic_flags $package_id $user_id
                     } else {
                         # changed name. assume this is a new table
-                        ns_log Notice "app-model.tcl: qss_table_create new table initial_conditions because name/title changed"
+                        ns_log Notice "affiliate.tcl: qss_table_create new table initial_conditions because name/title changed"
                         qss_table_create $ic_lists $ic_name $ic_title $ic_comments $ic_template_id $ic_flags $package_id $user_id
 
                     }
                 } else {
-                    ns_log Notice "app-model.tcl: qss_table_create new table initial_conditions"
+                    ns_log Notice "affiliate.tcl: qss_table_create new table initial_conditions"
                     qss_table_create $ic_lists $ic_name $ic_title $ic_comments $ic_template_id $ic_flags $package_id $user_id
                 }
 
@@ -285,7 +285,7 @@ if { $form_posted } {
                 } else {
                     set sc_name $input_array(sc_name)
                 }
-                ns_log Notice "app-model.tcl sc_name '${sc_name}' [string length $sc_name]"
+                ns_log Notice "affiliate.tcl sc_name '${sc_name}' [string length $sc_name]"
                 # sc_title Table title
                 if { $input_array(sc_title) eq "" && $initial_conditions_tid eq "" } {
                     set sc_title "Sales Curve [clock format [clock seconds] -format %Y%m%d-%X]"
@@ -304,9 +304,9 @@ if { $form_posted } {
                 # linebreak_char delimiter rows_count columns_count 
                 set sc_text_stats [qss_txt_table_stats $sales_curve_text]
                 set line_break [lindex $sc_text_stats 0]
-                ns_log Notice "app-model.tcl: sales_curve_text ${sales_curve_text}"
+                ns_log Notice "affiliate.tcl: sales_curve_text ${sales_curve_text}"
                 set sc_lists [qss_txt_to_tcl_list_of_lists $sales_curve_text $line_break $delimiter]
-                ns_log Notice "app-model.tcl: set sc_lists ${sc_lists}"
+                ns_log Notice "affiliate.tcl: set sc_lists ${sc_lists}"
                 # cleanup input
                 set sc_lists_new [list ]
                 foreach curve_list $sc_lists {
@@ -364,22 +364,22 @@ if { $form_posted } {
                             incr row_nbr
                         }
                         set sc_lists $sc_lists_new
-                        ns_log Notice "app-model.tcl: adjust probability value sum to 1: results"
-                        ns_log Notice "app-model.tcl: set sc_lists ${sc_lists}"
+                        ns_log Notice "affiliate.tcl: adjust probability value sum to 1: results"
+                        ns_log Notice "affiliate.tcl: set sc_lists ${sc_lists}"
                     }
                     # sort $price_list (and the cooresponding lists).
                     if { !$curve_error } {
                         set sc_lists [lsort -index 0 -real $sc_lists]
                     }
                 } else {
-                    ns_log Notice "app-model.tcl: sales_curve $sales_curve_tid cannot be normalized."
+                    ns_log Notice "affiliate.tcl: sales_curve $sales_curve_tid cannot be normalized."
                     lappend user_message_list "Unable to normalize Sales Curve. Saved as is."
                 }
-                ns_log Notice "app-model.tcl: sorted sc_lists. Results:"
-                ns_log Notice "app-model.tcl: set sc_lists ${sc_lists}"
+                ns_log Notice "affiliate.tcl: sorted sc_lists. Results:"
+                ns_log Notice "affiliate.tcl: set sc_lists ${sc_lists}"
 
-                ns_log Notice "app-model.tcl: create/write table" 
-                ns_log Notice "app-model.tcl: length sc_lists [llength $sc_lists]"
+                ns_log Notice "affiliate.tcl: create/write table" 
+                ns_log Notice "affiliate.tcl: length sc_lists [llength $sc_lists]"
 
 
                 if { [qf_is_natural_number $sales_curve_tid] } {
@@ -387,15 +387,15 @@ if { $form_posted } {
                     set name_old [lindex $table_stats 0]
                     set title_old [lindex $table_stats 1]
                     if { $name_old eq $sc_name && $title_old eq $sc_title } {
-                        ns_log Notice "app-model.tcl: qss_table_write table_id ${sales_curve_tid}" 
+                        ns_log Notice "affiliate.tcl: qss_table_write table_id ${sales_curve_tid}" 
                         qss_table_write $sc_lists $sc_name $sc_title $sc_comments $sales_curve_tid $sc_template_id $sc_flags $package_id $user_id
                     } else {
                         # changed name. assume this is a new table
-                        ns_log Notice "app-model.tcl: qss_table_create new table sales_curve"
+                        ns_log Notice "affiliate.tcl: qss_table_create new table sales_curve"
                         qss_table_create $sc_lists $sc_name $sc_title $sc_comments $sc_template_id $sc_flags $package_id $user_id
                     }
                 } else {
-                    ns_log Notice "app-model.tcl: qss_table_create new table sales_curve"
+                    ns_log Notice "affiliate.tcl: qss_table_create new table sales_curve"
                     qss_table_create $sc_lists $sc_name $sc_title $sc_comments $sc_template_id $sc_flags $package_id $user_id
                 }
             }
@@ -405,7 +405,7 @@ if { $form_posted } {
         }
         if { $mode eq "d" } {
             #  delete.... removes context     
-            ns_log Notice "app-model.tcl mode = delete"
+            ns_log Notice "affiliate.tcl mode = delete"
             #requires initial_conditions_tid or sales_curve_tid
             # delete initial_conditions_tid or sales_curve_tid or both, if both supplied
             if { [qf_is_natural_number $sales_curve_tid] } {
@@ -419,7 +419,7 @@ if { $form_posted } {
         }
         if { $mode eq "t" } {
             #  trash
-            ns_log Notice "app-model.tcl mode = trash"
+            ns_log Notice "affiliate.tcl mode = trash"
             #requires initial_conditions_tid or sales_curve_tid
             # delete initial_conditions_tid or sales_curve_tid or both, if both supplied
             if { [qf_is_natural_number $sales_curve_tid] && $write_p } {
@@ -450,7 +450,7 @@ if { $form_posted } {
 }
 
 
-set menu_list [list [list App-Model ""]]
+set menu_list [list [list Affiliate ""]]
 
 if { $write_p } {
     lappend menu_list [list new mode=n]
@@ -459,13 +459,13 @@ if { $write_p } {
 switch -exact -- $mode {
     e {
         #  edit...... edit/form mode of current context
-        ns_log Notice "app-model.tcl mode = edit"
+        ns_log Notice "affiliate.tcl mode = edit"
         #requires initial_conditions_tid, sales_curve_tid
         # make a form to edit 
         # get table from ID
 
 
-        qf_form action app-model method get id 20120531
+        qf_form action affiliate method get id 20120531
         
         qf_input type hidden value w name mode label ""
         
@@ -531,19 +531,19 @@ switch -exact -- $mode {
     w {
         #  save.....  (write) initial_conditions_tid and sales_curve_tid
         # should already have been handled above
-        ns_log Notice "app-model.tcl mode = save THIS SHOULD NOT BE CALLED."
+        ns_log Notice "affiliate.tcl mode = save THIS SHOULD NOT BE CALLED."
         # it's called in validation section.
     }
     n {
         #  new....... creates new, blank context (form)    
-        ns_log Notice "app-model.tcl mode = new"
+        ns_log Notice "affiliate.tcl mode = new"
         #requires no initial_conditions_tid, sales_curve_tid
         set initial_conditions_text [qss_lists_to_text $initial_conditions_lists]
         set sales_curve_text [qss_lists_to_text $sales_curve_lists]
 
         # make a form with no existing initial_conditions_tid and sales_curve_tid
 
-        qf_form action app-model method get id 20120530
+        qf_form action affiliate method get id 20120530
 
         qf_input type hidden value w name mode label ""
         if { $initial_conditions_tid > 0 && $sales_curve_tid > 0 } {
@@ -579,7 +579,7 @@ switch -exact -- $mode {
     }
     c {
         #  compute... compute/process (and cache) output, present post_calc results
-        ns_log Notice "app-model.tcl mode = compute"
+        ns_log Notice "affiliate.tcl mode = compute"
         #requires initial_conditions_tid, sales_curve_tid
         # given initial_conditions_tid and sales_curve_tid
         set error_fail 0
@@ -632,7 +632,7 @@ switch -exact -- $mode {
             lappend price_label_list [lindex $curve_band_list 2]
             lappend value_probability_lists [list $price_list $probability_list]
         }
-        #        ns_log Notice "app-model.tcl price_list $price_list"
+        #        ns_log Notice "affiliate.tcl price_list $price_list"
         ##### looped, varying initial conditions include:
         # put lists and html in a separate arrays from the scalars
         # scalar_arr abbreviated as s_arr
@@ -743,7 +743,7 @@ switch -exact -- $mode {
                     foreach triangle_nbr $triangle_list {
                         set sales_amt [lindex $sales_list $sale_idx]
                         if { [ad_var_type_check_number_p $sales_amt] } {
-#ns_log Notice "app-model.tcl(l739):  ( triangle_nbr $triangle_nbr revenue_tot $revenue_tot sales_amt $sales_amt triangle_tot $triangle_tot  "
+#ns_log Notice "affiliate.tcl(l739):  ( triangle_nbr $triangle_nbr revenue_tot $revenue_tot sales_amt $sales_amt triangle_tot $triangle_tot  "
                             lappend geometric_list [expr { ( $triangle_nbr * $revenue_tot ) + ( $sales_amt * $triangle_tot ) } ]
                         } else {
                             lappend geometric_list 0.
@@ -819,7 +819,7 @@ switch -exact -- $mode {
             lappend rows_list $last_row
             set row_step [expr { 1. / $sample_rate } ]
             for { set ii 0 } { $ii < $last_row } { set ii [expr { $ii + $row_step } ] } {
-#                ns_log Notice "app-model.tcl i $i last_row $last_row row_step $row_step ii $ii"
+#                ns_log Notice "affiliate.tcl i $i last_row $last_row row_step $row_step ii $ii"
                 set row_idx [expr { int( $ii ) } ]
                 lappend rows_list $row_idx
             }
@@ -953,14 +953,14 @@ switch -exact -- $mode {
     }
     r {
         #  review.... show computed output 
-        ns_log Notice "app-model.tcl mode = review"
+        ns_log Notice "affiliate.tcl mode = review"
         #requires initial_conditions_tid, sales_curve_tid
 
         # option not used for this app. No Calcs saved.
     }
     v {
         #  view table(s) (standard, html page document/report)
-        ns_log Notice "app-model.tcl mode = $mode ie. view table"
+        ns_log Notice "affiliate.tcl mode = $mode ie. view table"
         if { [qf_is_natural_number $initial_conditions_tid] && [qf_is_natural_number $sales_curve_tid] && $write_p } {
             lappend menu_list [list edit "initial_conditions_tid=${initial_conditions_tid}&sales_curve_tid=${sales_curve_tid}&mode=e"]
             set menu_e_p 1
@@ -986,7 +986,7 @@ switch -exact -- $mode {
                     if { [lsearch -exact $constants_list $constant] > -1 } {
                         set input_array($constant) [lindex $condition_list 1]
                         set $constant $input_array($constant)
-                        ns_log Notice "app-model.tcl: constant $constant set to $input_array($constant)"
+                        ns_log Notice "affiliate.tcl: constant $constant set to $input_array($constant)"
                     }
                 }
             }
@@ -1020,7 +1020,7 @@ switch -exact -- $mode {
         # default includes v,p
 
         #  present...... presents a list of contexts/scenarios to choose from
-        ns_log Notice "app-model.tcl mode = $mode ie. default"
+        ns_log Notice "affiliate.tcl mode = $mode ie. default"
 
 
         # show initial_conditions, sales_curve  tables
@@ -1069,17 +1069,17 @@ switch -exact -- $mode {
                 set table_ref_name sales_curve_tid
             }
 
-            set active_link "<a\ href=\"app-model?${table_ref_name}=${table_id}\">$name</a>"
+            set active_link "<a\ href=\"affiliate?${table_ref_name}=${table_id}\">$name</a>"
 
             if { ( $admin_p || $table_user_id == $user_id ) && $trashed_p == 1 } {
                 set trash_label "untrash"
-                append active_link " \[<a href=\"app-model?${table_ref_name}=${table_id}&mode=t\">${trash_label}</a>\]"
+                append active_link " \[<a href=\"affiliate?${table_ref_name}=${table_id}&mode=t\">${trash_label}</a>\]"
             } elseif { $table_user_id == $user_id || $admin_p } {
                 set trash_label "trash"
-                append active_link " \[<a href=\"app-model?${table_ref_name}=${table_id}&mode=t\">${trash_label}</a>\]"
+                append active_link " \[<a href=\"affiliate?${table_ref_name}=${table_id}&mode=t\">${trash_label}</a>\]"
             } 
             if { $delete_p && $trashed_p == 1 } {
-                append active_link " \[<a href=\"app-model?${table_ref_name}=${table_id}&mode=d\">delete</a>\]"
+                append active_link " \[<a href=\"affiliate?${table_ref_name}=${table_id}&mode=d\">delete</a>\]"
             } 
             set stats_list [lreplace $stats_list 0 1 $active_link]
             if { $trashed_p == 1 } {
@@ -1112,7 +1112,7 @@ set menu_html ""
 foreach item_list $menu_list {
     set label [lindex $item_list 0]
     set url [lindex $item_list 1]
-    append menu_html "<a href=\"app-model?${url}\">${label}</a>&nbsp;"
+    append menu_html "<a href=\"affiliate?${url}\">${label}</a>&nbsp;"
 }
 
 set user_message_html ""
