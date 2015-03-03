@@ -4,7 +4,7 @@ set context [list [list index "Documentation"] $title]
 set glossary_html ""
 
 set g_list [list "t  : (crash) duration" \
-                "tw : duration at waypoint. " \
+                "tw : (crash) duration at waypoint. " \
                 "waypoint :  A task along one path" \
                 "node : A task and all its direct and indirect dependents" \
                 "tn : (crash) duration at node" \
