@@ -26,7 +26,7 @@ sum of the values for the task and all it's dependents.
 </p>
 <p>Q3: What is a waypoint?
 </p>
-<p><a name="a3">A3</a>: A <strong>waypoing</strong> is a point
+<p><a name="a3">A3</a>: A <strong>waypoint</strong> is a point
 along a single path. When interpreting 'waypoint' in the context
 of PRETTI, waypoint refers to the 
 sum of the values for the task and previous tasks on the same path.
