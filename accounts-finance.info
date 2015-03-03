@@ -10,7 +10,7 @@
     <version name="0.546" url="http://openacs.org/repository/download/apm/accounts-finance-0.546.apm">
         <owner url="mailto:tekbasse@yahoo.com">Benjamin Brink</owner>
         <owner url="http://openacs.org">OpenACS community</owner>
-        <summary>Finance package provides limited set of tools for long-term debts, fixed assets, forecasting.</summary>
+        <summary>Finance package provides a growing library of procedures for use with financial accounting and related topics, including long-term debt, fixed assets, forecasting and data analysis.</summary>
         <description format="text/plain">Finance package provides some calculation tools for XDCPM project management network analysis, affiliate modeling using single path triangular compensation network that is geared for social network marketing, and a systems modeling calculator. Also has some procedures for long-term debts, fixed assets, capital, stock holding, dividends, forecasting and reporting. Will integrate with general-ledger etc.</description>
         <maturity>1</maturity>
 
