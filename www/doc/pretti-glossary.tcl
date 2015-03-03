@@ -1,4 +1,4 @@
-set title "PRETTI Table definitions"
+set title "PRETTI Table Task Glossary"
 set context [list [list index "Documentation"] $title]
 
 set glossary_html ""
