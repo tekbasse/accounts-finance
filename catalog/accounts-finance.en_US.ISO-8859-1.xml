@@ -57,6 +57,7 @@
 <msg key="comments">Comments</msg>
 <msg key="completed_time">Time Finished</msg>
 <msg key="contact_sysadmin">Please contact a system administrator.</msg>
+<msg key="contents">Contents</msg>
 <msg key="cost">Cost</msg>
 <msg key="cost_actual">Cost Actual</msg>
 <msg key="cost_actual_def">The actual cost it took to complete an activity.</msg>
