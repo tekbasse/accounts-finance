@@ -184,6 +184,10 @@
 <msg key="path_eco2_def">Eco2 of a completed path including all dependencies not on path.</msg>
 <msg key="path_idx">Path Index</msg>
 <msg key="path_idx_def">An internally fixed path reference number for this report.</msg>
+<msg key="path_len">Path Length</msg>
+<msg key="path_len_def">Number of different activities in path</msg>
+<msg key="path_len_w_coefs">Path Length with Coefficients</msg>
+<msg key="path_len_w_coefs_def">Number of activities in path</msg>
 <msg key="pert_omp">PERT expected time (Te)</msg>
 <msg key="pert_omp_def">Calculate a value from PERT 'expected time function' where Te = ( Optimal + 4 x Median + Pessimistic ) / 6</msg>
 <msg key="points_gt_5_or_blank">Number of Points should be greater than five or blank.</msg>
