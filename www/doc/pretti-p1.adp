@@ -7,12 +7,12 @@
 
 <h2>Example Contents field of table entry form</h2>
 <p>Here is an example of comma delimited p1 data as it appears when
-being input:
+being input via the app's form:
 </p>
 @raw_html;noquote@
 
 <h2>Example resultant p1 table</h2>
-<p>Here is the same example of p1 data once the table is saved:
+<p>Here is the same example of p1 data (as above) shown on a page once the table is saved:
 </p>
 @raw2_html;noquote@
 
