@@ -62,9 +62,9 @@ array set input_array [list \
     initial_conditions_tid ""\
     revenue_target 22222.\
     sale_max 10000.\
-    initial_conditions_lists [list [list sale_max 10000] [list revenue_target 100000] [list pct_pooled .10] [list interpolate_last_band_p 0] [list growth_curve_eq 1] [list commissions_eq 1] [list interval_start 1] [list interval_size 3] [list interval_count 4] [list sales_curve_name ""] [list sales_curve_tid ""]]\
+    initial_conditions_lists [list [list name value ] [list sale_max 10000] [list revenue_target 100000] [list pct_pooled .10] [list interpolate_last_band_p 0] [list growth_curve_eq 1] [list commissions_eq 1] [list interval_start 1] [list interval_size 3] [list interval_count 4] [list sales_curve_name ""] [list sales_curve_tid ""]]\
     initial_conditions_text ""\
-    sales_curve_lists [list [list 1 .125 bar1] [list 5 .5 bar2] [list 10 .25 bar3] [list 20 .125 bar4]]\
+    sales_curve_lists [list [list price sales_share label] [list 1 .125 bar1] [list 5 .5 bar2] [list 10 .25 bar3] [list 20 .125 bar4]]\
     sales_curve_text ""\
     sample_rate 1\
     period_unit period\
@@ -322,15 +322,20 @@ if { $form_posted } {
                 }
                 set sc_lists $sc_lists_new
             
+                set curve_error 0
                 set sales_pct_list [list ]
-                foreach curve_list $sc_lists {
-                    # area under curve aka probability is second item in list
-                    lappend sales_pct_list [lindex $curve_list 1]
-                }
+                set sc_header_list [lindex $sc_lists 0]
+                set sales_share_idx [lsearch -exact "sales_share" $sc_header_list]
+
+                if { $sales_share_idx > -1 } {
+                    foreach curve_list [lrange $sc_lists 1 end] {
+                        # area under curve aka probability is second item in list --now sales_share_idx
+                        lappend sales_pct_list [lindex $curve_list $sales_share_idx]
+                    }
 
                 # normalize sales_pct_list curve. Total should equal 1. (100%)
                 set rcp_total 0.
-                set curve_error 0
+
                 foreach sales_pct $sales_pct_list {
                     # sales_pct must be a number
                     if { [ad_var_type_check_number_p $sales_pct] } {
@@ -375,6 +380,13 @@ if { $form_posted } {
                     ns_log Notice "affiliate.tcl: sales_curve $sales_curve_tid cannot be normalized."
                     lappend user_message_list "Unable to normalize Sales Curve. Saved as is."
                 }
+                } else {
+                    set curve_error 1
+                    ns_log Notice "affiliate.tcl: sales_share does not exist for sales_curve $sales_curve_tid ."
+                    lappend user_message_list "Column sales_share does not exist. Saved as is."
+
+                }
+
                 ns_log Notice "affiliate.tcl: sorted sc_lists. Results:"
                 ns_log Notice "affiliate.tcl: set sc_lists ${sc_lists}"
 
@@ -586,12 +598,20 @@ switch -exact -- $mode {
         set initial_conditions_lists [qss_table_read $initial_conditions_tid]
         set constants_list [list sale_max revenue_target pct_pooled interpolate_last_band_p growth_curve_eq commissions_eq interval_start interval_size interval_count sample_rate sales_curve_name sales_curve_tid period_unit]
         set constants_required_list [list revenue_target pct_pooled sales_curve_name sales_curve_tid]
-        foreach condition_list $initial_conditions_lists {
-            set constant [lindex $condition_list 0]
-            if { [lsearch -exact $constants_list $constant] > -1 } {
-                set input_array($constant) [lindex $condition_list 1]
-                set $constant $input_array($constant)
+        set condition_headers_list [lindex $initial_conditions_lists 0]
+        set ic_name_idx [lsearch -exact "name" $condition_headers_list]
+        set ic_value_idx [lsearch -exact "name" $condition_headers_list]
+        if { $ic_name_idx > -1 && $ic_value_idx > -1 } {
+            foreach condition_list [lrange $initial_conditions_lists 1 end] {
+                set constant [lindex $condition_list $ic_name_idx]
+                if { [lsearch -exact $constants_list $constant] > -1 } {
+                    set input_array($constant) [lindex $condition_list $ic_value_idx]
+                    set $constant $input_array($constant)
+                }
             }
+        } else {
+            set error_fail 1
+            lappend compute_message_list "Initial condition column 'name' or 'value' is required but does not exist."
         }
         if { [info exists sales_curve_name] } {
             # set sales_curve_tid
