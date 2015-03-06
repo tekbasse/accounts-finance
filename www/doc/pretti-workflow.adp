@@ -45,8 +45,7 @@ Click the #accounts-finance.process# button in the menu of the scenario view to 
         Most any common delimiters may be used to separate fields, 
         so long as they are consistently applied.
         Titles must include the required fields (@p2_required_fields_html@) 
-        for the system to recognize the table as a type p2. 
-        Read more about applying <a href="pretti-p2">p2 tables</a>.
+        for the system to recognize a <a href="pretti-p2">p2 table</a>.
     </li></ul>
   </li><li>
     Click #accounts-finance.Save# button to save the table.
@@ -84,8 +83,7 @@ Click the #accounts-finance.process# button in the menu of the scenario view to 
         Most any common delimiters may be used to separate fields, 
         so long as they are consistently applied.
         Titles must include the required field (@p1_required_fields_html@) 
-        for the system to recognize the table as a type p1.
-        Read more about applying <a href="pretti-p1">p1 tables</a>.
+        for the system to recognize a <a href="pretti-p1">p1 table</a>.
     </li></ul>
   </li><li>
     Click #accounts-finance.Save# button to save the table.
@@ -130,8 +128,7 @@ Any p3 table used by a scenario must be referred to in the p1 scenario.
         Most any common delimiters may be used to separate fields, 
         so long as they are consistently applied.
         Titles must include the required field (@p3_required_fields_html@) 
-        for the system to recognize the table as a type p3.
-        Read more about applying <a href="pretti-p3">p3 tables</a>.
+        for the system to recognize a <a href="pretti-p3">p3 table</a>.
     </li></ul>
   </li><li>
     Click #accounts-finance.Save# button to save the table.
@@ -179,8 +176,7 @@ There are two ways to proceed:
         Most any common delimiters may be used to separate fields, 
         so long as they are consistently applied.
         Titles must include the required field (@dc_required_fields_html@) 
-        for the system to recognize the table as a type dc.
-        Read more about applying <a href="pretti-dc">dc tables</a>.
+        for the system to recognize a <a href="pretti-dc">dc table</a>.
     </li></ul>
   </li><li>
     Click #accounts-finance.Save# button to save the table.  
