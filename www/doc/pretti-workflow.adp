@@ -40,7 +40,8 @@ The button appears in a scenario menu when a scenario points to an existing task
         Most any common delimiters may be used to separate fields, 
         so long as they are consistently applied.
         Titles must include the required fields (@p2_required_fields_html@) 
-        for the system to recognize the table as a type p2.
+        for the system to recognize the table as a type p2. 
+        Read more about applying <a href="pretti-p2">p2 tables</a>.
     </li></ul>
   </li><li>
     Click #accounts-finance.Save# button to save the table.
@@ -79,6 +80,7 @@ The button appears in a scenario menu when a scenario points to an existing task
         so long as they are consistently applied.
         Titles must include the required field (@p1_required_fields_html@) 
         for the system to recognize the table as a type p1.
+        Read more about applying <a href="pretti-p1">p1 tables</a>.
     </li></ul>
   </li><li>
     Click #accounts-finance.Save# button to save the table.
@@ -124,6 +126,7 @@ Any p3 table used by a scenario must be referred to in the p1 scenario.
         so long as they are consistently applied.
         Titles must include the required field (@p3_required_fields_html@) 
         for the system to recognize the table as a type p3.
+        Read more about applying <a href="pretti-p3">p3 tables</a>.
     </li></ul>
   </li><li>
     Click #accounts-finance.Save# button to save the table.
