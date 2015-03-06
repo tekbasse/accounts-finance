@@ -13,5 +13,9 @@ set p3_required_fields_list [acc_fin::pretti_columns_list p3 1]
 
 set p3_required_fields_html [join $p3_required_fields_list ", "]
 
+set dc_required_fields_list [acc_fin::pretti_columns_list dc 1]
+
+set dc_required_fields_html [join $dc_required_fields_list ", "]
+
 set example_url [ad_conn package_url]
 
