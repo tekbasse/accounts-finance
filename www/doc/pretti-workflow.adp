@@ -7,8 +7,11 @@
 The purpose of the workflow is to create a PRETTI chart. 
 A PRETTI chart is a table of type <a href="pretti-tables#p4">p4</a>. 
 </p><p>
-To create a PRETTI chart, create a <strong>task network</strong> table (<a href="pretti-tables#p2">type p2</a>)
+To create a PRETTI chart, 
+create a <strong>task network</strong> table (<a href="pretti-tables#p2">type p2</a>)
 and a <strong>scenario</strong> table (<a href="pretti-tables#p1">type p1</a>). 
+Click the #accounts-finance.process# button in the menu of the scenario view to begin a process that results in a PRETTI table.
+The button appears in a scenario menu when a scenario points to an existing task network.
 </p>
 
 <h4><a name="p2">#accounts-finance.task_network_p2#</a> *</h4>
