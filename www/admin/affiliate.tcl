@@ -325,7 +325,7 @@ if { $form_posted } {
                 set curve_error 0
                 set sales_pct_list [list ]
                 set sc_header_list [lindex $sc_lists 0]
-                set sales_share_idx [lsearch -exact "sales_share" $sc_header_list]
+                set sales_share_idx [lsearch -exact $sc_header_list "sales_share"]
 
                 if { $sales_share_idx > -1 } {
                     foreach curve_list [lrange $sc_lists 1 end] {
@@ -599,8 +599,8 @@ switch -exact -- $mode {
         set constants_list [list sale_max revenue_target pct_pooled interpolate_last_band_p growth_curve_eq commissions_eq interval_start interval_size interval_count sample_rate sales_curve_name sales_curve_tid period_unit]
         set constants_required_list [list revenue_target pct_pooled sales_curve_name sales_curve_tid]
         set condition_headers_list [lindex $initial_conditions_lists 0]
-        set ic_name_idx [lsearch -exact "name" $condition_headers_list]
-        set ic_value_idx [lsearch -exact "name" $condition_headers_list]
+        set ic_name_idx [lsearch -exact $condition_headers_list "name" ]
+        set ic_value_idx [lsearch -exact $condition_headers_list "value"]
         if { $ic_name_idx > -1 && $ic_value_idx > -1 } {
             foreach condition_list [lrange $initial_conditions_lists 1 end] {
                 set constant [lindex $condition_list $ic_name_idx]
@@ -640,16 +640,20 @@ switch -exact -- $mode {
 
         # Get revenue_curve_data 
         set revenue_curve_data_lists [qss_table_read $sales_curve_tid]
-
+        set rc_header_list [lindex $revenue_curve_data_lists 0]
+        set rc_price_idx [lsearch -exact $rc_header_list "price"]
+        set rc_probability_idx [lsearch -exact $rc_header_list "sales_share"]
+        set rc_label_idx [lsearch -exact $rc_header_list "label"]
+        set revenue_curve_data_lists [lrange $revenue_curve_data_lists 1 end]
         # make the distribution curve accessible as lists
         set price_list [list ]
         set probability_list [list ]
         set price_label_list [list ]
         set value_probability_lists [list ]
         foreach curve_band_list $revenue_curve_data_lists {
-            lappend price_list [lindex $curve_band_list 0]
-            lappend probability_list [lindex $curve_band_list 1]            
-            lappend price_label_list [lindex $curve_band_list 2]
+            lappend price_list [lindex $curve_band_list $rc_price_idx]
+            lappend probability_list [lindex $curve_band_list $rc_probability_idx]            
+            lappend price_label_list [lindex $curve_band_list $rc_label_idx]
             lappend value_probability_lists [list $price_list $probability_list]
         }
         #        ns_log Notice "affiliate.tcl price_list $price_list"
