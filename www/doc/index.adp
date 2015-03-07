@@ -39,12 +39,18 @@ A local copy is available at accounts-finance/www/doc/<a href="LICENSE.html">LIC
     GNU General Public License for more details.
 
     You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+    along with this program.  If not, see &lt; http://www.gnu.org/licenses/ &gt;.
 </pre>
-
+<p>
+Forecasting is about asking "What if.."; Plans and status reports are about keeping a forecast relevant
+and sharing with key project stakeholders.  Accounts-finance package is designed to minimize burdens associated 
+with these endeavors. 
+</p>
 <h3>contents</h3>
 <ul><li>
 <a href="LICENSE.html">GPL 3+ License</a>
+</li><li>
+<a href="pretti">PRETTI Introduction</a>
 </li><li>
 <a href="pretti-features">PRETTI Features</a>
 </li><li>
