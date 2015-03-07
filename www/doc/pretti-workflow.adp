@@ -7,6 +7,8 @@
 The purpose of the workflow is to create a PRETTI chart. 
 A PRETTI chart is a table of type <a href="pretti-tables#p4">p4</a>. 
 </p><p>
+
+</p><p>
 To create a PRETTI chart, 
 </p>
 <ul><li>
@@ -187,17 +189,15 @@ There are two ways to proceed:
     Prior revisions are automatically moved to #accounts-finance.trash#, 
     where they may be recovered using #accounts-finance.untrash#.
 </li></ol>
-<h5>Create a standardized curve using max,min and mode points</h5>
+<h5>Create a standardized curve using max,min and median points</h5>
 <ul><li>
     #accounts-finance.name# becomes the tail part of the url as in 
     @example_url;noquote@pretti/{name}
   </li><li>
     <strong>Optimistic</strong> (O) is the minimum value in the range.
   </li><li>
-    <strong>Most likely</strong> (M) is the mode (and usually median) value 
+    <strong>Most likely</strong> (M) is the median value 
     in the range.
-    The mode is not automatically calculated to allow for significant
-    bias other than the median that may exist in a range.
   </li><li>
     <strong>Pessimistic</strong> (P) is the maximum value in the range.
   </li><li>
@@ -208,5 +208,5 @@ There are two ways to proceed:
     Click #accounts-finance.new# button to create the table.  
 </li></ul>
 <p>
-  The curve is built assuming two standards of deviation from the mode (and median).
+  The curve is built assuming two standards of deviation from the median.
 </p>
