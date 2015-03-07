@@ -23,6 +23,7 @@ if { $read_p } {
     set admin_p 0
     set delete_p 0
 }
+set user_created_p 0
 
 set debug_p 0
 # set debug_p to 1 to bypass scheduling and possibly add extra error logging for admins
@@ -680,7 +681,10 @@ switch -exact -- $mode {
         set table_flags [lindex $table_stats_list 6]
         set trash_folder_p [lindex $table_stats_list 7]
         # see lib/pretti-view-one and lib/pretti-menu1
-        
+        set created_user_id [lindex $table_stats_list 11]
+        if { ( $created_user_id eq $user_id ) && $create_p } {
+            set user_created_p 1
+        }
     }
     default {
         # default includes v,p

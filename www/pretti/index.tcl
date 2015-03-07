@@ -4,6 +4,7 @@ set instance_id [ad_conn package_id]
 set user_id [ad_conn user_id]
 set read_p [permission::permission_p -party_id $user_id -object_id $instance_id -privilege read]
 if { $read_p } {
+    set create_p [permission::permission_p -party_id $user_id -object_id $instance_id -privilege create]
     set write_p [permission::permission_p -party_id $user_id -object_id $instance_id -privilege write]
     if { $write_p } {
         set delete_p [permission::permission_p -party_id $user_id -object_id $instance_id -privilege delete]
@@ -17,10 +18,12 @@ if { $read_p } {
         set delete_p 0
     }
 } else {
+    set create_p 0
     set write_p 0
     set admin_p 0
     set delete_p 0
 }
+set user_created_p 0
 
 set table_default ""
 
@@ -121,6 +124,10 @@ switch -exact -- $mode {
         set trashed_p [lindex $table_stats_list 7]
         set trash_folder_p $trashed_p
         # see lib/pretti-view-one and lib/pretti-menu1
+        set created_user_id [lindex $table_stats_list 11]
+        if { ( $created_user_id eq $user_id ) && $create_p } {
+            set user_created_p 1
+        }
     }
     default {
         # default includes v,p

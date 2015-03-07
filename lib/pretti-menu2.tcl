@@ -161,7 +161,7 @@ if { $write_p || $create_p } {
             # default includes v,p
             #  present...... presents a list of contexts/tables to choose from
             ns_log Notice "accounts-finance/lib/pretti-menu2.tcl.392:  mode = $mode ie. default"
-            if { $write_p } {
+            if { $write_p || $create_p } {
                 if { $trashed_p || ( [info exists trash_folder_p] && $trash_folder_p ) } {
                     #append active_link " \[<a href=\"app?${table_ref_name}=${table_id}&mode=t\">${untrash_label}</a>\]"
                     #qf_input type submit value $untrash_label name "zt" class btn
