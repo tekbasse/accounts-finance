@@ -26,7 +26,7 @@ if { ![info exists app_name] } {
     set app_name "App"
 }
 
-if { ![info exists read_p] || ![info exists write_p] || ![info exists admin_p] || ![info exists delete_p] } {
+if { ![info exists read_p] || ![info exists create_p] || ![info exists write_p] || ![info exists admin_p] || ![info exists delete_p] } {
     set user_id [ad_conn user_id]
     set read_p [permission::permission_p -party_id $user_id -object_id $instance_id -privilege read]
     if { $read_p } {
@@ -53,8 +53,8 @@ if { ![info exists read_p] || ![info exists write_p] || ![info exists admin_p] |
 
 set menu_html ""
 set menu_list [list [list $app_name ""]]
-
-if { $write_p || ( $user_created_p && $create_p ) } {
+# user_created_p && create_p
+if { $write_p || $create_p } {
     #set select_label "#accounts-finance.select#"
     #set untrash_label "#accounts-finance.untrash#"
     #set trash_label "#accounts-finance.trash#"
@@ -64,9 +64,10 @@ if { $write_p || ( $user_created_p && $create_p ) } {
     if { ![info exists form_action_url] } {
         set form_action_url app
     }
-    if { $write_p || $create_p } {
-        lappend menu_list [list new mode=n]
-    }
+
+    lappend menu_list [list new mode=n]
+
+    # Mode names are set, but apparently not passed anywhere..
     switch -exact -- $mode {
         e {
             set mode_name "#accounts-finance.edit#"
