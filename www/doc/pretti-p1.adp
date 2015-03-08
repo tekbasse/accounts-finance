@@ -24,19 +24,19 @@ Reserved p1 columns consist of:
 <ul><li>
 references to other tables ( *_tid *_name ), 
 </li><li>
-task attributes for setting default estimate values (time_* cost_* eco2_*), 
+task attributes for setting default estimate values (time_* cost_* eco2_* ), 
 </li><li>
 operational constraint attributes for setting default values ( max_* ), 
 </li><li>
-report number formatting ( *precision),
+report number formatting ( *precision ),
 </li><li>
-statistical points ( *_probability_points), and
+statistical points ( *_probability_points ), and
 </li><li>
-process flags ( index_equation, db_format)
+process flags ( index_equation, db_format )
 </li></ul>
 <p>Here, an asterisk (*) is used similar to a hyphen in Engilsh to denote a prefix or suffix.
 </p>
-<p>In general with PRETTI processing, <strong>a more specific value takes precidence</strong>. 
+<p>In general with PRETTI processing, <strong>a more specific value takes precedence</strong>. 
 This is similar in concept to class inheritance or subtyping in object-oriented computer programming 
 --depending on how its portrayed and your perspective etc. 
 Volumes have been written about it; There's no sense in exploring the depths of it here. 
@@ -45,8 +45,8 @@ By using more specificity as a guide,
 a plan may grow in depth at any point at any time without breaking the process or forcing artificial 
 constraints on an evolving plan.
 </p><p>
-For values common between table types, p2 values takes precidence over p3 values, p3 values take precidence over p1 values;
-Because p2 contains specific tasks, optional p3 contains templates of tasks, and p1 contains the scenario parameters.
+For values common between table types, p2 values takes precedence over p3 values, p3 values take precedence over p1 values;
+Because p2 contains specific tasks, optional p3 is a library of task templates, and p1 contains scenario parameters.
 </p>
 <h3>References to other tables</h3>
 <p>When building a model or plan, the initial minimum requirements are one scenario (p1) and task network (p2).
@@ -59,22 +59,31 @@ For example, if activity_table_tid is '100012' and activity_table_name is 'Red A
 PRETTI will reference the table with ID '100012'.
 </p><p>
 For *_dist_curve_tid or *_dist_curve_name, 
-the guide of a more specific value (*_tid) taking precidence (over *_name) still applies.
+the guide of a more specific value (*_tid) takes precedence (over *_name).
+If a distribution curve is not available, PRETTI attempts to generate
+a standard distribution curve using p2 minimum, maximum and median values over the same variable (cost, time, or eco2).
+Values of p2 takes precedence over p3 values, and p3 values take precedence over p1 values.
 </p><p>
 For example, if cost_dist_curve_tid is '100015' in the scenario (p1), 
 but the referenced task network (p2) assigns a specific task a cost_dist_curve_name of "paintingA103", 
-then the cost distribution curve for paintingA103 is used for that task.
+then the cost distribution curve 'paintingA103' is used for that task.
 </p>
 <h3>Task attributes</h3>
-<p>
+<p>Task attributes are mainly used in the context of tasks and task network (p2) tables, 
+and so are defined there. 
+In p1, task attributes can be assigned defaults for the entire scenario or missing data in p2 or p3 tables.
 </p>
 <h3>Operational constraint attributes</h3>
-
+<p>Operational constraint attributes are mainly used in the context of tasks and task network (p2) tables, 
+and so are defined there.
+In p1, operational constraints can be assigned defaults for the entire scenario or missing data in p2 or p3 tables.
+</p>
 <h3>Report number formatting</h3>
-
+<p>
+</p>
 <h3>Statistical points</h3>
 <p>
-When interpreting *_probability_points, a task's distribution curve takes precidence over min/max/median values similar to how *_tid values takes precidence over *_name values.
+When interpreting *_probability_points, a task's distribution curve takes precedence over min/max/median values similar to how *_tid values takes precedence over *_name values.
 </p>
 <h3>Process flags</h3>
 
