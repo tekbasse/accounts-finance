@@ -34,7 +34,7 @@ operational constraint attributes for setting default values ( max_* ), and
 </li><li>
 statistical points ( *_probability_points ), 
 </li></ul>
-<p>Here, an asterisk (*) is used similar to a hyphen in Engilsh to denote a prefix or suffix.
+<p>Here, an asterisk (*) is used similar to a hyphen in English to denote a prefix or suffix.
 </p>
 <p>In general with PRETTI processing, <strong>a more specific value takes precedence</strong>. 
 This is similar in concept to class inheritance or subtyping in object-oriented computer programming 
@@ -63,7 +63,7 @@ The equation is expected to be in a format usable by tcl's 'expr'.
 uses PERT expected values (EV) in place of probability point (*_probability_point) values. 
 This is especially useful to confirm PRETTI analysis is consistent with other PERT implementations. 
 PRETTI calculates EVs using the standard equation (O + 4*M + P) / 6, 
-where each value is determined by referencing the probability point at each place in a distribution curve.
+where O, M and P are determined by referencing the appropriate probability point (pp) in a distribution curve.
 Optimistic is at pp=0, Median at pp=0.5 and Pessimistic at pp=1. 
 For the gritty details, see the procedures acc_fin::pert_omp_to_strict_dc and qaf_y_of_x_dist_curve
 </p>
