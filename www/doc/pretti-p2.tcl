@@ -4,13 +4,29 @@ set type "p2"
 
 set context [list [list index "Documentation"] $title]
 
+set p2_text [lindex [acc_fin::example_table p20a] 2]
 set raw_html "<pre>"
-set p2_list [acc_fin::example_table p20a]
-foreach row $p2_list {
-    append raw_html [join $row "," ]
-    append raw_html "\n"
-}
+append raw_html $p2_text
 append raw_html "</pre>"
+
+
+#raw2_html
+
+set p2_list [list ]
+set p2_text_list [split $p2_text "\n"]
+foreach row $p2_text_list {
+    regsub -all -- " " $row ";" row2
+    set row_list [split $row2 ","]
+    set new_row_list [list ]
+    foreach element $row_list {
+        regsub -all -- ";" $element " " new_element
+        lappend new_row_list $new_element
+    }
+    lappend p2_list $new_row_list
+}
+
+
+
 
 set table_attribute_list [list border 1 cellspacing 0 cellpadding 3]
 
