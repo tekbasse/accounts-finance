@@ -10,7 +10,7 @@ foreach row $p1_list {
 append p1_html "</pre>"
 
 set p2_html "<pre>"
-set p2_list [lindex [acc_fin::example_table p20b]]
+set p2_list [acc_fin::example_table p20b]
 append p2_html [lindex $p2_list 2]
 append p2_html "</pre>"
 set subtitle_html [lindex $p2_list 0]
