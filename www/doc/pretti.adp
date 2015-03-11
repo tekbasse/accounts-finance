@@ -5,6 +5,8 @@
 <h3>@title;noquote@</h3>
 
 <p>
+PRETTI is made for project networks that grow in size and statistical complexity with thousands of participants.
+</p><p>
 A PRETTI chart renders a network of tasks using parameters from a scenario.
 </p><p>
 Multiple PRETTI charts can be made by applying different scenarios to a task network. 
@@ -18,5 +20,6 @@ PERT/GERT and critical path management (CPM) to stakeholders
 that may not be as proficient or motivated to follow project management techniques
 for your project.
 </p><p>
-
+PRETTI's color-blind friendly color scheme provides effective visual signals for prioritizing micro-tasks 
+at points of inteference in the field --without the need for managment intervention. 
 </p>
