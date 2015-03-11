@@ -14,7 +14,7 @@ highlighting the critical path (CP)
 as well as paths and activities that risk interfering or affecting the CP. 
 </p><p>
 PRETTI avoids processing intensity of Monte Carlo analysis 
-by calculating only the points requested along a distribution curve, 
+by calculating <a href="pretti-statistics">only the points requested along a distribution curve</a>, 
 such as the extremes and median. 
 </p><p>
 PRETTI provides a painless way to create a probability distribution curve 

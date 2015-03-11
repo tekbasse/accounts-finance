@@ -47,6 +47,9 @@ This algorithm quickly converts historical data into performance data.
 </p><p>
 Custom statistical curves based on historical performance are nolonger inconvenient to use.
 </p>
+<p>
+For the gritty details, see the procedures acc_fin::pert_omp_to_strict_dc and qaf_y_of_x_dist_curve in this OpenACS package.
+</p>
 
 
 
