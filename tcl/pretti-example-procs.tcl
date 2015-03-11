@@ -536,6 +536,17 @@ ORG,INT,28
 UK,QQ,90
 RI,US,23" ]
         }
+        p30g {
+            set ret_list [list "example p3" "This is an example p3 using example 1's data templated into p3 format" "type,time_est_short,time_est_median,time_est_long,time_ext,dependent_tasks
+A,2,4,6,4.0,
+B,3,5,9,5.33,
+C,4,5,7,5.17,A
+D,4,6,10,6.33,A
+E,4,5,7,5.17,B C
+F,3,4,8,4.5,D
+G,3,5,8,5.17,E" ]
+        }
+
         p20 {
             # p2 Task Network
             #      activity_ref           reference for an activity, a unique task id, using "activity" to differentiate between table_id's tid 
