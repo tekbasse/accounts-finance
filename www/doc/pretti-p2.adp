@@ -36,7 +36,7 @@ a space or semicolon may be appropriate to delimit between dependent each activi
 Other p2 columns are either constraints on a sequence of the same task.
 </p>
 <h3>Dimensions of task</h3>
-<p>Pretti tracks up to three different dimensions using distribution curves: 
+<p>PRETTI tracks up to three different dimensions using distribution curves: 
 </p>
 <ul><li>
 duration ie. time, 
@@ -46,24 +46,22 @@ cost, or
 eco2 ie. greenhouse gas equivalents used in tracking environmental footprint. 
 </li></ul>
 <p>
-Other tracked fields accumulate task values without statistical calculations. 
+Other tracked fields accumulate task values using standard number calucaltions 
+expected with using a ledger (ie without interpreting statistical values). 
 </p>
 <p>
 Task attributes are organized by a prefix associated by its dimension; Usually: time_* cost_* and eco2_*. 
 Here, an asterisk (*) is used similar to a hyphen in English to denote a prefix or suffix.
-</p>
-<p>
-Each prefix has a suffix appended that identifies a specific attribute for the dimension. 
-Each reserved combination is listed in the table of reserved p2 column headings (below). 
 </p><p>
 Each prefix has a unit associated with the dimension that is assumed to be consistent for all values, 
 whether it is hours, days, weeks, minutes etc. for time, 
 a specific currency or ounce of gold for cost, or 
 ghg or tons of co2 et cetera for eco2.
 </p><p>
+Each prefix has a suffix appended that identifies a specific attribute for each task.
+</p><p>
 Each suffix also has a datatype associated with it:
-</p>
-<ul><li>
+</p><ul><li>
 References to other tables ( *_tid *_name ) are expected to be a number for *_tid or other table name for *_name.
 Distribution curves are the only tables that task attributes can refer to directly. 
 </li><li>
@@ -71,7 +69,9 @@ Operational constraint attributes for setting default values ( max_* ) refer to 
 or same unit of dimension used elsewhere. 
 See the reserved p2 columns' Description for specifics including example number formats.
 </li></ul>
-
+<p> 
+Each reserved prefix-suffix combination is listed in the table of reserved p2 column headings: 
+</p>
 <h3>All reserved @type@ columns</h3>
 @p2_html;noquote@
 <p>These column headings are required for a @type@ table:
