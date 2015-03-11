@@ -95,7 +95,7 @@
 <msg key="dependent_tasks">Dependent Tasks</msg>
 <msg key="dependent_tasks_def">Tasks that this activity or task directly depends on.</msg>
 <msg key="dependent_types">Dependent Types</msg>
-<msg key="dependent_types_def">Types that this Task Type depends on.</msg>
+<msg key="dependent_types_def">Types that this Task Type depends on. (not yet implemented)</msg>
 <msg key="description">Description</msg>
 <msg key="description_def">A sentence or phrase describing activity or task type.</msg>
 <msg key="direct_dependencies">Direct Dependencies</msg>
