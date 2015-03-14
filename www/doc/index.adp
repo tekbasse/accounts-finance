@@ -63,6 +63,8 @@ with these endeavors.
 <a href="pretti-glossary">PRETTI Glossary</a>
 </li>
 @examples_html;noquote@
+</li><li>
+<a href="app-workflow">Application Workflow</a>
 </ul>
 
 <h3>Package Features</h3>

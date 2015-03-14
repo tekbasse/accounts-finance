@@ -44,6 +44,6 @@ click the #accounts-finance.new# button.
 <p>
 If a table is a process specification, such as a PRETTI Scenario (p1), 
 a process button will appear in the menu with specification's view when the table meets minimum process requirements. 
-Click the #accounts-finance.process# button to begin a process that results in some process output, usually a table.
+Click the #accounts-finance.process# button to begin a process that results in some process output, usually one or more tables also.
 </p>
 
