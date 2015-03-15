@@ -133,3 +133,123 @@ ad_proc -public acc_fin::app_table_type_flag {
     
     return $type_return
 }
+
+ad_proc -private acc_fin::app_log_create {
+    table_tid
+    action_code
+    action_title
+    entry_text
+    {user_id ""}
+    {instance_id ""}
+} {
+    Log an entry for a acc_fin::app process. Returns unique entry_id if successful, otherwise returns empty string.
+} {
+    set id ""
+    set status [qf_is_natural_number $table_tid]
+    if { $status } {
+        if { $entry_text ne "" } {
+            if { $instance_id eq "" } {
+                ns_log Notice "acc_fin::app_log_create.451: instance_id ''"
+                set instance_id [ad_conn package_id]
+            }
+            if { $user_id eq "" } {
+                ns_log Notice "acc_fin::app_log_create.451: user_id ''"
+                set user_id [ad_conn user_id]
+            }
+            set id [db_nextval qaf_id_seq]
+            set trashed_p 0
+            set nowts [dt_systime -gmt 1]
+            set action_code [qf_abbreviate $action_code 38]
+            set action_title [qf_abbreviate $action_title 78]
+            db_dml qaf_process_log_create { insert into qaf_process_log
+                (id,table_tid,instance_id,user_id,trashed_p,name,title,created,last_modified,log_entry)
+                values (:id,:table_tid,:instance_id,:user_id,:trashed_p,:action_code,:action_title,:nowts,:nowts,:entry_text) }
+            ns_log Notice "acc_fin::app_log_create.46: posting to qaf_process_log: action_code ${action_code} action_title ${action_title} '$entry_text'"
+        } else {
+            ns_log Warning "acc_fin::app_log_create.48: attempt to post an empty log message has been ignored."
+        }
+    } else {
+        ns_log Warning "acc_fin::app_log_create.51: table_tid '$table_tid' is not a natural number reference. Log message '${entry_text}' ignored."
+    }
+    return $id
+}
+
+ad_proc -public acc_fin::app_log_read {
+    table_tid
+    {max_old "1"}
+    {user_id ""}
+    {instance_id ""}
+} {
+    Returns any new log entries as a list via util_user_message, otherwise returns most recent max_old number of log entries.
+    Returns empty string if no entry exists.
+} {
+    set return_lol [list ]
+    set alert_p 0
+    set nowts [dt_systime -gmt 1]
+    set valid1_p [qf_is_natural_number $table_tid] 
+    set valid2_p [qf_is_natural_number $table_tid]
+    if { $valid1_p && $valid2_p } {
+        if { $instance_id eq "" } {
+            set instance_id [ad_conn package_id]
+            ns_log Notice "acc_fin::app_log_read.493: instance_id ''"
+        }
+        if { $user_id eq "" } {
+            set user_id [ad_conn user_id]
+            ns_log Notice "acc_fin::app_log_read.497: user_id ''"
+        }
+        set return_lol [list ]
+        set last_viewed ""
+        set alert_msg_count 0
+        set viewing_history_p [db_0or1row qaf_process_log_viewed_last { select last_viewed from qaf_process_log_viewed where instance_id = :instance_id and table_tid = :table_tid and user_id = :user_id } ]
+        # set new view history time
+        if { $viewing_history_p } {
+
+            set last_viewed [string range $last_viewed 0 18]
+            if { $last_viewed ne "" } {
+                
+                set entries_lol [db_list_of_lists qaf_process_log_read_new { 
+                    select id, name, title, log_entry, last_modified from qaf_process_log 
+                    where instance_id = :instance_id and table_tid =:table_tid and last_modified > :last_viewed order by last_modified desc } ]
+                
+                ns_log Notice "acc_fin::app_log_read.80: last_viewed ${last_viewed}  entries_lol $entries_lol"
+                
+                if { [llength $entries_lol ] > 0 } {
+                    set alert_p 1
+                    set alert_msg_count [llength $entries_lol]
+                    foreach row $entries_lol {
+                        set message_txt "[lc_time_system_to_conn [string range [lindex $row 4] 0 18]] [lindex $row 3]"
+                        set last_modified [lindex $row 4]
+                        ns_log Notice "acc_fin::app_log_read.79: last_modified ${last_modified}"
+                        util_user_message -message $message_txt
+                        ns_log Notice "acc_fin::app_log_read.88: message '${message_txt}'"
+                    }
+                    set entries_lol [list ]
+                } 
+            }
+            
+            set max_old [expr { $max_old + $alert_msg_count } ]
+            set entries_lol [db_list_of_lists qaf_process_log_read_one { 
+                select id, name, title, log_entry, last_modified from qaf_process_log 
+                where instance_id = :instance_id and table_tid =:table_tid order by last_modified desc limit :max_old } ]
+            foreach row [lrange $entries_lol $alert_msg_count end] {
+                set message_txt [lindex $row 2]
+                append message_txt " ([lindex $row 1])"
+                append message_txt " posted: [lc_time_system_to_conn [string range [lindex $row 4] 0 18]]\n "
+                append message_txt [lindex $row 3]
+                ns_log Notice "acc_fin::app_log_read.100: message '${message_txt}'"
+                lappend return_lol $message_txt
+            }
+            
+            # last_modified ne "", so update
+            db_dml qaf_process_log_viewed_update { update qaf_process_log_viewed set last_viewed = :nowts where instance_id = :instance_id and table_tid = :table_tid and user_id = :user_id }
+        } else {
+            # create history
+            set id [db_nextval qaf_id_seq]
+            db_dml qaf_process_log_viewed_create { insert into qaf_process_log_viewed
+                ( id, instance_id, user_id, table_tid, last_viewed )
+                values ( :id, :instance_id, :user_id, :table_tid, :nowts ) }
+        }
+    }
+    return $return_lol
+}
+
