@@ -6,7 +6,7 @@ set glossary_html ""
 set g_list [list "t  : (crash) duration" \
                 "tw : (crash) duration at waypoint. " \
                 "waypoint :  A task along one path" \
-                "node : A task and all its direct and indirect dependents" \
+                "node : A task in a network. Summaries include all its direct and indirect dependents" \
                 "tn : (crash) duration at node" \
                 "fw : float at waypoint (tn - tw)" \
                 "c : cost" \
