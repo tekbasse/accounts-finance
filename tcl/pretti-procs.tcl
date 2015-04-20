@@ -485,6 +485,12 @@ ad_proc -public acc_fin::pretti_color_chooser {
     if { $on_cp_p > -1 } {
         # ..from acc_fin::pretti_table_to_html
         # intensity is 0 to 15.
+        # Keep in mind accessibility contrast requirements:
+        # (L1 + 0.05 ) / ( L2 + 0.05) = contrast
+        # l1 is lightest color, l2 is darkest color, constrast should be greater than 7 (at least 4.5) of 21
+        # see "constrast ratio" defined in http://www.w3.org/TR/WCAG20/#visual-audio-contrast7
+        # which on a scale to 15 means constrat should be at least 4, best if at least 5.
+
         # subtract 1 for contrast variance
         # which leaves color variance 0 to 14
         if { $on_cp_p || $path_duration == $cp_duration } {
