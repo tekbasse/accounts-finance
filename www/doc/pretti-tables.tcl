@@ -9,6 +9,7 @@ foreach type $type_list {
     set var ${type}_html
     set var2 ${type}b_html
     set table_lists [list ]
+    lappend table_lists [list "#accounts-finance.columns#" "#accounts-finance.title#" "#accounts-finance.description#"]
     foreach column $all_list {
         set row_list [list $column "#accounts-finance.${column}#" "#accounts-finance.${column}_def#"]
         lappend table_lists $row_list
