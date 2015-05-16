@@ -13,6 +13,8 @@
         <summary>Finance package provides a growing library of procedures for use with financial accounting and related topics, including long-term debt, fixed assets, forecasting and data analysis.</summary>
         <description format="text/plain">Finance package provides some calculation tools for XDCPM project management network analysis, affiliate modeling using single path triangular compensation network that is geared for social network marketing, and a systems modeling calculator. Also has some procedures for long-term debts, fixed assets, capital, stock holding, dividends, forecasting and reporting. Will integrate with general-ledger etc.</description>
         <maturity>1</maturity>
+        <license>GNU Gpl 3.0 or higher</license>
+        <license url="http://www.gnu.org/licenses/gpl.txt">GPL3</license>
 
         <provides url="accounts-finance" version="0.546"/>
 	<requires url="acs-datetime" version="4.0"/>
