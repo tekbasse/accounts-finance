@@ -148,6 +148,125 @@ ad_proc -public qaf_y_of_x_dist_curve {
     return $y
 }
 
+
+ad_proc -public qaf_p_at_y_of_dist_curve {
+    y
+    y_x_lol
+} {
+    returns p where y is in the distribution curve's range of y.  Where p is some probability between 0 and 1. 
+    Assumes y_x_lol is an ordered list of lists representing a curve. 
+    If first row contains labels x and y as labels, 
+    these positions will be used to extract data from remaining rows. a pair y,x is assumed.
+    Returns -1  if there is data type error or supplied y is out of distribution curve's range of y.
+    Assumes y is sorted ascending order.
+}  {
+    # this function is revised from qaf_y_of_x_dist_curve.
+    
+    #ns_log Notice "qaf_p_at_y_of_dist_curve.82: *****************************************************************" 
+    #ns_log Notice "qaf_p_at_y_of_dist_curve.83: p $p interpolate_p $interpolate_p "
+
+    set y_spot [expr { $y + 0. } ]
+    set first_row_list [lindex $y_x_lol 0]
+    set x_idx [lsearch -exact $first_row_list "x"]
+    set y_idx [lsearch -exact $first_row_list "y"]
+    if { $y_idx == -1 || $x_idx == -1 } {
+        set x_idx 1
+        set y_idx 0
+        set data_row_1 0
+    } else {
+        set data_row_1 1
+    }
+
+    # normalize x to 1.. first extract x list
+    set x_list [list ]
+    set x_incr_list [list ]
+    set x_subtot 0.
+    foreach y_x [lrange $y_x_lol $data_row_1 end] {
+        set x_val [lindex $y_x $x_idx]
+        ns_log Notice "qaf_p_at_y_of_dist_curv.186: x_val $x_val y_x $y_x"
+        lappend x_list $x_val
+        # also create a list of increasing x
+        if { [qf_is_decimal $x_val ] } {
+            set x_subtot [expr { $x_subtot + $x_val } ]
+        }
+        lappend x_incr_list $x_subtot
+    }
+    #ns_log Notice "qaf_p_at_y_of_dist_curve.102: y_x_lol length [llength $y_x_lol] y_x_lol $y_x_lol " 
+    #ns_log Notice "qaf_p_at_y_of_dist_curve.103: x_list length [llength $x_list] x_list $x_list"
+    set x_sum [f::sum $x_list]
+    # set x_len [llength $x_list]
+
+    # extract y list
+    foreach y_x [lrange $y_x_lol $data_row_1 end] {
+        lappend y_list [lindex $y_x $y_idx]
+    }
+    set y_len [llength $y_list]
+    set y_min [f::lmin $y_list]
+    set y_max [f::lmax $y_list]
+    if { $y_spot < $y_min || $y_spot > $y_max } {
+        set x_normalized -1
+        # test value out of range
+    } else {
+
+        set loop_limit [expr { $y_len + 1 } ]
+
+        # normalize p to range of x
+        # set p_normalized [expr { $p * $x_sum * 1. } ]
+
+        #ns_log Notice "qaf_p_at_y_of_dist_curve.104: x_sum '$x_sum' p '$p' p_normalized '$p_normalized' y_idx '$y_idx' x_idx '$x_idx' data_row_1 '$data_row_1'"
+        # determine y @ x
+
+        set i 0
+        set s_idx $i
+        set s_test 0.
+        while { $s_test < $y_spot && $i < $loop_limit } {
+            set s [lindex $y_list $i]
+            #    ns_log Notice "qaf_p_at_y_of_dist_curve.117: i '$i' x '$x' p_test '$p_test'"
+            if { $s ne "" } {
+                set s_test $s
+                set s_idx $i
+            }
+            incr i
+        }
+        # $s_idx is the index point in y_list where y is in the range of s_idx
+        set y_x_i [expr { $data_row_1 + $s_idx } ]
+        set row_list [lindex $y_x_lol $y_x_i]
+        #ns_log Notice "qaf_p_at_y_of_dist_curve.120: i $i p_test $p_test x '$x' row_list '$row_list' y_x_i '$y_x_i'"
+        if { $s_test != $y_spot } {
+            # interpolate
+
+            # point(i) is p(x2,y2)
+            #set x2 [lindex $row_list $x_idx]
+            set x2 [lindex $x_incr_list $s_idx]
+            #set y2 [lindex $row_list $y_idx]
+            set y2 [lindex $y_list $s_idx]
+            # point(i-1) is p(x1,y1)
+            #set y_x_i_1 [expr { $y_x_i - 1 } ]
+            set s_idx_1 [expr { $s_idx - 1 } ]
+            #set row_list [lindex $y_x_lol $y_x_i_1]
+            #set x1 [lindex $row_list $x_idx]
+            set x1 [lindex $x_incr_list $s_idx_1]
+            #set y1 [lindex $row_list $y_idx]
+            set y1 [lindex $y_list $s_idx_1]
+            # axis are reversed, because we are interplating x at y instead of y at x
+            # so we are essentially calling qal_interpolatep1p2_at_y ..
+            set x [qaf_interpolatep1p2_at_x $y1 $x1 $y2 $x2 $y_spot 1]
+
+        } else {
+            set x [lindex $x_incr_list $x_idx]
+            if { $x ne "" } {
+                set x [expr { $x + 0. } ]
+            }
+        }
+        #ns_log Notice "qaf_p_at_y_of_dist_curve.141: y $y"
+
+        # normalize x to a probability
+        set x_normalized [expr { $x / ( $x_sum * 1. ) } ]
+    }
+    return $x_normalized
+}
+
+
 ad_proc -public qaf_distribution_points_create {
     distribution_p_list
     {number_of_points ""}

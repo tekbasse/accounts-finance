@@ -24,7 +24,7 @@ ad_proc -public qaf_interpolatep1p2_at_x {
         set m [expr { ($p2_y - $p1_y) / ($p2_x - $p1_x) }]
         if { $p2_x != 0 } {
             set b [expr { $p2_y / ( $m * $p2_x ) } ]
-        } else { $p1_y != 0 } {
+        } elseif { $p1_y != 0 } {
             set b [expr { $p1_y / ( $m * $p1_x ) } ]
         }
         set p3_y [expr { ( $m * $p3_x ) + $b } ]
