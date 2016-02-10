@@ -257,12 +257,12 @@ ad_proc -public qaf_p_at_y_of_dist_curve {
         if { $s_test != $y_spot } {
             # interpolate
             # point(i) is p(x2,y2)
-            set x2 [lindex $x_incr_list $s_idx]
-            set y2 [lindex $y_list $s_idx]
+            set x2 [expr { [lindex $x_incr_list $s_idx] * 1. } ]
+            set y2 [expr { [lindex $y_list $s_idx] * 1. } ]
             # point(i-1) is p(x1,y1)
             set s_idx_1 [expr { $s_idx - 1 } ]
-            set x1 [lindex $x_incr_list $s_idx_1]
-            set y1 [lindex $y_list $s_idx_1]
+            set x1 [expr { [lindex $x_incr_list $s_idx_1] * 1. } ]
+            set y1 [expr { [lindex $y_list $s_idx_1] * 1. } ]
             ns_log Notice "qaf_p_at_y_of_dist_curve.262: s_idx $s_idx y1 $y1 x1 $x1 y2 $y2 x2 $x2"
             # axis are rotated (swapped), because we are interplating x at y instead of y at x
             # so we are essentially calling qal_interpolatep1p2_at_y ..
