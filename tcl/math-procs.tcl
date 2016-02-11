@@ -7,7 +7,7 @@ ad_library {
 
 namespace eval acc_fin {}
 
-ad_proc -public qaf_interp_line_p1p2_at_x {
+ad_proc -public qaf_extrapolate_p1p2_at_x {
     p1_x
     p1_y
     p2_x
