@@ -44,7 +44,7 @@ ad_proc -private acc_fin::schedule_do {
     set dur_sum 0
     set first_started_time [lindex [lindex $batch_lists 0] 6]
     # set debug_p to 0 to reduce repeated log noise:
-    set debug_p 1
+    set debug_p 0
     if { $debug_p } {
         ns_log Notice "acc_fin::schedule_do.39: first_started_time '${first_started_time}' batch_lists_len ${batch_lists_len}"
     }
