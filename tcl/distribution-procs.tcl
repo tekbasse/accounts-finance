@@ -139,7 +139,7 @@ ad_proc -public qaf_y_of_x_dist_curve {
 
     } else {
         set y [lindex $row_list $y_idx]
-        if { $y ne "" } {
+        if { [qf_is_natural_number $y] } {
             set y [expr { $y + 0. } ]
         }
     }
@@ -270,7 +270,7 @@ ad_proc -public qaf_p_at_y_of_dist_curve {
             ns_log Notice "qaf_p_at_y_of_dist_curve.269: x $x"
         } else {
             set x [lindex $x_incr_list $s_idx]
-            if { $x ne "" } {
+            if { [qf_is_natural_number $x] } {
                 set x [expr { $x + 0. } ]
             }
         }
