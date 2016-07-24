@@ -34,9 +34,11 @@ ad_proc -public acc_fin::smoothing_filter {
 ad_proc -public acc_fin::shuffle_list {
     a_list
 } {
-    Shuffles a list.
+    Shuffles ( or randomizes the order of ) a list into a random order.
 } {
-#     Algorithm/Code extracted from wiki.tcl.tk/941 version shuffle10a on 20 May 2014.
+    # Algorithm/Code extracted from wiki.tcl.tk/941 version shuffle10a on 20 May 2014.
+    # Added more keywords in description to help find this proc.
+
     randomInit [clock clicks]
     set len [llength $a_list]
     while { $len > 0 } {
