@@ -17,9 +17,10 @@
         <license url="http://www.gnu.org/licenses/gpl.txt">GPL3</license>
 
         <provides url="accounts-finance" version="0.546"/>
-	<requires url="acs-datetime" version="4.0"/>
-	<requires url="q-forms" version="0.001"/>
-	<requires url="spreadsheet" version="0.001"/>
+        <requires url="acs-datetime" version="4.0"/>
+        <requires url="q-forms" version="0.001"/>
+        <requires url="spreadsheet" version="0.001"/>
+        <requires url="q-control" version="0.001"/>
 
         <callbacks>
         </callbacks>
@@ -28,6 +29,7 @@
             <parameter scope="instance" datatype="number"  min_n_values="1"  max_n_values="1"  name="TableRowsMax"  default="0" description="Limits the maximum row size of any table. 0 is no limit." section_name="constraints"/>
             <parameter scope="instance" datatype="string"  min_n_values="1"  max_n_values="1"  name="AuxiliaryColumnNames"  default="ghg ggwp co2e cde coal oil ng gt nuke hydro solar wind cement eru cers rec km airkm" description="A space delimited list of column names allowed for alternate resource costs or system inputs and outputs in PRETTI P2 and P3 tables.  Column 'name' and 'type' are reserved." section_name="auxiliary"/>
             <parameter scope="instance" datatype="number"  min_n_values="1"  max_n_values="1"  name="AuxiliaryColumnsNameMaxLength"  default="4" description="Limits the maximum column name length of auxiliary resource cost calculations used in PRETTI P2 and P3 tables. 0 means no auxiliary columns calculated (except any declared in AuxiliaryColumnNames parameter. Column 'name' and 'type' are reserved." section_name="auxiliary"/>
+          <parameter datatype="string"  min_n_values="1"  max_n_values="1"  name="instanceIdOverride"  default="" description="Override the package_id for this instance. Usually leave blank.. or maybe set to subsite_id or a specific package_id number. See qs_set_instance_id for implementation details." section_name="site-admin"/>
         </parameters>
     </version>
 </package>
