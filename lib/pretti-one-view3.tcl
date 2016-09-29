@@ -5,7 +5,7 @@
 # This is a variation of accounts-finance/lib/pretti-one-view.tcl
 # Does not depend on graphicsmagick
 
-#set package_id [ad_conn package_id]
+#set instance_id \[qc_set_instance_id\]
 set user_id [ad_conn user_id]
 set read_p [permission::permission_p -party_id $user_id -object_id $instance_id -privilege read]
 set log_html ""

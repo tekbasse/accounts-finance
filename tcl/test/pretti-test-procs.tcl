@@ -399,7 +399,7 @@ aa_register_case pretti_curve_tc_multiply {
             # set defaults
             set activity "pretti_curve_tc_multiply"
             set user_id 0
-            set instance_id [ad_conn package_id]
+            set instance_id [qc_set_instance_id]
             set scenario_id 0
             set base_curve_lol [list ]
             lappend base_curve_lol [list x y]

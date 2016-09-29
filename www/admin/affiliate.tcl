@@ -3,10 +3,10 @@
 set title "Affiliate program"
 set context [list $title]
 
-set package_id [ad_conn package_id]
+set package_id [qc_set_instance_id]
 set user_id [ad_conn user_id]
 set write_p [permission::permission_p -party_id $user_id -object_id $package_id -privilege write]
-set admin_p [permission::permission_p -party_id $user_id -object_id $package_id -privilege admin]
+set admin_p [permission::permission_p -party_id $user_id -object_id [ad_conn package_id] -privilege admin]
 set delete_p [permission::permission_p -party_id $user_id -object_id $package_id -privilege delete]
 # randmize rand with seed from clock
 expr { srand([clock clicks]) }

@@ -152,7 +152,7 @@ ad_proc -public acc_fin::cobbler_file_create_from_table {
 } {
     if { $instance_id eq "" } {
         ns_log Warning "acc_fin::cobbler_file_create_from_table.45: No instance_id supplied."
-        set instance_id [ad_conn package_id]
+        set instance_id [qc_set_instance_id]
     }
     if { $user_id eq "" } {
         ns_log Warning "acc_fin::cobbler_file_create_from_table.49: No user_id supplied."
@@ -341,7 +341,7 @@ ad_proc -public acc_fin::cobbler_html_build_n_view {
     x_max_min_px 100, x_max_max_px 500, y_max_min_px 100, y_max_max_px 500, color1 #999999, color2 #cccccc
 } {
     set error_p 0
-    set instance_id [ad_conn package_id]
+    set instance_id [qc_set_instance_id]
     set user_id [ad_conn user_id]
     set cob_html ""
     set name_list [acc_fin::chart_file_names $cob_filename $instance_id]
@@ -569,7 +569,7 @@ ad_proc -public acc_fin::file_web_pathname {
 } {
     #ns_log Notice "acc_fin::file_web_pathname.554: instance_id $instance_id"
     if { $instance_id eq "" } {
-        set instance_id [ad_conn package_id]
+        set instance_id [qc_set_instance_id]
     }
     set pkg_url [apm_package_url_from_id $instance_id]
     if { [string range $pkg_url 0 0] eq "/" } {
@@ -589,7 +589,7 @@ ad_proc -public acc_fin::pie_file_create_from_table {
 } {
     if { $instance_id eq "" } {
         ns_log Warning "acc_fin::pie_file_create_from_table.566: No instance_id supplied."
-        set instance_id [ad_conn package_id]
+        set instance_id [qc_set_instance_id]
     }
     if { $user_id eq "" } {
         ns_log Warning "acc_fin::pie_file_create_from_table.570: No user_id supplied."

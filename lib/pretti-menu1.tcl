@@ -5,7 +5,7 @@
 
 # generic header for static .adp pages
 if { ![info exists instance_id] } {
-    set instance_id [ad_conn package_id]
+    set instance_id [qc_set_instance_id]
 }
 if { ![info exists table_tid] } {
     set table_tid ""
@@ -19,7 +19,7 @@ if { $read_p } {
     set menu_list [list [list $app_name ""]]
     
     if { $write_p } {
-        set admin_p [permission::permission_p -party_id $user_id -object_id $instance_id -privilege admin]
+        set admin_p [permission::permission_p -party_id $user_id -object_id [ad_conn package_id] -privilege admin]
         set delete_p [permission::permission_p -party_id $user_id -object_id $instance_id -privilege delete]
         if { ![info exists form_action_url] } {
             set form_action_url app

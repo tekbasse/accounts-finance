@@ -6,7 +6,7 @@
 
 # generic header for static .adp pages
 if { ![info exists instance_id] } {
-    set instance_id [ad_conn package_id]
+    set instance_id [qc_set_instance_id]
 }
 if { ![info exists table_flags] } {
     set table_tid ""
@@ -35,7 +35,7 @@ if { ![info exists read_p] || ![info exists create_p] || ![info exists write_p] 
          if { $write_p } {
             set delete_p [permission::permission_p -party_id $user_id -object_id $instance_id -privilege delete]
             if { $delete_p } {
-                set admin_p [permission::permission_p -party_id $user_id -object_id $instance_id -privilege admin]
+                set admin_p [permission::permission_p -party_id $user_id -object_id [ad_conn package_id] -privilege admin]
             } else {
                 set admin_p 0
             }

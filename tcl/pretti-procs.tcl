@@ -580,7 +580,7 @@ ad_proc -private acc_fin::pretti_log_create {
         if { $entry_text ne "" } {
             if { $instance_id eq "" } {
                 ns_log Notice "acc_fin::pretti_log_create.451: instance_id ''"
-                set instance_id [ad_conn package_id]
+                set instance_id [qc_set_instance_id]
             }
             if { $user_id eq "" } {
                 ns_log Notice "acc_fin::pretti_log_create.451: user_id ''"
@@ -620,7 +620,7 @@ ad_proc -public acc_fin::pretti_log_read {
     set valid2_p [qf_is_natural_number $table_tid]
     if { $valid1_p && $valid2_p } {
         if { $instance_id eq "" } {
-            set instance_id [ad_conn package_id]
+            set instance_id [qc_set_instance_id]
             ns_log Notice "acc_fin::pretti_log_read.493: instance_id ''"
         }
         if { $user_id eq "" } {
@@ -1773,7 +1773,7 @@ ad_proc -private acc_fin::p_load_tid {
     #    upvar 1 cc_larr cc_larr
 
     if { $instance_id eq "" } {
-        set instance_id [ad_conn package_id]
+        set instance_id [qc_set_instance_id]
     }
     if { $user_id eq "" } {
         set user_id [ad_conn user_id]
@@ -2687,7 +2687,7 @@ ad_proc -public acc_fin::scenario_prettify {
     if { $instance_id eq "" } {
         # Added warning for diagnostics if called via schedule proc
         ns_log Warning "acc_fin::scenario_prettify.2364 instance_id not previously set."
-        set instance_id [ad_conn package_id]
+        set instance_id [qc_set_instance_id]
     }
     if { $user_id eq "" } {
         # Added warning for diagnostics if called via schedule proc
@@ -4477,7 +4477,7 @@ ad_proc -public acc_fin::table_sort_y_asc {
     Creates a copy of a distribution curve (table) sorted by column Y in ascending order. Returns table_id or empty string if error.
 } {
     if { $instance_id eq "" } {
-        set instance_id [ad_conn package_id]
+        set instance_id [qc_set_instance_id]
     }
     if { $user_id eq "" } {
         set user_id [ad_conn user_id]

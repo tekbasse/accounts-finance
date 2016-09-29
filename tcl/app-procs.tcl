@@ -150,7 +150,7 @@ ad_proc -private acc_fin::app_log_create {
         if { $entry_text ne "" } {
             if { $instance_id eq "" } {
                 ns_log Notice "acc_fin::app_log_create.451: instance_id ''"
-                set instance_id [ad_conn package_id]
+                set instance_id [qc_set_instance_id]
             }
             if { $user_id eq "" } {
                 ns_log Notice "acc_fin::app_log_create.451: user_id ''"
@@ -190,7 +190,7 @@ ad_proc -public acc_fin::app_log_read {
     set valid2_p [qf_is_natural_number $table_tid]
     if { $valid1_p && $valid2_p } {
         if { $instance_id eq "" } {
-            set instance_id [ad_conn package_id]
+            set instance_id [qc_set_instance_id]
             ns_log Notice "acc_fin::app_log_read.493: instance_id ''"
         }
         if { $user_id eq "" } {

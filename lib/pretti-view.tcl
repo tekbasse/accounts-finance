@@ -13,7 +13,7 @@ set read_p [permission::permission_p -party_id $user_id -object_id $instance_id 
 if { $read_p } {
     set write_p [permission::permission_p -party_id $user_id -object_id $instance_id -privilege write]
     if { $write_p } {
-        set admin_p [permission::permission_p -party_id $user_id -object_id $instance_id -privilege admin]
+        set admin_p [permission::permission_p -party_id $user_id -object_id [ad_conn package_id] -privilege admin]
         set delete_p [permission::permission_p -party_id $user_id -object_id $instance_id -privilege delete]
     } else {
         set admin_p 0

@@ -47,7 +47,7 @@ ad_page_contract {
 
 set title "Model"
 set context [list $title]
-set package_id [ad_conn package_id]
+set package_id [qc_set_instance_id]
 
 
 set window_content ""
@@ -55,7 +55,7 @@ set window_content ""
 
 set user_id [ad_conn user_id]
 set write_p [permission::permission_p -party_id $user_id -object_id $package_id -privilege write]
-set admin_p [permission::permission_p -party_id $user_id -object_id $package_id -privilege admin]
+set admin_p [permission::permission_p -party_id $user_id -object_id [ad_conn package_id] -privilege admin]
 if { $admin_p } {
 
     #set model [acc_fin::template_model 0]
