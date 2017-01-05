@@ -4,6 +4,8 @@
 
 # @creation-date 2014-09-12
 
+##code  Add a proc here to check for any active procedures in the scheduled proc stack that have been killed
+#        as a result of server restart..
 
 # Scheduled proc scheduling:
 # Nightly pi time + 1 = 4:14am
