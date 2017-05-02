@@ -1289,11 +1289,11 @@ ad_proc -private acc_fin::pretti_columns_list {
             #                           variation in repeating task detail. (deprecated by auto expansion of nonexisting coefficients).
             #      time_probability_point A percentage (0..1) along the (cumulative) distribution curve. defaults to 0.5
             #      cost_probability_point A percentage (0..1) along the (cumulative) distribution curve. defaults to "", which defaults to same as time_probability_point
-            #set ret_list \[list name value\]
+            # ret_list is list of names
             set ret_list [list activity_table_tid activity_table_name task_types_tid task_types_name time_dist_curve_name time_dist_curve_tid cost_dist_curve_name cost_dist_curve_tid time_est_short time_est_median time_est_long time_probability_point cost_est_low cost_est_median cost_est_high cost_probability_point db_format index_equation precision tprecision cprecision eprecision pert_omp max_concurrent max_discount_pct max_reduction_pct max_run_time max_tasks_per_run max_overlap_pct eco2_est_low eco2_est_median eco2_est_high eco2_probability_point eco2_dist_curve_tid eco2_dist_curve_name ]
         }
         p11 {
-            #set ret_list \[list name value\]
+            # ret_list is list of names
             set ret_list [list activity_table_tid ]
         }
         p20 {

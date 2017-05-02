@@ -365,7 +365,7 @@ NOTE: this list_of_lists format is diffrent than the standard list_of_lists tabl
     
     # then split each section into "lines" by CR
     
-    # then split calculations by "=" (and add set,\[expr \])
+    # then split calculations by equal-sign (and add set, expr in brackets)
     # output data as list of lists
 
     # for security, compiler should not allow square brackets, exec, source, or proc
