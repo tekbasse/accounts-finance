@@ -134,7 +134,7 @@ ad_proc -public qaf_tcl_list_of_lists_to_html_table {
                     # process this column / cell
                     set cell_format ""
                     set cell_value [lindex [lindex $tcl_list_of_lists $column_index ] $row_index]
-                    set cell_value_is_number [ad_var_type_check_number_p $cell_value ]
+                    set cell_value_is_number [qfad_is_number_p $cell_value ]
                     if { $cell_value_is_number } {
                         set cell_format " align=\"right\""
                         if { $cell_value < 0 } {

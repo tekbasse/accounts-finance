@@ -84,7 +84,7 @@ ad_proc -public acc_fin::table_data_stats {
             foreach row [lrange $table_data_list 1 end]  {
                 set x [lindex $row $x_idx]
                 set y [lindex $row $y_idx]
-                if { [ad_var_type_check_number_p $x] && [ad_var_type_check_number_p $y] } {
+                if { [qfad_is_number_p $x] && [qfad_is_number_p $y] } {
                     lappend maybe_x_list $x
                     lappend maybe_y_list $y
                     set maybe_x_list_len [llength $maybe_x_list ]

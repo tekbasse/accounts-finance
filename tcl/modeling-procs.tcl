@@ -1084,7 +1084,7 @@ ad_proc -private acc_fin::gl_tx_balanced {
     set errors 0
     foreach list_pair $transaction_list {
         set term [lindex $list_pair 1]
-        if { [ad_var_type_check_number_p $term] } {
+        if { [qfad_is_number_p $term] } {
             set sum [expr { $sum + $term } ]
         } else {
             set errors 1

@@ -1475,7 +1475,7 @@ ad_proc -public acc_fin::pretti_table_to_html {
     # Other parameters could be added to comments for changing color scheme/bias
     set color_sig_mask_idx ""
     regexp -- {[^a-z\_]?color_sig_mask_idx[\ \=\:]([0-7])[^0-7]} $comments scratch color_sig_mask_idx
-    if { [ad_var_type_check_number_p $color_sig_mask_idx] && $color_sig_mask_idx > -1 && $color_sig_mask_idx < 8 } {
+    if { [qfad_is_number_p $color_sig_mask_idx] && $color_sig_mask_idx > -1 && $color_sig_mask_idx < 8 } {
         # do nothing
     } else {
         # set default
@@ -1484,7 +1484,7 @@ ad_proc -public acc_fin::pretti_table_to_html {
 
     set color_cp_mask_idx ""
     regexp -- {[^a-z\_]?color_cp_mask_idx[\ \=\:]([0-7])[^0-7]} $comments scratch color_cp_mask_idx
-    if { [ad_var_type_check_number_p $color_cp_mask_idx] && $color_cp_mask_idx > -1 && $color_cp_mask_idx < 8 } {
+    if { [qfad_is_number_p $color_cp_mask_idx] && $color_cp_mask_idx > -1 && $color_cp_mask_idx < 8 } {
         # do nothing
     } else {
         # set default
@@ -1493,7 +1493,7 @@ ad_proc -public acc_fin::pretti_table_to_html {
 
     set colorswap_p ""
     regexp -- {[^a-z\_]?colorswap_p[\ \=\:]([0-1])[^0-1]} $comments scratch colorswap_p
-    if { [ad_var_type_check_number_p $colorswap_p] && $colorswap_p > -1 && $colorswap_p < 2 } {
+    if { [qfad_is_number_p $colorswap_p] && $colorswap_p > -1 && $colorswap_p < 2 } {
         # do nothing
     } else {
         # set default
@@ -1518,7 +1518,7 @@ ad_proc -public acc_fin::pretti_table_to_html {
                 regexp -- {ts:([0-9\.]+)[^0-9]} $cell scratch test_num
             }
         }
-        if { [ad_var_type_check_number_p $test_num] && $test_num > 0 } {
+        if { [qfad_is_number_p $test_num] && $test_num > 0 } {
             set cp_duration_at_pp $test_num
         }
     }

@@ -338,7 +338,7 @@ if { $form_posted } {
 
                 foreach sales_pct $sales_pct_list {
                     # sales_pct must be a number
-                    if { [ad_var_type_check_number_p $sales_pct] } {
+                    if { [qfad_is_number_p $sales_pct] } {
                         set rcp_total [expr { $rcp_total + $sales_pct } ]
                     } else {
                         set curve_error 1
@@ -351,7 +351,7 @@ if { $form_posted } {
                         # edit the probability values
                         set new_rcp_list [list ]
                         foreach sales_pct $sales_pct_list {
-                            if { [ad_var_type_check_number_p $sales_pct] } {
+                            if { [qfad_is_number_p $sales_pct] } {
                                 set sales_pct_adj [expr { $adj_factor * $sales_pct } ]
                                 lappend new_rcp_list $sales_pct_adj
                             } else {
@@ -737,7 +737,7 @@ switch -exact -- $mode {
                 }
                 
                 # add column and format
-                if { [ad_var_type_check_number_p $frequency] } {
+                if { [qfad_is_number_p $frequency] } {
                     set frequency_fmtd "[format "% 1.4f" $frequency]%"
                 } else {
                     set frequency_fmtd $frequency
@@ -766,7 +766,7 @@ switch -exact -- $mode {
                     set sale_idx 0
                     foreach triangle_nbr $triangle_list {
                         set sales_amt [lindex $sales_list $sale_idx]
-                        if { [ad_var_type_check_number_p $sales_amt] } {
+                        if { [qfad_is_number_p $sales_amt] } {
 #ns_log Notice "affiliate.tcl(l739):  ( triangle_nbr $triangle_nbr revenue_tot $revenue_tot sales_amt $sales_amt triangle_tot $triangle_tot  "
                             lappend geometric_list [expr { ( $triangle_nbr * $revenue_tot ) + ( $sales_amt * $triangle_tot ) } ]
                         } else {
@@ -792,7 +792,7 @@ switch -exact -- $mode {
 
             set scalar_arr(commissions_pot-$i) [expr { $scalar_arr(revenue-$i) * $scalar_arr(pct_pooled-$i) } ]
 
-            if { [ad_var_type_check_number_p $scalar_arr(shares_tot-$i) ] && $scalar_arr(shares_tot-$i) != 0 } {
+            if { [qfad_is_number_p $scalar_arr(shares_tot-$i) ] && $scalar_arr(shares_tot-$i) != 0 } {
                 set scalar_arr(share_value-$i) [expr { $scalar_arr(commissions_pot-$i) / $scalar_arr(shares_tot-$i) } ]
             } else {
                 set scalar_arr(share_value-$i) 0
@@ -884,15 +884,15 @@ switch -exact -- $mode {
                 if { $row_idx < $sale_count } {
                     # in original loop, ii is set here, and now known as row_idx
                     set commission_ii [lindex $list_arr(commission_list-$i) $row_idx]
-                    if { [ad_var_type_check_number_p $commission_ii] } {
+                    if { [qfad_is_number_p $commission_ii] } {
                         set commission_ii [util_commify_number [format "%0.2f" $commission_ii]]
                     }
                     set revenue_ii [lindex $list_arr(data_set_list-$i) $row_idx]
-                    if { [ad_var_type_check_number_p $revenue_ii] } {
+                    if { [qfad_is_number_p $revenue_ii] } {
                         set revenue_ii [util_commify_number [format "%0.2f" $revenue_ii]]
                     }
                     set micropayment_ii [lindex $list_arr(shares_list-$i) $row_idx] 
-                    if { [ad_var_type_check_number_p $micropayment_ii] } {
+                    if { [qfad_is_number_p $micropayment_ii] } {
                         if { $micropayment_ii > 2 } {
                             set micropayment_ii [util_commify_number [format "%1.0f" $micropayment_ii]]
                         } else {
@@ -919,7 +919,7 @@ switch -exact -- $mode {
         foreach i $intervals_list { 
             regsub -all -- {,} $scalar_arr(shares_tot-$i) {} shares_tot_i
             regsub -all -- {,} $scalar_arr(commissions_tot-$i) {} commissions_tot_i
-            if { [ad_var_type_check_number_p $commissions_tot_i ] && [ad_var_type_check_number_p $shares_tot_i ] } {
+            if { [qfad_is_number_p $commissions_tot_i ] && [qfad_is_number_p $shares_tot_i ] } {
                 set micropayment_val [format "%1.14f" [expr { $commissions_tot_i / $shares_tot_i } ]]
             } else {
                 set micropayment_val "&nbsp;"

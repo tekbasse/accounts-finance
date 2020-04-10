@@ -237,7 +237,7 @@ ad_proc -public qaf_distribution_points_create {
         #ns_log Notice "qaf_distribution_points_create: yvalue '$yvalue' frequency '$frequency'"
         # total_pct adds all the rcp amounts to confirm it is 100%
         # frequency must be a number
-        if { [ad_var_type_check_number_p $frequency] } {
+        if { [qfad_is_number_p $frequency] } {
             #            ns_log Notice "qaf_distribution_points_create: frequency $frequency"
             set area($count) [expr { $area([expr { $count - 1 } ]) + $frequency } ] 
             set total_pct [expr { $total_pct + $frequency } ]
@@ -257,7 +257,7 @@ ad_proc -public qaf_distribution_points_create {
         foreach row $distribution_p_list {
             set yvalue [lindex $row $y_col]
             set frequency [lindex $row $x_col]
-            if { [ad_var_type_check_number_p $frequency] } {
+            if { [qfad_is_number_p $frequency] } {
                 set area($count) [expr { $area([expr { $count - 1 } ]) + ( $frequency / $total_pct ) } ]
                 set total_check [expr { $total_check + $frequency } ]
             }
