@@ -42,7 +42,7 @@ ad_proc -public acc_fin::shuffle_list {
     randomInit [clock clicks]
     set len [llength $a_list]
     while { $len > 0 } {
-        set n_idx [expr { int( $len * [random] ) } ]
+        set n_idx [expr { int( $len * [util::random] ) } ]
         set tmp [lindex $a_list $n_idx]
         lset a_list $n_idx [lindex $a_list [incr len -1]]
         lset a_list $len $tmp

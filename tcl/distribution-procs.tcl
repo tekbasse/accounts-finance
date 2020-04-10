@@ -278,7 +278,7 @@ ad_proc -public qaf_distribution_points_create {
         # every case assumes to reach target
         while { ( $amount_p && ( $data_sum < $min_sum_of_outputs ) ) || ( $count_p && ($point_count < $number_of_points ) ) } {
             
-            set point_seed [random ]
+            set point_seed [util::random ]
             set count 0
             # We have area under a normalized curve, let's find interval 
             while { $point_seed > $area($count) } {

@@ -91,7 +91,7 @@ if { $read_p } {
         # each $active_link becomes a separate form..
         if { $write_p } {
 
-            set form_id [qf_form action $form_action_attr method post id 20140420-[random] hash_check 1]
+            set form_id [qf_form action $form_action_attr method post id 20140420-[util::random] hash_check 1]
             
             ## if using name_link, comment out this next line:
             qf_input type submit value $select_label name "zv" class btn

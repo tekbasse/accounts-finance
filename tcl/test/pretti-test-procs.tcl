@@ -212,18 +212,18 @@ aa_register_case curve_import {
             set c_label_list [list ]
             set curve_lists [list ]
 
-            set dot_count [expr { int( [random] * ( 10 - 1 + .99 ) ) + 1 } ]
-            set 1or2 [expr { int( [random] * ( 2 - 1 + .5 ) ) + 1 } ] 
+            set dot_count [expr { int( [util::random] * ( 10 - 1 + .99 ) ) + 1 } ]
+            set 1or2 [expr { int( [util::random] * ( 2 - 1 + .5 ) ) + 1 } ] 
             for {set i 0} { $i < $dot_count} {incr i} {
                 foreach col_list [lrange [list x y label] 0 $1or2] {
                     switch -exact $col_list {
                         x { 
                             # a random amount, assume hours for a task for example
-                            lappend c_x_list [expr { int( [random] * 256. + 5. ) / 6. } ]
+                            lappend c_x_list [expr { int( [util::random] * 256. + 5. ) / 6. } ]
                         }
                         y {
                             # these could be usd or btc for example
-                            lappend c_y_list [expr { int( [random] * 30000. + 90. ) / 100. } ]
+                            lappend c_y_list [expr { int( [util::random] * 30000. + 90. ) / 100. } ]
                         }
                         label {
                             lappend c_label_list [ad_generate_random_string]
@@ -232,9 +232,9 @@ aa_register_case curve_import {
                 }
             }
 
-            set minimum [expr { int( [random] * 256. + 5. ) / 6. } ]
-            set median [expr { int( [random] * 512. + 5. ) / 6. + 256. } ]
-            set maximum [expr { int( [random] * 1024. + 5. ) / 6. + 1024 } ]
+            set minimum [expr { int( [util::random] * 256. + 5. ) / 6. } ]
+            set median [expr { int( [util::random] * 512. + 5. ) / 6. + 256. } ]
+            set maximum [expr { int( [util::random] * 1024. + 5. ) / 6. + 1024 } ]
             set x_len [llength $c_x_list]
             if { $c_label_list eq "" } {
                 set titles [list x y]
@@ -416,7 +416,7 @@ aa_register_case pretti_curve_tc_multiply {
             set i 0
             set random_list [list ]
             for {set ii 0} { $ii < $base_n } { incr ii } {
-                set random_arr($ii) [qaf_round_to_decimals [random] 3]
+                set random_arr($ii) [qaf_round_to_decimals [util::random] 3]
             }
             set zeros [string range "000000000000000" 1 $combo_set_count]
             while { $i < $permutations_count } {
