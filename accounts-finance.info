@@ -23,7 +23,8 @@
         <requires url="acs-datetime" version="4.0"/>
         <requires url="q-forms" version="0.001"/>
         <requires url="spreadsheet" version="0.001"/>
-
+	<requires url="q-control" version="0.020" />
+	
         <callbacks>
         </callbacks>
         <parameters>
