@@ -20,10 +20,7 @@
         <maturity>1</maturity>
 
         <provides url="accounts-finance" version="0.547"/>
-        <requires url="acs-datetime" version="4.0"/>
-        <requires url="q-forms" version="0.001"/>
-        <requires url="spreadsheet" version="0.001"/>
-	<requires url="q-control" version="0.020" />
+        <requires url="accounts-ledger" version="0.036"/>
 	
         <callbacks>
         </callbacks>
