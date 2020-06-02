@@ -39,7 +39,7 @@ set table_tid ""
 if { [qf_is_natural_number $path_info] } {
     set table_tid $path_info
     # is path_info a table_tid?
-    set table_stats_list [qss_table_stats $table_tid]
+    set table_stats_list [qss_table_stats $table_tid $instance_id]
     # name, title, comments, cell_count, row_count, template_id, flags, trashed, popularity, time last_modified, time created, user_id
     if { [llength $table_stats_list ] > 1 } {
         set http_status 200
@@ -73,7 +73,7 @@ ns_log Notice "accounts-finance/www/index.vuh.73 path_info '$path_info' table_ti
 
 if { $table_tid ne "" } {
     set http_status 200
-    set table_stats_list [qss_table_stats $table_tid]
+    set table_stats_list [qss_table_stats $table_tid $instance_id]
     if { [llength $table_stats_list ] > 1 } {
         set table_name [lindex $table_stats_list 0]
         # set table_title [lindex $table_stats_list 1]
@@ -100,9 +100,7 @@ if { $table_tid ne "" } {
 }
 
 if { $http_status eq "404" } {
-    doc_return 404 text/html "
-      [ad_header "Page Not Found"]
-      <h3>404 Page not found</h3><p>Please contact system administrator at <a href=\"mailto:[ad_system_owner]\">[ad_system_owner]</a> if you think this is a system error.</p>"
+   ad_return_exception_page 404 "Page Not Found" "<h3>404 Page not found</h3><p>Please contact system administrator at <a href=\"mailto:[ad_system_owner]\">[ad_system_owner]</a> if you think this is a system error.</p>"
     ns_log Notice "accounts-finance/www/pretti/index.vuh.66: table_tid '$table_tid' not found for user_id $user_id instance_id $instance_id"
     ad_script_abort
 }
