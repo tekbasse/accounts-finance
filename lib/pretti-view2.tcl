@@ -35,15 +35,16 @@ if { $read_p } {
     # get the entire list, to sort it before processing
     foreach table_id $table_ids_list {
         set stats_mod_list [list $table_id]
-        set stats_orig_list [qss_table_stats $table_id]
+        set stats_orig_list [qss_table_stats $table_id $instance_id]
         foreach stat $stats_orig_list {
             lappend stats_mod_list $stat
         }
         # table_id, name, title, comments, cell_count, row_count, template_id, flags, trashed, popularity, time last_modified, time created, user_id
         lappend tables_stats_lists $stats_mod_list
     }
-    
+
     set tables_stats_lists [lsort -index 6 -real $tables_stats_lists]
+
     set select_label "#accounts-finance.select#"
     set untrash_label "#accounts-finance.untrash#"
     set trash_label "#accounts-finance.trash#"
