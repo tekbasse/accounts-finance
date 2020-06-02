@@ -99,7 +99,7 @@ if { $write_p || $create_p } {
             ns_log Notice "accounts-finance/lib/pretti-menu2.tcl.358:  mode = $mode ie. view table"
             set mode_name "#accounts-finance.view#"
             set tid_is_num_p [qf_is_natural_number $table_tid]
-	    ns_log Notice "accounts-finance/lib/pretti-menu2.tcl.95 trashed_p '${trashed_p}' tid_is_num_p '${tid_is_num_p}' write_p '${write_p}' user_created_p '${user_created_p}' admin_p '${admin_p}' create_p '${create_p}' delete_p '${delete_p}' trash_folder_p '${trash_folder_p}'"
+
             # no actions against a trashed item
             if { !$trashed_p } {
 
