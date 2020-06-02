@@ -41,19 +41,19 @@ array set input_array [list \
     reset "" \
     mode "p" \
     next_mode "p" \
-			   ]
+      ]
 
 array set title_array [list \
     submit "Submit" \
     reset "Reset" \
-			   ]
+      ]
 
 set user_message_list [list ]
 
 
 # get previous form inputs if they exist
 
-set form_posted [qf_get_inputs_as_array input_array]
+set form_posted [qf_get_inputs_as_array input_array hash_check 0]
 set mode $input_array(mode)
 set next_mode $input_array(next_mode)
 set trash_folder_p $input_array(trash_folder_p)

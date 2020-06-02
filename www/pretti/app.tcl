@@ -56,19 +56,19 @@ array set input_array [list \
     reset "" \
     mode "p" \
     next_mode "p" \
-			   ]
+      ]
 
 array set title_array [list \
     submit "Submit" \
     reset "Reset" \
-			   ]
+      ]
 
 set user_message_list [list ]
 
 
 # get previous form inputs if they exist
 
-set form_posted [qf_get_inputs_as_array input_array hash_check 1]
+set form_posted [qf_get_inputs_as_array input_array hash_check 0]
 set mode $input_array(mode)
 set next_mode $input_array(next_mode)
 set trash_folder_p $input_array(trash_folder_p)
@@ -522,7 +522,7 @@ if { $form_posted } {
             
             # see lib/pretti-view-one and lib/pretti-menu1
             # given table_tid 
-            #set table_lists [qss_table_read $table_tid]
+            #set table_lists [qss_table_read $table_tid $instance_id $user_id]
             #acc_fin::scenario_prettify $table_tid $instance_id $user_id
             set table_rows_max [parameter::get -parameter TableRowsMax -package_id $instance_id]
             set table_rows_count [lindex $table_stats_list 4]

@@ -17,17 +17,25 @@ if { ![info exists table_flags] } {
 if { ![info exists trashed_p] } {
     set trashed_p 0
 }
+set trashed_p [qf_is_true $trashed_p]
+
+if { ![info exists trash_folder_p] } {
+    set trash_folder_p 0
+}
+set trash_folder_p [qf_is_true $trash_folder_p]
 
 if { ![info exists user_created_p] } {
     set user_created_p 0
 }
+set user_created_p [qf_is_true $user_created_p]
 
 if { ![info exists app_name] } {
     set app_name "App"
 }
-
+set user_id [ad_conn user_id]
 if { ![info exists read_p] || ![info exists create_p] || ![info exists write_p] || ![info exists admin_p] || ![info exists delete_p] } {
-    set user_id [ad_conn user_id]
+    ns_log Notice "accounts-finance/lib/pretti-menu2.tcl.30: check permissions"
+
     set read_p [permission::permission_p -party_id $user_id -object_id $instance_id -privilege read]
     if { $read_p } {
         set create_p [permission::permission_p -party_id $user_id -object_id $instance_id -privilege create]
@@ -91,9 +99,10 @@ if { $write_p || $create_p } {
             ns_log Notice "accounts-finance/lib/pretti-menu2.tcl.358:  mode = $mode ie. view table"
             set mode_name "#accounts-finance.view#"
             set tid_is_num_p [qf_is_natural_number $table_tid]
+	    ns_log Notice "accounts-finance/lib/pretti-menu2.tcl.95 trashed_p '${trashed_p}' tid_is_num_p '${tid_is_num_p}' write_p '${write_p}' user_created_p '${user_created_p}' admin_p '${admin_p}' create_p '${create_p}' delete_p '${delete_p}' trash_folder_p '${trash_folder_p}'"
             # no actions against a trashed item
             if { !$trashed_p } {
- 
+
                 # edit button
                 if { $tid_is_num_p && ( $write_p || $user_created_p ) } {
                     lappend menu_list [list "edit" "table_tid=${table_tid}&mode=e"]
@@ -178,7 +187,7 @@ if { $write_p || $create_p } {
     # end of switches
     
     
-    set form_id [qf_form action $form_action_url method post id 20140417 hash_check 1]
+    set form_id [qf_form action $form_action_url method post id 20140417 hash_check 0]
     foreach item_list $menu_list {
         set label [lindex $item_list 0]
         set url [lindex $item_list 1]
@@ -202,7 +211,7 @@ if { $write_p || $create_p } {
 
             if { $name1 eq "s" } {
                 # add a multiselect per "split" menu item
-                set table_lol [qss_table_read $table_tid $instance_id]
+                set table_lol [qss_table_read $table_tid $instance_id $user_id]
                 set column_list [lindex $table_lol 0]
                 set req_name_list [acc_fin::pretti_columns_list $table_flags 0]
                 # remove required column_names, because each of those lines should be unique..

@@ -31,7 +31,7 @@ if { $read_p } {
     # get the entire list, to sort it before processing
     foreach table_id $table_ids_list {
         set stats_mod_list [list $table_id]
-        set stats_orig_list [qss_table_stats $table_id]
+        set stats_orig_list [qss_table_stats $table_id $instance_id]
         foreach stat $stats_orig_list {
             lappend stats_mod_list $stat
         }

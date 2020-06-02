@@ -56,12 +56,12 @@ array set input_array [list \
     reset "" \
     mode "p" \
     next_mode "p" \
-			   ]
+      ]
 
 array set title_array [list \
     submit "Submit" \
     reset "Reset" \
-			   ]
+      ]
 
 set user_message_list [list ]
 

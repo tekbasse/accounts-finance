@@ -1709,11 +1709,11 @@ ad_proc -public acc_fin::larr_set {
         set index [lindex $indexes_list $i]
         set larr_ne_data_p 0
         # ns_log Notice "acc_fin::larr_ste.949: index '$index' i $i"
-	    if { $larr($index) ne $data_list } {
+     if { $larr($index) ne $data_list } {
             set larr_ne_data_p 1
-	    }
+     }
 
-	    while { $larr_ne_data_p } {
+     while { $larr_ne_data_p } {
             incr i
             set index [lindex $indexes_list $i]
             # ns_log Notice "acc_fin::larr_ste.953: index '$index' i $i"
@@ -1723,7 +1723,7 @@ ad_proc -public acc_fin::larr_set {
                     set larr_ne_data_p 1
                 }
             }
-	    }
+     }
         # ended because i == icount (ie out of range) or !larr_ne_data_p
         # ns_log Notice "acc_fin::larr_ste.955: index '$index' i $i"
         if { $index eq "" } {
